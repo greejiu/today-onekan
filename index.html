@@ -470,7 +470,7 @@
             </div>
 
             <div class="ag-section-head" style="margin-top:10px;">
-              <span class="label"><span class="ag-dot" style="background:#b98cf0;"></span>하루종일</span>
+              <span class="label">하루종일</span>
               <span class="count" id="agendaAllDayCount" style="display:none;"></span>
             </div>
             <div id="agendaAllDayZone">
@@ -2713,7 +2713,6 @@
       return `
       <div class="task-row ag-someday-row" data-someday-id="${item.id}">
         <input type="checkbox" data-id="${item.id}" class="somedaysum-check" />
-        ${item.tag_id ? `<span class="tag-dot-sm" style="background:${tagColor || "var(--accent)"};"></span>` : ""}
         <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
       </div>`;
     }).join("");
@@ -3165,7 +3164,6 @@
       return `
       <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}">
         <input type="checkbox" ${item.is_done?"checked":""} data-id="${item.id}" class="someday-check" />
-        ${item.tag_id ? `<span class="tag-dot-sm" style="background:${itemTagColor("someday", item.tag_id) || "var(--accent)"};"></span>` : ""}
         <span class="someday-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
         <button class="del" data-id="${item.id}">삭제</button>
       </div>
