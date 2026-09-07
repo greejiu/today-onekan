@@ -102,9 +102,10 @@
   /* 하루종일·타임블럭 체크박스: 다가오는 계획과 같은 네이티브 체크박스+accent-color 방식(옆의 일정 네모와 크기만 20px로 맞춤). */
   .ag-allday-row input[type=checkbox],.ag-block-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
   .ag-block-row.done .agenda-title,.ag-allday-row.done .agenda-title{color:var(--sub);text-decoration:line-through;}
-  /* 타임라인 보기일 때의 하루종일: 타임라인 항목(.ag-tl-task)과 같은 톤(작은 글씨+범주색 옅은 배경 칩)으로 맞춤(2026-09-07). */
+  /* 타임라인 보기일 때의 하루종일: 배경은 타임라인 항목(.ag-tl-task)처럼 범주색 옅게, 글씨는 타임라인의 시간 라벨(06:00 등,
+     .tl-row-label)과 같은 크기·색(10px, 연한 회색)으로 맞춤(2026-09-07, 결님 요청 — 처음엔 12px 검정으로 했다가 정정). */
   .ag-allday-row.tl-style{padding:2px 6px;border-radius:8px;border:1px solid transparent;margin-bottom:2px;}
-  .ag-allday-row.tl-style .agenda-title{font-size:12px;}
+  .ag-allday-row.tl-style .agenda-title{font-size:10px;color:var(--sub);}
   .ag-allday-row.tl-style input[type=checkbox]{width:14px;height:14px;}
   .agenda-empty-block{padding:14px;border-radius:14px;border:1px dashed var(--line);color:var(--sub);font-size:12px;text-align:center;}
   /* 체크박스와 같은 네모 모양·크기·간격으로 통일(할일/습관은 체크박스로 토글, 일정은 늘 범주색으로 차 있는 네모). */
