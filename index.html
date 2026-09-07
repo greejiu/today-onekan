@@ -470,7 +470,7 @@
             </div>
 
             <div class="ag-section-head" style="margin-top:10px;">
-              <span class="label">하루종일</span>
+              <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
               <span class="count" id="agendaAllDayCount" style="display:none;"></span>
             </div>
             <div id="agendaAllDayZone">
@@ -1544,9 +1544,12 @@
     const doneSet = doneSetAll;
 
     // 타임라인을 보고 있을 땐 하루종일도 타임라인과 같은 톤(작은 글씨+범주색 옅은 배경)으로 맞추고 동그라미 표시는 없앰
-    // (배경색 자체가 구분 역할을 대신 함). 타임블럭을 보고 있을 땐 기존처럼 동그라미로 구분(2026-09-07, 결님 요청).
+    // (배경색 자체가 구분 역할을 대신 함). 타임블럭을 보고 있을 땐 기존처럼 동그라미로 구분(2026-09-07, 결님 요청 —
+    // 섹션 제목 앞 장식용 동그라미도 같은 규칙: 타임블럭일 땐 보이고, 타임라인일 땐 숨김).
     const tlStyle = agendaView === "timeline";
     const rowCls = tlStyle ? "plan-row ag-allday-row tl-style" : "plan-row ag-allday-row";
+    const headDot = $("agendaAllDayHeadDot");
+    if (headDot) headDot.style.display = tlStyle ? "none" : "inline-block";
     // 동그라미 대신 붙이는 빈 자리(자리만 차지해서 글자 시작 위치를 체크박스 있는 행과 맞춤, 배경 없음)
     const leadBox = `<span class="agenda-event-dot-wrap" style="width:14px;height:14px;"></span>`;
 
