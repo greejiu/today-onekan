@@ -102,6 +102,10 @@
   /* 하루종일·타임블럭 체크박스: 다가오는 계획과 같은 네이티브 체크박스+accent-color 방식(옆의 일정 네모와 크기만 20px로 맞춤). */
   .ag-allday-row input[type=checkbox],.ag-block-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
   .ag-block-row.done .agenda-title,.ag-allday-row.done .agenda-title{color:var(--sub);text-decoration:line-through;}
+  /* 타임라인 보기일 때의 하루종일: 타임라인 항목(.ag-tl-task)과 같은 톤(작은 글씨+범주색 옅은 배경 칩)으로 맞춤(2026-09-07). */
+  .ag-allday-row.tl-style{padding:2px 6px;border-radius:8px;border:1px solid transparent;margin-bottom:2px;}
+  .ag-allday-row.tl-style .agenda-title{font-size:12px;}
+  .ag-allday-row.tl-style input[type=checkbox]{width:14px;height:14px;}
   .agenda-empty-block{padding:14px;border-radius:14px;border:1px dashed var(--line);color:var(--sub);font-size:12px;text-align:center;}
   /* 체크박스와 같은 네모 모양·크기·간격으로 통일(할일/습관은 체크박스로 토글, 일정은 늘 범주색으로 차 있는 네모). */
   .agenda-event-dot-wrap{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -1539,24 +1543,31 @@
     const untimedHabits = tasks.filter(t => t.is_active && t.start_minute == null && isHabitDueOnDate(t, dateStr, doneSetAll.has(t.id)));
     const doneSet = doneSetAll;
 
+    // 타임라인을 보고 있을 땐 하루종일도 타임라인과 같은 톤(작은 글씨+범주색 옅은 배경)으로 맞추고 동그라미 표시는 없앰
+    // (배경색 자체가 구분 역할을 대신 함). 타임블럭을 보고 있을 땐 기존처럼 동그라미로 구분(2026-09-07, 결님 요청).
+    const tlStyle = agendaView === "timeline";
+    const rowCls = tlStyle ? "plan-row ag-allday-row tl-style" : "plan-row ag-allday-row";
+    // 동그라미 대신 붙이는 빈 자리(자리만 차지해서 글자 시작 위치를 체크박스 있는 행과 맞춤, 배경 없음)
+    const leadBox = `<span class="agenda-event-dot-wrap" style="width:14px;height:14px;"></span>`;
+
     const rows = [
       ...dayUntimedEvents.map(e => `
-        <div class="plan-row ag-allday-row" data-id="${e.id}" data-kind="event">
-          ${eventDotHtml(e.category_id)}
+        <div class="${rowCls}" data-id="${e.id}" data-kind="event"${tlStyle ? ` style="${itemTagBgStyle("event", e.category_id)}"` : ""}>
+          ${tlStyle ? leadBox : eventDotHtml(e.category_id)}
           <span class="agenda-title">${escapeHtml(e.title)}</span>
         </div>`),
       ...dayUntimedNotes.map(n => `
-        <div class="plan-row ag-allday-row" data-id="${n.id}" data-kind="note">
-          ${noteDotHtml(n.category_id)}
+        <div class="${rowCls}" data-id="${n.id}" data-kind="note"${tlStyle ? ` style="${itemTagBgStyle("note", n.category_id)}"` : ""}>
+          ${tlStyle ? leadBox : noteDotHtml(n.category_id)}
           <span class="agenda-title">${escapeHtml(n.title)}</span>
         </div>`),
       ...untimedHabits.map(t => `
-        <div class="plan-row ag-allday-row ${doneSet.has(t.id) ? "done" : ""}" data-id="${t.id}" data-kind="habit">
+        <div class="${rowCls} ${doneSet.has(t.id) ? "done" : ""}" data-id="${t.id}" data-kind="habit"${tlStyle ? ` style="${itemTagBgStyle("habit", t.category_id)}"` : ""}>
           <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="ag-habit-check" />
           <span class="agenda-title">${escapeHtml(t.name)}</span>
         </div>`),
       ...dayTodos.map(td => `
-        <div class="plan-row ag-allday-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
+        <div class="${rowCls} ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo"${tlStyle ? ` style="${itemTagBgStyle("todo", td.tag_id)}"` : ""}>
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="agenda-todo-check" />
           <span class="agenda-title">${escapeHtml(td.title)}</span>
         </div>`),
@@ -1813,10 +1824,13 @@
       : it.kind === "note"
       ? noteDotHtml(it.cat_id) // 메모는 범주색 둥근 네모(일정 동그라미와 구분)
       : eventDotHtml(it.cat_id); // 일정은 체크박스 자리에 범주색 동그라미로 대신 표시
+    // 타임블럭은 배경색 대신 "글자색"으로 태그/범주를 구분(2026-09-07, 배경색을 넣으면 카드형이라 답답하다는 결님 의견 —
+    // 타임라인은 반대로 배경색을 계속 씀). 완료된 항목은 색을 빼서 기존 회색 줄긋기(.done)가 그대로 보이게 둠.
+    const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
     // 항목마다 카드처럼 보여서 공간을 너무 차지한다고 해서, 다가오는 계획 목록과 똑같이 카드 없는 플랫한 한 줄로 변경.
     return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
       ${lead}
-      <span class="agenda-title">${escapeHtml(it.name)}</span>
+      <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
       ${(it.kind !== "event" && it.kind !== "note") ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
     </div>`;
   }
@@ -2427,12 +2441,14 @@
     $("agendaViewBlockBtn").classList.add("active");
     $("agendaViewTimelineBtn").classList.remove("active");
     renderAgendaTimed();
+    renderAgendaAllDay(); // 하루종일 스타일이 타임블럭/타임라인에 따라 달라지므로 같이 다시 그림
   };
   $("agendaViewTimelineBtn").onclick = () => {
     agendaView = "timeline";
     $("agendaViewTimelineBtn").classList.add("active");
     $("agendaViewBlockBtn").classList.remove("active");
     renderAgendaTimed();
+    renderAgendaAllDay(); // 하루종일 스타일이 타임블럭/타임라인에 따라 달라지므로 같이 다시 그림
   };
 
   // "다가오는 계획" 열: 내일부터 7일, 일정+할일+습관을 모두 보여줌.
@@ -2476,12 +2492,15 @@
           ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : e.event_time ? `<span class="plan-time">${e.event_time.slice(0, 5)}</span>` : ""}
         </div>`;
       }).join("");
-      const todoHtml = dayTodos.map(td => `
+      const todoHtml = dayTodos.map(td => {
+        const tagColor = td.is_done ? null : itemTagColor("todo", td.tag_id);
+        return `
         <div class="plan-row todo planup-drag-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="planup-todo-check" />
-          <span class="plan-todo-title planup-todo-title">${escapeHtml(td.title)}</span>
+          <span class="plan-todo-title planup-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
           ${td.todo_time ? `<span class="plan-time">${td.todo_time.slice(0, 5)}</span>` : ""}
-        </div>`).join("");
+        </div>`;
+      }).join("");
       const bodyHtml = habitHtml + eventHtml + todoHtml;
       const hasItems = !!(dayHabits.length || dayEvents.length || dayTodos.length);
       const dotColor = hasItems ? PLAN_DAY_DOTS[idx % PLAN_DAY_DOTS.length] : "#c7c2d6";
@@ -2689,12 +2708,15 @@
     const undone = somedayItems.filter(s => !s.is_done);
     const all = filterSomedayList(sortSomedayList(undone, somedayHomeSort), somedayHomeFilterTag);
     const items = all.slice(0, somedayHomeVisible);
-    const rowsHtml = items.map(item => `
+    const rowsHtml = items.map(item => {
+      const tagColor = item.tag_id ? itemTagColor("someday", item.tag_id) : null;
+      return `
       <div class="task-row ag-someday-row" data-someday-id="${item.id}">
         <input type="checkbox" data-id="${item.id}" class="somedaysum-check" />
-        ${item.tag_id ? `<span class="tag-dot-sm" style="background:${itemTagColor("someday", item.tag_id) || "var(--accent)"};"></span>` : ""}
-        <span class="agenda-title">${escapeHtml(item.title)}</span>
-      </div>`).join("");
+        ${item.tag_id ? `<span class="tag-dot-sm" style="background:${tagColor || "var(--accent)"};"></span>` : ""}
+        <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
+      </div>`;
+    }).join("");
     const moreHtml = all.length > items.length ? `<div class="someday-more-row" data-somedaymore="1">+ 더보기 (${all.length - items.length}개 더)</div>` : "";
     $("somedaySummaryList").innerHTML = items.length
       ? rowsHtml + moreHtml + `<div class="block-add-row" data-somedayadd="1"></div>`
@@ -2830,12 +2852,15 @@
 
     $("planBoard").innerHTML = days.map((dateStr, idx) => {
       const dayTodos = todos.filter(td => td.start_date === dateStr);
-      const todoHtml = dayTodos.map(td => `
+      const todoHtml = dayTodos.map(td => {
+        const tagColor = td.is_done ? null : itemTagColor("todo", td.tag_id);
+        return `
         <div class="plan-row todo ${td.is_done?'done':''}" data-id="${td.id}">
           <input type="checkbox" ${td.is_done?"checked":""} data-id="${td.id}" class="plan-todo-check" />
-          <span class="plan-todo-title">${escapeHtml(td.title)}</span>
+          <span class="plan-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
           <button class="plan-todo-edit" data-id="${td.id}">✎</button>
-        </div>`).join("");
+        </div>`;
+      }).join("");
       const bodyHtml = todoHtml;
       return `<div class="plan-day" data-idx="${idx}" data-date="${dateStr}">
         <div class="plan-day-label">${idx===0 ? "오늘" : formatDateShort(dateStr)}</div>
@@ -3135,14 +3160,17 @@
     const undone = sortSomedayList(filtered.filter(s => !s.is_done), somedayTabSort);
     const done = sortSomedayList(filtered.filter(s => s.is_done), somedayTabSort);
     const sorted = [...undone, ...done]; // 완료 항목은 항상 뒤로(기존 규칙 유지), 각 그룹 안에서 선택한 정렬 기준 적용
-    $("somedayList").innerHTML = sorted.length ? sorted.map(item => `
+    $("somedayList").innerHTML = sorted.length ? sorted.map(item => {
+      const tagColor = (!item.is_done && item.tag_id) ? itemTagColor("someday", item.tag_id) : null;
+      return `
       <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}">
         <input type="checkbox" ${item.is_done?"checked":""} data-id="${item.id}" class="someday-check" />
         ${item.tag_id ? `<span class="tag-dot-sm" style="background:${itemTagColor("someday", item.tag_id) || "var(--accent)"};"></span>` : ""}
-        <span class="someday-title">${escapeHtml(item.title)}</span>
+        <span class="someday-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
         <button class="del" data-id="${item.id}">삭제</button>
       </div>
-    `).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 태그의 항목이 없어요." : "등록된 언젠가 할일이 없어요."}</div>`;
+    `;
+    }).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 태그의 항목이 없어요." : "등록된 언젠가 할일이 없어요."}</div>`;
     document.querySelectorAll(".someday-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
