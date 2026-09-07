@@ -69,12 +69,12 @@
   .upcoming-row .ti{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   /* ── 집 : 습관 목록(행) ── */
-  .task-row{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line);touch-action:none;}
+  .task-row{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line);touch-action:pan-y;}
   .task-row:last-child{border-bottom:none;}
   .task-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
   .task-row span{font-size:14px;}
   .task-row.done span{color:var(--sub);text-decoration:line-through;}
-  .task-row.dragging{opacity:.5;}
+  .task-row.dragging{opacity:.5;touch-action:none;}
   /* "+ 추가" 라벨 없이, 마지막 줄 바로 아래 빈 공간 자체가 클릭해서 추가하는 영역(호버 시에만 살짝 티 남). */
   .block-add-row{min-height:16px;padding:8px 4px;cursor:pointer;border-radius:8px;}
   .block-add-row:hover{background:var(--accent-soft);color:var(--accent);}
@@ -188,12 +188,12 @@
   .agenda-row{display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:13px;}
   .agenda-row:last-child{border-bottom:none;}
   .agenda-row.done{opacity:.5;text-decoration:line-through;}
-  .ag-allday-row{touch-action:none;cursor:pointer;}
-  .ag-allday-row.dragging{opacity:.5;}
-  .ag-block-row{touch-action:none;cursor:pointer;}
+  .ag-allday-row{touch-action:pan-y;cursor:pointer;}
+  .ag-allday-row.dragging{opacity:.5;touch-action:none;}
+  .ag-block-row{touch-action:pan-y;cursor:pointer;}
   /* 타임블럭 카드형 뷰 드래그 중 시각 피드백(2026-09-06 결님 제보 — 이동하는 게 안 보여서 불편) — 다른 뷰(하루종일 등)엔
      이미 있던 .dragging/.drop-target 스타일이 이 뷰에만 빠져 있었음. */
-  .ag-block-row.dragging{opacity:.5;cursor:grabbing;}
+  .ag-block-row.dragging{opacity:.5;cursor:grabbing;touch-action:none;}
   .ag-block-card.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft);border-radius:8px;}
   /* 타임블럭 드래그 중 손가락(커서)을 따라다니는 작은 미리보기 칩 — 타임라인처럼 "따라 움직이는" 느낌을 주기 위함. */
   .ag-drag-ghost{position:fixed;z-index:300;pointer-events:none;background:var(--card);border:1px solid var(--accent);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--text);box-shadow:0 6px 16px rgba(0,0,0,.18);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -213,12 +213,12 @@
   .ag-tl-grid{display:grid;grid-template-columns:34px 1fr;grid-auto-rows:13px;position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 0;overflow:hidden;}
   /* 같은 시간대에 겹치는 항목을 나란히 배치하려고 grid-row 대신 이 안에서 절대좌표(top/left/width)로 배치함 */
   .ag-tl-content{grid-column:2;grid-row:1 / -1;position:relative;}
-  .ag-tl-task{display:flex;align-items:flex-start;gap:6px;background:var(--accent-soft);border:1px solid #dfe3fb;border-radius:8px;padding:2px 6px;font-size:12px;line-height:1.3;position:absolute;box-sizing:border-box;overflow:hidden;z-index:1;touch-action:none;cursor:pointer;}
+  .ag-tl-task{display:flex;align-items:flex-start;gap:6px;background:var(--accent-soft);border:1px solid #dfe3fb;border-radius:8px;padding:2px 6px;font-size:12px;line-height:1.3;position:absolute;box-sizing:border-box;overflow:hidden;z-index:1;touch-action:pan-y;cursor:pointer;}
   .ag-tl-now-line{position:absolute;left:0;right:0;height:2px;background:var(--danger);z-index:3;pointer-events:none;}
   .ag-tl-now-line::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--danger);}
   .ag-tl-task.done{opacity:.55;text-decoration:line-through;}
   .ag-tl-task.event{background:#fff;border-style:dashed;}
-  .ag-tl-task.dragging{opacity:.85;box-shadow:0 3px 10px rgba(60,50,100,.18);z-index:5;cursor:grabbing;}
+  .ag-tl-task.dragging{opacity:.85;box-shadow:0 3px 10px rgba(60,50,100,.18);z-index:5;cursor:grabbing;touch-action:none;}
   .ag-tl-task .ag-tl-title{font-size:12px;flex:1;}
   .ag-tl-task input[type=checkbox]{width:14px;height:14px;flex-shrink:0;accent-color:var(--accent);margin:0;}
   .ag-tl-task::before, .ag-tl-task::after{content:"";position:absolute;left:10px;right:10px;height:2px;border-radius:2px;background:var(--accent);opacity:0;pointer-events:none;transition:opacity .12s;}
@@ -229,7 +229,7 @@
   .ag-tl-add-preview{position:absolute;left:0;right:4px;background:rgba(154,140,240,.18);border:2px dashed var(--accent);border-radius:8px;pointer-events:none;z-index:2;}
 
   /* ── 집 : 다가오는 계획 (7일 보드, 습관 탭의 #planBoard와는 별도 인스턴스) ── */
-  .planup-day{padding:8px 4px;border-bottom:1px solid var(--line);touch-action:none;}
+  .planup-day{padding:8px 4px;border-bottom:1px solid var(--line);touch-action:pan-y;}
   .planup-day:last-child{border-bottom:none;}
   .plan-time{font-size:11px;color:var(--accent);font-weight:700;flex-shrink:0;}
   .planup-day:last-child{border-bottom:none;}
@@ -239,7 +239,7 @@
   .planup-day-empty{font-size:12px;color:var(--sub);opacity:.5;padding:4px 0;}
 
   /* ── 집 : 다가오는 계획 (7일 보드) ── */
-  .plan-day{padding:8px 4px;border-bottom:1px solid var(--line);touch-action:none;}
+  .plan-day{padding:8px 4px;border-bottom:1px solid var(--line);touch-action:pan-y;}
   .plan-day:last-child{border-bottom:none;}
   .plan-day.drag-hi{background:var(--accent-soft);border-radius:8px;}
   .plan-day-label{font-size:11px;color:var(--sub);font-weight:700;margin-bottom:4px;}
@@ -248,8 +248,8 @@
   .plan-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
   .plan-row.done .plan-todo-title{color:var(--sub);text-decoration:line-through;}
   .plan-row.habit{color:var(--accent);}
-  .planup-drag-row{touch-action:none;cursor:grab;}
-  .planup-drag-row.dragging{opacity:.5;cursor:grabbing;}
+  .planup-drag-row{touch-action:pan-y;cursor:grab;}
+  .planup-drag-row.dragging{opacity:.5;cursor:grabbing;touch-action:none;}
   .plan-todo-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .plan-range-tag{font-size:10px;color:var(--sub);flex-shrink:0;}
   .plan-todo-edit{border:none;background:none;color:var(--sub);font-size:12px;cursor:pointer;flex-shrink:0;padding:2px 4px;}
