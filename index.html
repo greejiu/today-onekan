@@ -268,6 +268,21 @@
   .event-row .memo{font-size:12px;color:var(--sub);margin-top:2px;}
   .event-row .del{border:none;background:none;color:var(--danger);font-size:12px;cursor:pointer;flex-shrink:0;}
 
+  /* ── 일정 탭 : 캘린더(월간) 보기(2026-09-07 추가) — 일정+메모가 함께 표시되고, 모양(동그라미/네모)으로만 구분 ── */
+  .cal-weekday-row{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;color:var(--sub);padding:6px 0;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .cal-cell{background:var(--card);min-height:82px;padding:4px;display:flex;flex-direction:column;gap:2px;cursor:pointer;}
+  .cal-cell.other-month{background:var(--bg);}
+  .cal-cell.other-month .cal-cell-num{color:#c8c2d8;}
+  .cal-cell-num{font-size:11px;color:var(--sub);}
+  .cal-cell.today .cal-cell-num{color:#fff;background:var(--accent);border-radius:50%;width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center;}
+  .cal-chip{display:flex;align-items:center;gap:3px;font-size:10px;padding:1px 4px;border-radius:5px;background:var(--accent-soft);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;}
+  .cal-chip .dot{width:6px;height:6px;flex-shrink:0;border-radius:50%;}
+  .cal-chip.note .dot{border-radius:2px;}
+  .cal-more{font-size:10px;color:var(--accent);cursor:pointer;padding:0 2px;}
+  .cal-more:hover{text-decoration:underline;}
+  .cal-add-input{width:100%;font-size:11px;padding:2px 4px;border:1px solid var(--accent);border-radius:5px;font-family:inherit;}
+
   /* ── 습관 관리 화면 ── */
   .todo-row{display:flex;align-items:center;gap:8px;padding:12px 4px;border-bottom:1px solid var(--line);}
   .todo-row:last-child{border-bottom:none;}
@@ -485,36 +500,54 @@
         </div>
       </div>
 
-      <!-- 일정 / 메모 (2026-09-07: 메모는 일정과 범주 풀을 공유해서 한 탭 안 토글로 전환) -->
+      <!-- 일정 / 메모 (2026-09-07: 메모는 일정과 범주 풀을 공유해서 한 탭 안 토글로 전환, 목록/캘린더 보기도 같이 전환) -->
       <div class="page" data-page="schedule" style="display:none;">
         <div class="pagehead"><h2>🗓️ 일정</h2></div>
-        <div class="view-toggle" id="scheduleViewToggle" style="margin-bottom:12px;max-width:220px;">
-          <button type="button" id="scheduleViewEventsBtn" class="active">일정</button>
-          <button type="button" id="scheduleViewNotesBtn">메모</button>
+        <div class="view-toggle-row" style="margin-bottom:12px;">
+          <div class="view-toggle" id="scheduleModeToggle" style="flex:none;max-width:160px;">
+            <button type="button" id="scheduleModeListBtn" class="active">목록</button>
+            <button type="button" id="scheduleModeCalendarBtn">캘린더</button>
+          </div>
+          <div class="view-toggle" id="scheduleViewToggle" style="flex:none;max-width:160px;">
+            <button type="button" id="scheduleViewEventsBtn" class="active">일정</button>
+            <button type="button" id="scheduleViewNotesBtn">메모</button>
+          </div>
         </div>
 
-        <div id="scheduleEventsView">
-          <div class="inline-add-row">
-            <input id="ev_date" type="date" />
-            <span style="align-self:center;color:var(--sub);font-size:12px;">~</span>
-            <input id="ev_end" type="date" title="종료 날짜(선택, 비우면 하루짜리 일정)" />
-            <input id="ev_time" type="time" />
-            <input id="ev_title" type="text" placeholder="일정 제목" />
-            <button id="eventAddBtn">추가</button>
+        <div id="scheduleListMode">
+          <div id="scheduleEventsView">
+            <div class="inline-add-row">
+              <input id="ev_date" type="date" />
+              <span style="align-self:center;color:var(--sub);font-size:12px;">~</span>
+              <input id="ev_end" type="date" title="종료 날짜(선택, 비우면 하루짜리 일정)" />
+              <input id="ev_time" type="time" />
+              <input id="ev_title" type="text" placeholder="일정 제목" />
+              <button id="eventAddBtn">추가</button>
+            </div>
+            <div id="scheduleList"></div>
+            <div id="scheduleEmpty" class="empty" style="display:none;">등록된 일정이 없어요.<br/>위 입력창에서 바로 추가해보세요.</div>
           </div>
-          <div id="scheduleList"></div>
-          <div id="scheduleEmpty" class="empty" style="display:none;">등록된 일정이 없어요.<br/>위 입력창에서 바로 추가해보세요.</div>
+
+          <div id="scheduleNotesView" style="display:none;">
+            <div class="inline-add-row">
+              <input id="n_date" type="date" />
+              <input id="n_time" type="time" title="시간(선택, 비우면 하루종일 메모)" />
+              <input id="n_title" type="text" placeholder="메모 내용" />
+              <button id="noteAddBtn">추가</button>
+            </div>
+            <div id="noteList"></div>
+            <div id="noteEmpty" class="empty" style="display:none;">남긴 메모가 없어요.<br/>위 입력창에서 바로 추가해보세요.</div>
+          </div>
         </div>
 
-        <div id="scheduleNotesView" style="display:none;">
-          <div class="inline-add-row">
-            <input id="n_date" type="date" />
-            <input id="n_time" type="time" title="시간(선택, 비우면 하루종일 메모)" />
-            <input id="n_title" type="text" placeholder="메모 내용" />
-            <button id="noteAddBtn">추가</button>
+        <div id="scheduleCalendarMode" style="display:none;">
+          <div class="agenda-head" style="margin-bottom:8px;">
+            <button type="button" id="calPrevBtn" class="agenda-nav">‹</button>
+            <span id="calMonthLabel" style="font-weight:700;font-size:14px;"></span>
+            <button type="button" id="calNextBtn" class="agenda-nav">›</button>
           </div>
-          <div id="noteList"></div>
-          <div id="noteEmpty" class="empty" style="display:none;">남긴 메모가 없어요.<br/>위 입력창에서 바로 추가해보세요.</div>
+          <div class="cal-weekday-row"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+          <div class="cal-grid" id="calGrid"></div>
         </div>
       </div>
 
@@ -815,8 +848,12 @@
   let habitLogs = []; // tok_habit_logs 전체({habit_id, done_date}) — 반복주기 "마지막 완료일" 계산용
   let currentPage = "home";
   // 일정 탭 "일정↔메모", 할일 탭 "할일↔습관" 전환(2026-09-07, 사이드바 탭 정리 — 습관 탭을 없애고 할일 탭 안 토글로 흡수).
-  let scheduleSubView = "events"; // "events" | "notes"
+  let scheduleSubView = "events"; // "events" | "notes" — 목록 모드에서 어느 목록을 볼지 + 캘린더에서 빈칸 클릭 시 뭘 추가할지
   let todosSubView = "todos"; // "todos" | "habits"
+  // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가) — 캘린더에서는 일정+메모가 함께(모양으로만 구분) 표시됨.
+  let scheduleMode = "list"; // "list" | "calendar"
+  let calCursor = todayStr().slice(0, 7) + "-01"; // 캘린더가 보여주는 달의 1일
+  let calExpanded = new Set(); // "+N개 더"를 눌러서 다 펼친 날짜(dateStr) — 달 이동/모드 전환 시 초기화
 
   // ── 인증 ──
   $("loginBtn").onclick = async () => {
@@ -904,6 +941,7 @@
     renderHome();
     renderSchedule();
     renderNotes();
+    if (scheduleMode === "calendar") renderScheduleCalendar();
     renderTodosPage();
     renderTodo();
     renderSettingsTagLists();
@@ -1816,15 +1854,16 @@
   }
 
   // 블럭 카드 아래 "+ 추가"를 누르면 팝업 없이 그 자리에서 바로 할일을 입력할 수 있게 함
-  // (해당 블럭의 시작 시각으로 저장됨, 소요시간은 기본 30분).
-  // autoOpenStart: 특정 블럭(startMinute)의 입력창을 붙자마자 바로 열음(엔터로 연달아 추가할 때 사용).
-  function attachAgendaBlockAddClick(autoOpenStart) {
+  // (해당 블럭의 시작 시각으로 저장됨, 소요시간은 기본 30분). 오른쪽 클릭하면 같은 자리에 할일 대신 메모(tok_notes)가 추가됨
+  // (2026-09-07 추가 — 왼쪽=할일, 오른쪽=메모).
+  // autoOpenStart/autoOpenMemoStart: 특정 블럭(startMinute)의 입력창을 붙자마자 바로 열음(엔터로 연달아 추가할 때 사용).
+  function attachAgendaBlockAddClick(autoOpenStart, autoOpenMemoStart) {
     document.querySelectorAll(".block-add-row[data-block-start]").forEach(row => {
       const startMinute = parseInt(row.dataset.blockStart, 10);
-      const openInput = () => {
+      const openInput = (isMemo) => {
         const wrap = document.createElement("div");
         wrap.className = "inline-add-wrap";
-        wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="할일 이름" />`;
+        wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="${isMemo ? "메모 내용" : "할일 이름"}" />`;
         row.replaceWith(wrap);
         const input = wrap.querySelector("input");
         input.focus();
@@ -1834,13 +1873,18 @@
           const name = input.value.trim();
           if (!name) { done = true; renderAgendaTimed(); return; }
           done = true;
-          const { error } = await sb.from("tok_todos").insert({
-            title: name, start_date: homeAgendaDate,
-            todo_time: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
-          });
+          const { error } = isMemo
+            ? await sb.from("tok_notes").insert({
+                title: name, note_date: homeAgendaDate,
+                note_time: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
+              })
+            : await sb.from("tok_todos").insert({
+                title: name, start_date: homeAgendaDate,
+                todo_time: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
+              });
           if (error) { alert("저장 실패: " + error.message); done = false; return; }
           await loadAll();
-          if (reopen) attachAgendaBlockAddClick(startMinute);
+          if (reopen) attachAgendaBlockAddClick(isMemo ? null : startMinute, isMemo ? startMinute : null);
         };
         input.addEventListener("keydown", (e) => {
           if (e.key === "Enter") { e.preventDefault(); commit(true); }
@@ -1848,8 +1892,10 @@
         });
         input.addEventListener("blur", () => commit(false));
       };
-      row.onclick = openInput;
-      if (autoOpenStart === startMinute) openInput();
+      row.onclick = () => openInput(false);
+      row.oncontextmenu = (e) => { e.preventDefault(); openInput(true); };
+      if (autoOpenStart === startMinute) openInput(false);
+      if (autoOpenMemoStart === startMinute) openInput(true);
     });
   }
 
@@ -2261,6 +2307,7 @@
     };
 
     content.onpointerdown = (e) => {
+      if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(메모 추가)가 따로 처리
       if (e.target.closest(".ag-tl-task")) return;
       const startSlot = slotFromEvent(e);
       agAddState = { startSlot, currentSlot: startSlot, moved: false };
@@ -2292,41 +2339,61 @@
       const durationMinutes = moved ? (hi - lo + 1) * AG_TL_SLOT_MIN : 30;
       $("agTlAddPreview")?.remove();
       agAddState = null;
-      showAgendaTimelineInlineAdd(content, lo, hi, startMinute, durationMinutes);
+      showAgendaTimelineInlineAdd(content, lo, hi, startMinute, durationMinutes, false);
     };
     content.onpointerup = finish;
     content.onpointercancel = () => { $("agTlAddPreview")?.remove(); agAddState = null; };
+    // 빈 곳 오른쪽 클릭 → 그 시각에 할일 대신 메모(tok_notes)를 바로 추가(2026-09-07 추가 — 왼쪽=할일, 오른쪽=메모).
+    // 항목(.ag-tl-task) 위 오른쪽 클릭은 그 항목의 메뉴(showAgendaItemMenu, task.oncontextmenu)가 따로 처리하므로 여기선 건너뜀.
+    content.oncontextmenu = (e) => {
+      e.preventDefault();
+      if (e.target.closest(".ag-tl-task")) return;
+      const slot = slotFromEvent(e);
+      const startMinute = minM + slot * AG_TL_SLOT_MIN;
+      showAgendaTimelineInlineAdd(content, slot, slot, startMinute, 30, true);
+    };
   }
 
-  // 팝업 없이 타임라인 그 자리에 바로 입력창을 띄워 할일을 추가함(Enter/바깥 클릭 시 저장, Esc면 취소)
-  function showAgendaTimelineInlineAdd(content, loSlot, hiSlot, startMinute, durationMinutes) {
+  // 팝업 없이 타임라인 그 자리에 바로 입력창을 띄워 할일(또는 isMemo=true면 메모)을 추가함(Enter/바깥 클릭 시 저장, Esc면 취소).
+  // Enter로 저장하면 같은 자리에 바로 다음 입력창이 다시 열려 연달아 입력할 수 있음(언젠가 목록과 동일한 패턴).
+  function showAgendaTimelineInlineAdd(content, loSlot, hiSlot, startMinute, durationMinutes, isMemo) {
     const el = document.createElement("div");
     el.className = "ag-tl-task tl-inline-add inline-add-wrap";
     el.style.top = `${loSlot * AG_TL_ROW_PX}px`;
     el.style.height = `${(hiSlot - loSlot + 1) * AG_TL_ROW_PX}px`;
     el.style.left = "0"; el.style.width = "calc(100% - 4px)";
-    el.innerHTML = `<input type="text" class="inline-add-input" placeholder="할일 이름" />`;
+    el.innerHTML = `<input type="text" class="inline-add-input" placeholder="${isMemo ? "메모 내용" : "할일 이름"}" />`;
     content.appendChild(el);
     const input = el.querySelector("input");
     input.focus();
     let done = false;
-    const commit = async () => {
+    const commit = async (reopen) => {
       if (done) return;
       const name = input.value.trim();
       if (!name) { el.remove(); return; }
       done = true;
-      const { error } = await sb.from("tok_todos").insert({
-        title: name, start_date: homeAgendaDate,
-        todo_time: minutesToHHMM(startMinute) + ":00", duration_minutes: durationMinutes,
-      });
+      const { error } = isMemo
+        ? await sb.from("tok_notes").insert({
+            title: name, note_date: homeAgendaDate,
+            note_time: minutesToHHMM(startMinute) + ":00", duration_minutes: durationMinutes,
+          })
+        : await sb.from("tok_todos").insert({
+            title: name, start_date: homeAgendaDate,
+            todo_time: minutesToHHMM(startMinute) + ":00", duration_minutes: durationMinutes,
+          });
       if (error) { alert("저장 실패: " + error.message); done = false; return; }
       await loadAll();
+      // 연속 입력: loadAll이 타임라인을 통째로 다시 그리므로(.ag-tl-content가 새로 생김) 그 새 요소를 다시 찾아서 이어붙임.
+      if (reopen && agendaView === "timeline") {
+        const freshContent = document.querySelector("#agendaTimeWrap .ag-tl-content");
+        if (freshContent) showAgendaTimelineInlineAdd(freshContent, loSlot, hiSlot, startMinute, durationMinutes, isMemo);
+      }
     };
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); commit(); }
+      if (e.key === "Enter") { e.preventDefault(); commit(true); }
       else if (e.key === "Escape") { done = true; el.remove(); }
     });
-    input.addEventListener("blur", () => commit());
+    input.addEventListener("blur", () => commit(false));
   }
 
   function wireAgendaHabitChecks() {
@@ -2537,6 +2604,7 @@
     const clearHighlight = () => board.querySelectorAll(".planup-day").forEach(el => el.classList.remove("drag-hi"));
 
     board.onpointerdown = (e) => {
+      if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(메모 추가)가 따로 처리
       if (e.target.closest(".planup-todo-check") || e.target.closest(".planup-todo-title") || e.target.closest(".planup-habit-check") || e.target.closest(".planup-drag-row")) return;
       const dayEl = e.target.closest(".planup-day");
       if (!dayEl) return;
@@ -2561,10 +2629,21 @@
       planUpcomingAddState = null;
       const dayEl = board.querySelector(`.planup-day[data-idx="${lo}"]`);
       const body = dayEl?.querySelector(".planup-day-body");
-      if (body) showPlanInlineAdd(body, days[lo], moved ? days[hi] : null, renderPlanUpcomingBoard);
+      if (body) showPlanInlineAdd(body, days[lo], moved ? days[hi] : null, renderPlanUpcomingBoard, false);
     };
     board.onpointerup = finish;
     board.onpointercancel = () => { clearHighlight(); planUpcomingAddState = null; };
+    // 빈 날짜 칸 오른쪽 클릭 → 할일 대신 메모를 바로 추가(2026-09-07 추가 — 왼쪽=할일, 오른쪽=메모). 항목 위 오른쪽 클릭은
+    // 그 항목의 삭제/변경 메뉴(showAgendaItemMenu, .plan-row[data-id] 쪽에 이미 있음)가 처리하므로 건너뜀.
+    board.oncontextmenu = (e) => {
+      e.preventDefault();
+      if (e.target.closest(".plan-row")) return;
+      const dayEl = e.target.closest(".planup-day");
+      if (!dayEl) return;
+      const idx = parseInt(dayEl.dataset.idx, 10);
+      const body = dayEl.querySelector(".planup-day-body");
+      if (body) showPlanInlineAdd(body, days[idx], null, renderPlanUpcomingBoard, true);
+    };
   }
 
   // 언젠가 목록 정렬(최근순/오래된순/이름순) — 집 카드·할일 탭 공용으로 씀.
@@ -2820,6 +2899,7 @@
     const clearHighlight = () => document.querySelectorAll(".plan-day").forEach(el => el.classList.remove("drag-hi"));
 
     board.onpointerdown = (e) => {
+      if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(메모 추가)가 따로 처리
       if (e.target.closest(".plan-todo-check") || e.target.closest(".plan-todo-edit") || e.target.closest(".plan-todo-title") || e.target.closest(".home-check")) return;
       const dayEl = e.target.closest(".plan-day");
       if (!dayEl) return;
@@ -2844,38 +2924,60 @@
       planAddState = null;
       const dayEl = document.querySelector(`.plan-day[data-idx="${lo}"]`);
       const body = dayEl?.querySelector(".plan-day-body");
-      if (body) showPlanInlineAdd(body, days[lo], moved ? days[hi] : null);
+      if (body) showPlanInlineAdd(body, days[lo], moved ? days[hi] : null, renderPlanBoard, false);
     };
     board.onpointerup = finish;
     board.onpointercancel = () => { clearHighlight(); planAddState = null; };
+    // 빈 날짜 칸 오른쪽 클릭 → 할일 대신 메모를 바로 추가(2026-09-07 추가 — 왼쪽=할일, 오른쪽=메모). 항목 위 오른쪽 클릭은
+    // renderPlanBoard에 이미 있는 삭제 메뉴(.plan-row.todo 쪽)가 처리하므로 건너뜀.
+    board.oncontextmenu = (e) => {
+      e.preventDefault();
+      if (e.target.closest(".plan-row")) return;
+      const dayEl = e.target.closest(".plan-day");
+      if (!dayEl) return;
+      const idx = parseInt(dayEl.dataset.idx, 10);
+      const body = dayEl.querySelector(".plan-day-body");
+      if (body) showPlanInlineAdd(body, days[idx], null, renderPlanBoard, true);
+    };
   }
 
   // 팝업 없이 그 날짜 칸에 바로 입력창을 추가함(기존 항목은 그대로 두고 입력창만 덧붙임)
   // onEmpty: 입력 없이 취소했을 때 다시 그릴 렌더 함수(어느 보드에서 호출했는지에 따라 다름)
-  function showPlanInlineAdd(body, startDate, endDate, onEmpty = renderPlanBoard) {
+  // isMemo: true면 할일(tok_todos) 대신 메모(tok_notes)를 추가(2026-09-07 추가 — 오른쪽 클릭에서 옴).
+  // Enter로 저장하면 같은 날짜 칸에 바로 다음 입력창이 다시 열려 연달아 입력할 수 있음(언젠가 목록과 동일한 패턴).
+  function showPlanInlineAdd(body, startDate, endDate, onEmpty = renderPlanBoard, isMemo) {
+    // loadAll() 이후엔 body가 예전 DOM 조각이라 다시 못 찾으므로, 어느 보드(할일 탭/집 화면) 소속인지 지금 미리 기억해둠.
+    const containerId = body.closest("#planBoard") ? "planBoard" : body.closest("#planUpcomingBoard") ? "planUpcomingBoard" : null;
     const emptyTag = body.querySelector(".plan-day-empty, .planup-day-empty");
     if (emptyTag) emptyTag.remove();
     const row = document.createElement("div");
     row.className = "plan-inline-add";
-    row.innerHTML = `<input type="text" class="inline-add-input" placeholder="할일 제목" />`;
+    row.innerHTML = `<input type="text" class="inline-add-input" placeholder="${isMemo ? "메모 내용" : "할일 제목"}" />`;
     body.appendChild(row);
     const input = row.querySelector("input");
     input.focus();
     let done = false;
-    const commit = async () => {
+    const commit = async (reopen) => {
       if (done) return;
       const title = input.value.trim();
       if (!title) { row.remove(); if (!body.children.length) onEmpty(); return; }
       done = true;
-      const { error } = await sb.from("tok_todos").insert({ title, start_date: startDate, end_date: endDate });
+      const { error } = isMemo
+        ? await sb.from("tok_notes").insert({ title, note_date: startDate })
+        : await sb.from("tok_todos").insert({ title, start_date: startDate, end_date: endDate });
       if (error) { alert("저장 실패: " + error.message); done = false; return; }
       await loadAll();
+      if (reopen && containerId) {
+        const freshDayEl = $(containerId)?.querySelector(`[data-date="${startDate}"]`);
+        const freshBody = freshDayEl?.querySelector(".plan-day-body, .planup-day-body");
+        if (freshBody) showPlanInlineAdd(freshBody, startDate, null, onEmpty, isMemo);
+      }
     };
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); commit(); }
+      if (e.key === "Enter") { e.preventDefault(); commit(true); }
       else if (e.key === "Escape") { done = true; row.remove(); if (!body.children.length) onEmpty(); }
     });
-    input.addEventListener("blur", commit);
+    input.addEventListener("blur", () => commit(false));
   }
 
   // existing: 수정, null: 새로 추가(prefill로 시작~종료 날짜 지정 가능)
@@ -3208,6 +3310,117 @@
   }
   $("scheduleViewEventsBtn").onclick = () => showScheduleSubView("events");
   $("scheduleViewNotesBtn").onclick = () => showScheduleSubView("notes");
+
+  // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가).
+  function showScheduleMode(mode) {
+    scheduleMode = mode;
+    $("scheduleModeListBtn").classList.toggle("active", mode === "list");
+    $("scheduleModeCalendarBtn").classList.toggle("active", mode === "calendar");
+    $("scheduleListMode").style.display = mode === "list" ? "block" : "none";
+    $("scheduleCalendarMode").style.display = mode === "calendar" ? "block" : "none";
+    if (mode === "calendar") renderScheduleCalendar();
+  }
+  $("scheduleModeListBtn").onclick = () => showScheduleMode("list");
+  $("scheduleModeCalendarBtn").onclick = () => showScheduleMode("calendar");
+
+  // 일정 탭 캘린더(월간) 보기: 일정+메모가 같이 표시됨(모양으로만 구분 — 동그라미=일정, 둥근 네모=메모).
+  // 날짜 칸을 클릭하면 그 자리에서 바로 입력창이 열리고, 위 "일정/메모" 토글에 따라 그쪽으로 추가됨.
+  function renderScheduleCalendar() {
+    const [y, m] = calCursor.split("-").map(Number);
+    $("calMonthLabel").textContent = `${y}년 ${m}월`;
+    const firstOfMonth = new Date(y, m - 1, 1);
+    const startWeekday = firstOfMonth.getDay(); // 0=일요일
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
+    // toISOString()은 한국 시간(UTC+9)에서 날짜가 하루 어긋날 수 있어(addDaysStr 주석 참고) 로컬 필드로 직접 조립.
+    const dateStrAt = (offset) => {
+      const d = new Date(y, m - 1, offset - startWeekday + 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
+    let html = "";
+    for (let i = 0; i < totalCells; i++) {
+      const dateStr = dateStrAt(i);
+      const inMonth = dateStr.slice(0, 7) === calCursor.slice(0, 7);
+      const dayNum = parseInt(dateStr.slice(8, 10), 10);
+      const dayEvents = events
+        .filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr)
+        .map(e => ({ id: e.id, kind: "event", title: e.title, color: itemTagColor("event", e.category_id) }));
+      const dayNotes = notes
+        .filter(n => n.note_date === dateStr)
+        .map(n => ({ id: n.id, kind: "note", title: n.title, color: itemTagColor("event", n.category_id) }));
+      const dayItems = [...dayEvents, ...dayNotes];
+      const expanded = calExpanded.has(dateStr);
+      const visibleItems = expanded ? dayItems : dayItems.slice(0, 2);
+      const hiddenCount = dayItems.length - visibleItems.length;
+      const chipsHtml = visibleItems.map(it => `
+        <div class="cal-chip ${it.kind}" data-id="${it.id}" data-kind="${it.kind}">
+          <span class="dot" style="background:${it.color || "#c9457a"};"></span><span>${escapeHtml(it.title)}</span>
+        </div>`).join("");
+      const moreHtml = hiddenCount > 0 ? `<div class="cal-more" data-date="${dateStr}">+${hiddenCount}개 더</div>` : "";
+      html += `<div class="cal-cell ${inMonth ? "" : "other-month"} ${dateStr === todayStr() ? "today" : ""}" data-date="${dateStr}">
+        <span class="cal-cell-num">${dayNum}</span>
+        ${chipsHtml}
+        ${moreHtml}
+      </div>`;
+    }
+    $("calGrid").innerHTML = html;
+    wireScheduleCalendar();
+  }
+
+  function wireScheduleCalendar() {
+    document.querySelectorAll(".cal-more").forEach(el => {
+      el.onclick = (e) => {
+        e.stopPropagation();
+        calExpanded.add(el.dataset.date);
+        renderScheduleCalendar();
+      };
+    });
+    document.querySelectorAll(".cal-chip").forEach(chip => {
+      chip.onclick = (e) => {
+        e.stopPropagation();
+        showAgendaItemMenu(e.clientX, e.clientY, chip.dataset.kind, chip.dataset.id);
+      };
+    });
+    document.querySelectorAll(".cal-cell[data-date]").forEach(cell => {
+      cell.onclick = (e) => {
+        if (e.target.closest(".cal-chip, .cal-more, .cal-add-input")) return;
+        openCalendarInlineAdd(cell, cell.dataset.date);
+      };
+    });
+  }
+
+  // 캘린더 빈 칸을 눌렀을 때 팝업 없이 그 자리에서 바로 추가(집 화면의 다른 인라인 추가와 동일한 패턴).
+  // scheduleSubView("events"|"notes")에 따라 일정/메모 중 무엇을 만들지 정해짐.
+  function openCalendarInlineAdd(cell, dateStr) {
+    if (cell.querySelector(".cal-add-input")) return;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "cal-add-input";
+    input.placeholder = scheduleSubView === "notes" ? "메모 내용" : "일정 제목";
+    cell.appendChild(input);
+    input.focus();
+    let done = false;
+    const commit = async () => {
+      if (done) return;
+      const title = input.value.trim();
+      if (!title) { input.remove(); return; }
+      done = true;
+      const table = scheduleSubView === "notes" ? "tok_notes" : "tok_events";
+      const payload = scheduleSubView === "notes" ? { title, note_date: dateStr } : { title, event_date: dateStr };
+      const { error } = await sb.from(table).insert(payload);
+      if (error) { alert("저장 실패: " + error.message); done = false; return; }
+      await loadAll();
+      if (scheduleMode === "calendar") renderScheduleCalendar();
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); commit(); }
+      else if (e.key === "Escape") { done = true; input.remove(); }
+    });
+    input.addEventListener("blur", () => commit());
+  }
+  $("calPrevBtn").onclick = () => { calCursor = addMonthsStr(calCursor, -1); calExpanded.clear(); renderScheduleCalendar(); };
+  $("calNextBtn").onclick = () => { calCursor = addMonthsStr(calCursor, 1); calExpanded.clear(); renderScheduleCalendar(); };
 
   // 메모 목록(일정 탭의 "메모" 뷰) — 일정 목록(renderSchedule)과 동일한 패턴, 범주 풀만 공유해서 씀.
   function renderNotes() {
@@ -3832,7 +4045,7 @@
   }
   function renderSettingsTagLists() {
     renderCategoryManageList("settingsTagList", habitCategories, "tok_habit_categories", () => { renderTodo(); renderAgendaTimed(); });
-    renderCategoryManageList("settingsEventCatList", eventCategories, "tok_event_categories", () => { renderSchedule(); renderNotes(); renderAgendaTimed(); });
+    renderCategoryManageList("settingsEventCatList", eventCategories, "tok_event_categories", () => { renderSchedule(); renderNotes(); renderAgendaTimed(); if (scheduleMode === "calendar") renderScheduleCalendar(); });
   }
   $("settingsTagAddBtn").onclick = async () => {
     const name = $("settingsTagName").value.trim();
