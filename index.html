@@ -309,6 +309,11 @@
   .hs-cat-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .hs-cat-del{border:none;background:none;color:var(--sub);font-size:14px;cursor:pointer;flex-shrink:0;width:24px;height:24px;line-height:1;border-radius:6px;}
   .hs-cat-del:hover{color:var(--danger);background:var(--accent-soft);}
+  /* 설정 페이지 "타임블럭 구간" 목록(이름+시작+종료, 2026-09-09 추가) — .hs-cat-row와 같은 톤이되 입력칸이 하나 더 있음 */
+  .hs-block-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+  .hs-block-row{display:flex;align-items:center;gap:6px;}
+  .hs-block-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
+  .hs-block-row input[type="time"]{flex:none;width:96px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .historybtn{border:1px solid var(--line);background:#fff;border-radius:999px;font-size:12px;width:26px;height:26px;line-height:1;cursor:pointer;color:var(--sub);flex-shrink:0;}
 
   /* ── 습관 기록(히스토리) 캘린더 ── */
@@ -622,6 +627,22 @@
           <input id="settingsEventCatColor" type="color" value="#4a90e2" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
           <button class="btn-ghost" id="settingsEventCatAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
         </div>
+
+        <div class="section-label" style="margin-top:20px;">하루 시간 범위 <span style="color:var(--sub);font-weight:400;">(타임라인·타임블럭에서 보여줄 범위)</span></div>
+        <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
+          <div style="flex:1;"><label>시작</label><input id="settingsDayStart" type="time" step="900" /></div>
+          <div style="flex:1;"><label>종료</label><input id="settingsDayEnd" type="time" step="900" /></div>
+          <button class="btn-ghost" id="settingsDaySaveBtn" type="button" style="flex:none;padding:0 12px;height:38px;">저장</button>
+        </div>
+
+        <div class="section-label" style="margin-top:20px;">타임블럭 구간 <span style="color:var(--sub);font-weight:400;">(타임블럭 탭의 시간 구간)</span></div>
+        <div class="hs-block-list" id="settingsBlockList"></div>
+        <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
+          <div style="flex:1;"><label>이름</label><input id="settingsBlockName" type="text" placeholder="예: 오전" /></div>
+          <div style="flex:none;width:96px;"><label>시작</label><input id="settingsBlockStart" type="time" step="900" /></div>
+          <div style="flex:none;width:96px;"><label>종료</label><input id="settingsBlockEnd" type="time" step="900" /></div>
+          <button class="btn-ghost" id="settingsBlockAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
+        </div>
       </div>
     </div>
   </div>
@@ -844,7 +865,8 @@
   let somedayHomeVisible = 8; // "+더보기" 누를 때마다 8씩 증가
   let somedayTabSort = "recent";
   let somedayTabFilterTag = null;
-  let timeBlocks = []; // tok_time_blocks: 타임블럭 탭의 이름표 그룹핑용
+  let timeBlocks = []; // tok_time_blocks: 타임블럭 탭의 이름표 그룹핑용(시작/종료 분 포함 — 설정 페이지에서 목록으로 추가/수정/삭제)
+  let daySettings = { day_start_minute: 360, day_end_minute: 1440 }; // tok_settings: 타임라인/타임블럭에서 보여줄 하루 시작~종료 시간(분). 행이 없으면 이 기본값 사용.
   let todos = []; // tok_todos: 다가오는 계획 보드용 (날짜 있는 1회성 할일)
   let habitCategories = []; // tok_habit_categories: 습관·할일 공용 "태그"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
   let eventCategories = []; // tok_event_categories: 일정 전용 "범주"(이름+색상), 태그 풀과는 별개
@@ -919,6 +941,7 @@
       { data: subtaskData, error: e9 },
       { data: eventCatData, error: e10 },
       { data: noteData, error: e11 },
+      { data: settingsData, error: e12 },
     ] = await Promise.all([
       sb.from("tok_habits").select("*").order("start_minute", { nullsFirst: false }).order("created_at"),
       sb.from("tok_habit_logs").select("habit_id, done_date, start_minute, duration_minutes"),
@@ -930,8 +953,9 @@
       sb.from("tok_todo_subtasks").select("*").order("sort_order"),
       sb.from("tok_event_categories").select("*").order("sort_order"),
       sb.from("tok_notes").select("*").order("note_date").order("note_time"),
+      sb.from("tok_settings").select("*").maybeSingle(),
     ]);
-    const firstError = e1 || e2 || e3 || e5 || e6 || e7 || e8 || e9 || e10 || e11;
+    const firstError = e1 || e2 || e3 || e5 || e6 || e7 || e8 || e9 || e10 || e11 || e12;
     if (firstError) { alert("불러오기 실패: " + firstError.message); return; }
     tasks = taskData || [];
     habitLogs = logData || []; // 전체 완료 이력(반복주기의 "마지막 완료일" 계산용)
@@ -944,6 +968,7 @@
     todoSubtasks = subtaskData || []; // tok_todo_subtasks: 지금 할일 카드의 하위 행동
     eventCategories = eventCatData || [];
     notes = noteData || []; // tok_notes: 메모(일기) — 일정과 범주 풀 공유
+    if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00) 유지
     await advancePastRepeatingEvents(events); // 반복 설정된 일정 중 날짜 지난 것은 다음 회차로 자동 이동
     renderHome();
     renderSchedule();
@@ -952,6 +977,7 @@
     renderTodosPage();
     renderTodo();
     renderSettingsTagLists();
+    renderSettingsDaySettings();
   }
 
   // ── 할일·일정 반복 (2026-09-06 추가): 습관과 같은 방식으로 통일하되, 트리거는 종류별로 다름 ──
@@ -1703,7 +1729,7 @@
       if (zone === "someday") {
         const t = todos.find(x => x.id === id);
         if (!t) return;
-        const { error: insErr } = await sb.from("tok_someday").insert({ title: t.title, is_done: t.is_done });
+        const { error: insErr } = await sb.from("tok_someday").insert({ title: t.title, is_done: t.is_done, tag_id: t.tag_id });
         if (insErr) { alert("이동 실패: " + insErr.message); return; }
         const { error: delErr } = await sb.from("tok_todos").delete().eq("id", id);
         if (delErr) { alert("이동 실패: " + delErr.message); return; }
@@ -1720,7 +1746,7 @@
       if (zone === "someday") return; // 이미 언젠가라 놓아도 변화 없음
       const s = somedayItems.find(x => x.id === id);
       if (!s) return;
-      const patch = { title: s.title, is_done: s.is_done };
+      const patch = { title: s.title, is_done: s.is_done, tag_id: s.tag_id };
       if (zone === "planday") patch.start_date = zoneObj.date;
       else if (zone === "today-allday") patch.start_date = homeAgendaDate;
       else { patch.start_date = homeAgendaDate; patch.todo_time = minutesToHHMM(zoneObj.startMinute) + ":00"; }
@@ -1876,16 +1902,18 @@
   }
 
   // 블럭 카드 아래 "+ 추가"를 누르면 팝업 없이 그 자리에서 바로 할일을 입력할 수 있게 함
-  // (해당 블럭의 시작 시각으로 저장됨, 소요시간은 기본 30분). 오른쪽 클릭하면 같은 자리에 할일 대신 메모(tok_notes)가 추가됨
-  // (2026-09-07 추가 — 왼쪽=할일, 오른쪽=메모).
-  // autoOpenStart/autoOpenMemoStart: 특정 블럭(startMinute)의 입력창을 붙자마자 바로 열음(엔터로 연달아 추가할 때 사용).
-  function attachAgendaBlockAddClick(autoOpenStart, autoOpenMemoStart) {
+  // (해당 블럭의 시작 시각으로 저장됨, 소요시간은 기본 30분). 오른쪽 클릭하면 "일정 추가/메모 추가" 중 고르는 작은 메뉴가 뜸
+  // (2026-09-08 — 왼쪽=할일은 그대로, 오른쪽=메뉴에서 일정·메모 선택).
+  // autoOpenTodoStart: 할일 입력창을 바로 열 블럭(왼쪽 클릭 연속입력용). autoOpenKind/autoOpenKindStart: 일정·메모 입력창을
+  // 바로 열 종류/블럭(오른쪽 클릭 연속입력용).
+  function attachAgendaBlockAddClick(autoOpenTodoStart, autoOpenKind, autoOpenKindStart) {
     document.querySelectorAll(".block-add-row[data-block-start]").forEach(row => {
       const startMinute = parseInt(row.dataset.blockStart, 10);
-      const openInput = (isMemo) => {
+      const openInput = (kind) => { // kind: "todo" | "event" | "note"
         const wrap = document.createElement("div");
         wrap.className = "inline-add-wrap";
-        wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="${isMemo ? "메모 내용" : "할일 이름"}" />`;
+        const placeholder = kind === "event" ? "일정 이름" : kind === "note" ? "메모 내용" : "할일 이름";
+        wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
         row.replaceWith(wrap);
         const input = wrap.querySelector("input");
         input.focus();
@@ -1895,18 +1923,19 @@
           const name = input.value.trim();
           if (!name) { done = true; renderAgendaTimed(); return; }
           done = true;
-          const { error } = isMemo
-            ? await sb.from("tok_notes").insert({
-                title: name, note_date: homeAgendaDate,
-                note_time: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
-              })
-            : await sb.from("tok_todos").insert({
-                title: name, start_date: homeAgendaDate,
-                todo_time: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
-              });
+          const table = kind === "event" ? "tok_events" : kind === "note" ? "tok_notes" : "tok_todos";
+          const dateField = kind === "event" ? "event_date" : kind === "note" ? "note_date" : "start_date";
+          const timeField = kind === "event" ? "event_time" : kind === "note" ? "note_time" : "todo_time";
+          const { error } = await sb.from(table).insert({
+            title: name, [dateField]: homeAgendaDate,
+            [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
+          });
           if (error) { alert("저장 실패: " + error.message); done = false; return; }
           await loadAll();
-          if (reopen) attachAgendaBlockAddClick(isMemo ? null : startMinute, isMemo ? startMinute : null);
+          if (reopen) {
+            if (kind === "todo") attachAgendaBlockAddClick(startMinute, null, null);
+            else attachAgendaBlockAddClick(null, kind, startMinute);
+          }
         };
         input.addEventListener("keydown", (e) => {
           if (e.key === "Enter") { e.preventDefault(); commit(true); }
@@ -1914,10 +1943,13 @@
         });
         input.addEventListener("blur", () => commit(false));
       };
-      row.onclick = () => openInput(false);
-      row.oncontextmenu = (e) => { e.preventDefault(); openInput(true); };
-      if (autoOpenStart === startMinute) openInput(false);
-      if (autoOpenMemoStart === startMinute) openInput(true);
+      row.onclick = () => openInput("todo");
+      row.oncontextmenu = (e) => {
+        e.preventDefault();
+        showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind));
+      };
+      if (autoOpenTodoStart === startMinute) openInput("todo");
+      if (autoOpenKind && autoOpenKindStart === startMinute) openInput(autoOpenKind);
     });
   }
 
@@ -2018,7 +2050,7 @@
   const TL_LONG_PRESS_MS = 300;
   const TL_EDGE_ZONE_PX = 8;
   function renderAgendaTimeline(items) {
-    let minM = 360, maxM = 1440;
+    let minM = daySettings.day_start_minute, maxM = daySettings.day_end_minute; // 설정 페이지에서 정한 하루 범위(기본 06:00~24:00) — 항목이 범위 밖이면 자동으로 더 넓어짐
     items.forEach(it => {
       minM = Math.min(minM, it.start_minute);
       maxM = Math.max(maxM, it.start_minute + it.duration_minutes);
@@ -2361,30 +2393,31 @@
       const durationMinutes = moved ? (hi - lo + 1) * AG_TL_SLOT_MIN : 30;
       $("agTlAddPreview")?.remove();
       agAddState = null;
-      showAgendaTimelineInlineAdd(content, lo, hi, startMinute, durationMinutes, false);
+      showAgendaTimelineInlineAdd(content, lo, hi, startMinute, durationMinutes, "todo");
     };
     content.onpointerup = finish;
     content.onpointercancel = () => { $("agTlAddPreview")?.remove(); agAddState = null; };
-    // 빈 곳 오른쪽 클릭 → 그 시각에 할일 대신 메모(tok_notes)를 바로 추가(2026-09-07 추가 — 왼쪽=할일, 오른쪽=메모).
+    // 빈 곳 오른쪽 클릭 → "일정 추가/메모 추가" 중 고르는 작은 메뉴(2026-09-08 — 왼쪽=할일은 그대로, 오른쪽=메뉴에서 선택).
     // 항목(.ag-tl-task) 위 오른쪽 클릭은 그 항목의 메뉴(showAgendaItemMenu, task.oncontextmenu)가 따로 처리하므로 여기선 건너뜀.
     content.oncontextmenu = (e) => {
       e.preventDefault();
       if (e.target.closest(".ag-tl-task")) return;
       const slot = slotFromEvent(e);
       const startMinute = minM + slot * AG_TL_SLOT_MIN;
-      showAgendaTimelineInlineAdd(content, slot, slot, startMinute, 30, true);
+      showAddKindMenu(e.clientX, e.clientY, (kind) => showAgendaTimelineInlineAdd(content, slot, slot, startMinute, 30, kind));
     };
   }
 
-  // 팝업 없이 타임라인 그 자리에 바로 입력창을 띄워 할일(또는 isMemo=true면 메모)을 추가함(Enter/바깥 클릭 시 저장, Esc면 취소).
+  // 팝업 없이 타임라인 그 자리에 바로 입력창을 띄워 할일/일정/메모(kind)를 추가함(Enter/바깥 클릭 시 저장, Esc면 취소).
   // Enter로 저장하면 같은 자리에 바로 다음 입력창이 다시 열려 연달아 입력할 수 있음(언젠가 목록과 동일한 패턴).
-  function showAgendaTimelineInlineAdd(content, loSlot, hiSlot, startMinute, durationMinutes, isMemo) {
+  function showAgendaTimelineInlineAdd(content, loSlot, hiSlot, startMinute, durationMinutes, kind) {
     const el = document.createElement("div");
     el.className = "ag-tl-task tl-inline-add inline-add-wrap";
     el.style.top = `${loSlot * AG_TL_ROW_PX}px`;
     el.style.height = `${(hiSlot - loSlot + 1) * AG_TL_ROW_PX}px`;
     el.style.left = "0"; el.style.width = "calc(100% - 4px)";
-    el.innerHTML = `<input type="text" class="inline-add-input" placeholder="${isMemo ? "메모 내용" : "할일 이름"}" />`;
+    const placeholder = kind === "event" ? "일정 이름" : kind === "note" ? "메모 내용" : "할일 이름";
+    el.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
     content.appendChild(el);
     const input = el.querySelector("input");
     input.focus();
@@ -2394,21 +2427,19 @@
       const name = input.value.trim();
       if (!name) { el.remove(); return; }
       done = true;
-      const { error } = isMemo
-        ? await sb.from("tok_notes").insert({
-            title: name, note_date: homeAgendaDate,
-            note_time: minutesToHHMM(startMinute) + ":00", duration_minutes: durationMinutes,
-          })
-        : await sb.from("tok_todos").insert({
-            title: name, start_date: homeAgendaDate,
-            todo_time: minutesToHHMM(startMinute) + ":00", duration_minutes: durationMinutes,
-          });
+      const table = kind === "event" ? "tok_events" : kind === "note" ? "tok_notes" : "tok_todos";
+      const dateField = kind === "event" ? "event_date" : kind === "note" ? "note_date" : "start_date";
+      const timeField = kind === "event" ? "event_time" : kind === "note" ? "note_time" : "todo_time";
+      const { error } = await sb.from(table).insert({
+        title: name, [dateField]: homeAgendaDate,
+        [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: durationMinutes,
+      });
       if (error) { alert("저장 실패: " + error.message); done = false; return; }
       await loadAll();
       // 연속 입력: loadAll이 타임라인을 통째로 다시 그리므로(.ag-tl-content가 새로 생김) 그 새 요소를 다시 찾아서 이어붙임.
       if (reopen && agendaView === "timeline") {
         const freshContent = document.querySelector("#agendaTimeWrap .ag-tl-content");
-        if (freshContent) showAgendaTimelineInlineAdd(freshContent, loSlot, hiSlot, startMinute, durationMinutes, isMemo);
+        if (freshContent) showAgendaTimelineInlineAdd(freshContent, loSlot, hiSlot, startMinute, durationMinutes, kind);
       }
     };
     input.addEventListener("keydown", (e) => {
@@ -2656,12 +2687,12 @@
       planUpcomingAddState = null;
       const dayEl = board.querySelector(`.planup-day[data-idx="${lo}"]`);
       const body = dayEl?.querySelector(".planup-day-body");
-      if (body) showPlanInlineAdd(body, days[lo], moved ? days[hi] : null, renderPlanUpcomingBoard, false);
+      if (body) showPlanInlineAdd(body, days[lo], moved ? days[hi] : null, renderPlanUpcomingBoard, "todo");
     };
     board.onpointerup = finish;
     board.onpointercancel = () => { clearHighlight(); planUpcomingAddState = null; };
-    // 빈 날짜 칸 오른쪽 클릭 → 할일 대신 메모를 바로 추가(2026-09-07 추가 — 왼쪽=할일, 오른쪽=메모). 항목 위 오른쪽 클릭은
-    // 그 항목의 삭제/변경 메뉴(showAgendaItemMenu, .plan-row[data-id] 쪽에 이미 있음)가 처리하므로 건너뜀.
+    // 빈 날짜 칸 오른쪽 클릭 → "일정 추가/메모 추가" 중 고르는 작은 메뉴(2026-09-08 — 왼쪽=할일은 그대로, 오른쪽=메뉴에서 선택).
+    // 항목 위 오른쪽 클릭은 그 항목의 삭제/변경 메뉴(showAgendaItemMenu, .plan-row[data-id] 쪽에 이미 있음)가 처리하므로 건너뜀.
     board.oncontextmenu = (e) => {
       e.preventDefault();
       if (e.target.closest(".plan-row")) return;
@@ -2669,7 +2700,8 @@
       if (!dayEl) return;
       const idx = parseInt(dayEl.dataset.idx, 10);
       const body = dayEl.querySelector(".planup-day-body");
-      if (body) showPlanInlineAdd(body, days[idx], null, renderPlanUpcomingBoard, true);
+      if (!body) return;
+      showAddKindMenu(e.clientX, e.clientY, (kind) => showPlanInlineAdd(body, days[idx], null, renderPlanUpcomingBoard, kind));
     };
   }
 
@@ -2956,12 +2988,12 @@
       planAddState = null;
       const dayEl = document.querySelector(`.plan-day[data-idx="${lo}"]`);
       const body = dayEl?.querySelector(".plan-day-body");
-      if (body) showPlanInlineAdd(body, days[lo], moved ? days[hi] : null, renderPlanBoard, false);
+      if (body) showPlanInlineAdd(body, days[lo], moved ? days[hi] : null, renderPlanBoard, "todo");
     };
     board.onpointerup = finish;
     board.onpointercancel = () => { clearHighlight(); planAddState = null; };
-    // 빈 날짜 칸 오른쪽 클릭 → 할일 대신 메모를 바로 추가(2026-09-07 추가 — 왼쪽=할일, 오른쪽=메모). 항목 위 오른쪽 클릭은
-    // renderPlanBoard에 이미 있는 삭제 메뉴(.plan-row.todo 쪽)가 처리하므로 건너뜀.
+    // 빈 날짜 칸 오른쪽 클릭 → "일정 추가/메모 추가" 중 고르는 작은 메뉴(2026-09-08 — 왼쪽=할일은 그대로, 오른쪽=메뉴에서 선택).
+    // 항목 위 오른쪽 클릭은 renderPlanBoard에 이미 있는 삭제 메뉴(.plan-row.todo 쪽)가 처리하므로 건너뜀.
     board.oncontextmenu = (e) => {
       e.preventDefault();
       if (e.target.closest(".plan-row")) return;
@@ -2969,22 +3001,24 @@
       if (!dayEl) return;
       const idx = parseInt(dayEl.dataset.idx, 10);
       const body = dayEl.querySelector(".plan-day-body");
-      if (body) showPlanInlineAdd(body, days[idx], null, renderPlanBoard, true);
+      if (!body) return;
+      showAddKindMenu(e.clientX, e.clientY, (kind) => showPlanInlineAdd(body, days[idx], null, renderPlanBoard, kind));
     };
   }
 
   // 팝업 없이 그 날짜 칸에 바로 입력창을 추가함(기존 항목은 그대로 두고 입력창만 덧붙임)
   // onEmpty: 입력 없이 취소했을 때 다시 그릴 렌더 함수(어느 보드에서 호출했는지에 따라 다름)
-  // isMemo: true면 할일(tok_todos) 대신 메모(tok_notes)를 추가(2026-09-07 추가 — 오른쪽 클릭에서 옴).
+  // kind: "todo"(기본) | "event" | "note" — 오른쪽 클릭 메뉴에서 고른 종류(2026-09-08, 전엔 메모 고정이었음).
   // Enter로 저장하면 같은 날짜 칸에 바로 다음 입력창이 다시 열려 연달아 입력할 수 있음(언젠가 목록과 동일한 패턴).
-  function showPlanInlineAdd(body, startDate, endDate, onEmpty = renderPlanBoard, isMemo) {
+  function showPlanInlineAdd(body, startDate, endDate, onEmpty = renderPlanBoard, kind = "todo") {
     // loadAll() 이후엔 body가 예전 DOM 조각이라 다시 못 찾으므로, 어느 보드(할일 탭/집 화면) 소속인지 지금 미리 기억해둠.
     const containerId = body.closest("#planBoard") ? "planBoard" : body.closest("#planUpcomingBoard") ? "planUpcomingBoard" : null;
     const emptyTag = body.querySelector(".plan-day-empty, .planup-day-empty");
     if (emptyTag) emptyTag.remove();
     const row = document.createElement("div");
     row.className = "plan-inline-add";
-    row.innerHTML = `<input type="text" class="inline-add-input" placeholder="${isMemo ? "메모 내용" : "할일 제목"}" />`;
+    const placeholder = kind === "event" ? "일정 이름" : kind === "note" ? "메모 내용" : "할일 제목";
+    row.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
     body.appendChild(row);
     const input = row.querySelector("input");
     input.focus();
@@ -2994,7 +3028,9 @@
       const title = input.value.trim();
       if (!title) { row.remove(); if (!body.children.length) onEmpty(); return; }
       done = true;
-      const { error } = isMemo
+      const { error } = kind === "event"
+        ? await sb.from("tok_events").insert({ title, event_date: startDate, end_date: endDate })
+        : kind === "note"
         ? await sb.from("tok_notes").insert({ title, note_date: startDate })
         : await sb.from("tok_todos").insert({ title, start_date: startDate, end_date: endDate });
       if (error) { alert("저장 실패: " + error.message); done = false; return; }
@@ -3002,7 +3038,7 @@
       if (reopen && containerId) {
         const freshDayEl = $(containerId)?.querySelector(`[data-date="${startDate}"]`);
         const freshBody = freshDayEl?.querySelector(".plan-day-body, .planup-day-body");
-        if (freshBody) showPlanInlineAdd(freshBody, startDate, null, onEmpty, isMemo);
+        if (freshBody) showPlanInlineAdd(freshBody, startDate, null, onEmpty, kind);
       }
     };
     input.addEventListener("keydown", (e) => {
@@ -3713,6 +3749,28 @@
     menu.style.top = `${top}px`;
   }
 
+  // 빈 공간 오른쪽 클릭 공통 헬퍼(타임블럭/타임라인/다가오는 계획 3곳 공용, 2026-09-08 추가):
+  // 왼쪽 클릭=할일 추가는 그대로 두고, 오른쪽 클릭하면 "일정 추가 / 메모 추가" 중 고르는 작은 메뉴를 띄움
+  // (전엔 오른쪽 클릭=바로 메모였는데, 일정도 여기서 바로 추가하고 싶다는 결님 요청으로 메뉴 하나를 거치도록 변경).
+  function showAddKindMenu(x, y, onPick) {
+    document.querySelector(".ctx-menu")?.remove();
+    const menu = document.createElement("div");
+    menu.className = "ctx-menu";
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+    menu.innerHTML = `<button type="button" class="default" data-kind="event">일정 추가</button><button type="button" class="default" data-kind="note">메모 추가</button>`;
+    document.body.appendChild(menu);
+    positionCtxMenu(menu, x, y);
+    menu.querySelectorAll("button[data-kind]").forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        menu.remove();
+        onPick(btn.dataset.kind);
+      };
+    });
+    attachCtxMenuOutsideClose(menu);
+  }
+
   // 오른쪽 클릭(→ PC 관리 메뉴) 공통 헬퍼: 커서 위치에 "삭제" 한 줄짜리 메뉴를 띄움
   function showDeleteMenu(x, y, onDelete) {
     document.querySelector(".ctx-menu")?.remove();
@@ -4100,6 +4158,93 @@
     eventCategories.push(data);
     $("settingsEventCatName").value = "";
     renderSettingsTagLists();
+  };
+
+  // ── 설정 페이지: 하루 시간 범위(타임라인·타임블럭 표시 범위) ──
+  function renderSettingsDaySettings() {
+    const s = $("settingsDayStart"), e = $("settingsDayEnd");
+    if (s) s.value = minutesToHHMM(daySettings.day_start_minute);
+    if (e) e.value = minutesToHHMM(daySettings.day_end_minute);
+    renderSettingsBlockList();
+  }
+  $("settingsDaySaveBtn").onclick = async () => {
+    const startVal = $("settingsDayStart").value, endVal = $("settingsDayEnd").value;
+    if (!startVal || !endVal) { alert("시작·종료 시간을 모두 입력해주세요."); return; }
+    const day_start_minute = hhmmToMinutes(startVal);
+    let day_end_minute = hhmmToMinutes(endVal);
+    if (day_end_minute <= day_start_minute) day_end_minute = 1440; // 자정 넘어가는 범위(예: 22:00~새벽)는 아직 지원 안 함 — 종료가 시작보다 빠르면 자정(24:00)까지로 대체
+    const { error } = await sb.from("tok_settings").upsert({ user_id: (await sb.auth.getUser()).data.user.id, day_start_minute, day_end_minute }).select().single();
+    if (error) { alert("저장 실패: " + error.message); return; }
+    daySettings = { day_start_minute, day_end_minute };
+    renderAgendaTimed();
+  };
+
+  // ── 설정 페이지: 타임블럭 구간(이름+시작+종료) 목록 관리 ──
+  function renderSettingsBlockList() {
+    const host = $("settingsBlockList");
+    if (!host) return;
+    host.innerHTML = timeBlocks.length ? timeBlocks.map(b => `
+      <div class="hs-block-row" data-id="${b.id}">
+        <input type="text" class="hs-block-name-input" data-id="${b.id}" value="${escapeHtml(b.title)}" />
+        <input type="time" step="900" class="hs-block-start-input" data-id="${b.id}" value="${minutesToHHMM(b.start_minute)}" />
+        <input type="time" step="900" class="hs-block-end-input" data-id="${b.id}" value="${minutesToHHMM(b.end_minute)}" />
+        <button type="button" class="hs-cat-del" data-id="${b.id}" title="삭제">✕</button>
+      </div>
+    `).join("") : `<div class="empty" style="font-size:12px;padding:4px 0;">아직 없어요. 아래에서 추가해보세요.</div>`;
+    host.querySelectorAll(".hs-block-name-input").forEach(inp => {
+      const commit = async () => {
+        const id = inp.dataset.id, title = inp.value.trim();
+        const b = timeBlocks.find(x => x.id === id);
+        if (!title) { inp.value = b ? b.title : ""; return; }
+        if (b && b.title === title) return;
+        const { error } = await sb.from("tok_time_blocks").update({ title }).eq("id", id);
+        if (error) { alert("이름 변경 실패: " + error.message); return; }
+        if (b) b.title = title;
+        renderTodo();
+      };
+      inp.onblur = commit;
+      inp.onkeydown = (e) => { if (e.key === "Enter") inp.blur(); };
+    });
+    const commitTime = async (inp, field) => {
+      const id = inp.dataset.id;
+      const b = timeBlocks.find(x => x.id === id);
+      if (!inp.value) { if (b) inp.value = minutesToHHMM(b[field]); return; }
+      const minutes = hhmmToMinutes(inp.value);
+      if (b && b[field] === minutes) return;
+      const { error } = await sb.from("tok_time_blocks").update({ [field]: minutes }).eq("id", id);
+      if (error) { alert("시간 변경 실패: " + error.message); if (b) inp.value = minutesToHHMM(b[field]); return; }
+      if (b) b[field] = minutes;
+      renderTodo();
+    };
+    host.querySelectorAll(".hs-block-start-input").forEach(inp => { inp.onchange = () => commitTime(inp, "start_minute"); });
+    host.querySelectorAll(".hs-block-end-input").forEach(inp => { inp.onchange = () => commitTime(inp, "end_minute"); });
+    host.querySelectorAll(".hs-cat-del").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
+        const b = timeBlocks.find(x => x.id === id);
+        if (!confirm(`"${b ? b.title : "구간"}"을 삭제할까요? 이 구간을 쓰던 습관은 "구간 없음"으로 바뀌어요.`)) return;
+        const { error } = await sb.from("tok_time_blocks").delete().eq("id", id);
+        if (error) { alert("삭제 실패: " + error.message); return; }
+        const idx = timeBlocks.findIndex(x => x.id === id);
+        if (idx >= 0) timeBlocks.splice(idx, 1);
+        renderSettingsBlockList();
+        renderTodo();
+      };
+    });
+  }
+  $("settingsBlockAddBtn").onclick = async () => {
+    const title = $("settingsBlockName").value.trim();
+    const startVal = $("settingsBlockStart").value, endVal = $("settingsBlockEnd").value;
+    if (!title) { alert("구간 이름을 입력해주세요."); return; }
+    if (!startVal || !endVal) { alert("시작·종료 시간을 모두 입력해주세요."); return; }
+    const start_minute = hhmmToMinutes(startVal), end_minute = hhmmToMinutes(endVal);
+    if (end_minute <= start_minute) { alert("종료 시간이 시작 시간보다 늦어야 해요."); return; }
+    const { data, error } = await sb.from("tok_time_blocks").insert({ title, start_minute, end_minute, sort_order: timeBlocks.length }).select().single();
+    if (error) { alert("추가 실패: " + error.message); return; }
+    timeBlocks.push(data);
+    $("settingsBlockName").value = ""; $("settingsBlockStart").value = ""; $("settingsBlockEnd").value = "";
+    renderSettingsBlockList();
+    renderTodo();
   };
 
   boot();
