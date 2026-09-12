@@ -1976,10 +1976,10 @@
   function attachAgendaBlockAddClick(autoOpenTodoStart, autoOpenKind, autoOpenKindStart) {
     document.querySelectorAll(".block-add-row[data-block-start]").forEach(row => {
       const startMinute = parseInt(row.dataset.blockStart, 10);
-      const openInput = (kind) => { // kind: "todo" | "event"
+      const openInput = (kind) => { // kind: "todo" | "event" | "habit"
         const wrap = document.createElement("div");
         wrap.className = "inline-add-wrap";
-        const placeholder = kind === "event" ? "일정 이름" : "할일 이름";
+        const placeholder = kind === "event" ? "일정 이름" : kind === "habit" ? "습관 이름" : "할일 이름";
         wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
         row.replaceWith(wrap);
         const input = wrap.querySelector("input");
@@ -1990,13 +1990,21 @@
           const name = input.value.trim();
           if (!name) { done = true; renderAgendaTimed(); return; }
           done = true;
-          const table = kind === "event" ? "tok_events" : "tok_todos";
-          const dateField = kind === "event" ? "event_date" : "start_date";
-          const timeField = kind === "event" ? "event_time" : "todo_time";
-          const { error } = await sb.from(table).insert({
-            title: name, [dateField]: homeAgendaDate,
-            [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
-          });
+          let error;
+          if (kind === "habit") {
+            ({ error } = await sb.from("tok_habits").insert({
+              name, start_date: homeAgendaDate, start_minute: startMinute, duration_minutes: 30,
+              repeat_unit: "day", repeat_interval: 1,
+            }));
+          } else {
+            const table = kind === "event" ? "tok_events" : "tok_todos";
+            const dateField = kind === "event" ? "event_date" : "start_date";
+            const timeField = kind === "event" ? "event_time" : "todo_time";
+            ({ error } = await sb.from(table).insert({
+              title: name, [dateField]: homeAgendaDate,
+              [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
+            }));
+          }
           if (error) { alert("저장 실패: " + error.message); done = false; return; }
           await loadAll();
           if (reopen) {
@@ -2421,7 +2429,7 @@
     };
 
     content.onpointerdown = (e) => {
-      if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(일정/할일 선택 메뉴)가 따로 처리
+      if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(일정/할일/습관 선택 메뉴)가 따로 처리
       if (e.target.closest(".ag-tl-task")) return;
       const startSlot = slotFromEvent(e);
       agAddState = { startSlot, currentSlot: startSlot, moved: false };
@@ -2476,7 +2484,7 @@
     el.style.top = `${loSlot * AG_TL_ROW_PX}px`;
     el.style.height = `${(hiSlot - loSlot + 1) * AG_TL_ROW_PX}px`;
     el.style.left = "0"; el.style.width = "calc(100% - 4px)";
-    const placeholder = kind === "event" ? "일정 이름" : "할일 이름";
+    const placeholder = kind === "event" ? "일정 이름" : kind === "habit" ? "습관 이름" : "할일 이름";
     el.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
     content.appendChild(el);
     const input = el.querySelector("input");
@@ -2487,13 +2495,21 @@
       const name = input.value.trim();
       if (!name) { el.remove(); return; }
       done = true;
-      const table = kind === "event" ? "tok_events" : "tok_todos";
-      const dateField = kind === "event" ? "event_date" : "start_date";
-      const timeField = kind === "event" ? "event_time" : "todo_time";
-      const { error } = await sb.from(table).insert({
-        title: name, [dateField]: homeAgendaDate,
-        [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: durationMinutes,
-      });
+      let error;
+      if (kind === "habit") {
+        ({ error } = await sb.from("tok_habits").insert({
+          name, start_date: homeAgendaDate, start_minute: startMinute, duration_minutes: durationMinutes,
+          repeat_unit: "day", repeat_interval: 1,
+        }));
+      } else {
+        const table = kind === "event" ? "tok_events" : "tok_todos";
+        const dateField = kind === "event" ? "event_date" : "start_date";
+        const timeField = kind === "event" ? "event_time" : "todo_time";
+        ({ error } = await sb.from(table).insert({
+          title: name, [dateField]: homeAgendaDate,
+          [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: durationMinutes,
+        }));
+      }
       if (error) { alert("저장 실패: " + error.message); done = false; return; }
       await loadAll();
       // 연속 입력: loadAll이 타임라인을 통째로 다시 그리므로(.ag-tl-content가 새로 생김) 그 새 요소를 다시 찾아서 이어붙임.
@@ -2722,7 +2738,7 @@
     const clearHighlight = () => board.querySelectorAll(".planup-day").forEach(el => el.classList.remove("drag-hi"));
 
     board.onpointerdown = (e) => {
-      if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(일정/할일 선택 메뉴)가 따로 처리
+      if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(일정/할일/습관 선택 메뉴)가 따로 처리
       if (e.target.closest(".planup-todo-check") || e.target.closest(".planup-todo-title") || e.target.closest(".planup-habit-check") || e.target.closest(".planup-drag-row")) return;
       const dayEl = e.target.closest(".planup-day");
       if (!dayEl) return;
@@ -3065,7 +3081,7 @@
     if (emptyTag) emptyTag.remove();
     const row = document.createElement("div");
     row.className = "plan-inline-add";
-    const placeholder = kind === "event" ? "일정 이름" : "할일 제목";
+    const placeholder = kind === "event" ? "일정 이름" : kind === "habit" ? "습관 이름" : "할일 제목";
     row.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
     body.appendChild(row);
     const input = row.querySelector("input");
@@ -3078,6 +3094,8 @@
       done = true;
       const { error } = kind === "event"
         ? await sb.from("tok_events").insert({ title, event_date: startDate, end_date: endDate })
+        : kind === "habit"
+        ? await sb.from("tok_habits").insert({ name: title, start_date: startDate, repeat_unit: "day", repeat_interval: 1 })
         : await sb.from("tok_todos").insert({ title, start_date: startDate, end_date: endDate });
       if (error) { alert("저장 실패: " + error.message); done = false; return; }
       await loadAll();
@@ -3903,7 +3921,7 @@
   }
 
   // 빈 공간 오른쪽 클릭 공통 헬퍼(타임블럭/타임라인/다가오는 계획 3곳 공용, 2026-09-08 추가):
-  // 왼쪽 클릭=할일 추가는 그대로 두고, 오른쪽 클릭하면 "일정 추가 / 할일 추가" 중 고르는 작은 메뉴를 띄움
+  // 왼쪽 클릭=할일 추가는 그대로 두고, 오른쪽 클릭하면 "일정/할일/습관 추가" 중 고르는 작은 메뉴를 띄움(2026-09-12: 습관 추가 옵션 추가)
   // (2026-09-12: 메모 기능을 아예 없애면서 메뉴 두번째 항목을 메모→할일로 교체).
   function showAddKindMenu(x, y, onPick) {
     document.querySelector(".ctx-menu")?.remove();
@@ -3911,7 +3929,7 @@
     menu.className = "ctx-menu";
     menu.style.left = x + "px";
     menu.style.top = y + "px";
-    menu.innerHTML = `<button type="button" class="default" data-kind="event">일정 추가</button><button type="button" class="default" data-kind="todo">할일 추가</button>`;
+    menu.innerHTML = `<button type="button" class="default" data-kind="event">일정 추가</button><button type="button" class="default" data-kind="todo">할일 추가</button><button type="button" class="default" data-kind="habit">습관 추가</button>`;
     document.body.appendChild(menu);
     positionCtxMenu(menu, x, y);
     menu.querySelectorAll("button[data-kind]").forEach(btn => {
@@ -3972,7 +3990,9 @@
     return events.find(e => e.id === id);
   }
 
-  // 집 화면 항목 오른쪽 클릭 메뉴: 날짜 변경 / 그룹·범주 변경 / (반복 할일↔습관 전환) / 삭제 (습관·할일·일정 공용)
+  // 집 화면 항목 오른쪽 클릭 메뉴: 날짜 변경 / 그룹·범주 변경 / 복제 / 삭제 (습관·할일·일정 공용)
+  // 2026-09-12: 반복 할일↔습관 전환 메뉴는 없앰(빈칸 우클릭에서 종류별로 바로 추가할 수 있게 됐으니
+  // 굳이 나중에 종류를 바꾸는 기능은 필요 없다고 판단 — convertTodoToHabit/convertHabitToTodo 함수도 같이 삭제).
   function showAgendaItemMenu(x, y, kind, id) {
     document.querySelector(".ctx-menu")?.remove();
     const menu = document.createElement("div");
@@ -3981,14 +4001,9 @@
     menu.style.top = y + "px";
     const tagLabel = kind === "event" ? "범주 변경" : "그룹 변경";
     const item = agendaItemById(kind, id);
-    // 반복 할일 ↔ 습관 전환: 할일은 반복설정 돼있을 때만(일회성 할일은 대상 아님), 습관은 원래 반복 개념이라 항상 대상.
-    let convertBtn = "";
-    if (kind === "todo" && item?.repeat_unit) convertBtn = `<button type="button" class="default" data-act="convert">습관으로 바꾸기</button>`;
-    else if (kind === "habit") convertBtn = `<button type="button" class="default" data-act="convert">할일로 바꾸기</button>`;
     menu.innerHTML = `
       <button type="button" class="default" data-act="date">날짜 변경</button>
       <button type="button" class="default" data-act="tag">${tagLabel}</button>
-      ${convertBtn}
       <button type="button" class="default" data-act="duplicate">복제</button>
       <button type="button" data-act="delete">삭제</button>
     `;
@@ -4002,14 +4017,6 @@
       e.stopPropagation(); menu.remove();
       showItemTagPicker(x, y, kind, id);
     };
-    const convertEl = menu.querySelector('[data-act="convert"]');
-    if (convertEl) {
-      convertEl.onclick = async (e) => {
-        e.stopPropagation(); menu.remove();
-        if (kind === "todo") await convertTodoToHabit(id);
-        else await convertHabitToTodo(id);
-      };
-    }
     menu.querySelector('[data-act="duplicate"]').onclick = async (e) => {
       e.stopPropagation(); menu.remove();
       await duplicateAgendaItem(kind, id);
@@ -4052,48 +4059,6 @@
       }));
     }
     if (error) { alert("복제 실패: " + error.message); return; }
-    await loadAll();
-  }
-
-  // 반복 할일 → 습관 전환: 새 습관으로 만들고 기존 할일 행은 삭제(진행 중인 이 회차만 바뀜, 이미 지나간
-  // 완료 기록들은 별개의 할일 행으로 그대로 남아있어 영향 없음). 하위 행동이 있으면 같이 사라짐(습관엔 그 개념이 없어서).
-  async function convertTodoToHabit(id) {
-    const t = todos.find(x => x.id === id);
-    if (!t) return;
-    const subCount = todoSubtasks.filter(s => s.todo_id === id).length;
-    const warn = subCount ? ` 하위 행동 ${subCount}개도 함께 사라져요.` : "";
-    if (!confirm(`"${t.title}"을(를) 습관으로 바꿀까요?${warn}`)) return;
-    const startMinute = t.todo_time ? hhmmToMinutes(t.todo_time.slice(0, 5)) : null;
-    const { error: insErr } = await sb.from("tok_habits").insert({
-      name: t.title, category_id: t.tag_id || null,
-      repeat_unit: t.repeat_unit, repeat_interval: t.repeat_interval, repeat_days: t.repeat_days || null,
-      start_date: t.start_date || todayStr(), end_date: t.end_date || null,
-      start_minute: startMinute, duration_minutes: t.duration_minutes || 30,
-    });
-    if (insErr) { alert("전환 실패: " + insErr.message); return; }
-    const { error: delErr } = await sb.from("tok_todos").delete().eq("id", id);
-    if (delErr) { alert("전환 중 기존 할일 삭제 실패: " + delErr.message); return; }
-    await loadAll();
-  }
-
-  // 습관 → 반복 할일 전환: 새 할일로 만들고 기존 습관 행은 삭제 — 습관의 완료 기록(tok_habit_logs)은
-  // 습관이 삭제되면 함께 사라지므로(되돌릴 수 없음) 미리 개수를 보여주고 확인받음.
-  async function convertHabitToTodo(id) {
-    const t = tasks.find(x => x.id === id);
-    if (!t) return;
-    const logCount = habitLogs.filter(l => l.habit_id === id).length;
-    const warn = logCount ? ` 지금까지의 완료 기록 ${logCount}개가 사라지고 되돌릴 수 없어요.` : "";
-    if (!confirm(`"${t.name}"을(를) 할일로 바꿀까요?${warn}`)) return;
-    const todo_time = t.start_minute != null ? minutesToHHMM(t.start_minute) + ":00" : null;
-    const { error: insErr } = await sb.from("tok_todos").insert({
-      title: t.name, tag_id: t.category_id || null,
-      repeat_unit: t.repeat_unit, repeat_interval: t.repeat_interval, repeat_days: t.repeat_days || null,
-      start_date: t.start_date || homeAgendaDate, end_date: t.end_date || null,
-      todo_time, duration_minutes: t.duration_minutes || null,
-    });
-    if (insErr) { alert("전환 실패: " + insErr.message); return; }
-    const { error: delErr } = await sb.from("tok_habits").delete().eq("id", id);
-    if (delErr) { alert("전환 중 기존 습관 삭제 실패: " + delErr.message); return; }
     await loadAll();
   }
 
