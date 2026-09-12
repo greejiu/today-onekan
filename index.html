@@ -462,51 +462,53 @@
         </div>
 
         <div class="home-grid">
-          <div class="home-col">
-            <div class="agenda-head">
-              <button id="agendaPrevBtn" class="agenda-nav">‹</button>
-              <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
-              <button id="agendaNextBtn" class="agenda-nav">›</button>
-            </div>
-
-            <div class="view-toggle-row" style="margin-top:10px;">
-              <div class="view-toggle">
-                <button id="agendaViewBlockBtn" class="active">타임블럭</button>
-                <button id="agendaViewTimelineBtn">타임라인</button>
-              </div>
-              <button id="agendaTodayBtn" class="today-btn">오늘</button>
-            </div>
-
-            <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
-              <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
-              <span class="count" id="agendaAllDayCount" style="display:none;"></span>
-            </div>
-            <div id="agendaAllDayZone">
-              <div class="agenda-flat" id="agendaAllDayList"></div>
-            </div>
-
-            <div id="agendaTimeWrap" style="margin-top:12px;"></div>
-          </div>
-
+          <!-- 2026-09-12: 1열(하루종일+타임블럭/타임라인) 아래에 "다가오는 계획"을 쌓고, "언젠가"는 1열과 나란한 2열로 옮김
+               (결님 요청) — 모바일(1단 접힘)에서는 DOM 순서가 그대로라 하루종일/타임블럭·타임라인→다가오는 계획→언젠가 순서 그대로 유지됨. -->
           <div class="home-col-stack">
+            <div class="home-col">
+              <div class="agenda-head">
+                <button id="agendaPrevBtn" class="agenda-nav">‹</button>
+                <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
+                <button id="agendaNextBtn" class="agenda-nav">›</button>
+              </div>
+
+              <div class="view-toggle-row" style="margin-top:10px;">
+                <div class="view-toggle">
+                  <button id="agendaViewBlockBtn" class="active">타임블럭</button>
+                  <button id="agendaViewTimelineBtn">타임라인</button>
+                </div>
+                <button id="agendaTodayBtn" class="today-btn">오늘</button>
+              </div>
+
+              <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
+                <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
+                <span class="count" id="agendaAllDayCount" style="display:none;"></span>
+              </div>
+              <div id="agendaAllDayZone">
+                <div class="agenda-flat" id="agendaAllDayList"></div>
+              </div>
+
+              <div id="agendaTimeWrap" style="margin-top:12px;"></div>
+            </div>
+
             <div class="home-col">
               <div class="home-col-head">
                 <div class="title">다가오는 계획</div>
               </div>
               <div id="planUpcomingBoard"></div>
             </div>
+          </div>
 
-            <div class="home-col">
-              <div class="home-col-head">
-                <div class="title">언젠가</div>
-              </div>
-              <div class="someday-toolbar">
-                <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
-              </div>
-              <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
-              <div id="somedayZone">
-                <div id="somedaySummaryList"></div>
-              </div>
+          <div class="home-col">
+            <div class="home-col-head">
+              <div class="title">언젠가</div>
+            </div>
+            <div class="someday-toolbar">
+              <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
+            </div>
+            <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
+            <div id="somedayZone">
+              <div id="somedaySummaryList"></div>
             </div>
           </div>
         </div>
