@@ -1493,6 +1493,9 @@
     for (const p of habitPauses) {
       if (p.habit_id === habit.id && p.resumed_at && (!latest || p.resumed_at > latest)) latest = p.resumed_at;
     }
+    // 2026-09-12(4단계): 주기(반복 설정)를 바꾼 시점 이후로 새 주기를 적용하기 위한 앵커 재설정.
+    // 보관 재개(resumed_at)와 같은 방식 — 과거 이력은 안 건드리고 "이 날짜부터"만 새로 계산.
+    if (habit.cycle_changed_at && (!latest || habit.cycle_changed_at > latest)) latest = habit.cycle_changed_at;
     return latest;
   }
   // dateStr(포함) 이전 중 가장 최근 "예정일"(공식 스케줄상의 날짜)을 구함 — 아직 시작 전이면 null.
@@ -3177,6 +3180,17 @@
     if (unit === "custom_days") return (days && days.length ? days.slice().sort().map(d => WEEKDAY_NAMES[d]).join(",") : "요일 미선택") + "요일마다";
     return `${interval || 1}${{ day: "일", week: "주", month: "개월" }[unit]}마다`;
   }
+  // 2026-09-12(4단계): 주기 변경 팝업을 띄울지 판단하기 위해 반복 설정(단위/주기/요일)이 실제로 달라졌는지 비교.
+  function repeatFieldsEqual(a, b) {
+    if ((a.unit || null) !== (b.unit || null)) return false;
+    if (a.unit === "custom_days") {
+      const da = (a.days || []).slice().sort().join(",");
+      const db = (b.days || []).slice().sort().join(",");
+      return da === db;
+    }
+    if (a.unit && a.unit !== "weekday") return (a.interval || 1) === (b.interval || 1);
+    return true;
+  }
 
   function openHabitSheet(habit) {
     if (!habit) return;
@@ -3272,7 +3286,22 @@
     if (!start_date) { alert("시작일을 입력해주세요."); return; }
     const end_date = $("hs_end").value || null;
     if (end_date && end_date < start_date) { alert("종료일은 시작일보다 빠를 수 없어요."); return; }
-    const { error } = await sb.from("tok_habits").update({ repeat_unit, repeat_interval, repeat_days, category_id, start_date, end_date }).eq("id", editId);
+    // 2026-09-12(4단계): 주기(반복 설정) 필드를 실제로 바꿨을 때만 "다음부터 적용" 확인 팝업을 띄움.
+    // 확인하면 cycle_changed_at을 오늘로 찍어서, 이미 지나간 이력은 그대로 두고 오늘부터 새 주기로 앵커를 재설정.
+    const habit = tasks.find(t => t.id === editId);
+    const changed = habit && !repeatFieldsEqual(
+      { unit: habit.repeat_unit, interval: habit.repeat_interval, days: habit.repeat_days },
+      { unit: repeat_unit, interval: repeat_interval, days: repeat_days }
+    );
+    const patch = { repeat_unit, repeat_interval, repeat_days, category_id, start_date, end_date };
+    if (changed) {
+      const msg = repeat_unit
+        ? `오늘부터 "${repeatSummaryText(repeat_unit, repeat_interval, repeat_days)}"로 바뀌어요. 지금까지 밀린 기록은 그대로 두고 다음 예정일부터 새 주기가 적용돼요. 변경할까요?`
+        : "반복을 끄고 반복 없는 습관으로 바꿀까요?";
+      if (!confirm(msg)) return;
+      patch.cycle_changed_at = todayStr();
+    }
+    const { error } = await sb.from("tok_habits").update(patch).eq("id", editId);
     if (error) { alert("저장 실패: " + error.message); return; }
     $("habitSheetBg").classList.remove("open");
     await loadAll();
