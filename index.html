@@ -304,6 +304,11 @@
   .habit-due-chip.due-overdue{background:#fde2e2;color:#c0392b;}
   .habit-due-chip.due-today{background:#dce9fb;color:#2f6fd1;}
   .habit-due-chip.due-upcoming{background:#e8ecf5;color:#4a5a7a;}
+  /* 할일/습관 목록 공용: 정렬/그룹화 그룹 섹션 제목, 할일 날짜 배지(2026-09-12) */
+  .list-section-head{font-size:12px;font-weight:600;color:var(--sub);margin:14px 2px 6px;}
+  .list-section-head:first-child{margin-top:2px;}
+  .todo-date-badge{display:inline-block;margin-right:6px;padding:1px 7px;border-radius:999px;font-size:10px;background:var(--bg);border:1px solid var(--line);color:var(--sub);flex-shrink:0;}
+  .someday-toolbar select.someday-sort-select{max-width:150px;}
   .hs-cat-manage-label{font-size:11px;color:var(--sub);margin:-6px 0 6px;}
   .hs-cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
   .hs-cat-row{display:flex;align-items:center;gap:6px;}
@@ -566,20 +571,35 @@
         </div>
 
         <div id="todosTodosView">
-          <div class="section-label">🗓 다가오는 계획</div>
-          <div class="card" id="planBoard"></div>
+          <div class="view-toggle" id="todoTopTabs" style="margin-bottom:10px;">
+            <button type="button" data-tab="all" class="active">모두</button>
+            <button type="button" data-tab="scheduled">예정된</button>
+            <button type="button" data-tab="someday">언젠가</button>
+          </div>
 
-          <div class="section-label">💭 언젠가 할일</div>
-          <div class="card">
-            <div class="someday-add-row">
-              <input id="somedayInput" type="text" placeholder="나중에 할 것 같은 일 아무거나 적어보세요" />
-              <button id="somedayAddBtn">추가</button>
+          <div id="todoUnifiedView">
+            <div class="someday-toolbar" style="justify-content:space-between;gap:8px;flex-wrap:wrap;">
+              <button id="todoQuickAddBtn" type="button" class="btn-ghost" style="flex:none;">+ 할일 추가</button>
+              <div style="display:flex;gap:6px;">
+                <select id="todoSortSelect" class="someday-sort-select"></select>
+                <select id="todoGroupSelect" class="someday-sort-select"></select>
+              </div>
             </div>
-            <div class="someday-toolbar">
-              <select id="somedayTabSortSelect" class="someday-sort-select"></select>
+            <div class="card"><div id="todoUnifiedList"></div></div>
+          </div>
+
+          <div id="todoSomedayView" style="display:none;">
+            <div class="card">
+              <div class="someday-add-row">
+                <input id="somedayInput" type="text" placeholder="나중에 할 것 같은 일 아무거나 적어보세요" />
+                <button id="somedayAddBtn">추가</button>
+              </div>
+              <div class="someday-toolbar">
+                <select id="somedayTabSortSelect" class="someday-sort-select"></select>
+              </div>
+              <div id="somedayTabTagChips" class="someday-tag-chips"></div>
+              <div id="somedayList"></div>
             </div>
-            <div id="somedayTabTagChips" class="someday-tag-chips"></div>
-            <div id="somedayList"></div>
           </div>
         </div>
 
@@ -591,8 +611,17 @@
             <input id="tk_duration" type="number" min="15" step="15" placeholder="분" value="30" />
             <button id="taskAddBtn">추가</button>
           </div>
+          <div class="view-toggle" id="habitsTabRow" style="margin-bottom:10px;">
+            <button type="button" data-tab="active" class="active">진행중</button>
+            <button type="button" data-tab="archived">보관</button>
+            <button type="button" data-tab="ended">종료</button>
+          </div>
+          <div class="someday-toolbar">
+            <select id="habitSortSelect" class="someday-sort-select"></select>
+            <select id="habitGroupSelect" class="someday-sort-select"></select>
+          </div>
           <div id="todoList"></div>
-          <div id="todoEmpty" class="empty" style="display:none;">등록된 습관이 없어요.<br/>위 입력창에서 바로 추가해보세요.</div>
+          <div id="todoEmpty" class="empty" style="display:none;">표시할 습관이 없어요.</div>
         </div>
       </div>
 
@@ -896,6 +925,11 @@
   let manualFocusTodoId = null; // "다른 할일로 바꾸기"로 수동 지정한 할일 id — 새로고침하면 자동 선택으로 리셋(세션 전용, DB 저장 안 함)
   let focusPickerOpen = false; // 지금 할일 카드가 "선택 목록" 모드인지
   let habitLogs = []; // tok_habit_logs 전체({habit_id, done_date}) — 반복주기 "마지막 완료일" 계산용
+  let habitPauses = []; // tok_habit_pauses 전체({habit_id, paused_at, resumed_at, reason}) — 보관/재개 이력(2026-09-12, 여러 번 가능)
+  let habitsTabView = "active"; // 습관 관리 목록 상단탭: "active"(진행중) | "archived"(보관) | "ended"(종료)
+  let habitListSettings = loadTabSettings("tok_habitListSettings", ["active", "archived", "ended"]); // 습관 탭별 정렬/그룹화 기억
+  let todoTabView = "all"; // 할일 탭 상단탭: "all"(모두) | "scheduled"(예정된) | "someday"(언젠가)
+  let todoListSettings = loadTabSettings("tok_todoListSettings", ["all", "scheduled"]); // 할일 탭별 정렬/그룹화 기억(언젠가는 기존 정렬 그대로 유지)
   let currentPage = "home";
   // 할일 탭 "할일↔습관" 전환(2026-09-07, 사이드바 탭 정리 — 습관 탭을 없애고 할일 탭 안 토글로 흡수).
   let todosSubView = "todos"; // "todos" | "habits"
@@ -961,6 +995,7 @@
       { data: subtaskData, error: e9 },
       { data: eventCatData, error: e10 },
       { data: settingsData, error: e12 },
+      { data: pauseData, error: e13 },
     ] = await Promise.all([
       sb.from("tok_habits").select("*").order("start_minute", { nullsFirst: false }).order("created_at"),
       sb.from("tok_habit_logs").select("habit_id, done_date, start_minute, duration_minutes"),
@@ -972,11 +1007,13 @@
       sb.from("tok_todo_subtasks").select("*").order("sort_order"),
       sb.from("tok_event_categories").select("*").order("sort_order"),
       sb.from("tok_settings").select("*").maybeSingle(),
+      sb.from("tok_habit_pauses").select("habit_id, paused_at, resumed_at, reason"),
     ]);
-    const firstError = e1 || e2 || e3 || e5 || e6 || e7 || e8 || e9 || e10 || e12;
+    const firstError = e1 || e2 || e3 || e5 || e6 || e7 || e8 || e9 || e10 || e12 || e13;
     if (firstError) { alert("불러오기 실패: " + firstError.message); return; }
     tasks = taskData || [];
     habitLogs = logData || []; // 전체 완료 이력(반복주기의 "마지막 완료일" 계산용)
+    habitPauses = pauseData || []; // 보관/재개 이력(습관별로 여러 번 쌓일 수 있음)
     logsToday = new Set(habitLogs.filter(r => r.done_date === todayStr()).map(r => r.habit_id));
     events = eventData || [];
     somedayItems = somedayData || [];
@@ -1441,9 +1478,25 @@
   // 완료 기록(habitLogs)은 "그 스케줄의 이 회차가 끝났는지"만 확인하는 용도로 씀 — 그래서 늦게
   // 캐치업해도 다음 예정일은 원래 앵커 그대로라 안 밀리고, 반대로 안 하면 그 예정일이 계속
   // "밀린 상태"로 남아서 보임(예전처럼 매번 새 회차가 밀려서 생기지 않고, 딱 한 줄만 밀린 채로 유지됨).
+  // 보관(재개 가능한 일시정지)했다가 재개한 적이 있으면, 그 기간엔 "밀린 걸로" 안 치고 재개일부터
+  // 앵커를 새로 잡음(2026-09-12) — 쉬었던 기간만큼 밀린 걸로 누적되면 억울하니까. 재개 이력이 여러 번
+  // 있으면 그중 가장 최근 재개일을 씀. 재개 이력이 없으면 원래 start_date 그대로.
+  // 습관의 진행중/보관/종료 분류(2026-09-12) — 종료가 최우선(자동, end_date가 지나면 무조건 종료),
+  // 그 다음은 보관 여부(is_active, 수동 토글). 종료/보관 둘 다 재개 가능하고 차이는 발생 방식뿐.
+  function habitLifecycleState(habit, dateStr) {
+    if (habit.end_date && habit.end_date < dateStr) return "ended";
+    return habit.is_active ? "active" : "archived";
+  }
+  function habitEffectiveStartDate(habit) {
+    let latest = habit.start_date || (habit.created_at ? habit.created_at.slice(0, 10) : null);
+    for (const p of habitPauses) {
+      if (p.habit_id === habit.id && p.resumed_at && (!latest || p.resumed_at > latest)) latest = p.resumed_at;
+    }
+    return latest;
+  }
   // dateStr(포함) 이전 중 가장 최근 "예정일"(공식 스케줄상의 날짜)을 구함 — 아직 시작 전이면 null.
   function habitOccurrenceOnOrBefore(habit, dateStr) {
-    let occ = habit.start_date || (habit.created_at ? habit.created_at.slice(0, 10) : dateStr);
+    let occ = habitEffectiveStartDate(habit) || dateStr;
     if (occ > dateStr) return null;
     let next = nextRepeatDateStr(occ, habit.repeat_unit, habit.repeat_interval, habit.repeat_days);
     while (next <= dateStr) { occ = next; next = nextRepeatDateStr(occ, habit.repeat_unit, habit.repeat_interval, habit.repeat_days); }
@@ -1487,7 +1540,7 @@
       return nextRepeatDateStr(occ, habit.repeat_unit, habit.repeat_interval, habit.repeat_days);
     }
     // 아직 시작 전(첫 회차 자체가 다음 차례)
-    return habit.start_date || (habit.created_at ? habit.created_at.slice(0, 10) : dateStr);
+    return habitEffectiveStartDate(habit) || dateStr;
   }
 
   // ── 습관 기록(히스토리) 보기: 월별 캘린더로 완료 이력 확인 ──
@@ -2873,151 +2926,139 @@
     });
   }
 
-  // ── 할일 탭: 다가오는 계획 보드 + 언젠가 할일 관리 ──
+  // ── 할일 탭 재설계(2026-09-12): 모두/예정된/언젠가 상단탭 + 정렬/그룹화 ──
+  // 예전의 "다가오는 계획 7일 드래그보드"는 없앰(날짜 있는 할일 전체를 볼 수 없던 한계 — 집 화면의
+  // 다가오는 계획 보드는 별개 인스턴스라 그대로 유지됨, 안 건드림). "언젠가" 탭은 기존 renderSomeday()를
+  // 그대로 재사용(정렬 3종+태그필터 그대로 유지, 정렬/그룹화 신규 시스템은 모두/예정된에만 적용).
+  document.querySelectorAll("#todoTopTabs button").forEach(btn => {
+    btn.onclick = () => {
+      todoTabView = btn.dataset.tab;
+      renderTodosPage();
+    };
+  });
+  $("todoQuickAddBtn").onclick = () => openTodoSheet(null);
+
   function renderTodosPage() {
-    renderPlanBoard();
-    renderSomeday();
-  }
-  // ── 할일 탭 : 다가오는 계획 (7일 보드) ──
-  // tok_todos(날짜 있는 1회성 할일)만 보여줌 — 습관 실행은 '습관' 탭으로 이동함.
-  // 빈 날짜를 클릭하면 그 날짜로, 여러 날짜에 걸쳐 세로로 드래그하면 시작~종료 기간으로 할일 추가 시트가 열림.
-  function planDayList() {
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      days.push(d.toISOString().slice(0, 10));
-    }
-    return days;
+    document.querySelectorAll("#todoTopTabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === todoTabView));
+    const isSomeday = todoTabView === "someday";
+    $("todoUnifiedView").style.display = isSomeday ? "none" : "block";
+    $("todoSomedayView").style.display = isSomeday ? "block" : "none";
+    if (isSomeday) renderSomeday();
+    else renderTodoUnifiedList();
   }
 
-  function renderPlanBoard() {
-    const days = planDayList();
+  function renderTodoUnifiedList() {
+    const settings = todoListSettings[todoTabView]; // "all" | "scheduled"
+    renderSortGroupControls($("todoSortSelect"), $("todoGroupSelect"), settings, true, () => {
+      saveTabSettings("tok_todoListSettings", todoListSettings);
+      renderTodoUnifiedList();
+    });
+    let items = todos.map(t => ({ ...t, _kind: "todo" }));
+    if (todoTabView === "all") items = items.concat(somedayItems.map(s => ({ ...s, _kind: "someday" })));
+    const sorted = sortItemsBy(items, settings.sort, "start_date", habitCategories, "tag_id");
+    const sections = groupItemsBy(sorted, settings.group, "start_date", habitCategories, "tag_id");
+    renderSections($("todoUnifiedList"), sections, renderTodoUnifiedRow,
+      todoTabView === "all" ? "표시할 항목이 없어요." : "예정된 할일이 없어요.");
+    wireTodoUnifiedRows();
+  }
 
-    $("planBoard").innerHTML = days.map((dateStr, idx) => {
-      const dayTodos = todos.filter(td => td.start_date === dateStr);
-      const todoHtml = dayTodos.map(td => {
-        const tagColor = td.is_done ? null : itemTagColor("todo", td.tag_id);
-        return `
-        <div class="plan-row todo ${td.is_done?'done':''}" data-id="${td.id}">
-          <input type="checkbox" ${td.is_done?"checked":""} data-id="${td.id}" class="plan-todo-check" />
-          <span class="plan-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
-          <button class="plan-todo-edit" data-id="${td.id}">✎</button>
-        </div>`;
-      }).join("");
-      const bodyHtml = todoHtml;
-      return `<div class="plan-day" data-idx="${idx}" data-date="${dateStr}">
-        <div class="plan-day-label">${idx===0 ? "오늘" : formatDateShort(dateStr)}</div>
-        <div class="plan-day-body">${bodyHtml || '<div class="plan-day-empty">+ 추가</div>'}</div>
-      </div>`;
-    }).join("");
+  function renderTodoUnifiedRow(item) {
+    const isTodo = item._kind === "todo";
+    const tagColor = !item.is_done ? itemTagColor(isTodo ? "todo" : "someday", item.tag_id) : null;
+    const dateBadge = isTodo && item.start_date ? `<span class="todo-date-badge">${formatDateShort(item.start_date)}</span>` : "";
+    return `
+    <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}" data-kind="${item._kind}">
+      <input type="checkbox" ${item.is_done?"checked":""} class="tu-check" />
+      ${dateBadge}
+      <span class="someday-title tu-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
+      <button class="del tu-del">삭제</button>
+    </div>`;
+  }
 
-    document.querySelectorAll(".plan-todo-check").forEach(cb => {
+  function wireTodoUnifiedRows() {
+    document.querySelectorAll("#todoUnifiedList .tu-check").forEach(cb => {
       cb.onchange = async () => {
-        const reloaded = await setTodoDone(cb.dataset.id, cb.checked);
-        if (reloaded) return;
-        renderPlanBoard();
+        const row = cb.closest("[data-id]");
+        const id = row.dataset.id, kind = row.dataset.kind;
+        if (kind === "todo") {
+          const reloaded = await setTodoDone(id, cb.checked);
+          if (!reloaded) renderTodosPage();
+        } else {
+          const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", id);
+          if (error) { alert("변경 실패: " + error.message); return; }
+          const item = somedayItems.find(s => s.id === id);
+          if (item) item.is_done = cb.checked;
+          renderTodosPage();
+        }
       };
     });
-    document.querySelectorAll(".plan-todo-edit").forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        openTodoSheet(todos.find(t => t.id === btn.dataset.id));
+    document.querySelectorAll("#todoUnifiedList .tu-del").forEach(btn => {
+      btn.onclick = async () => {
+        const row = btn.closest("[data-id]");
+        const id = row.dataset.id, kind = row.dataset.kind;
+        if (kind === "todo") {
+          if (!confirm("이 할일을 삭제할까요?")) return;
+          const { error } = await sb.from("tok_todos").delete().eq("id", id);
+          if (error) { alert("삭제 실패: " + error.message); return; }
+        } else {
+          const { error } = await sb.from("tok_someday").delete().eq("id", id);
+          if (error) { alert("삭제 실패: " + error.message); return; }
+          somedayItems = somedayItems.filter(s => s.id !== id);
+        }
+        await loadAll();
       };
     });
-    // 클릭 → 수정(연필 아이콘과 동일하게 수정 시트가 열림. 날짜 두 개를 같이 바꿔야 해서 인라인 대신 시트 유지)
-    document.querySelectorAll(".plan-row.todo .plan-todo-title").forEach(titleEl => {
-      titleEl.onclick = (e) => {
-        e.stopPropagation();
-        const id = titleEl.closest(".plan-row").dataset.id;
-        openTodoSheet(todos.find(t => t.id === id));
+    // 클릭 → 수정(할일은 시트, 언젠가는 인라인 — 기존 언젠가 목록과 같은 방식)
+    document.querySelectorAll("#todoUnifiedList .tu-title").forEach(titleEl => {
+      titleEl.onclick = () => {
+        const row = titleEl.closest("[data-id]");
+        const id = row.dataset.id, kind = row.dataset.kind;
+        if (kind === "todo") { openTodoSheet(todos.find(t => t.id === id)); return; }
+        const current = titleEl.textContent;
+        const wrap = document.createElement("div");
+        wrap.className = "inline-add-wrap";
+        wrap.style.flex = "1"; wrap.style.minWidth = "0";
+        wrap.innerHTML = `<input type="text" class="inline-add-input" />`;
+        titleEl.replaceWith(wrap);
+        const input = wrap.querySelector("input");
+        input.value = current; input.focus(); input.select();
+        let done = false;
+        const commit = async () => {
+          if (done) return;
+          const title = input.value.trim();
+          if (!title || title === current) { renderTodosPage(); return; }
+          done = true;
+          const { error } = await sb.from("tok_someday").update({ title }).eq("id", id);
+          if (error) { alert("수정 실패: " + error.message); done = false; return; }
+          const item = somedayItems.find(s => s.id === id);
+          if (item) item.title = title;
+          renderTodosPage();
+        };
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          else if (e.key === "Escape") { done = true; renderTodosPage(); }
+        });
+        input.addEventListener("blur", () => commit());
       };
     });
-    // 오른쪽 클릭 → 삭제 메뉴
-    document.querySelectorAll(".plan-row.todo").forEach(row => {
+    // 오른쪽 클릭 → 그룹 변경/삭제(전환·복제·날짜변경은 할일만, 기존 showAgendaItemMenu 재사용)
+    document.querySelectorAll("#todoUnifiedList [data-id]").forEach(row => {
       row.oncontextmenu = (e) => {
         e.preventDefault();
-        showDeleteMenu(e.clientX, e.clientY, async () => {
-          if (!confirm("이 할일을 삭제할까요?")) return;
-          const { error } = await sb.from("tok_todos").delete().eq("id", row.dataset.id);
-          if (error) { alert("삭제 실패: " + error.message); return; }
-          await loadAll();
-        });
+        if (row.dataset.kind === "todo") showAgendaItemMenu(e.clientX, e.clientY, "todo", row.dataset.id);
+        else showSomedayItemMenu(e.clientX, e.clientY, row.dataset.id);
       };
     });
-
-    attachPlanBoardDrag(days);
-  }
-
-  let planAddState = null;
-  function attachPlanBoardDrag(days) {
-    const board = $("planBoard");
-    if (!board) return;
-
-    const idxFromPoint = (x, y) => {
-      const el = document.elementFromPoint(x, y)?.closest(".plan-day");
-      return el ? parseInt(el.dataset.idx, 10) : null;
-    };
-    const highlight = (a, b) => {
-      const lo = Math.min(a, b), hi = Math.max(a, b);
-      document.querySelectorAll(".plan-day").forEach(el => {
-        const idx = parseInt(el.dataset.idx, 10);
-        el.classList.toggle("drag-hi", idx >= lo && idx <= hi);
-      });
-    };
-    const clearHighlight = () => document.querySelectorAll(".plan-day").forEach(el => el.classList.remove("drag-hi"));
-
-    board.onpointerdown = (e) => {
-      if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(일정/할일 선택 메뉴)가 따로 처리
-      if (e.target.closest(".plan-todo-check") || e.target.closest(".plan-todo-edit") || e.target.closest(".plan-todo-title") || e.target.closest(".home-check")) return;
-      const dayEl = e.target.closest(".plan-day");
-      if (!dayEl) return;
-      const startIdx = parseInt(dayEl.dataset.idx, 10);
-      planAddState = { startIdx, currentIdx: startIdx, moved: false };
-      board.setPointerCapture?.(e.pointerId);
-      highlight(startIdx, startIdx);
-    };
-    board.onpointermove = (e) => {
-      if (!planAddState) return;
-      const idx = idxFromPoint(e.clientX, e.clientY);
-      if (idx == null) return;
-      if (idx !== planAddState.startIdx) planAddState.moved = true;
-      planAddState.currentIdx = idx;
-      highlight(planAddState.startIdx, idx);
-    };
-    const finish = () => {
-      if (!planAddState) return;
-      const { startIdx, currentIdx, moved } = planAddState;
-      const lo = Math.min(startIdx, currentIdx), hi = Math.max(startIdx, currentIdx);
-      clearHighlight();
-      planAddState = null;
-      const dayEl = document.querySelector(`.plan-day[data-idx="${lo}"]`);
-      const body = dayEl?.querySelector(".plan-day-body");
-      if (body) showPlanInlineAdd(body, days[lo], moved ? days[hi] : null, renderPlanBoard, "todo");
-    };
-    board.onpointerup = finish;
-    board.onpointercancel = () => { clearHighlight(); planAddState = null; };
-    // 빈 날짜 칸 오른쪽 클릭 → "일정 추가/할일 추가" 중 고르는 작은 메뉴(2026-09-12 — 메모 기능 제거로 두번째 항목이 할일로 바뀜).
-    // 항목 위 오른쪽 클릭은 renderPlanBoard에 이미 있는 삭제 메뉴(.plan-row.todo 쪽)가 처리하므로 건너뜀.
-    board.oncontextmenu = (e) => {
-      e.preventDefault();
-      if (e.target.closest(".plan-row")) return;
-      const dayEl = e.target.closest(".plan-day");
-      if (!dayEl) return;
-      const idx = parseInt(dayEl.dataset.idx, 10);
-      const body = dayEl.querySelector(".plan-day-body");
-      if (!body) return;
-      showAddKindMenu(e.clientX, e.clientY, (kind) => showPlanInlineAdd(body, days[idx], null, renderPlanBoard, kind));
-    };
   }
 
   // 팝업 없이 그 날짜 칸에 바로 입력창을 추가함(기존 항목은 그대로 두고 입력창만 덧붙임)
   // onEmpty: 입력 없이 취소했을 때 다시 그릴 렌더 함수(어느 보드에서 호출했는지에 따라 다름)
   // kind: "todo"(기본) | "event" — 오른쪽 클릭 메뉴에서 고른 종류(2026-09-12: 메모 기능 제거로 note 옵션 삭제).
   // Enter로 저장하면 같은 날짜 칸에 바로 다음 입력창이 다시 열려 연달아 입력할 수 있음(언젠가 목록과 동일한 패턴).
-  function showPlanInlineAdd(body, startDate, endDate, onEmpty = renderPlanBoard, kind = "todo") {
-    // loadAll() 이후엔 body가 예전 DOM 조각이라 다시 못 찾으므로, 어느 보드(할일 탭/집 화면) 소속인지 지금 미리 기억해둠.
-    const containerId = body.closest("#planBoard") ? "planBoard" : body.closest("#planUpcomingBoard") ? "planUpcomingBoard" : null;
+  function showPlanInlineAdd(body, startDate, endDate, onEmpty = () => {}, kind = "todo") {
+    // loadAll() 이후엔 body가 예전 DOM 조각이라 다시 못 찾으므로, 어느 보드 소속인지 지금 미리 기억해둠
+    // (2026-09-12: 할일 탭의 7일 드래그보드는 없앴고, 이제 집 화면의 #planUpcomingBoard만 이 함수를 씀).
+    const containerId = body.closest("#planUpcomingBoard") ? "planUpcomingBoard" : null;
     const emptyTag = body.querySelector(".plan-day-empty, .planup-day-empty");
     if (emptyTag) emptyTag.remove();
     const row = document.createElement("div");
@@ -3547,47 +3588,143 @@
     return `${dt.getMonth()+1}/${dt.getDate()}(${days[dt.getDay()]})`;
   }
 
+  // ── 할일·습관 목록 공용: 정렬/그룹화 (2026-09-12, 할일탭 재설계) ──
+  // 정렬: "created"(없음=등록일순, 기본) | "date_desc"(날짜 최신순) | "date_asc"(날짜 오래된순) | "group"(그룹순)
+  // 그룹화: "none"(안 함) | "date"(날짜별, 날짜 있는 목록에서만 제공) | "group"(그룹별)
+  // 탭별로 마지막 선택을 기억(localStorage) — 새로고침해도 유지됨.
+  function loadTabSettings(key, tabs) {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) {}
+    const out = {};
+    tabs.forEach(t => { out[t] = Object.assign({ sort: "created", group: "none" }, saved[t] || {}); });
+    return out;
+  }
+  function saveTabSettings(key, settings) {
+    try { localStorage.setItem(key, JSON.stringify(settings)); } catch (e) {}
+  }
+  function sortItemsBy(items, sortMode, dateField, groupPool, groupField) {
+    const arr = [...items];
+    const groupName = (it) => { const c = groupPool.find(g => g.id === it[groupField]); return c ? c.name : "￿"; }; // 그룹 없는 항목은 맨 뒤로
+    if (sortMode === "date_desc") arr.sort((a, b) => (b[dateField] || "").localeCompare(a[dateField] || ""));
+    else if (sortMode === "date_asc") arr.sort((a, b) => (a[dateField] || "").localeCompare(b[dateField] || ""));
+    else if (sortMode === "group") arr.sort((a, b) => groupName(a).localeCompare(groupName(b), "ko"));
+    else arr.sort((a, b) => (a.created_at || "").localeCompare(b.created_at || "")); // "created"(없음=등록일순)
+    return arr;
+  }
+  function groupItemsBy(items, groupMode, dateField, groupPool, groupField) {
+    if (groupMode === "date") {
+      const map = new Map();
+      items.forEach(it => {
+        const key = it[dateField] || "__none";
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(it);
+      });
+      return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([key, arr]) => ({ label: key === "__none" ? "날짜 없음" : formatDateShort(key), items: arr }));
+    }
+    if (groupMode === "group") {
+      const map = new Map();
+      items.forEach(it => {
+        const c = groupPool.find(g => g.id === it[groupField]);
+        const key = c ? c.id : "__none";
+        if (!map.has(key)) map.set(key, { label: c ? c.name : "그룹 없음", items: [] });
+        map.get(key).items.push(it);
+      });
+      return [...map.values()];
+    }
+    return [{ label: null, items }]; // "none"
+  }
+  function renderSections(containerEl, sections, rowFn, emptyText) {
+    const nonEmpty = sections.filter(s => s.items.length);
+    if (!nonEmpty.length) { containerEl.innerHTML = `<div class="agenda-empty-block">${emptyText}</div>`; return; }
+    containerEl.innerHTML = nonEmpty.map(sec => `
+      ${sec.label != null ? `<div class="list-section-head">${escapeHtml(sec.label)}</div>` : ""}
+      ${sec.items.map(rowFn).join("")}
+    `).join("");
+  }
+  // 정렬/그룹화 select 두 개를 채우고 onChange 연결(공용) — allowDateGroup=false면 "날짜별" 옵션은 뺌(습관·언젠가처럼 날짜 개념이 약한 목록용).
+  function renderSortGroupControls(sortSelEl, groupSelEl, settings, allowDateGroup, onChange) {
+    if (!sortSelEl.dataset.filled) {
+      sortSelEl.innerHTML = `<option value="created">정렬: 없음(등록일순)</option><option value="date_desc">날짜 최신순</option><option value="date_asc">날짜 오래된순</option><option value="group">그룹순</option>`;
+      sortSelEl.dataset.filled = "1";
+    }
+    sortSelEl.value = settings.sort;
+    sortSelEl.onchange = () => { settings.sort = sortSelEl.value; onChange(); };
+    if (!groupSelEl.dataset.filled) {
+      groupSelEl.innerHTML = `<option value="none">그룹화: 안 함</option>${allowDateGroup ? `<option value="date">날짜별</option>` : ""}<option value="group">그룹별</option>`;
+      groupSelEl.dataset.filled = "1";
+    }
+    groupSelEl.value = settings.group;
+    groupSelEl.onchange = () => { settings.group = groupSelEl.value; onChange(); };
+  }
+
   // ── 습관 탭: 습관 관리 목록 (오늘 일정 확인·조절은 집 화면에서) ──
-  function renderTodo() {
-    $("todoEmpty").style.display = tasks.length ? "none" : "block";
-    $("todoList").innerHTML = tasks.map(t => {
-      const cat = habitCategories.find(c => c.id === t.category_id);
-      const repeatText = repeatSummaryText(t.repeat_unit, t.repeat_interval, t.repeat_days);
-      const catChip = cat ? `<span class="habit-cat-chip" style="background:${cat.color || "var(--accent-soft)"}">${escapeHtml(cat.name)}</span>` : "";
-      // 시작일이 아직 안 왔거나 종료일이 있을 때만 기간을 같이 보여줌(평범하게 계속 진행 중인 습관은 굳이 안 보여줘서 안 복잡하게).
-      const todayS = todayStr();
-      const windowText = t.end_date ? ` · ~${formatDateShort(t.end_date)}까지`
-        : (t.start_date && t.start_date > todayS) ? ` · ${formatDateShort(t.start_date)}부터 시작` : "";
-      // 습관 예정 상태 배지: 앵커 기준 며칠 밀렸는지(N일 지남, 빨강) / 오늘이 예정일(오늘, 파랑) / 다음 회차까지 며칠(N일 남음, 파랑)
-      // — 여러 날 밀려도 줄을 쌓지 않고 이 배지 하나로만 표시(2026-09-12).
-      let dueChip = "";
-      if (t.is_active && t.repeat_unit) {
-        const overdue = habitOverdueDays(t, todayS);
-        if (overdue !== null) {
-          dueChip = overdue === 0
-            ? `<span class="habit-due-chip due-today">오늘</span>`
-            : `<span class="habit-due-chip due-overdue">${overdue}일 지남</span>`;
-        } else {
-          const next = habitNextDueAfter(t, todayS);
-          const remain = next ? daysBetween(todayS, next) : null;
-          if (remain !== null) {
-            dueChip = remain > 0 ? `<span class="habit-due-chip due-upcoming">${remain}일 남음</span>` : `<span class="habit-due-chip due-today">오늘</span>`;
-          }
+  // 2026-09-12: 진행중/보관/종료 상단탭 추가 — 종료(end_date 자동)와 보관(수동, 여러 번 가능) 모두
+  // 재개 가능. 보관/재개는 tok_habit_pauses에 이력을 남겨서, 재개하면 그 시점부터 앵커를 새로 잡음
+  // (쉬었던 기간만큼 밀린 걸로 안 치게). 정렬/그룹화도 탭별로 기억됨(habitListSettings).
+  document.querySelectorAll("#habitsTabRow button").forEach(btn => {
+    btn.onclick = () => {
+      habitsTabView = btn.dataset.tab;
+      document.querySelectorAll("#habitsTabRow button").forEach(b => b.classList.toggle("active", b === btn));
+      renderTodo();
+    };
+  });
+  function renderHabitRow(t) {
+    const todayS = todayStr();
+    const cat = habitCategories.find(c => c.id === t.category_id);
+    const repeatText = repeatSummaryText(t.repeat_unit, t.repeat_interval, t.repeat_days);
+    const catChip = cat ? `<span class="habit-cat-chip" style="background:${cat.color || "var(--accent-soft)"}">${escapeHtml(cat.name)}</span>` : "";
+    // 시작일이 아직 안 왔거나 종료일이 있을 때만 기간을 같이 보여줌(평범하게 계속 진행 중인 습관은 굳이 안 보여줘서 안 복잡하게).
+    const windowText = t.end_date ? ` · ~${formatDateShort(t.end_date)}까지`
+      : (t.start_date && t.start_date > todayS) ? ` · ${formatDateShort(t.start_date)}부터 시작` : "";
+    // 습관 예정 상태 배지: 앵커 기준 며칠 밀렸는지(N일 지남, 빨강) / 오늘이 예정일(오늘, 파랑) / 다음 회차까지 며칠(N일 남음, 파랑)
+    // — 여러 날 밀려도 줄을 쌓지 않고 이 배지 하나로만 표시(2026-09-12). 진행중 탭에서만 보여줌.
+    let dueChip = "";
+    if (habitsTabView === "active" && t.repeat_unit) {
+      const overdue = habitOverdueDays(t, todayS);
+      if (overdue !== null) {
+        dueChip = overdue === 0
+          ? `<span class="habit-due-chip due-today">오늘</span>`
+          : `<span class="habit-due-chip due-overdue">${overdue}일 지남</span>`;
+      } else {
+        const next = habitNextDueAfter(t, todayS);
+        const remain = next ? daysBetween(todayS, next) : null;
+        if (remain !== null) {
+          dueChip = remain > 0 ? `<span class="habit-due-chip due-upcoming">${remain}일 남음</span>` : `<span class="habit-due-chip due-today">오늘</span>`;
         }
       }
-      return `
-      <div class="todo-row ${t.is_active?"":"inactive"}" data-id="${t.id}">
-        <div class="info">
-          <div class="name">${escapeHtml(t.name)}${dueChip}</div>
-          <div class="block-tag">${t.start_minute != null ? minutesToHHMM(t.start_minute) : "시간 없음"} · ${t.duration_minutes || 30}분 · ${repeatText}${windowText}${catChip}</div>
-        </div>
-        <button class="historybtn" data-id="${t.id}" title="기록 보기">🗓</button>
-        <button class="settingsbtn" data-id="${t.id}" title="반복·그룹 설정">⚙</button>
-        <button class="togglebtn ${t.is_active?"on":""}" data-id="${t.id}" data-active="${t.is_active}">${t.is_active?"진행중":"멈춤"}</button>
-        <button class="del" data-id="${t.id}">삭제</button>
+    }
+    const actionBtn = habitsTabView === "active"
+      ? `<button class="togglebtn" data-id="${t.id}" data-act="archive">보관하기</button>`
+      : `<button class="togglebtn on" data-id="${t.id}" data-act="resume">재개하기</button>`;
+    return `
+    <div class="todo-row ${habitsTabView === "active" ? "" : "inactive"}" data-id="${t.id}">
+      <div class="info">
+        <div class="name">${escapeHtml(t.name)}${dueChip}</div>
+        <div class="block-tag">${t.start_minute != null ? minutesToHHMM(t.start_minute) : "시간 없음"} · ${t.duration_minutes || 30}분 · ${repeatText}${windowText}${catChip}</div>
       </div>
-    `;
-    }).join("");
+      <button class="historybtn" data-id="${t.id}" title="기록 보기">🗓</button>
+      <button class="settingsbtn" data-id="${t.id}" title="반복·그룹 설정">⚙</button>
+      ${actionBtn}
+      <button class="del" data-id="${t.id}">삭제</button>
+    </div>
+  `;
+  }
+  function renderTodo() {
+    const todayS = todayStr();
+    const visible = tasks.filter(t => habitLifecycleState(t, todayS) === habitsTabView);
+    const settings = habitListSettings[habitsTabView];
+    renderSortGroupControls($("habitSortSelect"), $("habitGroupSelect"), settings, true, () => {
+      saveTabSettings("tok_habitListSettings", habitListSettings);
+      renderTodo();
+    });
+    const sorted = sortItemsBy(visible, settings.sort, "start_date", habitCategories, "category_id");
+    const sections = groupItemsBy(sorted, settings.group, "start_date", habitCategories, "category_id");
+    const emptyText = habitsTabView === "active" ? "진행중인 습관이 없어요.<br/>위 입력창에서 바로 추가해보세요."
+      : habitsTabView === "archived" ? "보관 중인 습관이 없어요."
+      : "종료된 습관이 없어요.";
+    $("todoEmpty").style.display = "none"; // 빈 상태는 renderSections가 #todoList 안에 직접 그려줌
+    renderSections($("todoList"), sections, renderHabitRow, emptyText);
     document.querySelectorAll("#todoList .historybtn").forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -3602,9 +3739,32 @@
     });
     document.querySelectorAll("#todoList .togglebtn").forEach(btn => {
       btn.onclick = async () => {
-        const newActive = !(btn.dataset.active === "true");
-        const { error } = await sb.from("tok_habits").update({ is_active: newActive }).eq("id", btn.dataset.id);
-        if (error) { alert("변경 실패: " + error.message); return; }
+        const id = btn.dataset.id;
+        const t = tasks.find(x => x.id === id);
+        if (!t) return;
+        if (btn.dataset.act === "archive") {
+          // 보관: is_active를 꺼서 목록에서 숨기고, 이력에 "이 시점에 보관 시작"을 남김(재개일 계산용).
+          const { error } = await sb.from("tok_habits").update({ is_active: false }).eq("id", id);
+          if (error) { alert("보관 실패: " + error.message); return; }
+          const { error: pErr } = await sb.from("tok_habit_pauses").insert({ habit_id: id, paused_at: todayStr(), reason: "manual" });
+          if (pErr) { alert("보관 이력 저장 실패: " + pErr.message); return; }
+        } else {
+          // 재개: 종료(end_date 지남)였으면 end_date를 지워서 다시 진행중으로, 보관이었으면 is_active를 켜고
+          // 열려있는(resumed_at이 비어있는) 가장 최근 보관 이력에 재개일을 채움 — 이 재개일이 다음 앵커 기준이 됨.
+          const state = habitLifecycleState(t, todayStr());
+          // 종료 상태였으면 end_date도 지우고(다음 재개엔 걸리지 않게), 어느 쪽이든 is_active는 켜고
+          // 열려있는 보관 이력이 있으면(둘 다 겹친 드문 경우 포함) 재개일을 채워서 앵커를 새로 잡음.
+          const patch = { is_active: true };
+          if (state === "ended") patch.end_date = null;
+          const { error } = await sb.from("tok_habits").update(patch).eq("id", id);
+          if (error) { alert("재개 실패: " + error.message); return; }
+          const openPauses = habitPauses.filter(p => p.habit_id === id && !p.resumed_at);
+          if (openPauses.length) {
+            const { error: pErr } = await sb.from("tok_habit_pauses").update({ resumed_at: todayStr() })
+              .eq("habit_id", id).is("resumed_at", null);
+            if (pErr) { alert("재개 이력 저장 실패: " + pErr.message); return; }
+          }
+        }
         await loadAll();
       };
     });
