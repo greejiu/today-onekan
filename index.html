@@ -434,6 +434,7 @@
       <div class="navitem" data-page="home">🏠 집</div>
       <div class="navitem" data-page="schedule">🗓️ 일정</div>
       <div class="navitem" data-page="todos">✔️ 할일</div>
+      <div class="navitem" data-page="habits">🔁 습관</div>
       <div class="sidebar-footer">
         <div class="navitem" data-page="settings">⚙ 설정</div>
         <div class="sidebar-user" id="sidebarUserEmail"></div>
@@ -562,13 +563,9 @@
         </div>
       </div>
 
-      <!-- 할일 / 습관 (2026-09-07: 사이드바 탭 정리 — 습관 탭을 없애고 할일 탭 안 토글로 흡수) -->
+      <!-- 할일 (2026-09-12: 사이드바에서 습관과 별도 탭으로 분리) -->
       <div class="page" data-page="todos" style="display:none;">
         <div class="pagehead"><h2>✔️ 할일</h2></div>
-        <div class="view-toggle" id="todosViewToggle" style="margin-bottom:12px;max-width:220px;">
-          <button type="button" id="todosViewTodosBtn" class="active">할일</button>
-          <button type="button" id="todosViewHabitsBtn">습관</button>
-        </div>
 
         <div id="todosTodosView">
           <div class="view-toggle" id="todoTopTabs" style="margin-bottom:10px;">
@@ -602,8 +599,13 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <div id="todosHabitsView" style="display:none;">
+      <!-- 습관 (2026-09-12: 사이드바에서 할일과 별도 탭으로 분리) -->
+      <div class="page" data-page="habits" style="display:none;">
+        <div class="pagehead"><h2>🔁 습관</h2></div>
+
+        <div id="todosHabitsView">
           <div class="section-label">습관 관리</div>
           <div class="inline-add-row">
             <input id="tk_name" type="text" placeholder="습관 이름" />
@@ -674,6 +676,7 @@
     <div class="navitem" data-page="home">🏠<br/>집</div>
     <div class="navitem" data-page="schedule">🗓️<br/>일정</div>
     <div class="navitem" data-page="todos">✔️<br/>할일</div>
+    <div class="navitem" data-page="habits">🔁<br/>습관</div>
     <div class="navitem" data-page="settings">⚙<br/>설정</div>
   </div>
 </div>
@@ -931,8 +934,6 @@
   let todoTabView = "all"; // 할일 탭 상단탭: "all"(모두) | "scheduled"(예정된) | "someday"(언젠가)
   let todoListSettings = loadTabSettings("tok_todoListSettings", ["all", "scheduled"]); // 할일 탭별 정렬/그룹화 기억(언젠가는 기존 정렬 그대로 유지)
   let currentPage = "home";
-  // 할일 탭 "할일↔습관" 전환(2026-09-07, 사이드바 탭 정리 — 습관 탭을 없애고 할일 탭 안 토글로 흡수).
-  let todosSubView = "todos"; // "todos" | "habits"
   // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가). 메모 기능은 2026-09-12에 완전히 제거함(scheduleSubView도 함께 삭제).
   let scheduleMode = "list"; // "list" | "calendar"
   let calCursor = todayStr().slice(0, 7) + "-01"; // 캘린더가 보여주는 달의 1일
@@ -3562,16 +3563,7 @@
   $("calNextBtn").onclick = () => { calCursor = addMonthsStr(calCursor, 1); calExpanded.clear(); renderScheduleCalendar(); };
 
   // 메모 목록(일정 탭의 "메모" 뷰) — 일정 목록(renderSchedule)과 동일한 패턴, 범주 풀만 공유해서 씀.
-  // ── 할일 탭 : 할일↔습관 전환 토글(2026-09-07, 사이드바에서 습관 탭을 없애고 여기로 흡수) ──
-  function showTodosSubView(view) {
-    todosSubView = view;
-    $("todosViewTodosBtn").classList.toggle("active", view === "todos");
-    $("todosViewHabitsBtn").classList.toggle("active", view === "habits");
-    $("todosTodosView").style.display = view === "todos" ? "block" : "none";
-    $("todosHabitsView").style.display = view === "habits" ? "block" : "none";
-  }
-  $("todosViewTodosBtn").onclick = () => showTodosSubView("todos");
-  $("todosViewHabitsBtn").onclick = () => showTodosSubView("habits");
+  // ── 할일/습관은 2026-09-12부터 사이드바에서 각각 별도 탭(data-page="todos"/"habits")으로 분리됨. 전용 전환 토글 없음 ──
 
   function formatDate(d) {
     const dt = new Date(d + "T00:00:00");
