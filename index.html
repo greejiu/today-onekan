@@ -142,7 +142,7 @@
   .someday-row input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
   .someday-row span{flex:1;}
   .someday-row .tag-dot-sm{flex:0 0 auto;}
-  /* 언젠가 정렬/태그필터 툴바(집 카드+할일 탭 공용) */
+  /* 언젠가 정렬/그룹필터 툴바(집 카드+할일 탭 공용) */
   .tag-dot-sm{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
   .someday-toolbar{display:flex;justify-content:flex-end;margin-bottom:6px;}
   .someday-sort-select{font-size:11px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--sub);cursor:pointer;}
@@ -601,10 +601,10 @@
         <div class="section-label" style="margin-top:20px;">테마</div>
         <div class="theme-grid" id="themeGrid"></div>
 
-        <div class="section-label" style="margin-top:20px;">태그 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
+        <div class="section-label" style="margin-top:20px;">그룹 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
         <div class="hs-cat-list" id="settingsTagList"></div>
         <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
-          <div style="flex:1;"><label>새 태그</label><input id="settingsTagName" type="text" placeholder="예: 집안일" /></div>
+          <div style="flex:1;"><label>새 그룹</label><input id="settingsTagName" type="text" placeholder="예: 집안일" /></div>
           <input id="settingsTagColor" type="color" value="#9a8cf0" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
           <button class="btn-ghost" id="settingsTagAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
         </div>
@@ -664,7 +664,7 @@
   </div>
 </div>
 
-<!-- 습관 반복·카테고리 설정 시트 -->
+<!-- 습관 반복·그룹 설정 시트 -->
 <div class="sheet-bg" id="habitSheetBg">
   <div class="sheet">
     <h2>습관 설정</h2>
@@ -701,11 +701,11 @@
       <div><label>시작일(반복이 시작된 날)</label><input id="hs_start" type="date" /></div>
       <div><label>종료일(선택, 반복이 끝나는 날)</label><input id="hs_end" type="date" /></div>
     </div>
-    <div class="field"><label>카테고리</label><select id="hs_category"></select></div>
-    <div class="hs-cat-manage-label">카테고리 관리 (이름 수정 · 삭제)</div>
+    <div class="field"><label>그룹</label><select id="hs_category"></select></div>
+    <div class="hs-cat-manage-label">그룹 관리 (이름 수정 · 삭제)</div>
     <div class="hs-cat-list" id="hs_cat_list"></div>
     <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
-      <div style="flex:1;"><label>새 카테고리</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
+      <div style="flex:1;"><label>새 그룹</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
       <input id="hs_newcat_color" type="color" value="#9a8cf0" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
       <button class="btn-ghost" id="hs_newcat_btn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
     </div>
@@ -758,7 +758,7 @@
   </div>
 </div>
 
-<!-- 집 화면 오른쪽 클릭 → 태그/범주 변경(작은 선택 메뉴, ctx-menu 스타일 재사용) -->
+<!-- 집 화면 오른쪽 클릭 → 그룹/범주 변경(작은 선택 메뉴, ctx-menu 스타일 재사용) -->
 
 <!-- 습관 기록(히스토리) 보기 -->
 <div class="sheet-bg" id="habitHistoryBg">
@@ -885,8 +885,8 @@
   let timeBlocks = []; // tok_time_blocks: 타임블럭 탭의 이름표 그룹핑용(시작/종료 분 포함 — 설정 페이지에서 목록으로 추가/수정/삭제)
   let daySettings = { day_start_minute: 360, day_end_minute: 1440 }; // tok_settings: 타임라인/타임블럭에서 보여줄 하루 시작~종료 시간(분). 행이 없으면 이 기본값 사용.
   let todos = []; // tok_todos: 다가오는 계획 보드용 (날짜 있는 1회성 할일)
-  let habitCategories = []; // tok_habit_categories: 습관·할일 공용 "태그"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
-  let eventCategories = []; // tok_event_categories: 일정 전용 "범주"(이름+색상), 태그 풀과는 별개
+  let habitCategories = []; // tok_habit_categories: 습관·할일 공용 "그룹"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
+  let eventCategories = []; // tok_event_categories: 일정 전용 "범주"(이름+색상), 그룹 풀과는 별개
   let todoSubtasks = []; // tok_todo_subtasks: 지금 할일 카드에서 쓰는 하위 행동 목록
   let manualFocusTodoId = null; // "다른 할일로 바꾸기"로 수동 지정한 할일 id — 새로고침하면 자동 선택으로 리셋(세션 전용, DB 저장 안 함)
   let focusPickerOpen = false; // 지금 할일 카드가 "선택 목록" 모드인지
@@ -1552,7 +1552,7 @@
     "밤": { dot: "#7d8cd6" },
   };
   function agBlockStyle(title) { return AG_BLOCK_STYLE[title] || { dot: "var(--accent)" }; }
-  // 항목의 태그/범주 색상(습관·할일은 공용 태그 풀 habitCategories, 일정은 별도 eventCategories에서 찾음)
+  // 항목의 그룹/범주 색상(습관·할일은 공용 그룹 풀 habitCategories, 일정은 별도 eventCategories에서 찾음)
   function itemTagPool(kind) { return kind === "event" ? eventCategories : habitCategories; }
   function itemTagColor(kind, catId) {
     if (!catId) return null;
@@ -1565,7 +1565,7 @@
   function eventDotHtml(catId, size = 10, boxSize = 20) {
     return `<span class="agenda-event-dot-wrap" style="width:${boxSize}px;height:${boxSize}px;"><span class="agenda-event-dot" style="width:${size}px;height:${size}px;background:${itemTagColor("event", catId) || "#c9457a"};"></span></span>`;
   }
-  // 태그/범주 색을 카드 배경으로 옅게 깔아줌(원색 그대로면 글자가 안 보여서 흰색과 섞어 파스텔톤으로), 태그 없으면 흰 배경 고정
+  // 그룹/범주 색을 카드 배경으로 옅게 깔아줌(원색 그대로면 글자가 안 보여서 흰색과 섞어 파스텔톤으로), 그룹 없으면 흰 배경 고정
   function itemTagBgStyle(kind, catId) {
     const color = itemTagColor(kind, catId);
     if (!color) return `background:var(--card);border-color:var(--line);`;
@@ -1851,7 +1851,7 @@
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id); // 일정은 체크박스 자리에 범주색 동그라미로 대신 표시
-    // 타임블럭은 배경색 대신 "글자색"으로 태그/범주를 구분(2026-09-07, 배경색을 넣으면 카드형이라 답답하다는 결님 의견 —
+    // 타임블럭은 배경색 대신 "글자색"으로 그룹/범주를 구분(2026-09-07, 배경색을 넣으면 카드형이라 답답하다는 결님 의견 —
     // 타임라인은 반대로 배경색을 계속 씀). 완료된 항목은 색을 빼서 기존 회색 줄긋기(.done)가 그대로 보이게 둠.
     const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
     // 항목마다 카드처럼 보여서 공간을 너무 차지한다고 해서, 다가오는 계획 목록과 똑같이 카드 없는 플랫한 한 줄로 변경.
@@ -2552,7 +2552,7 @@
         openTodoSheet(todos.find(t => t.id === id));
       };
     });
-    // 오른쪽 클릭 메뉴(날짜 변경/태그·범주 변경/삭제) — 오늘 열과 동일하게, 습관·할일·일정 전부 공용 적용.
+    // 오른쪽 클릭 메뉴(날짜 변경/그룹·범주 변경/삭제) — 오늘 열과 동일하게, 습관·할일·일정 전부 공용 적용.
     document.querySelectorAll("#planUpcomingBoard .plan-row[data-id]").forEach(row => {
       row.oncontextmenu = (e) => {
         e.preventDefault();
@@ -2699,7 +2699,7 @@
     else arr.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "")); // 기본값 recent(최근순)
     return arr;
   }
-  // 언젠가 목록 태그 필터 — tagId가 null이면(=전체) 그대로 통과.
+  // 언젠가 목록 그룹 필터 — tagId가 null이면(=전체) 그대로 통과.
   function filterSomedayList(items, tagId) {
     return tagId ? items.filter(s => s.tag_id === tagId) : items;
   }
@@ -2712,7 +2712,7 @@
     selectEl.value = current;
     selectEl.onchange = () => onChange(selectEl.value);
   }
-  // 태그 필터 칩 채우기(전체 + 태그·할일 공용 풀 habitCategories) — onPick(tagIdOrNull)을 호출부에서 넘겨받음.
+  // 그룹 필터 칩 채우기(전체 + 그룹·할일 공용 풀 habitCategories) — onPick(tagIdOrNull)을 호출부에서 넘겨받음.
   function renderSomedayTagChips(hostEl, activeTagId, onPick) {
     const chips = [`<button type="button" class="someday-tag-chip${activeTagId ? "" : " active"}" data-tag="">전체</button>`]
       .concat(habitCategories.map(c => `<button type="button" class="someday-tag-chip${activeTagId === c.id ? " active" : ""}" data-tag="${c.id}"><span class="tag-dot-sm" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(c.name)}</button>`));
@@ -2722,7 +2722,7 @@
     });
   }
 
-  // "언젠가" 열: 정렬/태그필터 적용 후 일정 개수(somedayHomeVisible, 기본 8)까지만 보여주고 나머지는 "+더보기"로 8개씩 더.
+  // "언젠가" 열: 정렬/그룹필터 적용 후 일정 개수(somedayHomeVisible, 기본 8)까지만 보여주고 나머지는 "+더보기"로 8개씩 더.
   // ⚠️ data-id 대신 data-someday-id를 씀: 습관 탭의 attachBlockDrag가 전역으로 ".task-row[data-id]"를
   //   찾기 때문에, 여기서 data-id를 그대로 쓰면 이 행에도 그 핸들러가 잘못 붙어버림(이름공간 충돌 방지).
   function renderSomedaySummary() {
@@ -2747,7 +2747,7 @@
       ? rowsHtml + moreHtml + `<div class="block-add-row" data-somedayadd="1"></div>`
       : undone.length === 0
         ? `<div class="agenda-empty-block block-add-row" data-somedayadd="1">등록된 항목이 없어요. 눌러서 추가</div>`
-        : `<div class="agenda-empty-block">이 태그의 항목이 없어요.</div><div class="block-add-row" data-somedayadd="1"></div>`;
+        : `<div class="agenda-empty-block">이 그룹의 항목이 없어요.</div><div class="block-add-row" data-somedayadd="1"></div>`;
     document.querySelectorAll(".somedaysum-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
@@ -3073,10 +3073,10 @@
     await loadAll();
   };
 
-  // ── 습관 반복·카테고리 설정 시트 ──
+  // ── 습관 반복·그룹 설정 시트 ──
   function populateHabitCategorySelect(selectedId) {
     const sel = $("hs_category");
-    sel.innerHTML = `<option value="">카테고리 없음</option>` +
+    sel.innerHTML = `<option value="">그룹 없음</option>` +
       habitCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
     sel.value = selectedId || "";
   }
@@ -3134,18 +3134,18 @@
   $("habitSheetCancelBtn").onclick = () => $("habitSheetBg").classList.remove("open");
   $("hs_newcat_btn").onclick = async () => {
     const name = $("hs_newcat_name").value.trim();
-    if (!name) { alert("카테고리 이름을 입력해주세요."); return; }
+    if (!name) { alert("그룹 이름을 입력해주세요."); return; }
     const color = $("hs_newcat_color").value;
     const { data, error } = await sb.from("tok_habit_categories")
       .insert({ name, color, sort_order: habitCategories.length })
       .select().single();
-    if (error) { alert("카테고리 추가 실패: " + error.message); return; }
+    if (error) { alert("그룹 추가 실패: " + error.message); return; }
     habitCategories.push(data);
     populateHabitCategorySelect(data.id);
     renderHabitCategoryList();
     $("hs_newcat_name").value = "";
   };
-  // 카테고리 이름 수정 · 색상 변경 · 삭제 (습관 설정 시트 내 관리 목록)
+  // 그룹 이름 수정 · 색상 변경 · 삭제 (습관 설정 시트 내 관리 목록)
   function renderHabitCategoryList() {
     const host = $("hs_cat_list");
     if (!host) return;
@@ -3153,7 +3153,7 @@
       <div class="hs-cat-row" data-id="${c.id}">
         <input type="color" class="hs-cat-color-input" data-id="${c.id}" value="${c.color || "#9a8cf0"}" />
         <input type="text" class="hs-cat-name-input" data-id="${c.id}" value="${escapeHtml(c.name)}" />
-        <button type="button" class="hs-cat-del" data-id="${c.id}" title="카테고리 삭제">✕</button>
+        <button type="button" class="hs-cat-del" data-id="${c.id}" title="그룹 삭제">✕</button>
       </div>
     `).join("");
     host.querySelectorAll(".hs-cat-color-input").forEach(inp => {
@@ -3187,7 +3187,7 @@
       btn.onclick = async () => {
         const id = btn.dataset.id;
         const cat = habitCategories.find(c => c.id === id);
-        if (!confirm(`"${cat ? cat.name : "카테고리"}"를 삭제할까요? 이 카테고리를 쓰던 습관은 "카테고리 없음"으로 바뀌어요.`)) return;
+        if (!confirm(`"${cat ? cat.name : "그룹"}"을 삭제할까요? 이 그룹을 쓰던 습관은 "그룹 없음"으로 바뀌어요.`)) return;
         const { error } = await sb.from("tok_habit_categories").delete().eq("id", id);
         if (error) { alert("삭제 실패: " + error.message); return; }
         const wasSelected = $("hs_category").value === id;
@@ -3219,7 +3219,7 @@
   $("hs_repeat_unit").addEventListener("change", () => toggleRepeatUiFor("hs", $("hs_repeat_unit").value));
   $("idt_repeat_unit").addEventListener("change", () => toggleRepeatUiFor("idt", $("idt_repeat_unit").value));
 
-  // ── 할일 탭 : 언젠가 할일 관리(전체 목록, 정렬/태그필터 적용, 삭제 가능) ──
+  // ── 할일 탭 : 언젠가 할일 관리(전체 목록, 정렬/그룹필터 적용, 삭제 가능) ──
   function renderSomeday() {
     const sortSel = $("somedayTabSortSelect");
     if (sortSel) renderSomedaySortSelect(sortSel, somedayTabSort, (v) => { somedayTabSort = v; renderSomeday(); });
@@ -3239,7 +3239,7 @@
         <button class="del" data-id="${item.id}">삭제</button>
       </div>
     `;
-    }).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 태그의 항목이 없어요." : "등록된 언젠가 할일이 없어요."}</div>`;
+    }).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 그룹의 항목이 없어요." : "등록된 언젠가 할일이 없어요."}</div>`;
     document.querySelectorAll(".someday-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
@@ -3291,7 +3291,7 @@
         input.addEventListener("blur", () => commit());
       };
     });
-    // 오른쪽 클릭 → 태그 변경/삭제 메뉴
+    // 오른쪽 클릭 → 그룹 변경/삭제 메뉴
     document.querySelectorAll(".someday-row").forEach(row => {
       row.oncontextmenu = (e) => {
         e.preventDefault();
@@ -3546,7 +3546,7 @@
           <div class="block-tag">${t.start_minute != null ? minutesToHHMM(t.start_minute) : "시간 없음"} · ${t.duration_minutes || 30}분 · ${repeatText}${windowText}${catChip}</div>
         </div>
         <button class="historybtn" data-id="${t.id}" title="기록 보기">🗓</button>
-        <button class="settingsbtn" data-id="${t.id}" title="반복·카테고리 설정">⚙</button>
+        <button class="settingsbtn" data-id="${t.id}" title="반복·그룹 설정">⚙</button>
         <button class="togglebtn ${t.is_active?"on":""}" data-id="${t.id}" data-active="${t.is_active}">${t.is_active?"진행중":"멈춤"}</button>
         <button class="del" data-id="${t.id}">삭제</button>
       </div>
@@ -3740,14 +3740,14 @@
     return events.find(e => e.id === id);
   }
 
-  // 집 화면 항목 오른쪽 클릭 메뉴: 날짜 변경 / 태그·범주 변경 / (반복 할일↔습관 전환) / 삭제 (습관·할일·일정 공용)
+  // 집 화면 항목 오른쪽 클릭 메뉴: 날짜 변경 / 그룹·범주 변경 / (반복 할일↔습관 전환) / 삭제 (습관·할일·일정 공용)
   function showAgendaItemMenu(x, y, kind, id) {
     document.querySelector(".ctx-menu")?.remove();
     const menu = document.createElement("div");
     menu.className = "ctx-menu";
     menu.style.left = x + "px";
     menu.style.top = y + "px";
-    const tagLabel = kind === "event" ? "범주 변경" : "태그 변경";
+    const tagLabel = kind === "event" ? "범주 변경" : "그룹 변경";
     const item = agendaItemById(kind, id);
     // 반복 할일 ↔ 습관 전환: 할일은 반복설정 돼있을 때만(일회성 할일은 대상 아님), 습관은 원래 반복 개념이라 항상 대상.
     let convertBtn = "";
@@ -3865,18 +3865,18 @@
     await loadAll();
   }
 
-  // 태그/범주 변경용 작은 선택 메뉴(ctx-menu 재사용) — 습관·할일은 공용 태그 풀, 일정은 별도 범주 풀에서 고름
+  // 그룹/범주 변경용 작은 선택 메뉴(ctx-menu 재사용) — 습관·할일은 공용 그룹 풀, 일정은 별도 범주 풀에서 고름
   function showItemTagPicker(x, y, kind, id) {
     document.querySelector(".ctx-menu")?.remove();
     const pool = itemTagPool(kind);
-    // 지금 이 항목에 이미 붙어있는 태그/범주가 어떤 건지 목록에서 바로 보이게(체크 표시 + 배경 강조).
+    // 지금 이 항목에 이미 붙어있는 그룹/범주가 어떤 건지 목록에서 바로 보이게(체크 표시 + 배경 강조).
     const item = agendaItemById(kind, id);
     const currentVal = item ? ((kind === "todo" || kind === "someday") ? (item.tag_id || null) : (item.category_id || null)) : null;
     const menu = document.createElement("div");
     menu.className = "ctx-menu";
     menu.style.left = x + "px";
     menu.style.top = y + "px";
-    const noneBtn = `<button type="button" class="default${currentVal ? "" : " selected"}" data-tag="">${kind === "event" ? "범주 없음" : "태그 없음"}${currentVal ? "" : " ✓"}</button>`;
+    const noneBtn = `<button type="button" class="default${currentVal ? "" : " selected"}" data-tag="">${kind === "event" ? "범주 없음" : "그룹 없음"}${currentVal ? "" : " ✓"}</button>`;
     const items = pool.map(c => `<button type="button" class="default${c.id === currentVal ? " selected" : ""}" data-tag="${c.id}"><span class="ctx-tag-dot" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(c.name)}${c.id === currentVal ? " ✓" : ""}</button>`).join("");
     menu.innerHTML = noneBtn + items;
     document.body.appendChild(menu);
@@ -3896,7 +3896,7 @@
     attachCtxMenuOutsideClose(menu);
   }
 
-  // 언젠가 항목 전용 오른쪽 클릭 메뉴 — 날짜변경/전환/복제는 해당 없어서(언젠가는 그 자체가 "날짜 없음" 상태) 태그변경·삭제만 제공.
+  // 언젠가 항목 전용 오른쪽 클릭 메뉴 — 날짜변경/전환/복제는 해당 없어서(언젠가는 그 자체가 "날짜 없음" 상태) 그룹변경·삭제만 제공.
   function showSomedayItemMenu(x, y, id) {
     document.querySelector(".ctx-menu")?.remove();
     const menu = document.createElement("div");
@@ -3904,7 +3904,7 @@
     menu.style.left = x + "px";
     menu.style.top = y + "px";
     menu.innerHTML = `
-      <button type="button" class="default" data-act="tag">태그 변경</button>
+      <button type="button" class="default" data-act="tag">그룹 변경</button>
       <button type="button" data-act="delete">삭제</button>
     `;
     document.body.appendChild(menu);
@@ -3997,7 +3997,7 @@
     await loadAll();
   };
 
-  // ── 설정 페이지: 태그(습관·할일 공용) / 범주(일정 전용) 관리 ──
+  // ── 설정 페이지: 그룹(습관·할일 공용) / 범주(일정 전용) 관리 ──
   function renderCategoryManageList(hostId, pool, table, onSaved) {
     const host = $(hostId);
     if (!host) return;
@@ -4052,10 +4052,10 @@
   }
   $("settingsTagAddBtn").onclick = async () => {
     const name = $("settingsTagName").value.trim();
-    if (!name) { alert("태그 이름을 입력해주세요."); return; }
+    if (!name) { alert("그룹 이름을 입력해주세요."); return; }
     const color = $("settingsTagColor").value;
     const { data, error } = await sb.from("tok_habit_categories").insert({ name, color, sort_order: habitCategories.length }).select().single();
-    if (error) { alert("태그 추가 실패: " + error.message); return; }
+    if (error) { alert("그룹 추가 실패: " + error.message); return; }
     habitCategories.push(data);
     $("settingsTagName").value = "";
     renderSettingsTagLists();
