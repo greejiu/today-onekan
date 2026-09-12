@@ -176,7 +176,7 @@
   .ctx-menu button.selected{background:var(--accent-soft);font-weight:700;color:var(--accent);}
   .ctx-menu button .ctx-tag-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle;}
 
-  /* ── 집 : 2열 레이아웃 (1열 오늘, 2열 다가오는 계획+언젠가를 세로로 쌓음) ── */
+  /* ── 집 : 2열 레이아웃 (1열 오늘, 2열 언젠가+다가오는 계획을 세로로 쌓음) ── */
   .home-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}
   .home-col-stack{display:flex;flex-direction:column;gap:14px;min-width:0;}
   .home-col{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 6px 20px rgba(150,130,200,.08);}
@@ -463,33 +463,47 @@
         </div>
 
         <div class="home-grid">
-          <!-- 2026-09-12: 1열(하루종일+타임블럭/타임라인) 아래에 "다가오는 계획"을 쌓고, "언젠가"는 1열과 나란한 2열로 옮김
-               (결님 요청) — 모바일(1단 접힘)에서는 DOM 순서가 그대로라 하루종일/타임블럭·타임라인→다가오는 계획→언젠가 순서 그대로 유지됨. -->
+          <!-- 2026-09-12: 1열은 하루종일+타임블럭/타임라인만, 2열은 언젠가 아래에 "다가오는 계획"을 쌓음
+               (결님 요청 — 처음엔 다가오는 계획을 1열 밑에 뒀다가 언젠가 밑으로 다시 옮김).
+               모바일(1단 접힘)에서는 DOM 순서 그대로라 하루종일/타임블럭·타임라인→언젠가→다가오는 계획 순서로 보임. -->
+          <div class="home-col">
+            <div class="agenda-head">
+              <button id="agendaPrevBtn" class="agenda-nav">‹</button>
+              <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
+              <button id="agendaNextBtn" class="agenda-nav">›</button>
+            </div>
+
+            <div class="view-toggle-row" style="margin-top:10px;">
+              <div class="view-toggle">
+                <button id="agendaViewBlockBtn" class="active">타임블럭</button>
+                <button id="agendaViewTimelineBtn">타임라인</button>
+              </div>
+              <button id="agendaTodayBtn" class="today-btn">오늘</button>
+            </div>
+
+            <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
+              <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
+              <span class="count" id="agendaAllDayCount" style="display:none;"></span>
+            </div>
+            <div id="agendaAllDayZone">
+              <div class="agenda-flat" id="agendaAllDayList"></div>
+            </div>
+
+            <div id="agendaTimeWrap" style="margin-top:12px;"></div>
+          </div>
+
           <div class="home-col-stack">
             <div class="home-col">
-              <div class="agenda-head">
-                <button id="agendaPrevBtn" class="agenda-nav">‹</button>
-                <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
-                <button id="agendaNextBtn" class="agenda-nav">›</button>
+              <div class="home-col-head">
+                <div class="title">언젠가</div>
               </div>
-
-              <div class="view-toggle-row" style="margin-top:10px;">
-                <div class="view-toggle">
-                  <button id="agendaViewBlockBtn" class="active">타임블럭</button>
-                  <button id="agendaViewTimelineBtn">타임라인</button>
-                </div>
-                <button id="agendaTodayBtn" class="today-btn">오늘</button>
+              <div class="someday-toolbar">
+                <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
               </div>
-
-              <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
-                <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
-                <span class="count" id="agendaAllDayCount" style="display:none;"></span>
+              <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
+              <div id="somedayZone">
+                <div id="somedaySummaryList"></div>
               </div>
-              <div id="agendaAllDayZone">
-                <div class="agenda-flat" id="agendaAllDayList"></div>
-              </div>
-
-              <div id="agendaTimeWrap" style="margin-top:12px;"></div>
             </div>
 
             <div class="home-col">
@@ -497,19 +511,6 @@
                 <div class="title">다가오는 계획</div>
               </div>
               <div id="planUpcomingBoard"></div>
-            </div>
-          </div>
-
-          <div class="home-col">
-            <div class="home-col-head">
-              <div class="title">언젠가</div>
-            </div>
-            <div class="someday-toolbar">
-              <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
-            </div>
-            <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
-            <div id="somedayZone">
-              <div id="somedaySummaryList"></div>
             </div>
           </div>
         </div>
