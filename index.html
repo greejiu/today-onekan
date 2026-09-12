@@ -713,8 +713,6 @@
           <option value="day">일마다</option>
           <option value="week">주마다</option>
           <option value="month">개월마다</option>
-          <option value="weekday">평일(월~금)마다</option>
-          <option value="custom_days">특정 요일마다</option>
         </select>
       </div>
       <div id="hs_repeat_interval_wrap">
@@ -723,7 +721,7 @@
       </div>
     </div>
     <div class="field" id="hs_repeat_days_row" style="display:none;">
-      <label>반복 요일</label>
+      <label>반복 요일 (선택, 비우면 시작일 요일 기준으로 주기마다 반복)</label>
       <div class="weekday-picker">
         <label><input type="checkbox" value="0" />일</label>
         <label><input type="checkbox" value="1" />월</label>
@@ -770,14 +768,12 @@
           <option value="day">일마다</option>
           <option value="week">주마다</option>
           <option value="month">개월마다</option>
-          <option value="weekday">평일(월~금)마다</option>
-          <option value="custom_days">특정 요일마다</option>
         </select>
       </div>
       <div id="idt_repeat_interval_wrap"><label>주기(숫자)</label><input id="idt_repeat_interval" type="number" min="1" value="1" /></div>
     </div>
     <div class="field" id="idt_repeat_days_row" style="display:none;">
-      <label>반복 요일</label>
+      <label>반복 요일 (선택, 비우면 시작일 요일 기준으로 주기마다 반복)</label>
       <div class="weekday-picker">
         <label><input type="checkbox" value="0" />일</label>
         <label><input type="checkbox" value="1" />월</label>
@@ -1453,9 +1449,7 @@
     const lastDay = new Date(ny, nm + 1, 0).getDate();
     return `${ny}-${pad2(nm + 1)}-${pad2(Math.min(d, lastDay))}`;
   }
-  // "평일" 반복(월~금)에 쓰는 고정 요일 집합 — JS Date.getDay() 기준(0=일 ~ 6=토).
-  const WEEKDAY_DAYS = new Set([1, 2, 3, 4, 5]);
-  // dateStr 다음날부터 훑어서 daysSet(0~6, 일~토)에 속하는 가장 가까운 날짜를 찾음(2026-09-12, 평일·특정 요일 반복용).
+  // dateStr 다음날부터 훑어서 daysSet(0~6, 일~토)에 속하는 가장 가까운 날짜를 찾음(주+요일 반복용).
   function nextDayOfWeekAfter(dateStr, daysSet) {
     const d = new Date(dateStr + "T00:00:00");
     for (let i = 0; i < 7; i++) {
@@ -1464,14 +1458,18 @@
     }
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   }
-  // 할일·일정 반복에도 재사용하는 공용 "다음 날짜" 계산(습관과 같은 일/주/개월 규칙, 월은 말일 보정 + 평일/특정요일 반복)
-  // repeatDays: repeatUnit이 "custom_days"일 때만 쓰는 선택 요일 배열(0~6, 일~토).
+  // 할일·일정 반복에도 재사용하는 공용 "다음 날짜" 계산(습관과 같은 일/주/개월 규칙, 월은 말일 보정).
+  // 2026-09-12: 기존에 따로 있던 "평일마다"/"특정 요일마다" 단위를 없애고 "주마다" 안으로 합침 —
+  // repeatDays(0~6, 일~토)를 하나 이상 고르면 그 요일들 기준으로 매주 반복(주기 입력은 무시하고 1주 고정),
+  // 안 고르면 기존처럼 시작일과 같은 요일로 repeatInterval주마다 반복. 평일(월~금)은 이제 월~금 5개를
+  // 체크하는 걸로 표현.
   function nextRepeatDateStr(dateStr, repeatUnit, repeatInterval, repeatDays) {
     const interval = repeatInterval || 1;
-    if (repeatUnit === "week") return addDaysStr(dateStr, interval * 7);
+    if (repeatUnit === "week") {
+      if (repeatDays && repeatDays.length) return nextDayOfWeekAfter(dateStr, new Set(repeatDays));
+      return addDaysStr(dateStr, interval * 7);
+    }
     if (repeatUnit === "month") return addMonthsStr(dateStr, interval);
-    if (repeatUnit === "weekday") return nextDayOfWeekAfter(dateStr, WEEKDAY_DAYS);
-    if (repeatUnit === "custom_days") return nextDayOfWeekAfter(dateStr, new Set(repeatDays && repeatDays.length ? repeatDays : [0, 1, 2, 3, 4, 5, 6]));
     return addDaysStr(dateStr, interval); // "day"
   }
   // ── 습관 예정일 계산 (2026-09-12 재설계: "지정일(앵커) 기준 고정 주기" ──
@@ -3144,14 +3142,19 @@
       habitCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
     sel.value = selectedId || "";
   }
-  // 반복 선택 UI 공용 헬퍼 3종(2026-09-12 추가, hs_/idt_ 두 시트에서 같이 씀) ──
-  // kind가 "event"면 "평일"/"특정 요일" 옵션을 비활성화(일정은 반복 범위 밖 — 결님 요청 범위는 할일·습관만).
+  // 반복 선택 UI 공용 헬퍼(hs_/idt_ 두 시트에서 같이 씀) ──
+  // 2026-09-12: 원래 있던 "평일마다"/"특정 요일마다"라는 별도 반복 단위를 없애고 "주마다" 안으로 합침.
+  // "주마다"를 고르면 요일 체크박스가 같이 뜨고, 하나 이상 고르면 그 요일 기준(주기 입력 무시,
+  // 항상 1주 간격)으로 반복 — 요일을 안 고르면 기존처럼 시작일 요일 기준 N주마다.
+  // kind가 "event"(일정)면 요일 선택 UI 자체를 숨김 — 요일 지정 반복은 일정 제외, 할일·습관 전용(결님 확정 범위).
   function populateRepeatUnitSelect(selectEl, kind) {
     if (!selectEl) return;
-    const allowExtra = kind === "todo" || kind === "habit";
-    selectEl.querySelectorAll('option[value="weekday"], option[value="custom_days"]').forEach(opt => {
-      opt.disabled = !allowExtra;
-    });
+    selectEl.dataset.allowDays = (kind === "todo" || kind === "habit") ? "1" : "0";
+  }
+  function repeatDaysAllowedFor(prefix) {
+    if (prefix === "hs") return true; // 습관 설정 시트는 항상 습관이라 요일 선택 가능
+    const selectEl = $(`${prefix}_repeat_unit`);
+    return !(selectEl && selectEl.dataset.allowDays === "0");
   }
   // 요일 선택 배열(0~6, 일~토)을 체크박스에 반영
   function setRepeatDaysChecked(rowEl, days) {
@@ -3164,31 +3167,39 @@
     if (!rowEl) return [];
     return Array.from(rowEl.querySelectorAll('input[type="checkbox"]:checked')).map(cb => Number(cb.value));
   }
-  // 선택된 반복 종류에 따라 "주기(숫자)" 칸과 "반복 요일" 칸을 보이거나 숨김(prefix: "hs" | "idt")
+  // 선택된 반복 종류에 따라 "반복 요일" 칸을 보이거나 숨김(prefix: "hs" | "idt")
   function toggleRepeatUiFor(prefix, unitValue) {
-    const intervalWrap = $(`${prefix}_repeat_interval_wrap`);
     const daysRow = $(`${prefix}_repeat_days_row`);
-    const isDayBased = unitValue === "weekday" || unitValue === "custom_days";
-    if (intervalWrap) intervalWrap.style.display = isDayBased ? "none" : "block";
-    if (daysRow) daysRow.style.display = unitValue === "custom_days" ? "block" : "none";
+    const showDays = unitValue === "week" && repeatDaysAllowedFor(prefix);
+    if (daysRow) daysRow.style.display = showDays ? "block" : "none";
+    updateWeekIntervalVisibility(prefix, unitValue, showDays);
   }
-  // 습관 관리 목록 등에서 보여주는 반복 요약 문구(평일·특정 요일은 "N일마다" 형식이 안 맞아서 따로 처리)
+  // "주마다" + 요일을 하나라도 체크하면 주기(숫자) 입력은 안 쓰여서(항상 1주 고정) 칸 자체를 숨김.
+  function updateWeekIntervalVisibility(prefix, unitValue, showDays) {
+    const intervalWrap = $(`${prefix}_repeat_interval_wrap`);
+    if (!intervalWrap) return;
+    if (unitValue !== "week" || !showDays) { intervalWrap.style.display = "block"; return; }
+    const anyChecked = getRepeatDaysChecked($(`${prefix}_repeat_days_row`)).length > 0;
+    intervalWrap.style.display = anyChecked ? "none" : "block";
+  }
+  // 습관 관리 목록 등에서 보여주는 반복 요약 문구
   const WEEKDAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
   function repeatSummaryText(unit, interval, days) {
     if (!unit) return "반복 없음";
-    if (unit === "weekday") return "평일마다";
-    if (unit === "custom_days") return (days && days.length ? days.slice().sort().map(d => WEEKDAY_NAMES[d]).join(",") : "요일 미선택") + "요일마다";
+    if (unit === "week" && days && days.length) return days.slice().sort().map(d => WEEKDAY_NAMES[d]).join(",") + "요일마다";
     return `${interval || 1}${{ day: "일", week: "주", month: "개월" }[unit]}마다`;
   }
   // 2026-09-12(4단계): 주기 변경 팝업을 띄울지 판단하기 위해 반복 설정(단위/주기/요일)이 실제로 달라졌는지 비교.
   function repeatFieldsEqual(a, b) {
     if ((a.unit || null) !== (b.unit || null)) return false;
-    if (a.unit === "custom_days") {
+    if (a.unit === "week") {
       const da = (a.days || []).slice().sort().join(",");
       const db = (b.days || []).slice().sort().join(",");
-      return da === db;
+      if (da !== db) return false;
+      if (!da) return (a.interval || 1) === (b.interval || 1); // 요일 미선택일 때만 주기(숫자) 비교
+      return true;
     }
-    if (a.unit && a.unit !== "weekday") return (a.interval || 1) === (b.interval || 1);
+    if (a.unit) return (a.interval || 1) === (b.interval || 1);
     return true;
   }
 
@@ -3278,9 +3289,10 @@
     const editId = $("habitSheetBg").dataset.editId;
     if (!editId) return;
     const repeat_unit = $("hs_repeat_unit").value || null;
-    const repeat_interval = (repeat_unit && repeat_unit !== "weekday" && repeat_unit !== "custom_days") ? (parseInt($("hs_repeat_interval").value, 10) || 1) : null;
-    const repeat_days = repeat_unit === "custom_days" ? getRepeatDaysChecked($("hs_repeat_days_row")) : null;
-    if (repeat_unit === "custom_days" && (!repeat_days || !repeat_days.length)) { alert("반복할 요일을 1개 이상 선택해주세요."); return; }
+    // "주마다" + 요일을 하나 이상 고르면 그 요일 기준(주기 입력 무시, 1주 고정), 안 고르면 기존처럼 주기(숫자) 사용.
+    const hsDaysChecked = repeat_unit === "week" ? getRepeatDaysChecked($("hs_repeat_days_row")) : [];
+    const repeat_days = hsDaysChecked.length ? hsDaysChecked : null;
+    const repeat_interval = repeat_unit ? (repeat_days ? 1 : (parseInt($("hs_repeat_interval").value, 10) || 1)) : null;
     const category_id = $("hs_category").value || null;
     const start_date = $("hs_start").value;
     if (!start_date) { alert("시작일을 입력해주세요."); return; }
@@ -3308,6 +3320,9 @@
   };
   $("hs_repeat_unit").addEventListener("change", () => toggleRepeatUiFor("hs", $("hs_repeat_unit").value));
   $("idt_repeat_unit").addEventListener("change", () => toggleRepeatUiFor("idt", $("idt_repeat_unit").value));
+  // 요일 체크박스를 토글할 때마다 "주기(숫자)" 칸을 보이거나 숨김(요일을 하나라도 고르면 주기 입력 무의미)
+  $("hs_repeat_days_row").addEventListener("change", () => updateWeekIntervalVisibility("hs", $("hs_repeat_unit").value, true));
+  $("idt_repeat_days_row").addEventListener("change", () => updateWeekIntervalVisibility("idt", $("idt_repeat_unit").value, repeatDaysAllowedFor("idt")));
 
   // ── 할일 탭 : 언젠가 할일 관리(전체 목록, 정렬/그룹필터 적용, 삭제 가능) ──
   function renderSomeday() {
@@ -4185,9 +4200,11 @@
     if (!id) return;
     const timeVal = $("idt_time").value;
     const repeat_unit = $("idt_repeat_unit").value || null;
-    const repeat_interval = (repeat_unit && repeat_unit !== "weekday" && repeat_unit !== "custom_days") ? (parseInt($("idt_repeat_interval").value, 10) || 1) : null;
-    const repeat_days = repeat_unit === "custom_days" ? getRepeatDaysChecked($("idt_repeat_days_row")) : null;
-    if (repeat_unit === "custom_days" && (!repeat_days || !repeat_days.length)) { alert("반복할 요일을 1개 이상 선택해주세요."); return; }
+    // "주마다" + 요일을 하나 이상 고르면 그 요일 기준(주기 입력 무시, 1주 고정), 안 고르면 기존처럼 주기(숫자) 사용.
+    // 일정(event)은 요일 지정 반복 대상이 아니라서 repeatDaysAllowedFor로 걸러짐(항상 빈 배열 → null).
+    const idtDaysChecked = (repeat_unit === "week" && repeatDaysAllowedFor("idt")) ? getRepeatDaysChecked($("idt_repeat_days_row")) : [];
+    const repeat_days = idtDaysChecked.length ? idtDaysChecked : null;
+    const repeat_interval = repeat_unit ? (repeat_days ? 1 : (parseInt($("idt_repeat_interval").value, 10) || 1)) : null;
     let patch = {};
     if (kind === "todo") {
       const startVal = $("idt_date").value;
