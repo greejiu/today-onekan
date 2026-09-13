@@ -304,9 +304,10 @@
   .habit-due-chip.due-overdue{background:#fde2e2;color:#c0392b;}
   .habit-due-chip.due-today{background:#dce9fb;color:#2f6fd1;}
   .habit-due-chip.due-upcoming{background:#e8ecf5;color:#4a5a7a;}
-  /* 집 화면 미완료 알림 배너(2026-09-13, 6단계) — 하루 첫 접속 시 1번만, 닫으면 그날은 다시 안 뜸 */
+  /* 집 화면 미완료 알림 배너(2026-09-13, 6단계 → 7-4단계에서 할일/습관 각각 따로 물어보는 2개로 분리) — 하루 첫 접속 시 1번만, 닫으면(예/✕ 둘 다) 그날은 다시 안 뜸 */
   .home-incomplete-banner{display:flex;align-items:center;gap:8px;background:#fde2e2;color:#c0392b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;}
   .home-incomplete-banner .txt{flex:1;min-width:0;}
+  .home-incomplete-banner .yes{border:none;background:#c0392b;color:#fff;font-size:12px;font-weight:600;border-radius:7px;padding:5px 12px;cursor:pointer;flex-shrink:0;}
   .home-incomplete-banner .close{border:none;background:none;color:#c0392b;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px;flex-shrink:0;}
   /* 할일/습관 목록 공용: 정렬/그룹화 그룹 섹션 제목, 할일 날짜 배지(2026-09-12) */
   .list-section-head{font-size:12px;font-weight:600;color:var(--sub);margin:14px 2px 6px;}
@@ -458,9 +459,16 @@
       <div class="page" data-page="home">
         <div class="pagehead"><h2>🏠 집</h2></div>
 
-        <div class="home-incomplete-banner" id="homeIncompleteBanner" style="display:none;">
-          <span class="txt" id="homeIncompleteBannerText"></span>
-          <button type="button" class="close" id="homeIncompleteBannerClose">✕</button>
+        <!-- 09-13 7-4단계: 할일/습관 각각 따로 물어보는 배너로 분리(전엔 개수만 합쳐서 보여주는 배너 1개였음) -->
+        <div class="home-incomplete-banner" id="homeTodoBanner" style="display:none;">
+          <span class="txt" id="homeTodoBannerText">아직 완료하지 않은 할일이 있어요. 오늘로 옮길까요?</span>
+          <button type="button" class="yes" id="homeTodoBannerYes">예</button>
+          <button type="button" class="close" id="homeTodoBannerClose">✕</button>
+        </div>
+        <div class="home-incomplete-banner" id="homeHabitBanner" style="display:none;">
+          <span class="txt" id="homeHabitBannerText">아직 완료하지 않은 습관이 있어요. 오늘 할까요?</span>
+          <button type="button" class="yes" id="homeHabitBannerYes">예</button>
+          <button type="button" class="close" id="homeHabitBannerClose">✕</button>
         </div>
 
         <div class="home-grid" id="homeFocusRow" style="margin-bottom:14px;">
@@ -809,14 +817,14 @@
 
 <!-- 집 화면 오른쪽 클릭 → 그룹/범주 변경(작은 선택 메뉴, ctx-menu 스타일 재사용) -->
 
-<!-- 습관 기록(히스토리) 보기 -->
+<!-- 습관/반복 할일 기록(히스토리) 보기 — 09-13 7-2단계부터 습관·반복 할일 공용으로 씀(hhKind로 분기) -->
 <div class="sheet-bg" id="habitHistoryBg">
   <div class="sheet">
     <h2 id="hh_title">습관 기록</h2>
     <div class="habit-history-summary">
-      <div class="hh-stat"><strong id="hh_pct">-</strong><span>달성률</span></div>
-      <div class="hh-stat"><strong id="hh_done">0/0</strong><span>완료</span></div>
-      <div class="hh-stat"><strong id="hh_avg">-</strong><span>평균 지연</span></div>
+      <div class="hh-stat"><strong id="hh_pct">-</strong><span id="hh_pct_label">달성률</span></div>
+      <div class="hh-stat"><strong id="hh_done">0/0</strong><span id="hh_done_label">완료</span></div>
+      <div class="hh-stat"><strong id="hh_avg">-</strong><span id="hh_avg_label">평균 지연</span></div>
     </div>
     <div class="habit-history-next" id="hh_next">다음 예정 없음</div>
     <div class="habit-history-nav">
@@ -825,7 +833,7 @@
       <button type="button" id="hh_next_btn" aria-label="다음 3개월">›</button>
     </div>
     <div id="hh_months"></div>
-    <div class="habit-history-note">시작일 기준 고정 주기예요 — 완료 여부와 무관하게 다음 예정일이 정해져요.</div>
+    <div class="habit-history-note" id="hh_note">시작일 기준 고정 주기예요 — 완료 여부와 무관하게 다음 예정일이 정해져요.</div>
     <div class="sheet-actions">
       <button class="btn-ghost" id="habitHistoryCloseBtn">닫기</button>
     </div>
@@ -1056,21 +1064,28 @@
     const nextStart = nextRepeatDateStr(todo.start_date, todo.repeat_unit, todo.repeat_interval, todo.repeat_days);
     // 종료일(반복이 끝나는 날, 선택)을 넘어서면 다음 회차를 만들지 않고 반복을 그만둠. 종료일 자체는 그대로 다음 회차에도 이어서 넘겨줌.
     if (todo.end_date && nextStart > todo.end_date) return;
+    // repeat_chain_id: 같은 반복 체인끼리 묶는 연결고리(2026-09-13, 7-2단계 신규) — 부모가 이미 갖고 있으면 그대로
+    // 물려주고, 아직 없으면(예전에 만들어진 회차라 이 컬럼이 비어있는 경우) 부모의 id를 체인 시작점으로 삼음.
+    const chainId = todo.repeat_chain_id || todo.id;
     const { error } = await sb.from("tok_todos").insert({
       title: todo.title, start_date: nextStart, end_date: todo.end_date || null,
       todo_time: todo.todo_time || null, duration_minutes: todo.duration_minutes || null,
       tag_id: todo.tag_id || null, repeat_unit: todo.repeat_unit, repeat_interval: todo.repeat_interval, repeat_days: todo.repeat_days || null,
+      repeat_chain_id: chainId,
     });
     if (error) alert("다음 회차 생성 실패: " + error.message);
   }
   // 할일 완료 체크를 처리하는 공용 함수 — 반복이면 다음 회차 생성 후 전체 새로고침, 아니면 가벼운 렌더만.
   // 반환값 true = 이미 loadAll()로 전체 갱신했으니 호출부에서 추가로 렌더할 필요 없음.
   async function setTodoDone(id, checked) {
-    const { error } = await sb.from("tok_todos").update({ is_done: checked }).eq("id", id);
+    // completed_date: 실제로 체크한 날짜를 남겨둠(2026-09-13, 7-2단계 신규) — 반복 할일 기록 화면에서
+    // "예정일 대비 며칠 지나서 완료했는지" 계산할 때 씀. 체크 해제하면 다시 비움.
+    const completed_date = checked ? todayStr() : null;
+    const { error } = await sb.from("tok_todos").update({ is_done: checked, completed_date }).eq("id", id);
     if (error) { alert("변경 실패: " + error.message); return false; }
     if (checked) playCompleteSound(); // 할일(상위) 체크 시 완료 효과음 — 하위 행동보다 길게
     const t = todos.find(x => x.id === id);
-    if (t) t.is_done = checked;
+    if (t) { t.is_done = checked; t.completed_date = completed_date; }
     if (checked && t && t.repeat_unit) {
       await completeTodoRepeatIfNeeded(t);
       await loadAll();
@@ -1320,29 +1335,49 @@
     renderIncompleteBanner();
   }
 
-  // ── 집 화면 미완료 알림 배너(2026-09-13, 6단계) ──
-  // "오늘 것 + 밀린 것" 할일·습관이 하나라도 남아있으면 배너로 보여줌. "하루 1번"은 localStorage에
-  // 오늘 날짜를 적어두고, 이미 그 날짜로 닫은 적 있으면(=오늘 한 번 넘겼으면) 다시 안 띄우는 방식으로 구현
-  // (탭별 정렬·그룹화 설정을 localStorage에 기억하는 기존 방식과 동일한 패턴 — 기기별로만 기억되면 충분한 UX 값).
-  function incompleteBannerDismissedToday() {
-    try { return localStorage.getItem("tok_incompleteBannerDismissed") === todayStr(); } catch (e) { return false; }
+  // ── 집 화면 미완료 알림 배너(2026-09-13, 6단계 → 7-4단계에서 할일/습관 각각 따로 물어보는 배너 2개로 분리) ──
+  // "하루 1번"은 localStorage에 오늘 날짜를 적어두고, 이미 그 날짜로 닫은 적 있으면(=오늘 한 번 넘겼으면) 다시
+  // 안 띄우는 방식(탭별 정렬·그룹화 설정 기억과 동일한 패턴). 두 배너는 서로 독립 — 하나만 닫아도 다른 하나는 그대로 뜸.
+  // "예" 버튼은 결 확인대로 실제로 뭔가를 더 만들거나 완료 처리하지 않음(할일은 7-4단계로 이미 "오늘" 화면에
+  // 자동으로 같이 보이게 됐고, 습관도 앵커 엔진이 이미 자동으로 보여주고 있어서) — 그래서 "예"도 ✕과 똑같이
+  // "확인했어요, 오늘은 안 봐도 돼요"로 오늘 하루 배너만 닫는 역할.
+  function bannerDismissedToday(key) {
+    try { return localStorage.getItem(key) === todayStr(); } catch (e) { return false; }
+  }
+  function dismissBannerToday(key, bannerEl) {
+    try { localStorage.setItem(key, todayStr()); } catch (e) {}
+    bannerEl.style.display = "none";
   }
   function renderIncompleteBanner() {
-    const banner = $("homeIncompleteBanner");
-    if (!banner) return;
-    if (incompleteBannerDismissedToday()) { banner.style.display = "none"; return; }
+    const todoBanner = $("homeTodoBanner"), habitBanner = $("homeHabitBanner");
+    if (!todoBanner || !habitBanner) return;
     const todayS = todayStr();
-    const todoCount = todos.filter(t => !t.is_done && t.start_date && t.start_date <= todayS).length;
-    const habitCount = tasks.filter(t => habitLifecycleState(t, todayS) === "active" && habitOverdueDays(t, todayS) !== null).length;
-    const total = todoCount + habitCount;
-    if (total === 0) { banner.style.display = "none"; return; }
-    $("homeIncompleteBannerText").textContent = `오늘 할 일이 아직 ${total}개 남았어요 (할일 ${todoCount}개 · 습관 ${habitCount}개)`;
-    banner.style.display = "flex";
+    // 할일 배너: 원래 날짜가 지난(오늘보다 이전) 미완료 할일 — 오늘 자체 할일은 "옮길" 대상이 아니라서 제외.
+    const todoCount = todos.filter(t => !t.is_done && t.start_date && t.start_date < todayS).length;
+    if (!bannerDismissedToday("tok_todoBannerDismissed", todoBanner) && todoCount > 0) {
+      $("homeTodoBannerText").textContent = `아직 완료하지 않은 할일이 ${todoCount}개 있어요. 오늘로 옮길까요?`;
+      todoBanner.style.display = "flex";
+    } else {
+      todoBanner.style.display = "none";
+    }
+    // 습관 배너: 밀렸거나 오늘 예정인 진행중 습관 중 "매일 반복"은 제외(매일 하는 습관은 매일 새로 챙길 필요가
+    // 없어서, 결 요청대로 이 배너에서만 뺌 — 습관 탭 배지·기록 통계 등 다른 곳은 그대로 포함해서 계산).
+    const habitCount = tasks.filter(t =>
+      habitLifecycleState(t, todayS) === "active" &&
+      habitOverdueDays(t, todayS) !== null &&
+      !(t.repeat_unit === "day" && (t.repeat_interval || 1) === 1)
+    ).length;
+    if (!bannerDismissedToday("tok_habitBannerDismissed", habitBanner) && habitCount > 0) {
+      $("homeHabitBannerText").textContent = `아직 완료하지 않은 습관이 ${habitCount}개 있어요. 오늘 할까요? (매일 반복 습관은 제외)`;
+      habitBanner.style.display = "flex";
+    } else {
+      habitBanner.style.display = "none";
+    }
   }
-  $("homeIncompleteBannerClose").onclick = () => {
-    try { localStorage.setItem("tok_incompleteBannerDismissed", todayStr()); } catch (e) {}
-    $("homeIncompleteBanner").style.display = "none";
-  };
+  $("homeTodoBannerYes").onclick = () => dismissBannerToday("tok_todoBannerDismissed", $("homeTodoBanner"));
+  $("homeTodoBannerClose").onclick = () => dismissBannerToday("tok_todoBannerDismissed", $("homeTodoBanner"));
+  $("homeHabitBannerYes").onclick = () => dismissBannerToday("tok_habitBannerDismissed", $("homeHabitBanner"));
+  $("homeHabitBannerClose").onclick = () => dismissBannerToday("tok_habitBannerDismissed", $("homeHabitBanner"));
 
   // ── 집 : 포커스 타이머(뽀모도로 아닌 진짜 스톱워치) ──
   // 실행 중에도 loadAll()이 자주 다시 호출되지만(체크박스 등), 이 카드의 DOM은 renderHome()이 건드리지 않는 별도 영역이라
@@ -1627,10 +1662,13 @@
     return { total, done, pct, avgDelay };
   }
 
-  // ── 습관 기록(히스토리) 보기: 3개월씩 페이지 넘김 + 누적 통계(2026-09-13, 7단계 개편) ──
+  // ── 습관/반복 할일 기록(히스토리) 보기: 3개월씩 페이지 넘김 + 누적 통계(2026-09-13, 7단계 개편) ──
   // (onekan v1의 habit-history-view.js를 참고 — 완료일 체크 표시 + 다음 예정일 강조. 원래는 1달씩+이번 달
   // 완료횟수만 보여줬는데, 결님 요청으로 3달씩 페이지 넘김 + "총 N개 중 M개 완료/달성률/평균 지연일" 통계로 확장)
-  let hhTask = null;
+  // 09-13 7-2단계: 반복 할일도 같은 모달(`habitHistoryBg`)을 씀 — hhKind로 습관/할일 분기.
+  let hhKind = "habit"; // "habit" | "todo"
+  let hhTask = null;       // habit 모드: 그 습관 row
+  let hhTodoChainId = null; // todo 모드: repeat_chain_id(=체인을 묶는 값)
   let hhCursor = new Date(); // 이 값이 속한 3개월 묶음의 첫 달 기준으로 씀
   function habitCompletionDates(habitId) {
     return new Set(habitLogs.filter(r => r.habit_id === habitId).map(r => r.done_date));
@@ -1638,12 +1676,36 @@
   function openHabitHistory(habitId) {
     const t = tasks.find(x => x.id === habitId);
     if (!t) return;
+    hhKind = "habit";
     hhTask = t;
     hhCursor = new Date();
     hhCursor.setDate(1);
+    $("hh_pct_label").textContent = "달성률";
+    $("hh_done_label").textContent = "완료";
+    $("hh_avg_label").textContent = "평균 지연";
+    $("hh_note").textContent = "시작일 기준 고정 주기예요 — 완료 여부와 무관하게 다음 예정일이 정해져요.";
     renderHabitHistory();
     $("habitHistoryBg").classList.add("open");
   }
+  // 반복 할일 체인(같은 repeat_chain_id를 가진 모든 회차, 완료돼서 이미 지난 것까지 전부)을 나열.
+  function todoChainRows(chainId) {
+    return todos.filter(x => (x.repeat_chain_id || x.id) === chainId);
+  }
+  function openTodoHistory(todoId) {
+    const t = todos.find(x => x.id === todoId);
+    if (!t) return;
+    hhKind = "todo";
+    hhTodoChainId = t.repeat_chain_id || t.id;
+    hhCursor = new Date();
+    hhCursor.setDate(1);
+    $("hh_pct_label").textContent = "완료 횟수";
+    $("hh_done_label").textContent = "체인 시작일";
+    $("hh_avg_label").textContent = "평균 지연";
+    $("hh_note").textContent = "반복 할일은 완료할 때마다 다음 회차가 새로 생기는 방식이라, 미리 정해둔 예정일 표시는 없고 완료일만 기록돼요.";
+    renderTodoHistory();
+    $("habitHistoryBg").classList.add("open");
+  }
+  function renderHistoryModal() { if (hhKind === "todo") renderTodoHistory(); else renderHabitHistory(); }
   function renderHabitMonthGrid(year, month, doneDates, dueDates, today) {
     const lastDay = new Date(year, month + 1, 0).getDate();
     const firstDow = new Date(year, month, 1).getDay();
@@ -1703,8 +1765,37 @@
       $("hh_avg").textContent = "-";
     }
   }
-  $("hh_prev").onclick = () => { hhCursor.setMonth(hhCursor.getMonth() - 3); renderHabitHistory(); };
-  $("hh_next_btn").onclick = () => { hhCursor.setMonth(hhCursor.getMonth() + 3); renderHabitHistory(); };
+  // 반복 할일 체인의 기록/통계 — 습관과 달리 미리 만들어둔 예정일이 없어서(dueDates 없음), 완료일만 달력에 표시.
+  // 통계는 완료 횟수 / 체인 시작일 / 평균 지연(각 회차 start_date→completed_date 차이의 평균)만 계산.
+  function renderTodoHistory() {
+    if (!hhTodoChainId) return;
+    const rows = todoChainRows(hhTodoChainId).slice().sort((a, b) => (a.start_date || "") < (b.start_date || "") ? -1 : 1);
+    const baseYear = hhCursor.getFullYear(), baseMonth = hhCursor.getMonth();
+    const today = todayStr();
+    const doneDates = new Set(rows.filter(r => r.is_done && r.completed_date).map(r => r.completed_date));
+    const firstD = new Date(baseYear, baseMonth, 1);
+    const lastD = new Date(baseYear, baseMonth + 2, 1);
+    let monthsHtml = "";
+    for (let i = 0; i < 3; i++) {
+      const d = new Date(baseYear, baseMonth + i, 1);
+      monthsHtml += `<div class="hh-month-block">${renderHabitMonthGrid(d.getFullYear(), d.getMonth(), doneDates, new Set(), today)}</div>`;
+    }
+    const first = rows[0];
+    $("hh_title").textContent = (first && first.title) || "반복 할일 기록";
+    $("hh_month").textContent = firstD.getFullYear() === lastD.getFullYear()
+      ? `${firstD.getFullYear()}년 ${firstD.getMonth() + 1}월 ~ ${lastD.getMonth() + 1}월`
+      : `${firstD.getFullYear()}.${firstD.getMonth() + 1} ~ ${lastD.getFullYear()}.${lastD.getMonth() + 1}`;
+    $("hh_months").innerHTML = monthsHtml;
+    $("hh_next").textContent = first && first.start_date ? `체인 시작일 ${formatDateShort(first.start_date)}` : "체인 시작일 -";
+    const doneRows = rows.filter(r => r.is_done && r.completed_date);
+    const delays = doneRows.filter(r => r.start_date).map(r => daysBetween(r.start_date, r.completed_date));
+    const avgDelay = delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : null;
+    $("hh_pct").textContent = `${doneRows.length}회`;
+    $("hh_done").textContent = first && first.start_date ? formatDateShort(first.start_date) : "-";
+    $("hh_avg").textContent = avgDelay === null ? "-" : (avgDelay === 0 ? "모두 딱맞음" : `${avgDelay.toFixed(1)}일`);
+  }
+  $("hh_prev").onclick = () => { hhCursor.setMonth(hhCursor.getMonth() - 3); renderHistoryModal(); };
+  $("hh_next_btn").onclick = () => { hhCursor.setMonth(hhCursor.getMonth() + 3); renderHistoryModal(); };
   $("habitHistoryCloseBtn").onclick = () => $("habitHistoryBg").classList.remove("open");
 
   // 습관 체크를 "오늘"이 아닌 다른 날짜(과거·미래)에도 할 수 있게 일반화한 버전.
@@ -1761,11 +1852,19 @@
   // 다가오는 계획 각 날짜 점 색상(장식용, 항목 있는 날만 색이 돌아가며 붙고 빈 날은 회색)
   const PLAN_DAY_DOTS = ["#4a90e2", "#f5a742", "#a56cf0", "#3fae6a", "#e2678a"];
 
+  // 지난 날짜에 남아있는 미완료 할일 — "오늘" 화면을 볼 때만, 원래 start_date는 안 건드리고 오늘 화면에도
+  // 같이 보여줌(7-4단계, 결 확인대로 실제 날짜는 이동 안 시킴). 다른 날짜(어제/내일 등)를 넘겨서 볼 땐 안 섞임.
+  function overdueTodosForToday(dateStr) {
+    if (dateStr !== todayStr()) return [];
+    return todos.filter(td => !td.is_done && td.start_date && td.start_date < dateStr);
+  }
+
   // "하루종일": 그 날짜에 걸친 할일(시간 없음) + 시간 없는 일정 + 시간 없는 습관
   async function renderAgendaAllDay() {
     const dateStr = homeAgendaDate;
     $("agendaDateLabel").textContent = formatDate(dateStr);
-    const dayTodos = todos.filter(td => td.start_date === dateStr && !td.todo_time);
+    const overdueUntimed = overdueTodosForToday(dateStr).filter(td => !td.todo_time);
+    const dayTodos = [...todos.filter(td => td.start_date === dateStr && !td.todo_time), ...overdueUntimed];
     const dayUntimedEvents = events.filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr && !e.event_time);
     const doneSetAll = await fetchLogsForDate(dateStr);
     const untimedHabits = tasks.filter(t => t.is_active && t.start_minute == null && isHabitDueOnDate(t, dateStr, doneSetAll.has(t.id)));
@@ -1798,6 +1897,7 @@
         <div class="${rowCls} ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo"${tlStyle ? ` style="${itemTagBgStyle("todo", td.tag_id)}"` : ""}>
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="agenda-todo-check" />
           <span class="agenda-title">${escapeHtml(td.title)}</span>
+          ${td.start_date !== dateStr ? `<span class="habit-due-chip due-overdue">${daysBetween(td.start_date, dateStr)}일 지남</span>` : ""}
         </div>`),
     ];
     // 비어있을 땐 안내문구 자체가 곧 클릭해서 추가하는 빈칸(안내문+추가버튼 따로 안 두고 하나로 합침),
@@ -2030,10 +2130,12 @@
       kind: "event", id: e.id, name: e.title,
       start_minute: hhmmToMinutes(e.event_time), duration_minutes: e.duration_minutes || 30, done: false, cat_id: e.category_id,
     }));
-    const dayTimedTodos = todos.filter(td => td.todo_time && td.start_date === dateStr);
+    const overdueTimed = overdueTodosForToday(dateStr).filter(td => td.todo_time);
+    const dayTimedTodos = [...todos.filter(td => td.todo_time && td.start_date === dateStr), ...overdueTimed];
     const todoItems = dayTimedTodos.map(td => ({
       kind: "todo", id: td.id, name: td.title,
       start_minute: hhmmToMinutes(td.todo_time.slice(0, 5)), duration_minutes: td.duration_minutes || 30, done: td.is_done, cat_id: td.tag_id,
+      overdue: td.start_date !== dateStr ? daysBetween(td.start_date, dateStr) : null,
     }));
     return [...habitItems, ...eventItems, ...todoItems].sort((a, b) => a.start_minute - b.start_minute);
   }
@@ -2058,6 +2160,7 @@
     return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
       ${lead}
       <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
+      ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
     </div>`;
   }
@@ -3110,11 +3213,14 @@
     const isTodo = item._kind === "todo";
     const tagColor = !item.is_done ? itemTagColor(isTodo ? "todo" : "someday", item.tag_id) : null;
     const dateBadge = isTodo && item.start_date ? `<span class="todo-date-badge">${formatDateShort(item.start_date)}</span>` : "";
+    // 반복 할일만 기록(달력+통계) 보기 버튼 노출(2026-09-13, 7-2단계) — 습관 탭 🗓와 같은 모달 재사용.
+    const historyBtn = isTodo && item.repeat_unit ? `<button class="historybtn tu-history" title="기록 보기">🗓</button>` : "";
     return `
     <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}" data-kind="${item._kind}">
       <input type="checkbox" ${item.is_done?"checked":""} class="tu-check" />
       ${dateBadge}
       <span class="someday-title tu-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
+      ${historyBtn}
       <button class="del tu-del">삭제</button>
     </div>`;
   }
@@ -3134,6 +3240,13 @@
           if (item) item.is_done = cb.checked;
           renderTodosPage();
         }
+      };
+    });
+    document.querySelectorAll("#todoUnifiedList .tu-history").forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const row = btn.closest("[data-id]");
+        openTodoHistory(row.dataset.id);
       };
     });
     document.querySelectorAll("#todoUnifiedList .tu-del").forEach(btn => {
@@ -3985,16 +4098,11 @@
         input.addEventListener("blur", commit);
       };
     });
-    // 오른쪽 클릭 → 삭제 메뉴
+    // 오른쪽 클릭 → "오늘 하기"(밀렸거나 오늘 예정일 때만) + 삭제 메뉴 (09-13 7-3단계)
     document.querySelectorAll("#todoList .todo-row").forEach(row => {
       row.oncontextmenu = (e) => {
         e.preventDefault();
-        showDeleteMenu(e.clientX, e.clientY, async () => {
-          if (!confirm("이 습관을 삭제할까요? (기록도 함께 삭제돼요)")) return;
-          const { error } = await sb.from("tok_habits").delete().eq("id", row.dataset.id);
-          if (error) { alert("삭제 실패: " + error.message); return; }
-          await loadAll();
-        });
+        showHabitRowMenu(e.clientX, e.clientY, row.dataset.id);
       };
     });
   }
@@ -4094,6 +4202,41 @@
       document.addEventListener("click", closeOnOutside);
       document.addEventListener("contextmenu", closeOnOutside);
     }, 0);
+  }
+
+  // 습관 탭 목록 항목 오른쪽 클릭 메뉴(09-13 7-3단계 신규) — 습관 탭엔 체크박스가 없어서 지금까진 집 화면에서만
+  // 완료 체크가 가능했음. 오늘이 예정일이거나 밀린(habitOverdueDays !== null) 진행중 습관에만 "오늘 하기"를 보여주고,
+  // 고르면 toggleHabitForDate로 오늘 날짜 완료 기록을 남김(집 화면 체크와 완전히 같은 로직 재사용).
+  function showHabitRowMenu(x, y, habitId) {
+    document.querySelector(".ctx-menu")?.remove();
+    const t = tasks.find(x2 => x2.id === habitId);
+    const todayS = todayStr();
+    const canDoToday = t && habitsTabView === "active" && t.repeat_unit && habitOverdueDays(t, todayS) !== null;
+    const menu = document.createElement("div");
+    menu.className = "ctx-menu";
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+    menu.innerHTML = (canDoToday ? `<button type="button" class="default" data-act="today">오늘 하기</button>` : "")
+      + `<button type="button" data-act="delete">삭제</button>`;
+    document.body.appendChild(menu);
+    positionCtxMenu(menu, x, y);
+    const todayBtn = menu.querySelector('[data-act="today"]');
+    if (todayBtn) {
+      todayBtn.onclick = async (e) => {
+        e.stopPropagation();
+        menu.remove();
+        await toggleHabitForDate(habitId, true, todayS);
+      };
+    }
+    menu.querySelector('[data-act="delete"]').onclick = async (e) => {
+      e.stopPropagation();
+      menu.remove();
+      if (!confirm("이 습관을 삭제할까요? (기록도 함께 삭제돼요)")) return;
+      const { error } = await sb.from("tok_habits").delete().eq("id", habitId);
+      if (error) { alert("삭제 실패: " + error.message); return; }
+      await loadAll();
+    };
+    attachCtxMenuOutsideClose(menu);
   }
 
   function attachCtxMenuOutsideClose(menu) {
@@ -4301,6 +4444,9 @@
       const startVal = $("idt_date").value;
       if (!startVal) { alert("시작 날짜를 입력해주세요."); return; }
       patch = { start_date: startVal, end_date: $("idt_end").value || null, todo_time: timeVal ? timeVal + ":00" : null, repeat_unit, repeat_interval, repeat_days };
+      // 반복이 없던 할일에 여기서 새로 반복을 켜면, 이 할일 자신을 체인의 시작점으로 삼음(2026-09-13, 7-2단계).
+      const currentTodo = todos.find(t => t.id === id);
+      if (repeat_unit && currentTodo && !currentTodo.repeat_chain_id) patch.repeat_chain_id = id;
     } else if (kind === "event") {
       const dateVal = $("idt_date").value;
       if (!dateVal) { alert("날짜를 입력해주세요."); return; }
