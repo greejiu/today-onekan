@@ -304,6 +304,10 @@
   .habit-due-chip.due-overdue{background:#fde2e2;color:#c0392b;}
   .habit-due-chip.due-today{background:#dce9fb;color:#2f6fd1;}
   .habit-due-chip.due-upcoming{background:#e8ecf5;color:#4a5a7a;}
+  /* 집 화면 미완료 알림 배너(2026-09-13, 6단계) — 하루 첫 접속 시 1번만, 닫으면 그날은 다시 안 뜸 */
+  .home-incomplete-banner{display:flex;align-items:center;gap:8px;background:#fde2e2;color:#c0392b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;}
+  .home-incomplete-banner .txt{flex:1;min-width:0;}
+  .home-incomplete-banner .close{border:none;background:none;color:#c0392b;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px;flex-shrink:0;}
   /* 할일/습관 목록 공용: 정렬/그룹화 그룹 섹션 제목, 할일 날짜 배지(2026-09-12) */
   .list-section-head{font-size:12px;font-weight:600;color:var(--sub);margin:14px 2px 6px;}
   .list-section-head:first-child{margin-top:2px;}
@@ -446,6 +450,11 @@
       <!-- 집 -->
       <div class="page" data-page="home">
         <div class="pagehead"><h2>🏠 집</h2></div>
+
+        <div class="home-incomplete-banner" id="homeIncompleteBanner" style="display:none;">
+          <span class="txt" id="homeIncompleteBannerText"></span>
+          <button type="button" class="close" id="homeIncompleteBannerClose">✕</button>
+        </div>
 
         <div class="home-grid" id="homeFocusRow" style="margin-bottom:14px;">
           <div class="focus-card card" id="focusTaskCard">
@@ -1300,7 +1309,32 @@
     renderPlanUpcomingBoard();
     renderSomedaySummary();
     populateFocusTimerSelect();
+    renderIncompleteBanner();
   }
+
+  // ── 집 화면 미완료 알림 배너(2026-09-13, 6단계) ──
+  // "오늘 것 + 밀린 것" 할일·습관이 하나라도 남아있으면 배너로 보여줌. "하루 1번"은 localStorage에
+  // 오늘 날짜를 적어두고, 이미 그 날짜로 닫은 적 있으면(=오늘 한 번 넘겼으면) 다시 안 띄우는 방식으로 구현
+  // (탭별 정렬·그룹화 설정을 localStorage에 기억하는 기존 방식과 동일한 패턴 — 기기별로만 기억되면 충분한 UX 값).
+  function incompleteBannerDismissedToday() {
+    try { return localStorage.getItem("tok_incompleteBannerDismissed") === todayStr(); } catch (e) { return false; }
+  }
+  function renderIncompleteBanner() {
+    const banner = $("homeIncompleteBanner");
+    if (!banner) return;
+    if (incompleteBannerDismissedToday()) { banner.style.display = "none"; return; }
+    const todayS = todayStr();
+    const todoCount = todos.filter(t => !t.is_done && t.start_date && t.start_date <= todayS).length;
+    const habitCount = tasks.filter(t => habitLifecycleState(t, todayS) === "active" && habitOverdueDays(t, todayS) !== null).length;
+    const total = todoCount + habitCount;
+    if (total === 0) { banner.style.display = "none"; return; }
+    $("homeIncompleteBannerText").textContent = `오늘 할 일이 아직 ${total}개 남았어요 (할일 ${todoCount}개 · 습관 ${habitCount}개)`;
+    banner.style.display = "flex";
+  }
+  $("homeIncompleteBannerClose").onclick = () => {
+    try { localStorage.setItem("tok_incompleteBannerDismissed", todayStr()); } catch (e) {}
+    $("homeIncompleteBanner").style.display = "none";
+  };
 
   // ── 집 : 포커스 타이머(뽀모도로 아닌 진짜 스톱워치) ──
   // 실행 중에도 loadAll()이 자주 다시 호출되지만(체크박스 등), 이 카드의 DOM은 renderHome()이 건드리지 않는 별도 영역이라
