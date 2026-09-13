@@ -328,22 +328,29 @@
   .historybtn{border:1px solid var(--line);background:#fff;border-radius:999px;font-size:12px;width:26px;height:26px;line-height:1;cursor:pointer;color:var(--sub);flex-shrink:0;}
 
   /* ── 습관 기록(히스토리) 캘린더 ── */
-  .habit-history-summary{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 14px;}
-  .habit-history-summary strong{font-size:20px;display:block;}
-  .habit-history-summary span{color:var(--sub);font-size:11px;}
-  .habit-history-summary b{font-size:12px;color:var(--accent);font-weight:600;}
+  /* 2026-09-13(7단계): 이번 달 완료 횟수 1개짜리 요약 → 시작일부터 지금까지 누적 통계(달성률/완료/평균 지연)
+     3개짜리 카드로 확장, 1달씩 넘기던 걸 3달씩 한 번에 보여주는 걸로 변경(hh_months에 month-block 3개). */
+  .habit-history-summary{display:flex;gap:8px;padding:2px 2px 10px;}
+  .hh-stat{flex:1;text-align:center;background:var(--bg);border-radius:10px;padding:8px 4px;}
+  .hh-stat strong{font-size:16px;display:block;}
+  .hh-stat span{color:var(--sub);font-size:10px;}
+  .habit-history-next{font-size:11px;color:var(--sub);margin-bottom:10px;}
   .habit-history-nav{display:grid;grid-template-columns:32px 1fr 32px;align-items:center;margin-bottom:8px;}
   .habit-history-nav button{border:none;background:none;font-size:18px;color:var(--sub);cursor:pointer;height:32px;border-radius:8px;}
   .habit-history-nav button:hover{background:var(--accent-soft);color:var(--accent);}
   .habit-history-nav strong{text-align:center;font-size:13px;}
+  .hh-month-block{margin-bottom:16px;}
+  .hh-month-block:last-child{margin-bottom:0;}
+  .hh-month-label{font-size:12px;font-weight:600;color:var(--sub);margin-bottom:4px;text-align:center;}
   .habit-history-weekdays,.habit-history-grid{display:grid;grid-template-columns:repeat(7,1fr);}
   .habit-history-weekdays{color:var(--sub);font-size:10px;text-align:center;margin-bottom:4px;}
   .habit-history-weekdays span{padding:4px 0;}
   .habit-history-grid{gap:4px;}
   .habit-history-day{position:relative;aspect-ratio:1;display:grid;place-items:center;border-radius:8px;font-size:11px;color:var(--sub);}
   .habit-history-day.blank{visibility:hidden;}
-  .habit-history-day.scheduled{background:var(--bg);color:var(--text);border:1px solid var(--line);}
-  .habit-history-day.completed{background:var(--accent-soft);color:var(--accent);font-weight:700;}
+  /* 해야 할 날(예정일인데 아직 미완료) = 연한 빨강, 체크된 날 = 연한 초록 — 결님 확정 색상 규칙(2026-09-13) */
+  .habit-history-day.due-missed{background:#fde2e2;color:#c0392b;}
+  .habit-history-day.completed{background:#dcf5e3;color:#1e8a45;font-weight:700;}
   .habit-history-day.today{box-shadow:inset 0 0 0 1.5px var(--accent);}
   .habit-history-check{position:absolute;bottom:0;right:2px;font-size:8px;}
   .habit-history-note{font-size:11px;color:var(--sub);margin-top:12px;line-height:1.5;}
@@ -807,17 +814,18 @@
   <div class="sheet">
     <h2 id="hh_title">습관 기록</h2>
     <div class="habit-history-summary">
-      <div><strong id="hh_count">0회</strong><span>이번 달 완료</span></div>
-      <b id="hh_next">다음 예정 없음</b>
+      <div class="hh-stat"><strong id="hh_pct">-</strong><span>달성률</span></div>
+      <div class="hh-stat"><strong id="hh_done">0/0</strong><span>완료</span></div>
+      <div class="hh-stat"><strong id="hh_avg">-</strong><span>평균 지연</span></div>
     </div>
+    <div class="habit-history-next" id="hh_next">다음 예정 없음</div>
     <div class="habit-history-nav">
-      <button type="button" id="hh_prev" aria-label="이전 달">‹</button>
+      <button type="button" id="hh_prev" aria-label="이전 3개월">‹</button>
       <strong id="hh_month"></strong>
-      <button type="button" id="hh_next_btn" aria-label="다음 달">›</button>
+      <button type="button" id="hh_next_btn" aria-label="다음 3개월">›</button>
     </div>
-    <div class="habit-history-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-    <div class="habit-history-grid" id="hh_grid"></div>
-    <div class="habit-history-note">다음 예정일은 마지막 완료일을 기준으로 계산돼요.</div>
+    <div id="hh_months"></div>
+    <div class="habit-history-note">시작일 기준 고정 주기예요 — 완료 여부와 무관하게 다음 예정일이 정해져요.</div>
     <div class="sheet-actions">
       <button class="btn-ghost" id="habitHistoryCloseBtn">닫기</button>
     </div>
@@ -1579,10 +1587,51 @@
     return habitEffectiveStartDate(habit) || dateStr;
   }
 
-  // ── 습관 기록(히스토리) 보기: 월별 캘린더로 완료 이력 확인 ──
-  // (onekan v1의 habit-history-view.js를 참고 — 완료일 체크 표시 + 다음 예정일 강조)
+  // 습관의 예정 회차(occurrence)를 [fromStr, toStr] 범위 안에서 전부 나열 — 기록 달력의 "해야 할 날" 표시,
+  // 통계(총 회차 수)용(2026-09-13, 7단계). 반복 없는 습관은 회차 개념이 없어 빈 배열.
+  function habitOccurrencesInRange(habit, fromStr, toStr) {
+    if (!habit.repeat_unit) return [];
+    const start = habitEffectiveStartDate(habit);
+    if (!start || start > toStr) return [];
+    const result = [];
+    let occ = start;
+    while (occ <= toStr) {
+      if (occ >= fromStr) result.push(occ);
+      occ = nextRepeatDateStr(occ, habit.repeat_unit, habit.repeat_interval, habit.repeat_days);
+    }
+    return result;
+  }
+  // 시작일부터 오늘(종료됐으면 종료일)까지 전체 누적 통계 — 총 회차/완료 회차/달성률/평균 지연일(2026-09-13, 7단계).
+  // "완료"는 각 회차별로 habitDoneSinceOccurrence(기존 앵커 로직과 완전히 같은 기준)로 판정해서, 이미 다른
+  // 곳에서 쓰는 "밀림/완료" 판정과 항상 일치하게 함. 지연일은 그 회차를 만족시킨 가장 이른 완료 기록 기준.
+  function habitOverallStats(habit) {
+    if (!habit.repeat_unit) return null;
+    const today = todayStr();
+    const endBound = habit.end_date && habit.end_date < today ? habit.end_date : today;
+    const start = habitEffectiveStartDate(habit);
+    if (!start || start > endBound) return { total: 0, done: 0, pct: 0, avgDelay: null };
+    const occs = habitOccurrencesInRange(habit, start, endBound);
+    let done = 0;
+    const delays = [];
+    for (const occ of occs) {
+      if (habitDoneSinceOccurrence(habit.id, occ)) {
+        done++;
+        const satisfying = habitLogs.filter(r => r.habit_id === habit.id && r.done_date >= occ)
+          .sort((a, b) => a.done_date < b.done_date ? -1 : 1)[0];
+        if (satisfying) delays.push(daysBetween(occ, satisfying.done_date));
+      }
+    }
+    const total = occs.length;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    const avgDelay = delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : null;
+    return { total, done, pct, avgDelay };
+  }
+
+  // ── 습관 기록(히스토리) 보기: 3개월씩 페이지 넘김 + 누적 통계(2026-09-13, 7단계 개편) ──
+  // (onekan v1의 habit-history-view.js를 참고 — 완료일 체크 표시 + 다음 예정일 강조. 원래는 1달씩+이번 달
+  // 완료횟수만 보여줬는데, 결님 요청으로 3달씩 페이지 넘김 + "총 N개 중 M개 완료/달성률/평균 지연일" 통계로 확장)
   let hhTask = null;
-  let hhCursor = new Date();
+  let hhCursor = new Date(); // 이 값이 속한 3개월 묶음의 첫 달 기준으로 씀
   function habitCompletionDates(habitId) {
     return new Set(habitLogs.filter(r => r.habit_id === habitId).map(r => r.done_date));
   }
@@ -1595,37 +1644,67 @@
     renderHabitHistory();
     $("habitHistoryBg").classList.add("open");
   }
-  function renderHabitHistory() {
-    if (!hhTask) return;
-    const year = hhCursor.getFullYear(), month = hhCursor.getMonth();
+  function renderHabitMonthGrid(year, month, doneDates, dueDates, today) {
     const lastDay = new Date(year, month + 1, 0).getDate();
     const firstDow = new Date(year, month, 1).getDay();
-    const today = todayStr();
-    const doneDates = habitCompletionDates(hhTask.id);
-    const nextDate = hhTask.repeat_unit ? habitNextDueAfter(hhTask, today) : null;
-    let completed = 0, html = "";
+    let html = `<div class="hh-month-label">${year}년 ${month + 1}월</div>
+      <div class="habit-history-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+      <div class="habit-history-grid">`;
     for (let i = 0; i < firstDow; i++) html += `<div class="habit-history-day blank"></div>`;
     for (let d = 1; d <= lastDay; d++) {
       const dateStr = `${year}-${pad2(month + 1)}-${pad2(d)}`;
       const done = doneDates.has(dateStr);
-      const scheduled = dateStr === nextDate;
-      if (done) completed++;
+      const due = dueDates.has(dateStr);
       const classes = ["habit-history-day"];
-      if (scheduled) classes.push("scheduled");
       if (done) classes.push("completed");
+      else if (due) classes.push("due-missed");
       if (dateStr === today) classes.push("today");
       html += `<div class="${classes.join(" ")}"><span>${d}</span>${done ? '<span class="habit-history-check">✓</span>' : ""}</div>`;
     }
-    $("hh_title").textContent = hhTask.name || "습관 기록";
-    $("hh_month").textContent = `${year}년 ${month + 1}월`;
-    $("hh_count").textContent = `${completed}회`;
-    $("hh_next").textContent = nextDate
-      ? `다음 ${Number(nextDate.slice(5, 7))}/${Number(nextDate.slice(8, 10))}`
-      : (hhTask.repeat_unit ? "반복 종료" : "반복 없음");
-    $("hh_grid").innerHTML = html;
+    html += `</div>`;
+    return html;
   }
-  $("hh_prev").onclick = () => { hhCursor.setMonth(hhCursor.getMonth() - 1); renderHabitHistory(); };
-  $("hh_next_btn").onclick = () => { hhCursor.setMonth(hhCursor.getMonth() + 1); renderHabitHistory(); };
+  function renderHabitHistory() {
+    if (!hhTask) return;
+    const baseYear = hhCursor.getFullYear(), baseMonth = hhCursor.getMonth();
+    const today = todayStr();
+    const doneDates = habitCompletionDates(hhTask.id);
+    const firstD = new Date(baseYear, baseMonth, 1);
+    const lastD = new Date(baseYear, baseMonth + 2, 1);
+    const rangeStart = `${firstD.getFullYear()}-${pad2(firstD.getMonth() + 1)}-01`;
+    const rangeEndDate = new Date(baseYear, baseMonth + 3, 0);
+    const rangeEnd = `${rangeEndDate.getFullYear()}-${pad2(rangeEndDate.getMonth() + 1)}-${pad2(rangeEndDate.getDate())}`;
+    // "해야 할 날"(빨강)은 이미 지난(오늘 포함) 예정일만 — 아직 안 온 미래 예정일은 아직 밀린 게 아니니 표시 안 함.
+    const dueDates = hhTask.repeat_unit
+      ? new Set(habitOccurrencesInRange(hhTask, rangeStart, rangeEnd).filter(d => d <= today))
+      : new Set();
+    let monthsHtml = "";
+    for (let i = 0; i < 3; i++) {
+      const d = new Date(baseYear, baseMonth + i, 1);
+      monthsHtml += `<div class="hh-month-block">${renderHabitMonthGrid(d.getFullYear(), d.getMonth(), doneDates, dueDates, today)}</div>`;
+    }
+    $("hh_title").textContent = hhTask.name || "습관 기록";
+    $("hh_month").textContent = firstD.getFullYear() === lastD.getFullYear()
+      ? `${firstD.getFullYear()}년 ${firstD.getMonth() + 1}월 ~ ${lastD.getMonth() + 1}월`
+      : `${firstD.getFullYear()}.${firstD.getMonth() + 1} ~ ${lastD.getFullYear()}.${lastD.getMonth() + 1}`;
+    $("hh_months").innerHTML = monthsHtml;
+    const nextDate = hhTask.repeat_unit ? habitNextDueAfter(hhTask, today) : null;
+    $("hh_next").textContent = nextDate
+      ? `다음 예정일 ${Number(nextDate.slice(5, 7))}/${Number(nextDate.slice(8, 10))}`
+      : (hhTask.repeat_unit ? "반복 종료" : "반복 없음");
+    const stats = habitOverallStats(hhTask);
+    if (stats && stats.total > 0) {
+      $("hh_pct").textContent = `${stats.pct}%`;
+      $("hh_done").textContent = `${stats.done}/${stats.total}`;
+      $("hh_avg").textContent = stats.avgDelay === null ? "-" : (stats.avgDelay === 0 ? "모두 딱맞음" : `${stats.avgDelay.toFixed(1)}일`);
+    } else {
+      $("hh_pct").textContent = "-";
+      $("hh_done").textContent = "0/0";
+      $("hh_avg").textContent = "-";
+    }
+  }
+  $("hh_prev").onclick = () => { hhCursor.setMonth(hhCursor.getMonth() - 3); renderHabitHistory(); };
+  $("hh_next_btn").onclick = () => { hhCursor.setMonth(hhCursor.getMonth() + 3); renderHabitHistory(); };
   $("habitHistoryCloseBtn").onclick = () => $("habitHistoryBg").classList.remove("open");
 
   // 습관 체크를 "오늘"이 아닌 다른 날짜(과거·미래)에도 할 수 있게 일반화한 버전.
