@@ -189,10 +189,8 @@
   .home-col-head{margin-bottom:10px;}
   .home-col-head .title{font-size:13px;font-weight:700;color:var(--text);text-align:center;}
   @media (max-width:900px){ .home-grid{grid-template-columns:1fr;} }
-  /* 지금 할 일 카드와 포커스 타이머 카드는 둘 중 더 긴 쪽 높이에 항상 맞춰지도록(그리드 stretch로 통일).
-     8-1단계: 포커스 탭으로 이동하면서 #homeFocusRow → .page[data-page="focus"] .home-grid로 셀렉터 갱신. */
-  .page[data-page="focus"] .home-grid{align-items:stretch;}
-  .page[data-page="focus"] .home-grid .focus-card{display:flex;flex-direction:column;}
+  /* 8-6단계: "지금 할일" 카드는 집으로 되돌아가고 포커스 탭엔 타이머 카드 하나만 남아서(더 이상 2열로 나란히
+     안 놓임) 위 정렬 규칙은 필요 없어짐 — .focus-card 자체 스타일만으로 충분해서 별도 규칙 없이 정리함. */
   .agenda-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .agenda-date-wrap{display:flex;align-items:center;gap:6px;}
   .agenda-date-emoji{font-size:13px;}
@@ -479,54 +477,55 @@
           <button type="button" class="close" id="homeHabitBannerClose">✕</button>
         </div>
 
-        <!-- 2026-09-13 8-2단계: 포커스 타이머가 빠지며 생긴 자리에 "언젠가"를 올리고, "다가오는 계획" 보드는 완전히 제거.
-             그 결과 타임블럭/타임라인 카드가 2열 그리드에서 벗어나 전체 폭을 씀(8-3단계 3일/7일 뷰를 위한 공간 확보). -->
-        <div class="home-col" id="somedayHomeCol" style="margin-bottom:14px;">
-          <div class="home-col-head">
-            <div class="title">언젠가</div>
-          </div>
-          <div class="someday-toolbar">
-            <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
-          </div>
-          <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
-          <div id="somedayZone">
-            <div id="somedaySummaryList"></div>
-          </div>
+        <!-- 2026-09-13 8-6단계(결 피드백 반영): "지금 할일" 카드는 8-1단계에서 포커스 탭으로 잘못 같이 옮겨진 것이라
+             다시 집으로 되돌림(포커스 타이머만 포커스 탭에 남음). 타임블럭 보기는 제거하고 타임라인만 남김,
+             언젠가는 원래처럼 타임라인과 나란히 2열로 되돌림(8-2단계에서 잠깐 상단 단독 카드였던 걸 되돌림). -->
+        <div class="focus-card card" id="focusTaskCard" style="margin-bottom:14px;">
+          <div class="focus-head"><span id="focusTaskTitle">지금 할 일</span></div>
+          <div id="focusTaskBody"></div>
         </div>
 
-        <div class="home-col">
-          <div class="agenda-head">
-            <button id="agendaPrevBtn" class="agenda-nav">‹</button>
-            <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
-            <button id="agendaNextBtn" class="agenda-nav">›</button>
-          </div>
-
-          <div class="view-toggle-row" style="margin-top:10px;">
-            <div class="view-toggle">
-              <button id="agendaViewBlockBtn" class="active">타임블럭</button>
-              <button id="agendaViewTimelineBtn">타임라인</button>
+        <div class="home-grid">
+          <div class="home-col">
+            <div class="agenda-head">
+              <button id="agendaPrevBtn" class="agenda-nav">‹</button>
+              <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
+              <button id="agendaNextBtn" class="agenda-nav">›</button>
             </div>
-            <button id="agendaTodayBtn" class="today-btn">오늘</button>
+
+            <!-- 8-6단계: 타임블럭/타임라인 전환 토글은 제거(타임블럭 보기 자체를 없앰) — 1일/3일/7일 토글만 남김 -->
+            <div class="view-toggle-row" style="margin-top:10px;">
+              <div class="view-toggle" id="agendaDayCountToggle">
+                <button type="button" data-days="1">1일</button>
+                <button type="button" data-days="3" class="active">3일</button>
+                <button type="button" data-days="7">7일</button>
+              </div>
+              <button id="agendaTodayBtn" class="today-btn">오늘</button>
+            </div>
+
+            <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
+              <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
+              <span class="count" id="agendaAllDayCount" style="display:none;"></span>
+            </div>
+            <div id="agendaAllDayZone">
+              <div class="ag-mday-row" id="agendaAllDayList"></div>
+            </div>
+
+            <div id="agendaTimeWrap" style="margin-top:12px;"></div>
           </div>
 
-          <!-- 8-3단계: 1일/3일/7일 보기 전환 (기본 3일) -->
-          <div class="view-toggle-row" style="margin-top:6px;">
-            <div class="view-toggle" id="agendaDayCountToggle">
-              <button type="button" data-days="1">1일</button>
-              <button type="button" data-days="3" class="active">3일</button>
-              <button type="button" data-days="7">7일</button>
+          <div class="home-col" id="somedayHomeCol">
+            <div class="home-col-head">
+              <div class="title">언젠가</div>
+            </div>
+            <div class="someday-toolbar">
+              <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
+            </div>
+            <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
+            <div id="somedayZone">
+              <div id="somedaySummaryList"></div>
             </div>
           </div>
-
-          <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
-            <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
-            <span class="count" id="agendaAllDayCount" style="display:none;"></span>
-          </div>
-          <div id="agendaAllDayZone">
-            <div class="ag-mday-row" id="agendaAllDayList"></div>
-          </div>
-
-          <div id="agendaTimeWrap" style="margin-top:12px;"></div>
         </div>
       </div>
 
@@ -630,34 +629,30 @@
         </div>
       </div>
 
-      <!-- 포커스 (2026-09-13 8-1단계: 집 화면에 있던 "지금 할 일" 카드 + 포커스 타이머 카드를 별도 탭으로 이동.
-           DOM만 옮겼고 내부 로직(renderFocusCard/wireFocusTimer 등)은 id 기반이라 그대로 재사용 — 변경 없음. -->
+      <!-- 포커스 (2026-09-13 8-1단계: 집 화면에 있던 포커스 타이머 카드를 별도 탭으로 이동.
+           8-6단계: "지금 할일" 카드는 8-1에서 같이 옮겨진 게 결님 원래 의도가 아니었어서 집으로 되돌리고,
+           포커스 타이머 카드만 이 탭에 남김. DOM만 옮겼고 내부 로직(renderFocusCard/wireFocusTimer 등)은
+           id 기반이라 그대로 재사용 — 변경 없음. -->
       <div class="page" data-page="focus" style="display:none;">
         <div class="pagehead"><h2>⏱ 포커스</h2></div>
 
-        <div class="home-grid">
-          <div class="focus-card card" id="focusTaskCard">
-            <div class="focus-head"><span id="focusTaskTitle">지금 할 일</span></div>
-            <div id="focusTaskBody"></div>
+        <!-- 8-6단계: "지금 할일" 카드는 집으로 되돌아가서 이제 포커스 타이머 카드만 이 탭에 남음(단독 카드라 home-grid 불필요). -->
+        <div class="focus-card card" id="focusTimerCard" style="max-width:420px;">
+          <div class="focus-head">⏱ 포커스 타이머</div>
+          <select id="ftSelectTodo" class="ft-select"><option value="">선택 안 함</option></select>
+          <div class="ft-clock-wrap">
+            <div class="ft-clock">
+              <div class="ft-ticks" id="ftClockTicks"></div>
+              <div class="ft-hand ft-hand-hour" id="ftHourHand"></div>
+              <div class="ft-hand ft-hand-min" id="ftMinHand"></div>
+              <div class="ft-clock-center"></div>
+              <div class="ft-elapsed" id="ftElapsed">00:00</div>
+            </div>
           </div>
-
-          <div class="focus-card card" id="focusTimerCard">
-            <div class="focus-head">⏱ 포커스 타이머</div>
-            <select id="ftSelectTodo" class="ft-select"><option value="">선택 안 함</option></select>
-            <div class="ft-clock-wrap">
-              <div class="ft-clock">
-                <div class="ft-ticks" id="ftClockTicks"></div>
-                <div class="ft-hand ft-hand-hour" id="ftHourHand"></div>
-                <div class="ft-hand ft-hand-min" id="ftMinHand"></div>
-                <div class="ft-clock-center"></div>
-                <div class="ft-elapsed" id="ftElapsed">00:00</div>
-              </div>
-            </div>
-            <div class="ft-controls">
-              <button type="button" class="ft-btn ft-btn-primary" id="ftToggleBtn">시작</button>
-              <button type="button" class="ft-btn" id="ftEndBtn" disabled>종료</button>
-              <button type="button" class="ft-btn" id="ftResetBtn" disabled>초기화</button>
-            </div>
+          <div class="ft-controls">
+            <button type="button" class="ft-btn ft-btn-primary" id="ftToggleBtn">시작</button>
+            <button type="button" class="ft-btn" id="ftEndBtn" disabled>종료</button>
+            <button type="button" class="ft-btn" id="ftResetBtn" disabled>초기화</button>
           </div>
         </div>
       </div>
@@ -1522,7 +1517,9 @@
   }
 
   let homeAgendaDate = todayStr();
-  let agendaView = "block"; // "block" | "timeline" — 오늘 열 전용(습관탭의 homeView와는 별개 상태)
+  // 8-6단계: 타임블럭 보기를 없애고 타임라인 하나만 남겨서, "block"으로 바뀌는 경우가 이제 없음(토글 버튼 자체를 지움).
+  // 그래도 renderAgendaTimed/renderAgendaAllDay 등 곳곳에서 이 값을 참조하므로 변수 자체는 남겨두고 "timeline"로 고정.
+  let agendaView = "timeline"; // 항상 "timeline" — 오늘 열 전용(습관탭의 homeView와는 별개 상태)
   // 8-3단계: 집 화면 하루종일/타임블럭/타임라인을 1일 대신 N일(1/3/7)씩 나란히 보여줌.
   // homeAgendaDate는 그 중 "첫째 날"만 가리키고, 나머지 날짜는 agendaWindowDates()가 여기서부터 계산.
   let agendaDayCount = 3; // 1 | 3 | 7
@@ -1911,17 +1908,17 @@
 
       const rows = [
         ...dayUntimedEvents.map(e => `
-          <div class="${rowCls}" data-id="${e.id}" data-kind="event"${tlStyle ? ` style="${itemTagBgStyle("event", e.category_id)}"` : ""}>
+          <div class="${rowCls}" data-id="${e.id}" data-kind="event" data-date="${dateStr}"${tlStyle ? ` style="${itemTagBgStyle("event", e.category_id)}"` : ""}>
             ${tlStyle ? leadBox : eventDotHtml(e.category_id)}
             <span class="agenda-title">${escapeHtml(e.title)}</span>
           </div>`),
         ...untimedHabits.map(t => `
-          <div class="${rowCls} ${doneSet.has(t.id) ? "done" : ""}" data-id="${t.id}" data-kind="habit"${tlStyle ? ` style="${itemTagBgStyle("habit", t.category_id)}"` : ""}>
+          <div class="${rowCls} ${doneSet.has(t.id) ? "done" : ""}" data-id="${t.id}" data-kind="habit" data-date="${dateStr}"${tlStyle ? ` style="${itemTagBgStyle("habit", t.category_id)}"` : ""}>
             <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="ag-habit-check" />
             <span class="agenda-title">${escapeHtml(t.name)}</span>
           </div>`),
         ...dayTodos.map(td => `
-          <div class="${rowCls} ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo"${tlStyle ? ` style="${itemTagBgStyle("todo", td.tag_id)}"` : ""}>
+          <div class="${rowCls} ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo" data-date="${dateStr}"${tlStyle ? ` style="${itemTagBgStyle("todo", td.tag_id)}"` : ""}>
             <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="agenda-todo-check" />
             <span class="agenda-title">${escapeHtml(td.title)}</span>
             ${td.start_date !== dateStr ? `<span class="habit-due-chip due-overdue">${daysBetween(td.start_date, dateStr)}일 지남</span>` : ""}
@@ -2106,12 +2103,12 @@
   }
 
   function attachAgendaAllDayDrag() {
-    let dragEl = null, dragId = null, dragKindAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
+    let dragEl = null, dragId = null, dragKindAttr = null, dragDateAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
 
     document.querySelectorAll(".ag-allday-row[data-id]").forEach(row => {
       row.addEventListener("pointerdown", (e) => {
         if (e.target.closest("input")) return;
-        dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; moved = false; curTarget = null;
+        dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; dragDateAttr = row.dataset.date; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
       });
@@ -2132,14 +2129,17 @@
       });
       const finish = async (e) => {
         if (!dragEl) return;
-        const el = dragEl, id = dragId, kind = dragKindAttr, wasMoved = moved;
-        dragEl = null; dragId = null; dragKindAttr = null; moved = false;
+        const el = dragEl, id = dragId, kind = dragKindAttr, srcDate = dragDateAttr, wasMoved = moved;
+        dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false;
         el.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
         curTarget = null;
         if (!wasMoved) { startAgendaItemInlineEdit(el, id, kind, renderAgendaAllDay); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
-        if (!drop || drop.zone === "today-allday") return; // 이미 하루종일이라 놓아도 변화 없음
+        if (!drop) return;
+        // 8-6단계 버그 수정: 여러 날짜 열이 나란히 있는 지금은 "하루종일" 존이 열마다 따로 있으므로,
+        // zone 문자열만 보고 무조건 무시하면 다른 날짜 열로 옮기는 드래그가 씹힘 — 같은 날짜일 때만 무시.
+        if (drop.zone === "today-allday" && drop.date === srcDate) return; // 같은 날 하루종일이라 놓아도 변화 없음
         await moveItemToZone(kind, id, drop);
       };
       row.addEventListener("pointerup", finish);
@@ -2150,7 +2150,7 @@
       row.addEventListener("pointercancel", () => {
         dragEl?.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
-        dragEl = null; dragId = null; dragKindAttr = null; moved = false; curTarget = null;
+        dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false; curTarget = null;
       });
     });
   }
@@ -2868,20 +2868,8 @@
     homeAgendaDate = todayStr();
     renderAgendaAllDay(); renderAgendaTimed();
   };
-  $("agendaViewBlockBtn").onclick = () => {
-    agendaView = "block";
-    $("agendaViewBlockBtn").classList.add("active");
-    $("agendaViewTimelineBtn").classList.remove("active");
-    renderAgendaTimed();
-    renderAgendaAllDay(); // 하루종일 스타일이 타임블럭/타임라인에 따라 달라지므로 같이 다시 그림
-  };
-  $("agendaViewTimelineBtn").onclick = () => {
-    agendaView = "timeline";
-    $("agendaViewTimelineBtn").classList.add("active");
-    $("agendaViewBlockBtn").classList.remove("active");
-    renderAgendaTimed();
-    renderAgendaAllDay(); // 하루종일 스타일이 타임블럭/타임라인에 따라 달라지므로 같이 다시 그림
-  };
+  // 8-6단계: 타임블럭/타임라인 전환 버튼(agendaViewBlockBtn/agendaViewTimelineBtn) 자체를 없애서
+  // 여기 있던 onclick 배선도 같이 제거함 — agendaView는 위에서 "timeline"으로 고정.
   // 8-3단계: 1일/3일/7일 보기 전환.
   document.querySelectorAll("#agendaDayCountToggle button[data-days]").forEach(btn => {
     btn.onclick = () => {
