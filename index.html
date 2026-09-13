@@ -110,6 +110,12 @@
      크기·색(10px, 연한 회색, 일반 굵기)으로 맞춤(2026-09-08, 결님 정정 — 항목 글씨가 아니라 이 제목 글자였음). */
   .ag-section-head.tl-style .label{font-size:10px;color:var(--sub);font-weight:400;}
   .agenda-empty-block{padding:14px;border-radius:14px;border:1px dashed var(--line);color:var(--sub);font-size:12px;text-align:center;}
+  /* 8-3단계: 하루종일/타임블럭/타임라인 1일/3일/7일 나란히 보기 — 열이 늘어나면 가로 스크롤. */
+  .ag-mday-row{display:flex;gap:10px;align-items:flex-start;overflow-x:auto;padding-bottom:2px;}
+  .ag-allday-col,.ag-block-col,.ag-tl-col{flex:1 1 0;min-width:150px;}
+  .ag-mday-col-head{font-size:11px;font-weight:700;color:var(--sub);text-align:center;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--line);}
+  .ag-mday-col-head.is-today{color:var(--accent);}
+  .ag-mday-col-head .ag-today-tag{font-size:9px;background:var(--accent-soft);border-radius:999px;padding:1px 6px;margin-left:4px;}
   /* 체크박스와 같은 네모 모양·크기·간격으로 통일(할일/습관은 체크박스로 토글, 일정은 늘 범주색으로 차 있는 네모). */
   .agenda-event-dot-wrap{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
   .agenda-event-dot{border-radius:50%;flex-shrink:0;display:inline-block;vertical-align:middle;}
@@ -183,9 +189,10 @@
   .home-col-head{margin-bottom:10px;}
   .home-col-head .title{font-size:13px;font-weight:700;color:var(--text);text-align:center;}
   @media (max-width:900px){ .home-grid{grid-template-columns:1fr;} }
-  /* 지금 할 일 카드와 포커스 타이머 카드는 둘 중 더 긴 쪽 높이에 항상 맞춰지도록(그리드 stretch로 통일). */
-  #homeFocusRow{align-items:stretch;}
-  #homeFocusRow .focus-card{display:flex;flex-direction:column;}
+  /* 지금 할 일 카드와 포커스 타이머 카드는 둘 중 더 긴 쪽 높이에 항상 맞춰지도록(그리드 stretch로 통일).
+     8-1단계: 포커스 탭으로 이동하면서 #homeFocusRow → .page[data-page="focus"] .home-grid로 셀렉터 갱신. */
+  .page[data-page="focus"] .home-grid{align-items:stretch;}
+  .page[data-page="focus"] .home-grid .focus-card{display:flex;flex-direction:column;}
   .agenda-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .agenda-date-wrap{display:flex;align-items:center;gap:6px;}
   .agenda-date-emoji{font-size:13px;}
@@ -447,6 +454,7 @@
       <div class="navitem" data-page="schedule">🗓️ 일정</div>
       <div class="navitem" data-page="todos">✔️ 할일</div>
       <div class="navitem" data-page="habits">🔁 습관</div>
+      <div class="navitem" data-page="focus">⏱ 포커스</div>
       <div class="sidebar-footer">
         <div class="navitem" data-page="settings">⚙ 설정</div>
         <div class="sidebar-user" id="sidebarUserEmail"></div>
@@ -471,83 +479,54 @@
           <button type="button" class="close" id="homeHabitBannerClose">✕</button>
         </div>
 
-        <div class="home-grid" id="homeFocusRow" style="margin-bottom:14px;">
-          <div class="focus-card card" id="focusTaskCard">
-            <div class="focus-head"><span id="focusTaskTitle">지금 할 일</span></div>
-            <div id="focusTaskBody"></div>
+        <!-- 2026-09-13 8-2단계: 포커스 타이머가 빠지며 생긴 자리에 "언젠가"를 올리고, "다가오는 계획" 보드는 완전히 제거.
+             그 결과 타임블럭/타임라인 카드가 2열 그리드에서 벗어나 전체 폭을 씀(8-3단계 3일/7일 뷰를 위한 공간 확보). -->
+        <div class="home-col" id="somedayHomeCol" style="margin-bottom:14px;">
+          <div class="home-col-head">
+            <div class="title">언젠가</div>
           </div>
-
-          <div class="focus-card card" id="focusTimerCard">
-            <div class="focus-head">⏱ 포커스 타이머</div>
-            <select id="ftSelectTodo" class="ft-select"><option value="">선택 안 함</option></select>
-            <div class="ft-clock-wrap">
-              <div class="ft-clock">
-                <div class="ft-ticks" id="ftClockTicks"></div>
-                <div class="ft-hand ft-hand-hour" id="ftHourHand"></div>
-                <div class="ft-hand ft-hand-min" id="ftMinHand"></div>
-                <div class="ft-clock-center"></div>
-                <div class="ft-elapsed" id="ftElapsed">00:00</div>
-              </div>
-            </div>
-            <div class="ft-controls">
-              <button type="button" class="ft-btn ft-btn-primary" id="ftToggleBtn">시작</button>
-              <button type="button" class="ft-btn" id="ftEndBtn" disabled>종료</button>
-              <button type="button" class="ft-btn" id="ftResetBtn" disabled>초기화</button>
-            </div>
+          <div class="someday-toolbar">
+            <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
+          </div>
+          <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
+          <div id="somedayZone">
+            <div id="somedaySummaryList"></div>
           </div>
         </div>
 
-        <div class="home-grid">
-          <!-- 2026-09-12: 1열은 하루종일+타임블럭/타임라인만, 2열은 언젠가 아래에 "다가오는 계획"을 쌓음
-               (결님 요청 — 처음엔 다가오는 계획을 1열 밑에 뒀다가 언젠가 밑으로 다시 옮김).
-               모바일(1단 접힘)에서는 DOM 순서 그대로라 하루종일/타임블럭·타임라인→언젠가→다가오는 계획 순서로 보임. -->
-          <div class="home-col">
-            <div class="agenda-head">
-              <button id="agendaPrevBtn" class="agenda-nav">‹</button>
-              <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
-              <button id="agendaNextBtn" class="agenda-nav">›</button>
-            </div>
-
-            <div class="view-toggle-row" style="margin-top:10px;">
-              <div class="view-toggle">
-                <button id="agendaViewBlockBtn" class="active">타임블럭</button>
-                <button id="agendaViewTimelineBtn">타임라인</button>
-              </div>
-              <button id="agendaTodayBtn" class="today-btn">오늘</button>
-            </div>
-
-            <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
-              <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
-              <span class="count" id="agendaAllDayCount" style="display:none;"></span>
-            </div>
-            <div id="agendaAllDayZone">
-              <div class="agenda-flat" id="agendaAllDayList"></div>
-            </div>
-
-            <div id="agendaTimeWrap" style="margin-top:12px;"></div>
+        <div class="home-col">
+          <div class="agenda-head">
+            <button id="agendaPrevBtn" class="agenda-nav">‹</button>
+            <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
+            <button id="agendaNextBtn" class="agenda-nav">›</button>
           </div>
 
-          <div class="home-col-stack">
-            <div class="home-col">
-              <div class="home-col-head">
-                <div class="title">언젠가</div>
-              </div>
-              <div class="someday-toolbar">
-                <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
-              </div>
-              <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
-              <div id="somedayZone">
-                <div id="somedaySummaryList"></div>
-              </div>
+          <div class="view-toggle-row" style="margin-top:10px;">
+            <div class="view-toggle">
+              <button id="agendaViewBlockBtn" class="active">타임블럭</button>
+              <button id="agendaViewTimelineBtn">타임라인</button>
             </div>
+            <button id="agendaTodayBtn" class="today-btn">오늘</button>
+          </div>
 
-            <div class="home-col">
-              <div class="home-col-head">
-                <div class="title">다가오는 계획</div>
-              </div>
-              <div id="planUpcomingBoard"></div>
+          <!-- 8-3단계: 1일/3일/7일 보기 전환 (기본 3일) -->
+          <div class="view-toggle-row" style="margin-top:6px;">
+            <div class="view-toggle" id="agendaDayCountToggle">
+              <button type="button" data-days="1">1일</button>
+              <button type="button" data-days="3" class="active">3일</button>
+              <button type="button" data-days="7">7일</button>
             </div>
           </div>
+
+          <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
+            <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
+            <span class="count" id="agendaAllDayCount" style="display:none;"></span>
+          </div>
+          <div id="agendaAllDayZone">
+            <div class="ag-mday-row" id="agendaAllDayList"></div>
+          </div>
+
+          <div id="agendaTimeWrap" style="margin-top:12px;"></div>
         </div>
       </div>
 
@@ -651,6 +630,38 @@
         </div>
       </div>
 
+      <!-- 포커스 (2026-09-13 8-1단계: 집 화면에 있던 "지금 할 일" 카드 + 포커스 타이머 카드를 별도 탭으로 이동.
+           DOM만 옮겼고 내부 로직(renderFocusCard/wireFocusTimer 등)은 id 기반이라 그대로 재사용 — 변경 없음. -->
+      <div class="page" data-page="focus" style="display:none;">
+        <div class="pagehead"><h2>⏱ 포커스</h2></div>
+
+        <div class="home-grid">
+          <div class="focus-card card" id="focusTaskCard">
+            <div class="focus-head"><span id="focusTaskTitle">지금 할 일</span></div>
+            <div id="focusTaskBody"></div>
+          </div>
+
+          <div class="focus-card card" id="focusTimerCard">
+            <div class="focus-head">⏱ 포커스 타이머</div>
+            <select id="ftSelectTodo" class="ft-select"><option value="">선택 안 함</option></select>
+            <div class="ft-clock-wrap">
+              <div class="ft-clock">
+                <div class="ft-ticks" id="ftClockTicks"></div>
+                <div class="ft-hand ft-hand-hour" id="ftHourHand"></div>
+                <div class="ft-hand ft-hand-min" id="ftMinHand"></div>
+                <div class="ft-clock-center"></div>
+                <div class="ft-elapsed" id="ftElapsed">00:00</div>
+              </div>
+            </div>
+            <div class="ft-controls">
+              <button type="button" class="ft-btn ft-btn-primary" id="ftToggleBtn">시작</button>
+              <button type="button" class="ft-btn" id="ftEndBtn" disabled>종료</button>
+              <button type="button" class="ft-btn" id="ftResetBtn" disabled>초기화</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 설정 -->
       <div class="page" data-page="settings" style="display:none;">
         <div class="pagehead"><h2>⚙ 설정</h2></div>
@@ -701,6 +712,7 @@
     <div class="navitem" data-page="schedule">🗓️<br/>일정</div>
     <div class="navitem" data-page="todos">✔️<br/>할일</div>
     <div class="navitem" data-page="habits">🔁<br/>습관</div>
+    <div class="navitem" data-page="focus">⏱<br/>포커스</div>
     <div class="navitem" data-page="settings">⚙<br/>설정</div>
   </div>
 </div>
@@ -1511,6 +1523,14 @@
 
   let homeAgendaDate = todayStr();
   let agendaView = "block"; // "block" | "timeline" — 오늘 열 전용(습관탭의 homeView와는 별개 상태)
+  // 8-3단계: 집 화면 하루종일/타임블럭/타임라인을 1일 대신 N일(1/3/7)씩 나란히 보여줌.
+  // homeAgendaDate는 그 중 "첫째 날"만 가리키고, 나머지 날짜는 agendaWindowDates()가 여기서부터 계산.
+  let agendaDayCount = 3; // 1 | 3 | 7
+  function agendaWindowDates() {
+    const arr = [];
+    for (let i = 0; i < agendaDayCount; i++) arr.push(addDaysStr(homeAgendaDate, i));
+    return arr;
+  }
 
   // 특정 날짜에 완료 체크된 습관 id 집합 — habitLogs(전체 이력, loadAll에서 미리 다 받아둠)에서 그때그때 계산.
   async function fetchLogsForDate(dateStr) {
@@ -1817,7 +1837,8 @@
       if (checked) logsToday.add(taskId); else logsToday.delete(taskId);
       renderTodo();
     }
-    if (homeAgendaDate === dateStr) await renderAgendaTimed();
+    // 8-3단계: 지금 보이는 창이 하루가 아니라 여러 날(1/3/7일)일 수 있으므로, 그 창 안의 날짜인지로 확인.
+    if (agendaWindowDates().includes(dateStr)) await renderAgendaTimed();
     await renderPlanUpcomingBoard();
   }
   // 타임블럭 이름표별 점 색상(사용자 스크린샷 시안 참고, 장식용 — tok_time_blocks에 실제 색상 컬럼은 없음). 이모지는 2026-09-06 결님 요청으로 제거.
@@ -1860,15 +1881,12 @@
   }
 
   // "하루종일": 그 날짜에 걸친 할일(시간 없음) + 시간 없는 일정 + 시간 없는 습관
+  // 8-3단계: homeAgendaDate 하루가 아니라 agendaWindowDates()가 계산한 N일(1/3/7)을 나란히(열) 그림.
   async function renderAgendaAllDay() {
-    const dateStr = homeAgendaDate;
-    $("agendaDateLabel").textContent = formatDate(dateStr);
-    const overdueUntimed = overdueTodosForToday(dateStr).filter(td => !td.todo_time);
-    const dayTodos = [...todos.filter(td => td.start_date === dateStr && !td.todo_time), ...overdueUntimed];
-    const dayUntimedEvents = events.filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr && !e.event_time);
-    const doneSetAll = await fetchLogsForDate(dateStr);
-    const untimedHabits = tasks.filter(t => t.is_active && t.start_minute == null && isHabitDueOnDate(t, dateStr, doneSetAll.has(t.id)));
-    const doneSet = doneSetAll;
+    const dates = agendaWindowDates();
+    $("agendaDateLabel").textContent = dates.length > 1
+      ? `${formatDate(dates[0])} ~ ${formatDateShort(dates[dates.length - 1])}`
+      : formatDate(dates[0]);
 
     // 타임라인을 보고 있을 땐 하루종일도 타임라인과 같은 톤(작은 글씨+범주색 옅은 배경)으로 맞추고 동그라미 표시는 없앰
     // (배경색 자체가 구분 역할을 대신 함). 타임블럭을 보고 있을 땐 기존처럼 동그라미로 구분(2026-09-07, 결님 요청 —
@@ -1882,33 +1900,50 @@
     // 동그라미 대신 붙이는 빈 자리(자리만 차지해서 글자 시작 위치를 체크박스 있는 행과 맞춤, 배경 없음)
     const leadBox = `<span class="agenda-event-dot-wrap" style="width:14px;height:14px;"></span>`;
 
-    const rows = [
-      ...dayUntimedEvents.map(e => `
-        <div class="${rowCls}" data-id="${e.id}" data-kind="event"${tlStyle ? ` style="${itemTagBgStyle("event", e.category_id)}"` : ""}>
-          ${tlStyle ? leadBox : eventDotHtml(e.category_id)}
-          <span class="agenda-title">${escapeHtml(e.title)}</span>
-        </div>`),
-      ...untimedHabits.map(t => `
-        <div class="${rowCls} ${doneSet.has(t.id) ? "done" : ""}" data-id="${t.id}" data-kind="habit"${tlStyle ? ` style="${itemTagBgStyle("habit", t.category_id)}"` : ""}>
-          <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="ag-habit-check" />
-          <span class="agenda-title">${escapeHtml(t.name)}</span>
-        </div>`),
-      ...dayTodos.map(td => `
-        <div class="${rowCls} ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo"${tlStyle ? ` style="${itemTagBgStyle("todo", td.tag_id)}"` : ""}>
-          <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="agenda-todo-check" />
-          <span class="agenda-title">${escapeHtml(td.title)}</span>
-          ${td.start_date !== dateStr ? `<span class="habit-due-chip due-overdue">${daysBetween(td.start_date, dateStr)}일 지남</span>` : ""}
-        </div>`),
-    ];
-    // 비어있을 땐 안내문구 자체가 곧 클릭해서 추가하는 빈칸(안내문+추가버튼 따로 안 두고 하나로 합침),
-    // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙여서 더 추가할 수 있게 함.
-    $("agendaAllDayList").innerHTML = rows.length
-      ? rows.join("") + `<div class="block-add-row" data-alladd="1"></div>`
-      : `<div class="agenda-empty-block block-add-row" data-alladd="1">하루종일 항목이 없어요. 눌러서 추가</div>`;
+    let totalCount = 0;
+    const colsHtml = [];
+    for (const dateStr of dates) {
+      const overdueUntimed = overdueTodosForToday(dateStr).filter(td => !td.todo_time);
+      const dayTodos = [...todos.filter(td => td.start_date === dateStr && !td.todo_time), ...overdueUntimed];
+      const dayUntimedEvents = events.filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr && !e.event_time);
+      const doneSet = await fetchLogsForDate(dateStr);
+      const untimedHabits = tasks.filter(t => t.is_active && t.start_minute == null && isHabitDueOnDate(t, dateStr, doneSet.has(t.id)));
+
+      const rows = [
+        ...dayUntimedEvents.map(e => `
+          <div class="${rowCls}" data-id="${e.id}" data-kind="event"${tlStyle ? ` style="${itemTagBgStyle("event", e.category_id)}"` : ""}>
+            ${tlStyle ? leadBox : eventDotHtml(e.category_id)}
+            <span class="agenda-title">${escapeHtml(e.title)}</span>
+          </div>`),
+        ...untimedHabits.map(t => `
+          <div class="${rowCls} ${doneSet.has(t.id) ? "done" : ""}" data-id="${t.id}" data-kind="habit"${tlStyle ? ` style="${itemTagBgStyle("habit", t.category_id)}"` : ""}>
+            <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="ag-habit-check" />
+            <span class="agenda-title">${escapeHtml(t.name)}</span>
+          </div>`),
+        ...dayTodos.map(td => `
+          <div class="${rowCls} ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo"${tlStyle ? ` style="${itemTagBgStyle("todo", td.tag_id)}"` : ""}>
+            <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="agenda-todo-check" />
+            <span class="agenda-title">${escapeHtml(td.title)}</span>
+            ${td.start_date !== dateStr ? `<span class="habit-due-chip due-overdue">${daysBetween(td.start_date, dateStr)}일 지남</span>` : ""}
+          </div>`),
+      ];
+      totalCount += rows.length;
+      // 비어있을 땐 안내문구 자체가 곧 클릭해서 추가하는 빈칸(안내문+추가버튼 따로 안 두고 하나로 합침),
+      // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙여서 더 추가할 수 있게 함.
+      const bodyHtml = rows.length
+        ? rows.join("") + `<div class="block-add-row" data-alladd="${dateStr}"></div>`
+        : `<div class="agenda-empty-block block-add-row" data-alladd="${dateStr}">하루종일 항목이 없어요. 눌러서 추가</div>`;
+      const isToday = dateStr === todayStr();
+      const headHtml = dates.length > 1
+        ? `<div class="ag-mday-col-head${isToday ? " is-today" : ""}">${formatDateShort(dateStr)}${isToday ? ` <span class="ag-today-tag">오늘</span>` : ""}</div>`
+        : "";
+      colsHtml.push(`<div class="ag-allday-col" data-date="${dateStr}">${headHtml}<div class="agenda-flat">${bodyHtml}</div></div>`);
+    }
+    $("agendaAllDayList").innerHTML = colsHtml.join("");
     const allDayCountEl = $("agendaAllDayCount");
     if (allDayCountEl) {
-      allDayCountEl.style.display = rows.length ? "inline-block" : "none";
-      allDayCountEl.textContent = `${rows.length}건`;
+      allDayCountEl.style.display = totalCount ? "inline-block" : "none";
+      allDayCountEl.textContent = `${totalCount}건`;
     }
 
     document.querySelectorAll(".agenda-todo-check").forEach(cb => {
@@ -1921,14 +1956,15 @@
     });
     wireAgendaHabitChecks();
     attachAgendaAllDayDrag();
-    attachAgendaAllDayAddClick();
+    dates.forEach(dateStr => attachAgendaAllDayAddClick(dateStr));
   }
 
   // 하루종일 영역 "+ 추가"/빈칸 → 왼쪽 클릭은 시간 없는 할일 바로 생성(타임블럭의 block-add-row와 동일 패턴),
   // 오른쪽 클릭은 일정/할일/습관 중 고르는 메뉴(showAddKindMenu, 2026-09-12 추가 — 원래 이 구역만 빠져있었음).
+  // dateStr: 이 add-row가 속한 열의 날짜(8-3단계 — 여러 날이 나란히 보이므로 열마다 따로 지정).
   // autoOpenKind: 지정돼 있으면 붙자마자 그 종류로 바로 입력창을 염(엔터로 연달아 추가할 때, 마우스로 다시 안 눌러도 되게).
-  function attachAgendaAllDayAddClick(autoOpenKind) {
-    const row = document.querySelector('#agendaAllDayList .block-add-row[data-alladd]');
+  function attachAgendaAllDayAddClick(dateStr, autoOpenKind) {
+    const row = document.querySelector(`#agendaAllDayList .block-add-row[data-alladd="${dateStr}"]`);
     if (!row) return;
     const openInput = (kind) => { // kind: "todo" | "event" | "habit"
       const wrap = document.createElement("div");
@@ -1947,16 +1983,16 @@
         let error;
         if (kind === "habit") {
           ({ error } = await sb.from("tok_habits").insert({
-            name, start_date: homeAgendaDate, repeat_unit: "day", repeat_interval: 1,
+            name, start_date: dateStr, repeat_unit: "day", repeat_interval: 1,
           }));
         } else if (kind === "event") {
-          ({ error } = await sb.from("tok_events").insert({ title: name, event_date: homeAgendaDate }));
+          ({ error } = await sb.from("tok_events").insert({ title: name, event_date: dateStr }));
         } else {
-          ({ error } = await sb.from("tok_todos").insert({ title: name, start_date: homeAgendaDate, todo_time: null }));
+          ({ error } = await sb.from("tok_todos").insert({ title: name, start_date: dateStr, todo_time: null }));
         }
         if (error) { alert("저장 실패: " + error.message); done = false; return; }
         await loadAll();
-        if (reopen) attachAgendaAllDayAddClick(kind);
+        if (reopen) attachAgendaAllDayAddClick(dateStr, kind);
       };
       input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") { e.preventDefault(); commit(true); }
@@ -1974,7 +2010,10 @@
 
   // 집 페이지 3열(언젠가 / 다가오는 계획 / 오늘의 하루종일·타임블럭·타임라인) 전체를 아우르는
   // 드래그 대상 판별 + 실제 이동 처리. 세 열 중 어디서 집어 어디에 놓든 같은 방식으로 처리됨.
-  //   zone 종류: "someday"(날짜 없음) / "planday"(다가오는 계획의 특정 날짜) / "today-allday"(오늘, 시간 없음) / "today-timed"(오늘, 특정 시각)
+  //   zone 종류: "someday"(날짜 없음) / "planday"(다가오는 계획의 특정 날짜, 8-2단계로 보드 자체는 없앴지만 함수는 남겨둠) /
+  //             "today-allday"(N일 중 특정 날짜, 시간 없음) / "today-timed"(N일 중 특정 날짜, 특정 시각)
+  //   8-3단계: 하루종일/타임블럭/타임라인이 이제 여러 날짜 열로 나뉘어 있어서, "오늘"이 아니라 실제로 놓인
+  //   열의 날짜(data-date)를 같이 돌려줌 — moveItemToZone이 homeAgendaDate 대신 이 date를 씀.
   function homeDropZone(x, y) {
     const el = document.elementFromPoint(x, y);
     if (!el) return null;
@@ -1984,14 +2023,19 @@
       return date ? { zone: "planday", date } : null;
     }
     const blockCard = el.closest(".ag-block-card[data-block-start]");
-    if (blockCard) return { zone: "today-timed", startMinute: parseInt(blockCard.dataset.blockStart, 10) };
-    const tlContent = el.closest(".ag-tl-content");
+    if (blockCard) return { zone: "today-timed", date: blockCard.dataset.date || homeAgendaDate, startMinute: parseInt(blockCard.dataset.blockStart, 10) };
+    const tlContent = el.closest(".ag-tl-content[data-date]");
     if (tlContent) {
       const rect = tlContent.getBoundingClientRect();
       const slot = Math.max(0, Math.floor((y - rect.top) / AG_TL_ROW_PX));
-      return { zone: "today-timed", startMinute: agendaTimelineMinM + slot * AG_TL_SLOT_MIN };
+      // ⚠️ "|| agendaTimelineMinM"이면 그 열이 자정(0분)부터 시작할 때 0이 거짓값 취급돼 엉뚱한 값으로 빠지므로 NaN 체크로 처리.
+      const parsedMinM = parseInt(tlContent.dataset.minM, 10);
+      const minM = Number.isNaN(parsedMinM) ? agendaTimelineMinM : parsedMinM;
+      return { zone: "today-timed", date: tlContent.dataset.date, startMinute: minM + slot * AG_TL_SLOT_MIN };
     }
-    if (el.closest("#agendaAllDayZone")) return { zone: "today-allday" };
+    const alldayCol = el.closest(".ag-allday-col[data-date]");
+    if (alldayCol) return { zone: "today-allday", date: alldayCol.dataset.date };
+    if (el.closest("#agendaAllDayZone")) return { zone: "today-allday", date: homeAgendaDate };
     if (el.closest("#somedayZone")) return { zone: "someday" };
     return null;
   }
@@ -2005,6 +2049,9 @@
   async function moveItemToZone(kind, id, zoneObj) {
     if (!zoneObj) return;
     const zone = zoneObj.zone;
+    // 8-3단계: zoneObj.date는 드롭한 열의 실제 날짜(homeDropZone이 채워줌) — 이제 여러 날짜 열이 있으므로
+    // "오늘 보는 날짜" 하나가 아니라 이 date를 씀. 혹시 없으면(옛 호출 등) homeAgendaDate로 안전하게 대체.
+    const targetDate = zoneObj.date || homeAgendaDate;
     if (kind === "habit") {
       if (zone === "today-allday") {
         const { error } = await sb.from("tok_habits").update({ start_minute: null }).eq("id", id);
@@ -2018,11 +2065,11 @@
     } else if (kind === "event") {
       if (zone === "someday") return; // 일정은 고정 스케줄 개념이라 언젠가로는 전환하지 않음
       // 어디로 옮기든 특정 하루/시간으로 콕 집어 놓는 동작이라, 기간(여러 날) 일정이었다면 하루짜리로 되돌림(할일 이동과 동일 규칙).
-      // "today-*" zone은 실제 오늘 날짜가 아니라 집 화면에서 지금 보고 있는 날짜(homeAgendaDate)를 뜻함
-      // (다른 날짜로 넘겨서 보다가 그 안에서 드래그해도 오늘로 튕기던 버그, 2026-09-06 결님 제보로 수정).
+      // "today-*" zone은 실제 오늘 날짜가 아니라 드롭한 열의 날짜(targetDate)를 뜻함
+      // (다른 날짜로 넘겨서 보다가 그 안에서 드래그해도 오늘로 튕기던 버그, 2026-09-06 결님 제보로 수정 — 8-3단계에서 열별 날짜로 재일반화).
       const patch = zone === "planday" ? { event_date: zoneObj.date, end_date: null }
-        : zone === "today-allday" ? { event_date: homeAgendaDate, end_date: null, event_time: null }
-        : { event_date: homeAgendaDate, end_date: null, event_time: minutesToHHMM(zoneObj.startMinute) + ":00" };
+        : zone === "today-allday" ? { event_date: targetDate, end_date: null, event_time: null }
+        : { event_date: targetDate, end_date: null, event_time: minutesToHHMM(zoneObj.startMinute) + ":00" };
       const { error } = await sb.from("tok_events").update(patch).eq("id", id);
       if (error) { alert("이동 실패: " + error.message); return; }
     } else if (kind === "todo") {
@@ -2035,10 +2082,10 @@
         if (delErr) { alert("이동 실패: " + delErr.message); return; }
       } else {
         // 시작일은 "이 회차가 놓인 날"이라 드래그하면 그대로 바뀌지만, 종료일은 반복이 끝나는 날(선택)이라 드래그와 무관 — 건드리지 않음.
-        // "today-*" zone은 실제 오늘 날짜가 아니라 집 화면에서 지금 보고 있는 날짜(homeAgendaDate)를 뜻함.
+        // "today-*" zone은 실제 오늘 날짜가 아니라 드롭한 열의 날짜(targetDate)를 뜻함.
         const patch = zone === "planday" ? { start_date: zoneObj.date }
-          : zone === "today-allday" ? { start_date: homeAgendaDate, todo_time: null }
-          : { start_date: homeAgendaDate, todo_time: minutesToHHMM(zoneObj.startMinute) + ":00" };
+          : zone === "today-allday" ? { start_date: targetDate, todo_time: null }
+          : { start_date: targetDate, todo_time: minutesToHHMM(zoneObj.startMinute) + ":00" };
         const { error } = await sb.from("tok_todos").update(patch).eq("id", id);
         if (error) { alert("이동 실패: " + error.message); return; }
       }
@@ -2048,8 +2095,8 @@
       if (!s) return;
       const patch = { title: s.title, is_done: s.is_done, tag_id: s.tag_id };
       if (zone === "planday") patch.start_date = zoneObj.date;
-      else if (zone === "today-allday") patch.start_date = homeAgendaDate;
-      else { patch.start_date = homeAgendaDate; patch.todo_time = minutesToHHMM(zoneObj.startMinute) + ":00"; }
+      else if (zone === "today-allday") patch.start_date = targetDate;
+      else { patch.start_date = targetDate; patch.todo_time = minutesToHHMM(zoneObj.startMinute) + ":00"; }
       const { error: insErr } = await sb.from("tok_todos").insert(patch);
       if (insErr) { alert("이동 실패: " + insErr.message); return; }
       const { error: delErr } = await sb.from("tok_someday").delete().eq("id", id);
@@ -2140,16 +2187,33 @@
     return [...habitItems, ...eventItems, ...todoItems].sort((a, b) => a.start_minute - b.start_minute);
   }
 
+  // 8-3단계: homeAgendaDate 하루가 아니라 agendaWindowDates()가 계산한 N일을 나란히(열) 그림.
+  // 각 열은 독립된 컨테이너(.ag-col-body)를 가지므로, 아래 render/attach 함수들은 전부 "어느 날짜/어느 컨테이너"인지
+  // 인자로 받도록 일반화함(같은 셀렉터를 열마다 반복 조회해서 이벤트 리스너가 중복으로 쌓이는 걸 막기 위함).
   async function renderAgendaTimed() {
-    const items = await timedItemsForDate(homeAgendaDate);
-    if (agendaView === "timeline") renderAgendaTimeline(items);
-    else renderAgendaBlocks(items);
+    const dates = agendaWindowDates();
+    const colCls = agendaView === "timeline" ? "ag-tl-col" : "ag-block-col";
+    const colsHtml = dates.map(dateStr => {
+      const isToday = dateStr === todayStr();
+      const headHtml = dates.length > 1
+        ? `<div class="ag-mday-col-head${isToday ? " is-today" : ""}">${formatDateShort(dateStr)}${isToday ? ` <span class="ag-today-tag">오늘</span>` : ""}</div>`
+        : "";
+      return `<div class="${colCls}">${headHtml}<div class="ag-col-body" data-date="${dateStr}"></div></div>`;
+    });
+    $("agendaTimeWrap").innerHTML = `<div class="ag-mday-row">${colsHtml.join("")}</div>`;
+    for (const dateStr of dates) {
+      const bodyEl = document.querySelector(`#agendaTimeWrap .ag-col-body[data-date="${dateStr}"]`);
+      if (!bodyEl) continue;
+      const items = await timedItemsForDate(dateStr);
+      if (agendaView === "timeline") renderAgendaTimeline(items, dateStr, bodyEl);
+      else renderAgendaBlocks(items, dateStr, bodyEl);
+    }
   }
 
   // 오늘 열 타임블럭(카드형) 항목: 짧게 클릭하면 이름 수정, 드래그하면 다른 블럭으로 이동.
-  function agendaItemRowHtml(it) {
+  function agendaItemRowHtml(it, dateStr) {
     const lead = it.kind === "habit"
-      ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" data-date="${homeAgendaDate}" class="ag-habit-check" />`
+      ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" data-date="${dateStr}" class="ag-habit-check" />`
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id); // 일정은 체크박스 자리에 범주색 동그라미로 대신 표시
@@ -2165,7 +2229,7 @@
     </div>`;
   }
 
-  function renderAgendaBlocks(items) {
+  function renderAgendaBlocks(items, dateStr, containerEl) {
     let html = "";
     if (timeBlocks.length) {
       const covered = new Set();
@@ -2179,31 +2243,34 @@
         </div>`;
         // 비어있을 땐 "일정 없음" 안내문구 자체가 곧 클릭해서 추가하는 빈칸(하루종일·언젠가와 동일 규칙),
         // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙임.
+        // data-date: 이 블럭 카드가 어느 열(날짜) 소속인지(8-3단계, homeDropZone이 드롭 대상 날짜를 여기서 읽음).
         html += inBlock.length
-          ? `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}">${inBlock.map(agendaItemRowHtml).join("")}<div class="block-add-row" data-block-start="${block.start_minute}"></div></div>`
-          : `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}"><div class="agenda-empty-block block-add-row" data-block-start="${block.start_minute}">일정 없음. 눌러서 추가</div></div>`;
+          ? `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}">${inBlock.map(it => agendaItemRowHtml(it, dateStr)).join("")}<div class="block-add-row" data-block-start="${block.start_minute}"></div></div>`
+          : `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}"><div class="agenda-empty-block block-add-row" data-block-start="${block.start_minute}">일정 없음. 눌러서 추가</div></div>`;
       });
       const uncovered = items.filter(it => !covered.has(it));
       if (uncovered.length) {
         html += `<div class="ag-section-head"><span class="label">그 외 시간</span><span class="count">${uncovered.length}건</span></div>`;
-        html += `<div class="agenda-flat">${uncovered.map(agendaItemRowHtml).join("")}</div>`;
+        html += `<div class="agenda-flat">${uncovered.map(it => agendaItemRowHtml(it, dateStr)).join("")}</div>`;
       }
     } else if (items.length) {
-      html += `<div class="agenda-flat">${items.map(agendaItemRowHtml).join("")}</div>`;
+      html += `<div class="agenda-flat">${items.map(it => agendaItemRowHtml(it, dateStr)).join("")}</div>`;
     }
-    $("agendaTimeWrap").innerHTML = html || `<div class="empty" style="padding:20px 0;font-size:12px;">시간이 있는 항목이 없어요.</div>`;
-    wireAgendaHabitChecks();
-    attachAgendaBlockDrag();
-    attachAgendaBlockAddClick();
+    containerEl.innerHTML = html || `<div class="empty" style="padding:20px 0;font-size:12px;">시간이 있는 항목이 없어요.</div>`;
+    wireAgendaHabitChecks(containerEl);
+    attachAgendaBlockDrag(containerEl);
+    attachAgendaBlockAddClick(containerEl, dateStr);
   }
 
   // 블럭 카드 아래 "+ 추가"를 누르면 팝업 없이 그 자리에서 바로 할일을 입력할 수 있게 함
   // (해당 블럭의 시작 시각으로 저장됨, 소요시간은 기본 30분). 오른쪽 클릭하면 "일정 추가/할일 추가" 중 고르는 작은 메뉴가 뜸
   // (2026-09-12 — 메모 기능 제거로 메뉴 두번째 항목이 메모→할일로 바뀜).
+  // 8-3단계: containerEl/dateStr — 여러 날짜 열이 나란히 있으므로 이 블럭이 속한 열/날짜로 범위를 좁힘
+  // (그렇지 않으면 같은 시각대의 다른 열까지 같이 열리는 버그가 생김).
   // autoOpenTodoStart: 할일 입력창을 바로 열 블럭(왼쪽 클릭 연속입력용). autoOpenKind/autoOpenKindStart: 일정 입력창을
   // 바로 열 종류/블럭(오른쪽 클릭 연속입력용).
-  function attachAgendaBlockAddClick(autoOpenTodoStart, autoOpenKind, autoOpenKindStart) {
-    document.querySelectorAll(".block-add-row[data-block-start]").forEach(row => {
+  function attachAgendaBlockAddClick(containerEl, dateStr, autoOpenTodoStart, autoOpenKind, autoOpenKindStart) {
+    containerEl.querySelectorAll(".block-add-row[data-block-start]").forEach(row => {
       const startMinute = parseInt(row.dataset.blockStart, 10);
       const openInput = (kind) => { // kind: "todo" | "event" | "habit"
         const wrap = document.createElement("div");
@@ -2222,7 +2289,7 @@
           let error;
           if (kind === "habit") {
             ({ error } = await sb.from("tok_habits").insert({
-              name, start_date: homeAgendaDate, start_minute: startMinute, duration_minutes: 30,
+              name, start_date: dateStr, start_minute: startMinute, duration_minutes: 30,
               repeat_unit: "day", repeat_interval: 1,
             }));
           } else {
@@ -2230,15 +2297,18 @@
             const dateField = kind === "event" ? "event_date" : "start_date";
             const timeField = kind === "event" ? "event_time" : "todo_time";
             ({ error } = await sb.from(table).insert({
-              title: name, [dateField]: homeAgendaDate,
+              title: name, [dateField]: dateStr,
               [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
             }));
           }
           if (error) { alert("저장 실패: " + error.message); done = false; return; }
           await loadAll();
           if (reopen) {
-            if (kind === "todo") attachAgendaBlockAddClick(startMinute, null, null);
-            else attachAgendaBlockAddClick(null, kind, startMinute);
+            const freshContainer = document.querySelector(`#agendaTimeWrap .ag-col-body[data-date="${dateStr}"]`);
+            if (freshContainer) {
+              if (kind === "todo") attachAgendaBlockAddClick(freshContainer, dateStr, startMinute, null, null);
+              else attachAgendaBlockAddClick(freshContainer, dateStr, null, kind, startMinute);
+            }
           }
         };
         input.addEventListener("keydown", (e) => {
@@ -2293,12 +2363,14 @@
 
   // 오늘 열 타임블럭(카드형) 보기: 습관·일정 행을 다른 블럭 카드 위로 드래그하면
   // 그 블럭의 시작 시각으로 재배정됨(습관 탭 attachBlockDrag와 동일 패턴, 습관+일정 공용으로 일반화).
-  function attachAgendaBlockDrag() {
+  // 8-3단계: containerEl로 범위를 좁힘 — 안 그러면 여러 날짜 열을 한 번씩 그릴 때마다
+  // 이미 그려둔 다른 열의 행에도 매번 새로 리스너가 겹쳐 붙어(addEventListener라 덮어써지지 않음) 드래그가 여러 번 겹쳐 실행됨.
+  function attachAgendaBlockDrag(containerEl) {
     let dragEl = null, dragId = null, dragKindAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
     let ghost = null; // 타임라인처럼 커서를 따라다니는 항목 미리보기(2026-09-06 결님 요청 — 카드형 뷰는 절대좌표가 아니라
                        // 정적 dim+테두리만으론 "따라 움직이는" 느낌이 안 나서, 손가락을 따라오는 작은 칩을 하나 더 붙임).
 
-    document.querySelectorAll(".ag-block-row[data-id]").forEach(row => {
+    containerEl.querySelectorAll(".ag-block-row[data-id]").forEach(row => {
       row.addEventListener("pointerdown", (e) => {
         if (e.target.closest("input")) return;
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; moved = false; curTarget = null;
@@ -2353,14 +2425,15 @@
   const AG_TL_SLOT_MIN = 15, AG_TL_ROW_PX = 13;
   const TL_LONG_PRESS_MS = 300;
   const TL_EDGE_ZONE_PX = 8;
-  function renderAgendaTimeline(items) {
+  // 8-3단계: dateStr/containerEl로 일반화 — 여러 날짜 열이 나란히 렌더되므로 각 열은 자기 min/max를
+  // .ag-tl-content의 data-min-m/data-max-m에 저장해두고(homeDropZone·현재시각선이 열마다 따로 읽어씀).
+  function renderAgendaTimeline(items, dateStr, containerEl) {
     let minM = daySettings.day_start_minute, maxM = daySettings.day_end_minute; // 설정 페이지에서 정한 하루 범위(기본 06:00~24:00) — 항목이 범위 밖이면 자동으로 더 넓어짐
     items.forEach(it => {
       minM = Math.min(minM, it.start_minute);
       maxM = Math.max(maxM, it.start_minute + it.duration_minutes);
     });
-    agendaTimelineMinM = minM; // 하루종일→타임라인 드래그 드롭시 시각 계산에 씀
-    agendaTimelineMaxM = maxM;
+    if (dateStr === homeAgendaDate) { agendaTimelineMinM = minM; agendaTimelineMaxM = maxM; } // 첫째 열 기준값(기존 전역 변수 호환용)
     const slotCount = Math.max(1, Math.ceil((maxM - minM) / AG_TL_SLOT_MIN));
     const rowOf = (m) => Math.floor((m - minM) / AG_TL_SLOT_MIN) + 1;
 
@@ -2387,35 +2460,39 @@
       const leftPct = widthPct * col;
       itemsHtml += `<div class="ag-tl-task ${it.kind} ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}" data-start="${it.start_minute}" data-duration="${it.duration_minutes}" style="top:${top}px;height:${height}px;left:${leftPct}%;width:calc(${widthPct}% - 4px);${itemTagBgStyle(it.kind, it.cat_id)}">
         ${it.kind === "habit"
-          ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" data-date="${homeAgendaDate}" class="ag-habit-check" />`
+          ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" data-date="${dateStr}" class="ag-habit-check" />`
           : it.kind === "todo"
           ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
           : eventDotHtml(it.cat_id, 8, 14)}
         <span class="ag-tl-title">${escapeHtml(it.name)}</span>
       </div>`;
     });
-    $("agendaTimeWrap").innerHTML = `<div class="ag-tl-grid" style="grid-template-rows:repeat(${slotCount},${AG_TL_ROW_PX}px)">${rowsHtml}<div class="ag-tl-content">${itemsHtml}</div></div>`;
-    wireAgendaHabitChecks();
-    attachAgendaTimelineItemDrag(minM);
-    attachAgendaTimelineAddDrag(minM, slotCount);
+    containerEl.innerHTML = `<div class="ag-tl-grid" style="grid-template-rows:repeat(${slotCount},${AG_TL_ROW_PX}px)">${rowsHtml}<div class="ag-tl-content" data-date="${dateStr}" data-min-m="${minM}" data-max-m="${maxM}">${itemsHtml}</div></div>`;
+    wireAgendaHabitChecks(containerEl);
+    attachAgendaTimelineItemDrag(minM, containerEl, dateStr);
+    attachAgendaTimelineAddDrag(minM, slotCount, containerEl, dateStr);
     positionAgendaNowLine();
   }
 
-  // 타임라인 뷰에 "현재 시간" 가로선 표시(오늘 날짜를 보고 있을 때만). 데이터 재조회 없이 위치만 갱신하므로
-  // 1분마다 가볍게 다시 불러도 됨(아래 setInterval).
+  // 타임라인 뷰에 "현재 시간" 가로선 표시(오늘 날짜인 열에만). 데이터 재조회 없이 위치만 갱신하므로
+  // 1분마다 가볍게 다시 불러도 됨(아래 setInterval). 8-3단계: 열마다 자기 min/max를 data 속성에서 읽어와
+  // 여러 날짜 열이 있어도 각자 정확한 위치에 그림(오늘이 아닌 열엔 선을 그리지 않음).
   function positionAgendaNowLine() {
-    const grid = document.querySelector("#agendaTimeWrap .ag-tl-content");
-    let line = grid?.querySelector(".ag-tl-now-line");
-    if (!grid || agendaView !== "timeline" || homeAgendaDate !== todayStr()) { line?.remove(); return; }
-    const now = new Date();
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    if (nowMin < agendaTimelineMinM || nowMin > agendaTimelineMaxM) { line?.remove(); return; }
-    if (!line) {
-      line = document.createElement("div");
-      line.className = "ag-tl-now-line";
-      grid.appendChild(line);
-    }
-    line.style.top = ((nowMin - agendaTimelineMinM) / AG_TL_SLOT_MIN * AG_TL_ROW_PX) + "px";
+    document.querySelectorAll("#agendaTimeWrap .ag-tl-content[data-date]").forEach(grid => {
+      let line = grid.querySelector(".ag-tl-now-line");
+      const dateStr = grid.dataset.date;
+      const minM = parseInt(grid.dataset.minM, 10), maxM = parseInt(grid.dataset.maxM, 10);
+      if (agendaView !== "timeline" || dateStr !== todayStr()) { line?.remove(); return; }
+      const now = new Date();
+      const nowMin = now.getHours() * 60 + now.getMinutes();
+      if (nowMin < minM || nowMin > maxM) { line?.remove(); return; }
+      if (!line) {
+        line = document.createElement("div");
+        line.className = "ag-tl-now-line";
+        grid.appendChild(line);
+      }
+      line.style.top = ((nowMin - minM) / AG_TL_SLOT_MIN * AG_TL_ROW_PX) + "px";
+    });
   }
   setInterval(positionAgendaNowLine, 60000);
 
@@ -2448,10 +2525,12 @@
   // 오늘 열 타임라인의 습관·일정 항목 드래그(습관탭 attachTimelineItemDrag와 동일 UX, 습관+일정 공용으로 일반화):
   // - 짧게 클릭 → 이름 수정, 0.3초 이상 누르다 움직이면 이동, 끝 8px 구역은 바로 드래그하면 시간(길이) 조절.
   // - 단, 일정은 duration 개념이 없어(시작 시각만 있음) 조절 없이 이동만 지원.
-  function attachAgendaTimelineItemDrag(minM) {
+  // 8-3단계: containerEl/dateStr 추가 — 이 열(날짜)로 조회 범위를 좁히고(중복 리스너 방지),
+  // "이동" 중 다른 날짜 열의 타임라인 위로 올라가면(자기 열 제외) 그 열+그 위치의 시각으로 옮기는 크로스데이 드래그를 지원.
+  function attachAgendaTimelineItemDrag(minM, containerEl, dateStr) {
     const rowOf = (m) => Math.floor((m - minM) / AG_TL_SLOT_MIN) + 1;
 
-    document.querySelectorAll(".ag-tl-task[data-id]").forEach(task => {
+    containerEl.querySelectorAll(".ag-tl-task[data-id]").forEach(task => {
       const id = task.dataset.id;
       const kind = task.dataset.kind;
       const origStart = parseInt(task.dataset.start, 10);
@@ -2566,7 +2645,10 @@
         if (Math.abs(dy) > 6) moved = true;
         if (!moved) return;
         if (dragKind === "move") {
-          const el = document.elementFromPoint(e.clientX, e.clientY)?.closest("#agendaAllDayZone, .planup-day, #somedayZone");
+          // 8-3단계: 하루종일/언젠가뿐 아니라 "다른 날짜"의 타임라인 열도 바깥 존으로 침(자기 열은 제외 —
+          // 그래야 같은 열 안에서의 기존 이동/시간조절 동작이 그대로 유지됨).
+          const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest("#agendaAllDayZone, .planup-day, #somedayZone, .ag-tl-content[data-date]");
+          const el = (hit && hit.matches(".ag-tl-content") && hit.dataset.date === dateStr) ? null : hit;
           if (el !== outsideEl) {
             outsideEl?.classList.remove("drop-target");
             outsideEl = el || null;
@@ -2646,8 +2728,9 @@
   // 오늘 열 타임라인 빈 곳을 클릭하거나 드래그하면 그 시각(또는 드래그한 범위)에 바로 할일이 추가됨
   // (습관 탭에 있던 기능을 집 화면으로 옮김 — 반복 설정이 필요한 습관은 여전히 습관 탭에서 추가).
   let agAddState = null;
-  function attachAgendaTimelineAddDrag(minM, slotCount) {
-    const content = document.querySelector("#agendaTimeWrap .ag-tl-content");
+  // 8-3단계: containerEl/dateStr — 이 열(날짜) 안의 .ag-tl-content만 대상으로 함.
+  function attachAgendaTimelineAddDrag(minM, slotCount, containerEl, dateStr) {
+    const content = containerEl.querySelector(".ag-tl-content");
     if (!content) return;
 
     const slotFromEvent = (e) => {
@@ -2690,7 +2773,7 @@
       const durationMinutes = moved ? (hi - lo + 1) * AG_TL_SLOT_MIN : 30;
       $("agTlAddPreview")?.remove();
       agAddState = null;
-      showAgendaTimelineInlineAdd(content, lo, hi, startMinute, durationMinutes, "todo");
+      showAgendaTimelineInlineAdd(content, lo, hi, startMinute, durationMinutes, "todo", dateStr);
     };
     content.onpointerup = finish;
     content.onpointercancel = () => { $("agTlAddPreview")?.remove(); agAddState = null; };
@@ -2701,13 +2784,14 @@
       if (e.target.closest(".ag-tl-task")) return;
       const slot = slotFromEvent(e);
       const startMinute = minM + slot * AG_TL_SLOT_MIN;
-      showAddKindMenu(e.clientX, e.clientY, (kind) => showAgendaTimelineInlineAdd(content, slot, slot, startMinute, 30, kind));
+      showAddKindMenu(e.clientX, e.clientY, (kind) => showAgendaTimelineInlineAdd(content, slot, slot, startMinute, 30, kind, dateStr));
     };
   }
 
   // 팝업 없이 타임라인 그 자리에 바로 입력창을 띄워 할일/일정(kind)을 추가함(Enter/바깥 클릭 시 저장, Esc면 취소).
   // Enter로 저장하면 같은 자리에 바로 다음 입력창이 다시 열려 연달아 입력할 수 있음(언젠가 목록과 동일한 패턴).
-  function showAgendaTimelineInlineAdd(content, loSlot, hiSlot, startMinute, durationMinutes, kind) {
+  // dateStr: 8-3단계 — 이 열이 어느 날짜인지(여러 날짜 열이 있으므로 homeAgendaDate 대신 이걸 씀).
+  function showAgendaTimelineInlineAdd(content, loSlot, hiSlot, startMinute, durationMinutes, kind, dateStr) {
     const el = document.createElement("div");
     el.className = "ag-tl-task tl-inline-add inline-add-wrap";
     el.style.top = `${loSlot * AG_TL_ROW_PX}px`;
@@ -2727,7 +2811,7 @@
       let error;
       if (kind === "habit") {
         ({ error } = await sb.from("tok_habits").insert({
-          name, start_date: homeAgendaDate, start_minute: startMinute, duration_minutes: durationMinutes,
+          name, start_date: dateStr, start_minute: startMinute, duration_minutes: durationMinutes,
           repeat_unit: "day", repeat_interval: 1,
         }));
       } else {
@@ -2735,16 +2819,17 @@
         const dateField = kind === "event" ? "event_date" : "start_date";
         const timeField = kind === "event" ? "event_time" : "todo_time";
         ({ error } = await sb.from(table).insert({
-          title: name, [dateField]: homeAgendaDate,
+          title: name, [dateField]: dateStr,
           [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: durationMinutes,
         }));
       }
       if (error) { alert("저장 실패: " + error.message); done = false; return; }
       await loadAll();
       // 연속 입력: loadAll이 타임라인을 통째로 다시 그리므로(.ag-tl-content가 새로 생김) 그 새 요소를 다시 찾아서 이어붙임.
+      // 8-3단계: 여러 날짜 열 중 이 dateStr에 해당하는 열을 정확히 찾음.
       if (reopen && agendaView === "timeline") {
-        const freshContent = document.querySelector("#agendaTimeWrap .ag-tl-content");
-        if (freshContent) showAgendaTimelineInlineAdd(freshContent, loSlot, hiSlot, startMinute, durationMinutes, kind);
+        const freshContent = document.querySelector(`#agendaTimeWrap .ag-tl-content[data-date="${dateStr}"]`);
+        if (freshContent) showAgendaTimelineInlineAdd(freshContent, loSlot, hiSlot, startMinute, durationMinutes, kind, dateStr);
       }
     };
     input.addEventListener("keydown", (e) => {
@@ -2754,11 +2839,13 @@
     input.addEventListener("blur", () => commit(false));
   }
 
-  function wireAgendaHabitChecks() {
-    document.querySelectorAll(".ag-habit-check").forEach(cb => {
+  // scopeEl: 8-3단계 — 여러 날짜 열이 있을 땐 해당 열(containerEl)로 좁혀서 씀(onchange는 대입이라 중복 문제는 없지만,
+  // 인자 없이 부르는 기존 호출(하루종일 등, 한 번에 전체를 다시 그리는 곳)은 그대로 document 전체를 씀).
+  function wireAgendaHabitChecks(scopeEl = document) {
+    scopeEl.querySelectorAll(".ag-habit-check").forEach(cb => {
       cb.onchange = () => toggleHabitForDate(cb.dataset.id, cb.checked, cb.dataset.date);
     });
-    document.querySelectorAll(".ag-todo-check").forEach(cb => {
+    scopeEl.querySelectorAll(".ag-todo-check").forEach(cb => {
       cb.onchange = async () => {
         const reloaded = await setTodoDone(cb.dataset.id, cb.checked);
         if (reloaded) return;
@@ -2768,8 +2855,9 @@
     });
   }
 
-  $("agendaPrevBtn").onclick = () => { homeAgendaDate = addDaysStr(homeAgendaDate, -1); renderAgendaAllDay(); renderAgendaTimed(); };
-  $("agendaNextBtn").onclick = () => { homeAgendaDate = addDaysStr(homeAgendaDate, 1); renderAgendaAllDay(); renderAgendaTimed(); };
+  // 8-3단계: 이전/다음은 지금 보이는 창(1/3/7일) 통째로 넘김(페이지 넘기듯) — homeAgendaDate는 항상 그 창의 "첫째 날".
+  $("agendaPrevBtn").onclick = () => { homeAgendaDate = addDaysStr(homeAgendaDate, -agendaDayCount); renderAgendaAllDay(); renderAgendaTimed(); };
+  $("agendaNextBtn").onclick = () => { homeAgendaDate = addDaysStr(homeAgendaDate, agendaDayCount); renderAgendaAllDay(); renderAgendaTimed(); };
   $("agendaDateLabel").onclick = () => {
     if (homeAgendaDate === todayStr()) return;
     homeAgendaDate = todayStr();
@@ -2794,6 +2882,15 @@
     renderAgendaTimed();
     renderAgendaAllDay(); // 하루종일 스타일이 타임블럭/타임라인에 따라 달라지므로 같이 다시 그림
   };
+  // 8-3단계: 1일/3일/7일 보기 전환.
+  document.querySelectorAll("#agendaDayCountToggle button[data-days]").forEach(btn => {
+    btn.onclick = () => {
+      agendaDayCount = parseInt(btn.dataset.days, 10);
+      document.querySelectorAll("#agendaDayCountToggle button[data-days]").forEach(b => b.classList.toggle("active", b === btn));
+      renderAgendaAllDay();
+      renderAgendaTimed();
+    };
+  });
 
   // "다가오는 계획" 열: 내일부터 7일, 일정+할일+습관을 모두 보여줌.
   // 습관은 반복주기상 "다음 차례" 날짜에만 뜸 — 완료해야 그 다음 차례가 새로 생기는 방식이라
@@ -2801,6 +2898,9 @@
   // 반복 없음으로 설정한 습관만 예전처럼 매일 다 뜸.
   // 빈 날짜도 칸이 남아있어 드래그로 그 날짜에 할일을 추가할 수 있음(습관·일정은 표시만 — 드래그 이동은 다음 단계).
   async function renderPlanUpcomingBoard() {
+    // 8-2단계: 집 화면에서 "다가오는 계획" 보드를 없앰 → #planUpcomingBoard가 더 이상 없으므로 조용히 종료.
+    // (함수/호출부 자체는 남겨둠 — 다른 곳에서 부르는 코드가 많아 지우는 것보다 no-op이 안전함)
+    if (!$("planUpcomingBoard")) return;
     const days = [];
     for (let i = 1; i <= 7; i++) days.push(addDaysStr(todayStr(), i));
     homePlanDays = days;
