@@ -210,6 +210,8 @@
   .home2-subtoggle{display:flex;background:#F3EFFC;border-radius:12px;padding:3px;gap:2px;}
   .home2-subtoggle button{padding:6px 14px;border-radius:10px;font-weight:700;font-size:13px;border:none;cursor:pointer;background:transparent;color:#A79CC4;font-family:inherit;}
   .home2-subtoggle button.active{background:#FFFFFF;color:#3A3350;box-shadow:0 1px 4px rgba(58,51,80,.10);}
+  /* ── 4단계(2026-09-20) — 1열 3탭(오늘/다가오는/언젠가) 행 앞 드래그 손잡이 아이콘(장식용, 목업 참고). ── */
+  .drag-handle-dots{color:#D9D2EC;flex-shrink:0;}
   /* 8-6단계: "지금 할일" 카드는 집으로 되돌아가고 포커스 탭엔 타이머 카드 하나만 남아서(더 이상 2열로 나란히
      안 놓임) 위 정렬 규칙은 필요 없어짐 — .focus-card 자체 스타일만으로 충분해서 별도 규칙 없이 정리함. */
   .agenda-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
@@ -2263,6 +2265,10 @@
   }
 
   // 오늘 열 타임블럭(카드형) 항목: 짧게 클릭하면 이름 수정, 드래그하면 다른 블럭으로 이동.
+  // 드래그 가능한 행 앞에 붙는 장식용 손잡이 아이콘(목업 참고) — 실제 드래그는 행 전체를 잡아도 동작하고,
+  // 이 아이콘은 "끌 수 있는 행"이라는 시각 신호용. 4단계(2026-09-20)에서 1열 3탭 행에 공용으로 붙임.
+  const DRAG_HANDLE_SVG = `<svg class="drag-handle-dots" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="6" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>`;
+
   function agendaItemRowHtml(it, dateStr) {
     const lead = it.kind === "habit"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" data-date="${dateStr}" class="ag-habit-check" />`
@@ -2274,6 +2280,7 @@
     const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
     // 항목마다 카드처럼 보여서 공간을 너무 차지한다고 해서, 다가오는 계획 목록과 똑같이 카드 없는 플랫한 한 줄로 변경.
     return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
+      ${DRAG_HANDLE_SVG}
       ${lead}
       <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
@@ -2519,6 +2526,7 @@
       : eventDotHtml(it.cat_id);
     const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
     return `<div class="plan-row ag-block-row home-today-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
+      ${DRAG_HANDLE_SVG}
       ${lead}
       <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
@@ -2546,6 +2554,66 @@
     });
   }
 
+  // ── 1열(오늘 목록/다가오는) 공용 드래그(2026-09-20, 4단계) — attachPlanUpcomingItemDrag·attachSomedayDrag와
+  // 같은 패턴: 행을 2열 타임라인 등 기존 zone(homeDropZone) 위로 놓으면 moveItemToZone이 그대로 처리함
+  // (습관은 날짜는 안 바뀌고 시간만 바뀌는 기존 규칙 그대로 적용됨 — 새 로직 아님, homeDropZone/moveItemToZone
+  // 자체는 손대지 않고 그대로 재사용). skipInlineEditKinds: 짧은 클릭(=안 끌림) 시 인라인 이름수정 대신
+  // 그 kind 전용 클릭 핸들러(예: 다가오는 탭의 할일 제목 클릭→전체 수정 시트)에 맡기고 아무것도 안 함.
+  function attachHomeRowDrag(containerEl, rowSelector, onRerender, skipInlineEditKinds = []) {
+    containerEl.querySelectorAll(rowSelector).forEach(row => {
+      let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
+      row.addEventListener("pointerdown", (e) => {
+        if (e.target.closest("input")) return;
+        moved = false; curTarget = null;
+        startX = e.clientX; startY = e.clientY;
+        row.setPointerCapture?.(e.pointerId);
+      });
+      row.addEventListener("pointermove", (e) => {
+        if (!row.hasPointerCapture?.(e.pointerId)) return;
+        if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+          moved = true;
+          row.classList.add("dragging");
+          ghost = document.createElement("div");
+          ghost.className = "ag-drag-ghost";
+          ghost.textContent = row.querySelector(".agenda-title, .plan-todo-title")?.textContent || "";
+          document.body.appendChild(ghost);
+        }
+        if (!moved) return;
+        if (ghost) { ghost.style.left = `${e.clientX + 14}px`; ghost.style.top = `${e.clientY + 10}px`; }
+        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #somedayZone");
+        if (under !== curTarget) {
+          curTarget?.classList.remove("drop-target");
+          curTarget = under || null;
+          curTarget?.classList.add("drop-target");
+        }
+      });
+      const finish = async (e) => {
+        if (!row.hasPointerCapture?.(e.pointerId)) return;
+        const wasMoved = moved, id = row.dataset.id, kind = row.dataset.kind;
+        moved = false;
+        row.classList.remove("dragging");
+        ghost?.remove(); ghost = null;
+        curTarget?.classList.remove("drop-target");
+        curTarget = null;
+        if (!wasMoved) {
+          if (skipInlineEditKinds.includes(kind)) return; // 다른 곳(예: 제목 클릭)이 처리하도록 그대로 둠
+          startAgendaItemInlineEdit(row, id, kind, onRerender);
+          return;
+        }
+        const drop = homeDropZone(e.clientX, e.clientY);
+        await moveItemToZone(kind, id, drop);
+      };
+      row.addEventListener("pointerup", finish);
+      row.addEventListener("pointercancel", () => {
+        moved = false;
+        row.classList.remove("dragging");
+        ghost?.remove(); ghost = null;
+        curTarget?.classList.remove("drop-target");
+        curTarget = null;
+      });
+    });
+  }
+
   async function renderHomeTodayList() {
     const containerEl = $("homeTodayList");
     if (!containerEl) return;
@@ -2563,6 +2631,7 @@
       };
     });
     wireHomeTodayChecks(containerEl);
+    attachHomeRowDrag(containerEl, ".home-today-row[data-id]", renderHomeTodayList); // 4단계: 2열 타임라인 등으로 드래그
   }
 
   async function renderHomeTodayBlock() {
@@ -3334,12 +3403,14 @@
 
       const habitHtml = dayHabits.map(t => `
         <div class="plan-row habit" data-id="${t.id}" data-kind="habit">
+          ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="upcoming-habit-check" />
           <span class="plan-todo-title">${escapeHtml(t.name)}</span>
         </div>`).join("");
       const eventHtml = dayEvents.map(e => {
         const isRange = e.end_date && e.end_date !== e.event_date;
         return `<div class="plan-row" data-id="${e.id}" data-kind="event">
+          ${DRAG_HANDLE_SVG}
           ${eventDotHtml(e.category_id, 8, 16)}
           <span class="plan-todo-title">${escapeHtml(e.title)}</span>
           ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : e.event_time ? `<span class="plan-time">${e.event_time.slice(0, 5)}</span>` : ""}
@@ -3349,6 +3420,7 @@
         const tagColor = td.is_done ? null : itemTagColor("todo", td.tag_id);
         return `
         <div class="plan-row todo ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
+          ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
           <span class="plan-todo-title planup-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
           ${td.todo_time ? `<span class="plan-time">${td.todo_time.slice(0, 5)}</span>` : ""}
@@ -3387,6 +3459,9 @@
         showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
       };
     });
+    // 4단계: 2열 타임라인 등으로 드래그. 할일은 짧은 클릭이 이미 위 .planup-todo-title.onclick(전체 수정 시트)이
+    // 처리하므로 인라인 이름수정에서 제외(skipInlineEditKinds) — 옛 attachPlanUpcomingItemDrag와 동일 규칙.
+    attachHomeRowDrag(containerEl, ".plan-row[data-id]", renderHomeUpcomingList, ["todo"]);
   }
 
   // 언젠가 목록 정렬(최근순/오래된순/이름순) — 집 카드·할일 탭 공용으로 씀.
@@ -3436,6 +3511,7 @@
       const tagColor = item.tag_id ? itemTagColor("someday", item.tag_id) : null;
       return `
       <div class="task-row ag-someday-row" data-someday-id="${item.id}">
+        ${DRAG_HANDLE_SVG}
         <input type="checkbox" data-id="${item.id}" class="somedaysum-check" />
         <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
       </div>`;
