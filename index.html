@@ -193,7 +193,17 @@
   /* ── 집 : 2열 탭 구조 재설계(2026-09-20, 1단계) — 1열 오늘/다가오는/언젠가, 2열 타임라인/포커스.
      목업(Claude 아티팩트 "오늘한칸 — 홈 재설계") 기준 파스텔 탭 색상·둥근 카드 톤 적용. ── */
   .home2-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
-  @media (max-width:900px){ .home2-grid{grid-template-columns:1fr;} }
+  /* 6단계(2026-09-20) — 모바일(≤900px)에선 2열을 세로로 쌓지 않고, 상단 "목록"/"타임라인·포커스" 2단
+     세그먼트로 둘 중 하나만 보여줌(목업 참고). 데스크톱에선 이 스위치 자체를 숨기고 기존 2열 그대로 둠. */
+  .home2-mobile-switch{display:none;}
+  @media (max-width:900px){
+    .home2-mobile-switch{display:flex;background:#F3EFFC;border-radius:16px;padding:4px;gap:4px;margin-bottom:14px;}
+    .home2-mobile-switch button{flex:1;padding:10px 0;border-radius:13px;font-weight:700;font-size:13px;border:none;cursor:pointer;background:transparent;color:#A79CC4;font-family:inherit;}
+    .home2-mobile-switch button.active{background:#FFFFFF;color:#3A3350;box-shadow:0 1px 4px rgba(58,51,80,.10);}
+    .home2-grid{grid-template-columns:1fr;}
+    .home2-col{display:none;}
+    .home2-col.mobile-active{display:flex;}
+  }
   .home2-col{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 6px 20px rgba(150,130,200,.08);display:flex;flex-direction:column;gap:14px;}
   .home2-tabs{display:flex;gap:8px;}
   .home2-tab{flex:1;padding:9px 0;border:none;border-radius:14px;font-size:13px;font-weight:700;color:#A8A0BD;background:transparent;cursor:pointer;font-family:inherit;}
@@ -513,6 +523,13 @@
              DOM만 옮겨서(agendaAllDayZone·agendaTimeWrap→2열 타임라인 탭, somedayZone→1열 언젠가 탭)
              renderHome()의 나머지 호출부는 손대지 않아도 그대로 동작함. 오늘/다가오는/포커스 탭 내용물은
              각각 2~5단계에서 채움(지금은 no-op placeholder). -->
+        <!-- 6단계: 모바일에서만 보이는 상단 세그먼트(≤900px, CSS 미디어쿼리로 데스크톱엔 숨김) — "목록"은
+             1열(homeCol1) 전체를, "타임라인·포커스"는 2열(homeCol2) 전체를 보여줌. 각 열 안의 하위 탭은
+             그대로 유지. -->
+        <div class="home2-mobile-switch" id="homeMobileSwitch">
+          <button type="button" class="active" data-mobilecol="col1">목록</button>
+          <button type="button" data-mobilecol="col2">타임라인 · 포커스</button>
+        </div>
         <div class="home2-grid">
           <div class="home2-col" id="homeCol1">
             <div class="home2-tabs" id="homeCol1Tabs">
@@ -3214,6 +3231,18 @@
   document.querySelectorAll("#homeCol2Tabs .home2-tab").forEach(btn => {
     btn.onclick = () => switchHomeCol2Tab(btn.dataset.col2tab);
   });
+
+  // 6단계(2026-09-20): 모바일 상단 세그먼트("목록"/"타임라인·포커스") — 데스크톱에선 CSS가 이 스위치 자체를
+  // 숨기고 .home2-col의 mobile-active 클래스도 무시하게 해둬서(위 CSS 참고), 여기 로직은 모바일 폭에서만 실제로 보임.
+  function switchHomeMobileCol(col) {
+    document.querySelectorAll("#homeMobileSwitch button").forEach(btn => btn.classList.toggle("active", btn.dataset.mobilecol === col));
+    $("homeCol1")?.classList.toggle("mobile-active", col === "col1");
+    $("homeCol2")?.classList.toggle("mobile-active", col === "col2");
+  }
+  document.querySelectorAll("#homeMobileSwitch button").forEach(btn => {
+    btn.onclick = () => switchHomeMobileCol(btn.dataset.mobilecol);
+  });
+  switchHomeMobileCol("col1"); // 기본값: 목록(1열)
 
   // "다가오는 계획" 열: 내일부터 7일, 일정+할일+습관을 모두 보여줌.
   // 습관은 반복주기상 "다음 차례" 날짜에만 뜸 — 완료해야 그 다음 차례가 새로 생기는 방식이라
