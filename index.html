@@ -189,6 +189,21 @@
   .home-col-head{margin-bottom:10px;}
   .home-col-head .title{font-size:13px;font-weight:700;color:var(--text);text-align:center;}
   @media (max-width:900px){ .home-grid{grid-template-columns:1fr;} }
+
+  /* ── 집 : 2열 탭 구조 재설계(2026-09-20, 1단계) — 1열 오늘/다가오는/언젠가, 2열 타임라인/포커스.
+     목업(Claude 아티팩트 "오늘한칸 — 홈 재설계") 기준 파스텔 탭 색상·둥근 카드 톤 적용. ── */
+  .home2-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  @media (max-width:900px){ .home2-grid{grid-template-columns:1fr;} }
+  .home2-col{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 6px 20px rgba(150,130,200,.08);display:flex;flex-direction:column;gap:14px;}
+  .home2-tabs{display:flex;gap:8px;}
+  .home2-tab{flex:1;padding:9px 0;border:none;border-radius:14px;font-size:13px;font-weight:700;color:#A8A0BD;background:transparent;cursor:pointer;font-family:inherit;}
+  .home2-tab.active.tab-today{background:#FFE1D6;color:#B75B3D;}
+  .home2-tab.active.tab-upcoming{background:#DCEBFF;color:#3E6FB0;}
+  .home2-tab.active.tab-someday{background:#ECE3FF;color:#6B4FA0;}
+  .home2-tab.active.tab-timeline{background:#D8F3E7;color:#2E8B6F;}
+  .home2-tab.active.tab-focus{background:#FFF1C2;color:#A9820A;}
+  .home2-tabpanel{min-width:0;}
+  .home2-placeholder{border:1.5px dashed var(--line);border-radius:14px;padding:28px 14px;text-align:center;color:var(--sub);font-size:13px;line-height:1.6;}
   /* 8-6단계: "지금 할일" 카드는 집으로 되돌아가고 포커스 탭엔 타이머 카드 하나만 남아서(더 이상 2열로 나란히
      안 놓임) 위 정렬 규칙은 필요 없어짐 — .focus-card 자체 스타일만으로 충분해서 별도 규칙 없이 정리함. */
   .agenda-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
@@ -485,45 +500,62 @@
           <div id="focusTaskBody"></div>
         </div>
 
-        <div class="home-grid">
-          <div class="home-col">
-            <div class="agenda-head">
-              <button id="agendaPrevBtn" class="agenda-nav">‹</button>
-              <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
-              <button id="agendaNextBtn" class="agenda-nav">›</button>
+        <!-- 2026-09-20 1단계: 2열 카드 구조로 재설계. 1열=오늘/다가오는/언젠가 탭, 2열=타임라인/포커스 탭.
+             1일/3일/7일 토글은 완전히 제거(집은 항상 "오늘"만). 기존 렌더 함수가 찾는 id는 그대로 유지한 채
+             DOM만 옮겨서(agendaAllDayZone·agendaTimeWrap→2열 타임라인 탭, somedayZone→1열 언젠가 탭)
+             renderHome()의 나머지 호출부는 손대지 않아도 그대로 동작함. 오늘/다가오는/포커스 탭 내용물은
+             각각 2~5단계에서 채움(지금은 no-op placeholder). -->
+        <div class="home2-grid">
+          <div class="home2-col" id="homeCol1">
+            <div class="home2-tabs" id="homeCol1Tabs">
+              <button type="button" class="home2-tab tab-today active" data-col1tab="today">오늘</button>
+              <button type="button" class="home2-tab tab-upcoming" data-col1tab="upcoming">다가오는</button>
+              <button type="button" class="home2-tab tab-someday" data-col1tab="someday">언젠가</button>
             </div>
 
-            <!-- 8-6단계: 타임블럭/타임라인 전환 토글은 제거(타임블럭 보기 자체를 없앰) — 1일/3일/7일 토글만 남김 -->
-            <div class="view-toggle-row" style="margin-top:10px;">
-              <div class="view-toggle" id="agendaDayCountToggle">
-                <button type="button" data-days="1">1일</button>
-                <button type="button" data-days="3" class="active">3일</button>
-                <button type="button" data-days="7">7일</button>
+            <div class="home2-tabpanel" data-col1panel="today" id="homeTodayPanel">
+              <div class="home2-placeholder">오늘 탭(목록/시간블럭) — 2단계에서 채울게요.</div>
+            </div>
+
+            <div class="home2-tabpanel" data-col1panel="upcoming" id="homeUpcomingPanel" style="display:none;">
+              <div class="home2-placeholder">다가오는 탭(날짜별 리스트) — 3단계에서 채울게요.</div>
+            </div>
+
+            <div class="home2-tabpanel" data-col1panel="someday" id="homeSomedayPanel" style="display:none;">
+              <div class="someday-toolbar">
+                <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
               </div>
-              <button id="agendaTodayBtn" class="today-btn">오늘</button>
+              <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
+              <div id="somedayZone">
+                <div id="somedaySummaryList"></div>
+              </div>
             </div>
-
-            <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
-              <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
-              <span class="count" id="agendaAllDayCount" style="display:none;"></span>
-            </div>
-            <div id="agendaAllDayZone">
-              <div class="ag-mday-row" id="agendaAllDayList"></div>
-            </div>
-
-            <div id="agendaTimeWrap" style="margin-top:12px;"></div>
           </div>
 
-          <div class="home-col" id="somedayHomeCol">
-            <div class="home-col-head">
-              <div class="title">언젠가</div>
+          <div class="home2-col" id="homeCol2">
+            <div class="home2-tabs" id="homeCol2Tabs">
+              <button type="button" class="home2-tab tab-timeline active" data-col2tab="timeline">타임라인</button>
+              <button type="button" class="home2-tab tab-focus" data-col2tab="focus">포커스</button>
             </div>
-            <div class="someday-toolbar">
-              <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
+
+            <div class="home2-tabpanel" data-col2panel="timeline" id="homeTimelinePanel">
+              <div class="agenda-head">
+                <span class="agenda-date-wrap"><span id="agendaDateLabel">오늘</span></span>
+              </div>
+
+              <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
+                <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
+                <span class="count" id="agendaAllDayCount" style="display:none;"></span>
+              </div>
+              <div id="agendaAllDayZone">
+                <div class="ag-mday-row" id="agendaAllDayList"></div>
+              </div>
+
+              <div id="agendaTimeWrap" style="margin-top:12px;"></div>
             </div>
-            <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
-            <div id="somedayZone">
-              <div id="somedaySummaryList"></div>
+
+            <div class="home2-tabpanel" data-col2panel="focus" id="homeFocusPanel" style="display:none;">
+              <div class="home2-placeholder">포커스 탭(타이머+지금 할일) — 5단계에서 채울게요.</div>
             </div>
           </div>
         </div>
@@ -1520,9 +1552,9 @@
   // 8-6단계: 타임블럭 보기를 없애고 타임라인 하나만 남겨서, "block"으로 바뀌는 경우가 이제 없음(토글 버튼 자체를 지움).
   // 그래도 renderAgendaTimed/renderAgendaAllDay 등 곳곳에서 이 값을 참조하므로 변수 자체는 남겨두고 "timeline"로 고정.
   let agendaView = "timeline"; // 항상 "timeline" — 오늘 열 전용(습관탭의 homeView와는 별개 상태)
-  // 8-3단계: 집 화면 하루종일/타임블럭/타임라인을 1일 대신 N일(1/3/7)씩 나란히 보여줌.
-  // homeAgendaDate는 그 중 "첫째 날"만 가리키고, 나머지 날짜는 agendaWindowDates()가 여기서부터 계산.
-  let agendaDayCount = 3; // 1 | 3 | 7
+  // 2026-09-20 1단계: 1일/3일/7일 토글을 완전히 제거하고 집 화면은 항상 "오늘" 하루만 다룸 — agendaDayCount 고정 1,
+  // prev/next/오늘 버튼도 없앴으니 homeAgendaDate는 사실상 항상 todayStr()로 남음(agendaWindowDates 등 기존 함수는 그대로 재사용).
+  let agendaDayCount = 1;
   function agendaWindowDates() {
     const arr = [];
     for (let i = 0; i < agendaDayCount; i++) arr.push(addDaysStr(homeAgendaDate, i));
@@ -2855,22 +2887,22 @@
     });
   }
 
-  // 8-3단계: 이전/다음은 지금 보이는 창(1/3/7일) 통째로 넘김(페이지 넘기듯) — homeAgendaDate는 항상 그 창의 "첫째 날".
-  $("agendaPrevBtn").onclick = () => { homeAgendaDate = addDaysStr(homeAgendaDate, -agendaDayCount); renderAgendaAllDay(); renderAgendaTimed(); };
-  $("agendaNextBtn").onclick = () => { homeAgendaDate = addDaysStr(homeAgendaDate, agendaDayCount); renderAgendaAllDay(); renderAgendaTimed(); };
-  $("agendaDateLabel").onclick = () => {
+  // 2026-09-20 1단계: agendaPrevBtn/agendaNextBtn/agendaTodayBtn/agendaDayCountToggle는 집 화면이 항상
+  // "오늘"만 보여주게 되면서 버튼 자체를 없앴음(agendaDayCount는 위에서 1로 고정). 이 아래 wiring은
+  // 옛 DOM이 사라져도 최상단 스크립트 실행이 멈추지 않도록 null 체크로 방어만 해두고 남겨둠(다른 곳에서
+  // 재사용할 수도 있어 완전히 지우지는 않음).
+  $("agendaPrevBtn")?.addEventListener("click", () => { homeAgendaDate = addDaysStr(homeAgendaDate, -agendaDayCount); renderAgendaAllDay(); renderAgendaTimed(); });
+  $("agendaNextBtn")?.addEventListener("click", () => { homeAgendaDate = addDaysStr(homeAgendaDate, agendaDayCount); renderAgendaAllDay(); renderAgendaTimed(); });
+  $("agendaDateLabel")?.addEventListener("click", () => {
     if (homeAgendaDate === todayStr()) return;
     homeAgendaDate = todayStr();
     renderAgendaAllDay(); renderAgendaTimed();
-  };
-  $("agendaTodayBtn").onclick = () => {
+  });
+  $("agendaTodayBtn")?.addEventListener("click", () => {
     if (homeAgendaDate === todayStr()) return;
     homeAgendaDate = todayStr();
     renderAgendaAllDay(); renderAgendaTimed();
-  };
-  // 8-6단계: 타임블럭/타임라인 전환 버튼(agendaViewBlockBtn/agendaViewTimelineBtn) 자체를 없애서
-  // 여기 있던 onclick 배선도 같이 제거함 — agendaView는 위에서 "timeline"으로 고정.
-  // 8-3단계: 1일/3일/7일 보기 전환.
+  });
   document.querySelectorAll("#agendaDayCountToggle button[data-days]").forEach(btn => {
     btn.onclick = () => {
       agendaDayCount = parseInt(btn.dataset.days, 10);
@@ -2878,6 +2910,23 @@
       renderAgendaAllDay();
       renderAgendaTimed();
     };
+  });
+
+  // ── 집 : 2열 탭 구조(2026-09-20 1단계) — 1열 오늘/다가오는/언젠가, 2열 타임라인/포커스 전환.
+  // 지금은 탭 보이기/숨기기만 담당하는 뼈대이고, 각 탭의 실제 내용은 2~5단계에서 채워짐. ──
+  function switchHomeCol1Tab(tab) {
+    document.querySelectorAll("#homeCol1Tabs .home2-tab").forEach(btn => btn.classList.toggle("active", btn.dataset.col1tab === tab));
+    document.querySelectorAll("#homeCol1 > .home2-tabpanel").forEach(p => { p.style.display = p.dataset.col1panel === tab ? "" : "none"; });
+  }
+  document.querySelectorAll("#homeCol1Tabs .home2-tab").forEach(btn => {
+    btn.onclick = () => switchHomeCol1Tab(btn.dataset.col1tab);
+  });
+  function switchHomeCol2Tab(tab) {
+    document.querySelectorAll("#homeCol2Tabs .home2-tab").forEach(btn => btn.classList.toggle("active", btn.dataset.col2tab === tab));
+    document.querySelectorAll("#homeCol2 > .home2-tabpanel").forEach(p => { p.style.display = p.dataset.col2panel === tab ? "" : "none"; });
+  }
+  document.querySelectorAll("#homeCol2Tabs .home2-tab").forEach(btn => {
+    btn.onclick = () => switchHomeCol2Tab(btn.dataset.col2tab);
   });
 
   // "다가오는 계획" 열: 내일부터 7일, 일정+할일+습관을 모두 보여줌.
