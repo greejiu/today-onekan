@@ -533,6 +533,7 @@
                 <div class="agenda-flat" id="homeTodayList"></div>
               </div>
               <div id="homeTodayBlockWrap" style="display:none;">
+                <div id="homeTodayBlockAllDay"></div>
                 <div id="homeTodayBlockBody"></div>
               </div>
             </div>
@@ -574,8 +575,31 @@
               <div id="agendaTimeWrap" style="margin-top:12px;"></div>
             </div>
 
+            <!-- 2026-09-20 5단계: 사이드바 "⏱포커스" 페이지(#focusTimerCard)는 결님 선택대로 그대로 두고,
+                 여기 2열에 같은 모양의 타이머 카드를 하나 더 둠(id만 Home 접미사로 구분). "지금 할 일" 카드는
+                 이미 집 화면 맨 위에 항상 떠 있어서(#focusTaskCard) 여기서 또 안 보여줌(중복이라). 실제 타이머
+                 상태(ftElapsedSec 등)는 두 카드가 하나를 공유함 — populateFocusTimerSelect/buildFocusTimerTicks/
+                 renderFocusTimerClock/renderFocusTimerButtons/wireFocusTimer가 FT_ID_SUFFIXES로 두 세트를
+                 같이 갱신하도록 일반화됨. -->
             <div class="home2-tabpanel" data-col2panel="focus" id="homeFocusPanel" style="display:none;">
-              <div class="home2-placeholder">포커스 탭(타이머+지금 할일) — 5단계에서 채울게요.</div>
+              <div class="focus-card card" id="focusTimerCardHome" style="max-width:420px;">
+                <div class="focus-head">⏱ 포커스 타이머</div>
+                <select id="ftSelectTodoHome" class="ft-select"><option value="">선택 안 함</option></select>
+                <div class="ft-clock-wrap">
+                  <div class="ft-clock">
+                    <div class="ft-ticks" id="ftClockTicksHome"></div>
+                    <div class="ft-hand ft-hand-hour" id="ftHourHandHome"></div>
+                    <div class="ft-hand ft-hand-min" id="ftMinHandHome"></div>
+                    <div class="ft-clock-center"></div>
+                    <div class="ft-elapsed" id="ftElapsedHome">00:00</div>
+                  </div>
+                </div>
+                <div class="ft-controls">
+                  <button type="button" class="ft-btn ft-btn-primary" id="ftToggleBtnHome">시작</button>
+                  <button type="button" class="ft-btn" id="ftEndBtnHome" disabled>종료</button>
+                  <button type="button" class="ft-btn" id="ftResetBtnHome" disabled>초기화</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1450,14 +1474,21 @@
   let ftSessionStartedAt = null; // 세션 시작(첫 "시작" 누른) 시각 — 기록 저장용
   let ftSessionTodoId = null;    // 세션 시작 시점에 스냅샷(중간에 할일 목록이 바뀌어도 이번 기록엔 영향 없게)
   let ftSessionTodoTitle = null;
+  // 2026-09-20 5단계: 사이드바 "⏱포커스" 페이지(id 그대로, 접미사 없음)와 2열 "포커스" 탭(id에 Home 접미사)에
+  // 같은 타이머 카드를 두 벌 두되, 위 상태 변수는 하나만 써서 둘이 항상 같은 타이머를 보여주고 조작하게 함.
+  // 아래 함수들은 전부 이 배열을 돌면서 두 세트의 DOM을 같이 갱신하도록 일반화됨(로직 자체는 그대로).
+  const FT_ID_SUFFIXES = ["", "Home"];
 
   function populateFocusTimerSelect() {
-    const sel = $("ftSelectTodo");
-    if (!sel) return;
-    const prevValue = sel.value;
     const options = todos.filter(t => !t.is_done);
-    sel.innerHTML = `<option value="">선택 안 함</option>` + options.map(t => `<option value="${t.id}">${escapeHtml(t.title)}</option>`).join("");
-    if (options.some(t => t.id === prevValue)) sel.value = prevValue;
+    const optionsHtml = `<option value="">선택 안 함</option>` + options.map(t => `<option value="${t.id}">${escapeHtml(t.title)}</option>`).join("");
+    FT_ID_SUFFIXES.forEach(suf => {
+      const sel = $("ftSelectTodo" + suf);
+      if (!sel) return;
+      const prevValue = sel.value;
+      sel.innerHTML = optionsHtml;
+      if (options.some(t => t.id === prevValue)) sel.value = prevValue;
+    });
   }
 
   function ftFormatElapsed(sec) {
@@ -1466,32 +1497,38 @@
   }
 
   function buildFocusTimerTicks() {
-    const wrap = $("ftClockTicks");
-    if (!wrap) return;
     let html = "";
     for (let i = 0; i < 12; i++) html += `<div class="ft-tick" style="transform:rotate(${i * 30}deg) translateY(-78px)"></div>`;
-    wrap.innerHTML = html;
+    FT_ID_SUFFIXES.forEach(suf => {
+      const wrap = $("ftClockTicks" + suf);
+      if (wrap) wrap.innerHTML = html;
+    });
   }
 
   // 시계 바탕(현재 시각을 가리키는 시침·분침)은 스톱워치가 멈춰있어도 계속 실제 시간에 맞게 흘러감.
   function renderFocusTimerClock() {
-    const elapsedEl = $("ftElapsed");
-    if (elapsedEl) elapsedEl.textContent = ftFormatElapsed(ftElapsedSec);
+    const elapsedText = ftFormatElapsed(ftElapsedSec);
     const now = new Date();
     const hourDeg = ((now.getHours() % 12) + now.getMinutes() / 60) * 30;
     const minDeg = (now.getMinutes() + now.getSeconds() / 60) * 6;
-    const hourHand = $("ftHourHand"), minHand = $("ftMinHand");
-    if (hourHand) hourHand.style.transform = `rotate(${hourDeg}deg)`;
-    if (minHand) minHand.style.transform = `rotate(${minDeg}deg)`;
+    FT_ID_SUFFIXES.forEach(suf => {
+      const elapsedEl = $("ftElapsed" + suf);
+      if (elapsedEl) elapsedEl.textContent = elapsedText;
+      const hourHand = $("ftHourHand" + suf), minHand = $("ftMinHand" + suf);
+      if (hourHand) hourHand.style.transform = `rotate(${hourDeg}deg)`;
+      if (minHand) minHand.style.transform = `rotate(${minDeg}deg)`;
+    });
   }
 
   function renderFocusTimerButtons() {
-    const toggleBtn = $("ftToggleBtn"), endBtn = $("ftEndBtn"), resetBtn = $("ftResetBtn"), sel = $("ftSelectTodo");
-    if (!toggleBtn) return;
-    toggleBtn.textContent = ftRunning ? "일시정지" : (ftElapsedSec > 0 ? "이어하기" : "시작");
-    endBtn.disabled = ftElapsedSec === 0;
-    resetBtn.disabled = ftElapsedSec === 0;
-    if (sel) sel.disabled = ftRunning || ftElapsedSec > 0; // 세션 도중엔 할일을 바꿀 수 없게(기록은 시작할 때 스냅샷 고정)
+    FT_ID_SUFFIXES.forEach(suf => {
+      const toggleBtn = $("ftToggleBtn" + suf), endBtn = $("ftEndBtn" + suf), resetBtn = $("ftResetBtn" + suf), sel = $("ftSelectTodo" + suf);
+      if (!toggleBtn) return;
+      toggleBtn.textContent = ftRunning ? "일시정지" : (ftElapsedSec > 0 ? "이어하기" : "시작");
+      endBtn.disabled = ftElapsedSec === 0;
+      resetBtn.disabled = ftElapsedSec === 0;
+      if (sel) sel.disabled = ftRunning || ftElapsedSec > 0; // 세션 도중엔 할일을 바꿀 수 없게(기록은 시작할 때 스냅샷 고정)
+    });
   }
 
   function ftResetState() {
@@ -1510,45 +1547,50 @@
     // 스톱워치가 꺼져있는 동안에도 시계 바탕은 계속 흘러가야 하니 1초마다 갱신(돌고 있을 땐 ftTick이 이미 매초 처리).
     ftClockHandle = setInterval(() => { if (!ftRunning) renderFocusTimerClock(); }, 1000);
 
-    $("ftToggleBtn").onclick = () => {
-      if (ftRunning) {
-        ftRunning = false;
-        clearInterval(ftTimerHandle);
-        ftTimerHandle = null;
-      } else {
-        if (!ftSessionStartedAt) {
-          ftSessionStartedAt = new Date();
-          const sel = $("ftSelectTodo");
-          ftSessionTodoId = sel && sel.value ? sel.value : null;
-          ftSessionTodoTitle = sel && sel.value ? sel.options[sel.selectedIndex].textContent : null;
+    FT_ID_SUFFIXES.forEach(suf => {
+      const toggleBtn = $("ftToggleBtn" + suf), endBtn = $("ftEndBtn" + suf), resetBtn = $("ftResetBtn" + suf);
+      if (!toggleBtn) return; // 둘 중 어느 한쪽 DOM이 없어도(옛 페이지 구조 등) 나머지는 정상 동작
+
+      toggleBtn.onclick = () => {
+        if (ftRunning) {
+          ftRunning = false;
+          clearInterval(ftTimerHandle);
+          ftTimerHandle = null;
+        } else {
+          if (!ftSessionStartedAt) {
+            ftSessionStartedAt = new Date();
+            const sel = $("ftSelectTodo" + suf); // 세션 시작 버튼을 누른 쪽 카드의 선택값을 스냅샷으로 씀
+            ftSessionTodoId = sel && sel.value ? sel.value : null;
+            ftSessionTodoTitle = sel && sel.value ? sel.options[sel.selectedIndex].textContent : null;
+          }
+          ftRunning = true;
+          ftTimerHandle = setInterval(() => { ftElapsedSec++; renderFocusTimerClock(); }, 1000);
         }
-        ftRunning = true;
-        ftTimerHandle = setInterval(() => { ftElapsedSec++; renderFocusTimerClock(); }, 1000);
-      }
-      renderFocusTimerButtons();
-    };
+        renderFocusTimerButtons();
+      };
 
-    $("ftEndBtn").onclick = async () => {
-      if (ftElapsedSec === 0) return;
-      if (ftRunning) { ftRunning = false; clearInterval(ftTimerHandle); ftTimerHandle = null; }
-      const { error } = await sb.from("tok_focus_sessions").insert({
-        todo_id: ftSessionTodoId, todo_title: ftSessionTodoTitle,
-        started_at: ftSessionStartedAt.toISOString(), ended_at: new Date().toISOString(),
-        duration_seconds: ftElapsedSec,
-      });
-      if (error) { alert("포커스 기록 저장 실패: " + error.message); renderFocusTimerButtons(); return; }
-      ftResetState();
-      populateFocusTimerSelect();
-      renderFocusTimerButtons();
-      renderFocusTimerClock();
-    };
+      endBtn.onclick = async () => {
+        if (ftElapsedSec === 0) return;
+        if (ftRunning) { ftRunning = false; clearInterval(ftTimerHandle); ftTimerHandle = null; }
+        const { error } = await sb.from("tok_focus_sessions").insert({
+          todo_id: ftSessionTodoId, todo_title: ftSessionTodoTitle,
+          started_at: ftSessionStartedAt.toISOString(), ended_at: new Date().toISOString(),
+          duration_seconds: ftElapsedSec,
+        });
+        if (error) { alert("포커스 기록 저장 실패: " + error.message); renderFocusTimerButtons(); return; }
+        ftResetState();
+        populateFocusTimerSelect();
+        renderFocusTimerButtons();
+        renderFocusTimerClock();
+      };
 
-    $("ftResetBtn").onclick = () => {
-      ftResetState();
-      populateFocusTimerSelect();
-      renderFocusTimerButtons();
-      renderFocusTimerClock();
-    };
+      resetBtn.onclick = () => {
+        ftResetState();
+        populateFocusTimerSelect();
+        renderFocusTimerButtons();
+        renderFocusTimerClock();
+      };
+    });
   }
 
   function addDaysStr(dateStr, delta) {
@@ -2492,8 +2534,8 @@
   // (시간 있는 항목 수집+정렬)·renderAgendaBlocks(시간블럭 카드) 로직을 그대로 재사용해서 만듦, 새 계산 로직은
   // 최소화함. 목록 뷰는 시간 없는 항목을 먼저 보여주고 그다음 시간순으로 이어붙임(시간 압박 없는 일부터 훑을 수
   // 있게 하려는 의도 — 결에게 확인 필요, 원하면 순서를 시간순 통합 등으로 바로 바꿀 수 있음).
-  // 알려진 한계: 시간블럭 뷰는 timedItemsForDate 그대로 재사용해서 "시간 있는" 항목만 나오고, 시간 없는
-  // 항목은 목록 뷰에서만 보임(기존 renderAgendaBlocks 자체가 원래 시간 있는 항목 전용이라 그대로 둠).
+  // (예전엔 시간블럭 뷰에 시간 없는 항목이 안 보이는 한계가 있었는데, renderHomeTodayBlock에서 하루종일
+  // 섹션을 따로 붙여서 해결함 — todayAllDayItems 정의 참고.)
 
   // 시간 없는(하루종일) 항목을 timedItemsForDate와 같은 모양으로 변환 — renderAgendaAllDay의 수집 로직과 동일한
   // 소스(할일/일정/습관)를 그대로 씀.
@@ -2634,10 +2676,32 @@
     attachHomeRowDrag(containerEl, ".home-today-row[data-id]", renderHomeTodayList); // 4단계: 2열 타임라인 등으로 드래그
   }
 
+  // 2026-09-20: 시간블럭 뷰는 renderAgendaBlocks 자체가 "시간 있는" 항목 전용이라 하루종일(시간 없는) 항목이
+  // 안 보이던 한계가 있었음(2단계 때 결에게 알려드린 부분) — 결 요청으로 block 카드들 위에 하루종일 섹션을
+  // 따로 붙임(todayAllDayItems + homeTodayRowHtml 재사용, 옛 #agendaAllDayZone의 "하루종일" 라벨/점 색과
+  // 동일한 스타일).
   async function renderHomeTodayBlock() {
+    const dateStr = todayStr();
+
+    const allDayEl = $("homeTodayBlockAllDay");
+    if (allDayEl) {
+      const allDayItems = await todayAllDayItems(dateStr);
+      allDayEl.innerHTML = allDayItems.length
+        ? `<div class="ag-section-head"><span class="label"><span class="ag-dot" style="background:${agBlockStyle("하루종일").dot};"></span>하루종일</span><span class="count">${allDayItems.length}건</span></div>
+           <div class="agenda-flat">${allDayItems.map(it => homeTodayRowHtml(it, dateStr)).join("")}</div>`
+        : "";
+      allDayEl.querySelectorAll(".home-today-row[data-id]").forEach(row => {
+        row.oncontextmenu = (e) => {
+          e.preventDefault();
+          showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
+        };
+      });
+      wireHomeTodayChecks(allDayEl);
+      attachHomeRowDrag(allDayEl, ".home-today-row[data-id]", renderHomeTodayBlock);
+    }
+
     const containerEl = $("homeTodayBlockBody");
     if (!containerEl) return;
-    const dateStr = todayStr();
     const items = await timedItemsForDate(dateStr);
     renderAgendaBlocks(items, dateStr, containerEl, renderHomeTodayBlock, () => $("homeTodayBlockBody"));
     // renderAgendaBlocks 내부가 wireAgendaHabitChecks로 옛 재렌더 대상(#agendaTimeWrap)에 먼저 연결해두므로,
