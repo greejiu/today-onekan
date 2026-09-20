@@ -536,7 +536,7 @@
             </div>
 
             <div class="home2-tabpanel" data-col1panel="upcoming" id="homeUpcomingPanel" style="display:none;">
-              <div class="home2-placeholder">다가오는 탭(날짜별 리스트) — 3단계에서 채울게요.</div>
+              <div id="homeUpcomingList"></div>
             </div>
 
             <div class="home2-tabpanel" data-col1panel="someday" id="homeSomedayPanel" style="display:none;">
@@ -1387,6 +1387,7 @@
     renderAgendaAllDay();
     renderAgendaTimed();
     renderHomeTodayTab(); // 2026-09-20 2단계: 1열 "오늘" 탭(목록/시간블럭)
+    renderHomeUpcomingList(); // 2026-09-20 3단계: 1열 "다가오는" 탭(날짜별 리스트)
     renderPlanUpcomingBoard();
     renderSomedaySummary();
     populateFocusTimerSelect();
@@ -2553,6 +2554,14 @@
     containerEl.innerHTML = items.length
       ? items.map(it => homeTodayRowHtml(it, dateStr)).join("")
       : `<div class="agenda-empty-block">오늘 할 일이 없어요.</div>`;
+    // 시간블럭 뷰(renderAgendaBlocks 재사용)는 attachAgendaBlockDrag 안에서 우클릭 메뉴가 자동으로 붙는데
+    // 목록 뷰는 직접 그려서 빠져 있었음 — 3단계에서 같이 붙여서 두 서브뷰 기능을 맞춤.
+    containerEl.querySelectorAll(".home-today-row[data-id]").forEach(row => {
+      row.oncontextmenu = (e) => {
+        e.preventDefault();
+        showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
+      };
+    });
     wireHomeTodayChecks(containerEl);
   }
 
@@ -3289,6 +3298,95 @@
       if (!body) return;
       showAddKindMenu(e.clientX, e.clientY, (kind) => showPlanInlineAdd(body, days[idx], null, renderPlanUpcomingBoard, kind));
     };
+  }
+
+  // ── 집 : 1열 "다가오는" 탭(2026-09-20, 3단계) — renderPlanUpcomingBoard와 같은 데이터 수집(내일부터
+  // 7일, 일정+할일+습관)을 그대로 재사용하되, 7일 카드보드 대신 항목이 있는 날짜만 위에서 아래로 나열하는
+  // 날짜별 리스트로 다시 그림. #planUpcomingBoard(7일 카드보드) 자체와 그 드래그 로직은 이제 아무 데서도
+  // 안 쓰이지만 건드리지 않고 그대로 둠(위 renderPlanUpcomingBoard가 이미 no-op 가드로 조용히 종료됨).
+  // 드래그 핸들·타임라인 드롭 연동은 4단계에서 붙임 — 지금은 체크·완료/제목 클릭 수정/우클릭 메뉴만 됨.
+  async function renderHomeUpcomingList() {
+    const containerEl = $("homeUpcomingList");
+    if (!containerEl) return;
+    const days = [];
+    for (let i = 1; i <= 7; i++) days.push(addDaysStr(todayStr(), i));
+
+    const { data: logData } = await sb.from("tok_habit_logs").select("habit_id, done_date").in("done_date", days);
+    const logsByDate = {};
+    days.forEach(d => { logsByDate[d] = new Set(); });
+    (logData || []).forEach(r => { if (logsByDate[r.done_date]) logsByDate[r.done_date].add(r.habit_id); });
+
+    const active = tasks.filter(t => t.is_active);
+    const habitNextDate = new Map(active.map(t => [t.id, t.repeat_unit ? habitNextDueAfter(t, todayStr()) : null]));
+
+    let html = "";
+    days.forEach(dateStr => {
+      const dayTodos = todos.filter(td => td.start_date === dateStr);
+      const dayEvents = events.filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr).sort((a, b) => (a.event_time || "").localeCompare(b.event_time || ""));
+      const doneSet = logsByDate[dateStr];
+      const dayHabits = active.filter(t => {
+        if (t.start_date && dateStr < t.start_date) return false;
+        if (t.end_date && dateStr > t.end_date) return false;
+        return !t.repeat_unit || habitNextDate.get(t.id) === dateStr;
+      });
+      const count = dayHabits.length + dayEvents.length + dayTodos.length;
+      if (!count) return; // 날짜별 리스트라 항목 없는 날은 건너뜀(빈 칸을 다 채우지 않음)
+
+      const habitHtml = dayHabits.map(t => `
+        <div class="plan-row habit" data-id="${t.id}" data-kind="habit">
+          <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="upcoming-habit-check" />
+          <span class="plan-todo-title">${escapeHtml(t.name)}</span>
+        </div>`).join("");
+      const eventHtml = dayEvents.map(e => {
+        const isRange = e.end_date && e.end_date !== e.event_date;
+        return `<div class="plan-row" data-id="${e.id}" data-kind="event">
+          ${eventDotHtml(e.category_id, 8, 16)}
+          <span class="plan-todo-title">${escapeHtml(e.title)}</span>
+          ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : e.event_time ? `<span class="plan-time">${e.event_time.slice(0, 5)}</span>` : ""}
+        </div>`;
+      }).join("");
+      const todoHtml = dayTodos.map(td => {
+        const tagColor = td.is_done ? null : itemTagColor("todo", td.tag_id);
+        return `
+        <div class="plan-row todo ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
+          <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
+          <span class="plan-todo-title planup-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
+          ${td.todo_time ? `<span class="plan-time">${td.todo_time.slice(0, 5)}</span>` : ""}
+        </div>`;
+      }).join("");
+
+      html += `<div class="ag-section-head"><span class="label">${formatDateShort(dateStr)}</span><span class="count">${count}건</span></div>
+        <div class="agenda-flat">${habitHtml}${eventHtml}${todoHtml}</div>`;
+    });
+
+    containerEl.innerHTML = html || `<div class="agenda-empty-block">앞으로 7일간 등록된 일정이 없어요. 🍃</div>`;
+
+    containerEl.querySelectorAll(".upcoming-habit-check").forEach(cb => {
+      cb.onchange = async () => {
+        await toggleHabitForDate(cb.dataset.id, cb.checked, cb.dataset.date);
+        renderHomeUpcomingList();
+      };
+    });
+    containerEl.querySelectorAll(".upcoming-todo-check").forEach(cb => {
+      cb.onchange = async () => {
+        const reloaded = await setTodoDone(cb.dataset.id, cb.checked);
+        if (reloaded) return;
+        renderHomeUpcomingList();
+      };
+    });
+    containerEl.querySelectorAll(".plan-row.todo .planup-todo-title").forEach(titleEl => {
+      titleEl.onclick = (e) => {
+        e.stopPropagation();
+        const id = titleEl.closest(".plan-row").dataset.id;
+        openTodoSheet(todos.find(t => t.id === id));
+      };
+    });
+    containerEl.querySelectorAll(".plan-row[data-id]").forEach(row => {
+      row.oncontextmenu = (e) => {
+        e.preventDefault();
+        showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
+      };
+    });
   }
 
   // 언젠가 목록 정렬(최근순/오래된순/이름순) — 집 카드·할일 탭 공용으로 씀.
