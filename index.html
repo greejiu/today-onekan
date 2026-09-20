@@ -431,6 +431,16 @@
   .hs-cat-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .hs-cat-del{border:none;background:none;color:var(--sub);font-size:14px;cursor:pointer;flex-shrink:0;width:24px;height:24px;line-height:1;border-radius:6px;}
   .hs-cat-del:hover{color:var(--danger);background:var(--accent-soft);}
+  /* 2026-09-20 — 그룹 순서 드래그(결님 요청): 손잡이(drag-handle-dots)만 잡고 옮기게 해서 옆 색상칩·이름칸·삭제버튼
+     조작과 안 겹치게 함. 손잡이엔 touch-action:none을 줘서 모바일에서 "그 손잡이를 잡는 순간부터"는 목록 스크롤과
+     절대 안 겹침(다른 자리를 잡고 스크롤하는 건 평소처럼 그대로 됨) — 이 규칙은 그룹 관리 줄 안에서만 적용. */
+  .hs-cat-row .drag-handle-dots{cursor:grab;touch-action:none;padding:2px;}
+  .hs-cat-row.dragging{opacity:.5;background:var(--accent-soft);border-radius:8px;}
+  .hs-cat-row.hs-cat-drop-before{box-shadow:0 -2px 0 var(--accent);}
+  .hs-cat-row.hs-cat-drop-after{box-shadow:0 2px 0 var(--accent);}
+  /* "기본"(그룹 없음) 줄 — 순서 고정이라 손잡이 자리를 빈 여백으로만 맞춰서 색상칩 위치를 다른 줄과 정렬 */
+  .hs-cat-drag-handle-spacer{display:inline-block;width:14px;height:14px;flex-shrink:0;}
+  .hs-cat-name-fixed{flex:1;min-width:0;font-size:13px;color:var(--sub);padding:6px 8px;}
   /* 설정 페이지 "타임블럭 구간" 목록(이름+시작+종료, 2026-09-09 추가) — .hs-cat-row와 같은 톤이되 입력칸이 하나 더 있음 */
   .hs-block-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
   .hs-block-row{display:flex;align-items:center;gap:6px;}
@@ -1194,7 +1204,7 @@
   let somedayTabSort = "recent";
   let somedayTabFilterTag = null;
   let timeBlocks = []; // tok_time_blocks: 타임블럭 탭의 이름표 그룹핑용(시작/종료 분 포함 — 설정 페이지에서 목록으로 추가/수정/삭제)
-  let daySettings = { day_start_minute: 360, day_end_minute: 1440 }; // tok_settings: 타임라인/타임블럭에서 보여줄 하루 시작~종료 시간(분). 행이 없으면 이 기본값 사용.
+  let daySettings = { day_start_minute: 360, day_end_minute: 1440, default_tag_color: null }; // tok_settings: 타임라인/타임블럭에서 보여줄 하루 시작~종료 시간(분) + "기본"(그룹 없음) 색상. 행이 없으면 이 기본값 사용.
   let todos = []; // tok_todos: 다가오는 계획 보드용 (날짜 있는 1회성 할일)
   let habitCategories = []; // tok_habit_categories: 습관·할일 공용 "그룹"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
   let eventCategories = []; // tok_event_categories: 일정 전용 "범주"(이름+색상), 그룹 풀과는 별개
@@ -1307,7 +1317,7 @@
     habitCategories = habitCatData || [];
     todoSubtasks = subtaskData || []; // tok_todo_subtasks: 지금 할일 카드의 하위 행동
     eventCategories = eventCatData || [];
-    if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00) 유지
+    if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute, default_tag_color: settingsData.default_tag_color || null }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00, 기본색 없음) 유지
     await advancePastRepeatingEvents(events); // 반복 설정된 일정 중 날짜 지난 것은 다음 회차로 자동 이동
     renderHome();
     renderSchedule();
@@ -2149,9 +2159,17 @@
   // 항목의 그룹/범주 색상(습관·할일은 공용 그룹 풀 habitCategories, 일정은 별도 eventCategories에서 찾음)
   function itemTagPool(kind) { return kind === "event" ? eventCategories : habitCategories; }
   function itemTagColor(kind, catId) {
-    if (!catId) return null;
+    if (!catId) return kind === "event" ? null : (daySettings.default_tag_color || null); // 2026-09-20: 습관/할일/언젠가는 "그룹 없음"도 "기본" 색을 가질 수 있음(일정 범주는 그대로 무색)
     const cat = itemTagPool(kind).find(c => c.id === catId);
     return cat ? (cat.color || null) : null;
+  }
+  // "기본"(그룹 없음) 색상 저장(습관/할일 공용 tok_settings 행에 함께 보관) — 실제 그룹 색 변경과 같은 UX로
+  // 바로 반영되게, 색상 인풋 onchange에서 즉시 호출.
+  async function saveDefaultTagColor(color) {
+    const { error } = await sb.from("tok_settings").upsert({ user_id: (await sb.auth.getUser()).data.user.id, ...daySettings, default_tag_color: color }).select().single();
+    if (error) { alert("색상 변경 실패: " + error.message); return false; }
+    daySettings = { ...daySettings, default_tag_color: color };
+    return true;
   }
   // 일정 항목 옆에 붙이는 범주색 동그라미("일정"이라는 글자 배지 대신) — 항상 색이 찬 상태로 구분(할일/습관은 체크 전엔 빈 체크박스, 체크하면 체크표시+줄긋기).
   // 동그라미 자체는 작게(size) 그리되, 옆 체크박스와 같은 너비(boxSize)의 자리 한가운데 놓아서 뒤따르는 글자 시작 위치가 체크박스가 있는 목록과 정확히 맞도록 함.
@@ -2290,6 +2308,9 @@
         }
         if (error) { alert("저장 실패: " + error.message); done = false; return; }
         await loadAll();
+        // 2026-09-20 — 다가오는 탭과 같은 레이스 수정(위 attachUpcomingDayAddClick 주석 참고):
+        // renderAgendaAllDay도 async라 loadAll() 안에서 await 없이 불려서 여기서 아직 안 끝났을 수 있음.
+        await renderAgendaAllDay();
         if (reopen) attachAgendaAllDayAddClick(dateStr, kind);
       };
       input.addEventListener("keydown", (e) => {
@@ -3823,6 +3844,12 @@
         }
         if (error) { alert("저장 실패: " + error.message); done = false; return; }
         await loadAll();
+        // 2026-09-20 — 결님 제보: 연속 입력(엔터로 계속 추가)이 가끔 씹히던 버그 수정.
+        // renderHomeUpcomingList는 async라 loadAll() 안에서 await 없이 불려서, 여기 도착했을 때
+        // 아직 다 안 그려졌을 수 있음 → 그 사이 옛 DOM에 입력창을 다시 붙였다가 뒤늦게 온 재렌더가
+        // 통째로 덮어써서 입력창이 사라지는 레이스였음. 재조회는 이미 끝났으니 한 번 더 await로 확실히
+        // 그린 다음에 입력창을 다시 열어줌(중복 렌더는 비용만 조금 더 들 뿐 안전).
+        await renderHomeUpcomingList();
         if (reopen) attachUpcomingDayAddClick(dateStr, kind);
       };
       input.addEventListener("keydown", (e) => {
@@ -4249,7 +4276,7 @@
   // ── 습관 반복·그룹 설정 시트 ──
   function populateHabitCategorySelect(selectedId) {
     const sel = $("hs_category");
-    sel.innerHTML = `<option value="">그룹 없음</option>` +
+    sel.innerHTML = `<option value="">기본</option>` +
       habitCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
     sel.value = selectedId || "";
   }
@@ -4342,59 +4369,14 @@
     renderHabitCategoryList();
     $("hs_newcat_name").value = "";
   };
-  // 그룹 이름 수정 · 색상 변경 · 삭제 (습관 설정 시트 내 관리 목록)
+  // 그룹 이름 수정 · 색상 변경 · 삭제 · 순서 변경 (습관 설정 시트 내 관리 목록)
+  // 2026-09-20 — 설정 페이지의 renderCategoryManageList와 완전히 같은 목록이라(그룹 관리 UI가 두 군데
+  // 있었음) 직접 그리던 중복 코드를 걷어내고 공용 함수에 위임함 — "기본" 줄/드래그 순서변경도 자동으로 같이 적용됨.
   function renderHabitCategoryList() {
-    const host = $("hs_cat_list");
-    if (!host) return;
-    host.innerHTML = habitCategories.map(c => `
-      <div class="hs-cat-row" data-id="${c.id}">
-        <input type="color" class="hs-cat-color-input" data-id="${c.id}" value="${c.color || "#9a8cf0"}" />
-        <input type="text" class="hs-cat-name-input" data-id="${c.id}" value="${escapeHtml(c.name)}" />
-        <button type="button" class="hs-cat-del" data-id="${c.id}" title="그룹 삭제">✕</button>
-      </div>
-    `).join("");
-    host.querySelectorAll(".hs-cat-color-input").forEach(inp => {
-      inp.onchange = async () => {
-        const id = inp.dataset.id;
-        const color = inp.value;
-        const { error } = await sb.from("tok_habit_categories").update({ color }).eq("id", id);
-        if (error) { alert("색상 변경 실패: " + error.message); return; }
-        const cat = habitCategories.find(c => c.id === id);
-        if (cat) cat.color = color;
-        renderTodo();
-      };
-    });
-    host.querySelectorAll(".hs-cat-name-input").forEach(inp => {
-      const commit = async () => {
-        const id = inp.dataset.id;
-        const name = inp.value.trim();
-        const cat = habitCategories.find(c => c.id === id);
-        if (!name) { inp.value = cat ? cat.name : ""; return; }
-        if (cat && cat.name === name) return;
-        const { error } = await sb.from("tok_habit_categories").update({ name }).eq("id", id);
-        if (error) { alert("이름 변경 실패: " + error.message); return; }
-        if (cat) cat.name = name;
-        populateHabitCategorySelect($("hs_category").value);
-        renderTodo();
-      };
-      inp.onblur = commit;
-      inp.onkeydown = (e) => { if (e.key === "Enter") inp.blur(); };
-    });
-    host.querySelectorAll(".hs-cat-del").forEach(btn => {
-      btn.onclick = async () => {
-        const id = btn.dataset.id;
-        const cat = habitCategories.find(c => c.id === id);
-        if (!confirm(`"${cat ? cat.name : "그룹"}"을 삭제할까요? 이 그룹을 쓰던 습관은 "그룹 없음"으로 바뀌어요.`)) return;
-        const { error } = await sb.from("tok_habit_categories").delete().eq("id", id);
-        if (error) { alert("삭제 실패: " + error.message); return; }
-        const wasSelected = $("hs_category").value === id;
-        habitCategories = habitCategories.filter(c => c.id !== id);
-        tasks.forEach(t => { if (t.category_id === id) t.category_id = null; });
-        populateHabitCategorySelect(wasSelected ? "" : $("hs_category").value);
-        renderHabitCategoryList();
-        renderTodo();
-      };
-    });
+    renderCategoryManageList("hs_cat_list", habitCategories, "tok_habit_categories", () => {
+      populateHabitCategorySelect($("hs_category").value);
+      renderTodo();
+    }, true);
   }
   $("habitSheetSaveBtn").onclick = async () => {
     const editId = $("habitSheetBg").dataset.editId;
@@ -4774,7 +4756,7 @@
       items.forEach(it => {
         const c = groupPool.find(g => g.id === it[groupField]);
         const key = c ? c.id : "__none";
-        if (!map.has(key)) map.set(key, { label: c ? c.name : "그룹 없음", items: [] });
+        if (!map.has(key)) map.set(key, { label: c ? c.name : "기본", items: [] });
         map.get(key).items.push(it);
       });
       return [...map.values()];
@@ -5196,7 +5178,10 @@
     menu.className = "ctx-menu";
     menu.style.left = x + "px";
     menu.style.top = y + "px";
-    const noneBtn = `<button type="button" class="default${currentVal ? "" : " selected"}" data-tag="">${kind === "event" ? "범주 없음" : "그룹 없음"}${currentVal ? "" : " ✓"}</button>`;
+    // 2026-09-20 — "그룹 없음" -> "기본"으로 이름 변경, 습관/할일 쪽은 이제 기본도 색이 있어서 다른 그룹처럼 점 표시.
+    const noneLabel = kind === "event" ? "범주 없음" : "기본";
+    const noneDot = kind === "event" ? "" : `<span class="ctx-tag-dot" style="background:${daySettings.default_tag_color || "var(--sub)"};"></span>`;
+    const noneBtn = `<button type="button" class="default${currentVal ? "" : " selected"}" data-tag="">${noneDot}${noneLabel}${currentVal ? "" : " ✓"}</button>`;
     const items = pool.map(c => `<button type="button" class="default${c.id === currentVal ? " selected" : ""}" data-tag="${c.id}"><span class="ctx-tag-dot" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(c.name)}${c.id === currentVal ? " ✓" : ""}</button>`).join("");
     menu.innerHTML = noneBtn + items;
     document.body.appendChild(menu);
@@ -5323,17 +5308,36 @@
   };
 
   // ── 설정 페이지: 그룹(습관·할일 공용) / 범주(일정 전용) 관리 ──
-  function renderCategoryManageList(hostId, pool, table, onSaved) {
+  // withDefaultRow: true면 목록 맨 위에 "기본"(그룹 없음) 줄을 하나 더 붙임 — 이 행은 순서 고정(드래그 불가),
+  // 이름 수정·삭제 불가, 색상만 daySettings.default_tag_color에 저장(2026-09-20, 결님 요청).
+  function renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow = false) {
     const host = $(hostId);
     if (!host) return;
-    host.innerHTML = pool.length ? pool.map(c => `
+    const defaultRowHtml = withDefaultRow
+      ? `<div class="hs-cat-row hs-cat-row-default" data-default="1">
+           <span class="hs-cat-drag-handle-spacer"></span>
+           <input type="color" class="hs-cat-color-input hs-cat-default-color-input" value="${daySettings.default_tag_color || "#c7c2d6"}" />
+           <span class="hs-cat-name-fixed">기본</span>
+         </div>`
+      : "";
+    const rowsHtml = pool.map(c => `
       <div class="hs-cat-row" data-id="${c.id}">
+        ${DRAG_HANDLE_SVG}
         <input type="color" class="hs-cat-color-input" data-id="${c.id}" value="${c.color || "#9a8cf0"}" />
         <input type="text" class="hs-cat-name-input" data-id="${c.id}" value="${escapeHtml(c.name)}" />
         <button type="button" class="hs-cat-del" data-id="${c.id}" title="삭제">✕</button>
       </div>
-    `).join("") : `<div class="empty" style="font-size:12px;padding:4px 0;">아직 없어요. 아래에서 추가해보세요.</div>`;
-    host.querySelectorAll(".hs-cat-color-input").forEach(inp => {
+    `).join("");
+    host.innerHTML = defaultRowHtml + (pool.length ? rowsHtml : (withDefaultRow ? "" : `<div class="empty" style="font-size:12px;padding:4px 0;">아직 없어요. 아래에서 추가해보세요.</div>`));
+    const defaultColorInp = host.querySelector(".hs-cat-default-color-input");
+    if (defaultColorInp) {
+      defaultColorInp.onchange = async () => {
+        const ok = await saveDefaultTagColor(defaultColorInp.value);
+        if (!ok) return;
+        onSaved?.();
+      };
+    }
+    host.querySelectorAll(".hs-cat-color-input[data-id]").forEach(inp => {
       inp.onchange = async () => {
         const id = inp.dataset.id, color = inp.value;
         const { error } = await sb.from(table).update({ color }).eq("id", id);
@@ -5366,13 +5370,88 @@
         if (error) { alert("삭제 실패: " + error.message); return; }
         const idx = pool.findIndex(c => c.id === id);
         if (idx >= 0) pool.splice(idx, 1);
-        renderCategoryManageList(hostId, pool, table, onSaved);
+        // DB에는 ON DELETE로 참조가 알아서 풀리지만(다음 loadAll에 반영), 지금 화면에 바로 "기본"으로
+        // 보이도록 메모리상 참조도 같이 정리함(습관 시트에 있던 기존 최적화 업데이트를 공용 함수로 옮기며 일반화).
+        if (table === "tok_habit_categories") {
+          tasks.forEach(t => { if (t.category_id === id) t.category_id = null; });
+          todos.forEach(td => { if (td.tag_id === id) td.tag_id = null; });
+          somedayItems.forEach(s => { if (s.tag_id === id) s.tag_id = null; });
+        } else if (table === "tok_event_categories") {
+          events.forEach(e => { if (e.category_id === id) e.category_id = null; });
+        }
+        renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow);
         onSaved?.();
       };
     });
+    attachCategoryReorderDrag(host, pool, table, onSaved, withDefaultRow);
+  }
+  // 그룹/범주 목록 순서 변경: 각 줄 맨 앞 손잡이(DRAG_HANDLE_SVG)만 드래그 시작점으로 삼아서(줄 전체를
+  // 드래그 대상으로 하면 이름 입력칸·색상칩·삭제 버튼 조작과 겹침), 손잡이엔 touch-action:none을 줘서
+  // 모바일에서 그 손잡이를 잡는 순간부터는 목록 스크롤과 절대 안 겹치게 함(다른 곳을 잡고 스크롤하는 건 그대로 됨).
+  // 실제 순서 반영은 pointerup에서 한 번만(중간엔 DOM 위치만 옮겨서 미리보기) — 매 프레임 다시 그리면
+  // setPointerCapture가 걸린 손잡이 DOM이 통째로 교체돼 드래그가 끊기기 때문.
+  function attachCategoryReorderDrag(host, pool, table, onSaved, withDefaultRow) {
+    host.querySelectorAll(".hs-cat-row[data-id] .drag-handle-dots").forEach(handle => {
+      // 2026-09-20 — 드래그 도중(pointermove)마다 실제로 row를 insertBefore로 옮기면, 손잡이(핸들)가
+      // 그 row의 자손이라 DOM 위치가 바뀌는 순간 브라우저가 handle의 pointer capture를 풀어버려서
+      // 그 이후 pointermove/pointerup이 손잡이에 전혀 안 들어오는 문제가 있었음(헤드리스 테스트로 재현·확인).
+      // 그래서 드래그 중엔 "지금 어디에 놓일지" 자리만 표시(hs-cat-drop-before/after 클래스)해두고,
+      // 실제 DOM 이동·순서 반영·저장은 손을 뗄 때(pointerup, 이제 handle이 안 움직인 뒤라 안전) 한 번만 함.
+      let row = null, moved = false, startY = 0, overEl = null, insertBefore = true;
+      const clearPreview = () => { host.querySelectorAll(".hs-cat-drop-before, .hs-cat-drop-after").forEach(el => el.classList.remove("hs-cat-drop-before", "hs-cat-drop-after")); };
+      handle.addEventListener("pointerdown", (e) => {
+        row = handle.closest(".hs-cat-row[data-id]");
+        if (!row) return;
+        moved = false; overEl = null;
+        startY = e.clientY;
+        handle.setPointerCapture?.(e.pointerId);
+      });
+      handle.addEventListener("pointermove", (e) => {
+        if (!row) return;
+        if (!moved && Math.abs(e.clientY - startY) > 8) {
+          moved = true;
+          row.classList.add("dragging");
+        }
+        if (!moved) return;
+        const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest(".hs-cat-row[data-id]");
+        clearPreview();
+        if (hit && hit !== row) {
+          const hitRect = hit.getBoundingClientRect();
+          overEl = hit;
+          insertBefore = e.clientY < hitRect.top + hitRect.height / 2;
+          hit.classList.add(insertBefore ? "hs-cat-drop-before" : "hs-cat-drop-after");
+        } else {
+          overEl = null;
+        }
+      });
+      const finish = async () => {
+        if (!row) return;
+        const el = row, wasMoved = moved, target = overEl, before = insertBefore;
+        row = null; moved = false; overEl = null;
+        el.classList.remove("dragging");
+        clearPreview();
+        if (!wasMoved || !target) return;
+        host.insertBefore(el, before ? target : target.nextSibling);
+        const newOrder = [...host.querySelectorAll(".hs-cat-row[data-id]")].map(r => r.dataset.id);
+        const byId = new Map(pool.map(c => [c.id, c]));
+        const reordered = newOrder.map(id => byId.get(id)).filter(Boolean);
+        pool.length = 0; pool.push(...reordered);
+        const { error } = await Promise.all(
+          reordered.map((c, idx) => sb.from(table).update({ sort_order: idx }).eq("id", c.id))
+        ).then(results => ({ error: results.find(r => r.error)?.error }));
+        if (error) { alert("순서 저장 실패: " + error.message); }
+        onSaved?.();
+      };
+      handle.addEventListener("pointerup", finish);
+      handle.addEventListener("pointercancel", () => {
+        clearPreview();
+        row?.classList.remove("dragging");
+        row = null; moved = false;
+      });
+    });
   }
   function renderSettingsTagLists() {
-    renderCategoryManageList("settingsTagList", habitCategories, "tok_habit_categories", () => { renderTodo(); renderAgendaTimed(); });
+    renderCategoryManageList("settingsTagList", habitCategories, "tok_habit_categories", () => { renderTodo(); renderAgendaTimed(); }, true);
     renderCategoryManageList("settingsEventCatList", eventCategories, "tok_event_categories", () => { renderSchedule(); renderAgendaTimed(); if (scheduleMode === "calendar") renderScheduleCalendar(); });
   }
   $("settingsTagAddBtn").onclick = async () => {
@@ -5411,7 +5490,7 @@
     if (day_end_minute <= day_start_minute) day_end_minute = 1440; // 자정 넘어가는 범위(예: 22:00~새벽)는 아직 지원 안 함 — 종료가 시작보다 빠르면 자정(24:00)까지로 대체
     const { error } = await sb.from("tok_settings").upsert({ user_id: (await sb.auth.getUser()).data.user.id, day_start_minute, day_end_minute }).select().single();
     if (error) { alert("저장 실패: " + error.message); return; }
-    daySettings = { day_start_minute, day_end_minute };
+    daySettings = { ...daySettings, day_start_minute, day_end_minute }; // 2026-09-20: default_tag_color 등 다른 설정값 안 날아가게 스프레드로 병합
     renderAgendaTimed();
   };
 
