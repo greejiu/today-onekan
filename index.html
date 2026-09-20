@@ -3649,7 +3649,10 @@
         return !t.repeat_unit || habitNextDate.get(t.id) === dateStr;
       });
       const count = dayHabits.length + dayEvents.length + dayTodos.length;
-      if (!count) return; // 날짜별 리스트라 항목 없는 날은 건너뜀(빈 칸을 다 채우지 않음)
+      // 2026-09-20 — 결님 요청: 앞으로 7일을 전부 보여주고(전엔 항목 없는 날은 통째로 건너뜀),
+      // 빈 날은 하루종일·타임블럭·언젠가와 같은 "일정 없음. 눌러서 추가" 빈칸(block-add-row)으로 보여줘서
+      // 그 날짜에 바로 추가할 수 있게 함. 항목이 있는 날도 마지막에 글자 없는 빈 줄을 하나 더 붙여서
+      // 계속 추가할 수 있게 함(하루종일 영역과 동일 규칙).
 
       const habitHtml = dayHabits.map(t => {
         const tagColor = itemTagColor("habit", t.category_id);
@@ -3681,8 +3684,11 @@
         </div>`;
       }).join("");
 
-      html += `<div class="ag-section-head"><span class="label">${formatDateShort(dateStr)}</span><span class="count">${count}건</span></div>
-        <div class="agenda-flat">${habitHtml}${eventHtml}${todoHtml}</div>`;
+      const addRowHtml = count
+        ? `<div class="block-add-row" data-upcomingadd="${dateStr}"></div>`
+        : `<div class="agenda-empty-block block-add-row" data-upcomingadd="${dateStr}">일정 없음. 눌러서 추가</div>`;
+      html += `<div class="ag-section-head"><span class="label">${formatDateShort(dateStr)}</span>${count ? `<span class="count">${count}건</span>` : ""}</div>
+        <div class="agenda-flat">${habitHtml}${eventHtml}${todoHtml}${addRowHtml}</div>`;
     });
 
     containerEl.innerHTML = html || `<div class="agenda-empty-block">앞으로 7일간 등록된 일정이 없어요. 🍃</div>`;
@@ -3716,6 +3722,56 @@
     // 4단계: 2열 타임라인 등으로 드래그. 할일은 짧은 클릭이 이미 위 .planup-todo-title.onclick(전체 수정 시트)이
     // 처리하므로 인라인 이름수정에서 제외(skipInlineEditKinds) — 옛 attachPlanUpcomingItemDrag와 동일 규칙.
     attachHomeRowDrag(containerEl, ".plan-row[data-id]", renderHomeUpcomingList, ["todo"]);
+    days.forEach(dateStr => attachUpcomingDayAddClick(dateStr)); // 2026-09-20: 날짜별 빈칸 클릭 → 그 날짜로 바로 추가
+  }
+
+  // 2026-09-20 — "다가오는" 탭의 날짜별 빈칸(block-add-row[data-upcomingadd]) 클릭 처리. 하루종일 영역의
+  // attachAgendaAllDayAddClick과 완전히 같은 규칙(왼쪽 클릭=할일 바로 생성, 오른쪽 클릭=일정/할일/습관 선택
+  // 메뉴)이지만, 취소·빈값 종료 시 되돌릴 화면이 renderAgendaAllDay가 아니라 renderHomeUpcomingList라서
+  // 별도 함수로 둠(공용화하면 재렌더 대상을 매번 인자로 넘겨야 해서 오히려 더 헷갈림).
+  function attachUpcomingDayAddClick(dateStr, autoOpenKind) {
+    const row = document.querySelector(`#homeUpcomingList .block-add-row[data-upcomingadd="${dateStr}"]`);
+    if (!row) return;
+    const openInput = (kind) => { // kind: "todo" | "event" | "habit"
+      const wrap = document.createElement("div");
+      wrap.className = "inline-add-wrap";
+      const placeholder = kind === "event" ? "일정 이름" : kind === "habit" ? "습관 이름" : "할일 이름";
+      wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
+      row.replaceWith(wrap);
+      const input = wrap.querySelector("input");
+      input.focus();
+      let done = false;
+      const commit = async (reopen) => {
+        if (done) return;
+        const name = input.value.trim();
+        if (!name) { done = true; renderHomeUpcomingList(); return; }
+        done = true;
+        let error;
+        if (kind === "habit") {
+          ({ error } = await sb.from("tok_habits").insert({
+            name, start_date: dateStr, repeat_unit: "day", repeat_interval: 1,
+          }));
+        } else if (kind === "event") {
+          ({ error } = await sb.from("tok_events").insert({ title: name, event_date: dateStr }));
+        } else {
+          ({ error } = await sb.from("tok_todos").insert({ title: name, start_date: dateStr, todo_time: null }));
+        }
+        if (error) { alert("저장 실패: " + error.message); done = false; return; }
+        await loadAll();
+        if (reopen) attachUpcomingDayAddClick(dateStr, kind);
+      };
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); commit(true); }
+        else if (e.key === "Escape") { done = true; renderHomeUpcomingList(); }
+      });
+      input.addEventListener("blur", () => commit(false));
+    };
+    row.onclick = () => openInput("todo"); // 왼쪽 클릭 = 할일 바로 추가(기존 규칙 유지)
+    row.oncontextmenu = (e) => {
+      e.preventDefault();
+      showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind));
+    };
+    if (autoOpenKind) openInput(autoOpenKind);
   }
 
   // 언젠가 목록 정렬(최근순/오래된순/이름순) — 집 카드·할일 탭 공용으로 씀.
