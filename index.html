@@ -54,6 +54,8 @@
   .sidebar{width:180px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);padding:20px 12px;position:sticky;top:120px;height:calc(100vh - 120px);box-shadow:2px 0 16px rgba(150,130,200,.06);display:flex;flex-direction:column;}
   .sidebar .sidebar-label{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.03em;padding:0 8px 10px;}
   .navitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:var(--sub);font-size:14px;cursor:pointer;margin-bottom:4px;transition:background .15s,color .15s;}
+  .nav-icon{flex-shrink:0;}
+  .bottombar .nav-icon{vertical-align:-4px;}
   .navitem.active{background:var(--accent-soft);color:var(--accent);font-weight:600;box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 15%,transparent);}
   .content{flex:1;min-width:0;padding:20px 24px 100px;max-width:1100px;}
   .pagehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
@@ -320,12 +322,10 @@
   .plan-day-label{font-size:11px;color:var(--sub);font-weight:700;margin-bottom:4px;}
   .plan-day-body{display:flex;flex-direction:column;gap:4px;}
   .plan-row{display:flex;align-items:center;gap:6px;font-size:13px;padding:2px 0;}
-  /* 2026-09-20 — 결님이 보내준 목업 반영: 1열(할일 보관함) 목록 줄을 밑줄 구분선 리스트가 아니라 살짝
-     둥근 카드형으로 바꿈. 그룹/범주 색이 있으면 기존 itemTagBgStyle()을 그대로 재사용해서(타임라인에서
-     이미 쓰던 것과 동일 로직) 옅은 배경까지 입혀 목업의 컬러 카드 느낌에 가깝게 함 — 단, 목업처럼 줄
-     높이를 크게 늘리진 않음(2주간 확정해온 조밀한 목록 밀도는 유지, 결님이 원한 건 색감·카드 느낌이라). */
-  .plan-row.home1-card-row, .task-row.home1-card-row{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:6px;box-shadow:0 1px 3px rgba(150,130,200,.06);background:var(--card);}
-  .plan-row.home1-card-row:last-child, .task-row.home1-card-row:last-child{margin-bottom:0;}
+  /* 2026-09-20 — 카드형(테두리·그림자·여백)으로 한번 바꿨다가 결님이 "너무 넓다"고 해서 되돌림 —
+     시간블럭 뷰(agendaItemRowHtml)와 똑같이 플랫하게. 결님이 "배경색은 나쁘지 않다"고 한 부분만 살려서
+     범주색 옅은 배경만 살짝 남기고 테두리·그림자·여백은 다 뺌(itemTagFlatBgStyle, 아래 정의). */
+  .plan-row.home1-flat-row, .task-row.home1-flat-row{border-radius:7px;padding:2px 6px;margin:0 -6px;}
   .plan-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
   .plan-row.done .plan-todo-title{color:var(--sub);text-decoration:line-through;}
   .plan-row.habit{color:var(--accent);}
@@ -536,13 +536,16 @@
   <div class="layout">
     <div class="sidebar">
       <div class="sidebar-label">메뉴 탐색</div>
-      <div class="navitem" data-page="home">🏠 집</div>
-      <div class="navitem" data-page="schedule">🗓️ 일정</div>
-      <div class="navitem" data-page="todos">✔️ 할일</div>
-      <div class="navitem" data-page="habits">🔁 습관</div>
-      <div class="navitem" data-page="focus">⏱ 포커스</div>
+      <!-- 2026-09-20: 이모지 아이콘 → 상단바 설정 아이콘과 같은 계열의 선 아이콘(SVG, currentColor)으로 교체.
+           .navitem이 color:var(--sub)/active시 var(--accent)을 이미 쓰고 있어서 stroke="currentColor"만
+           넣으면 활성/비활성 색이 자동으로 맞춰짐(따로 손볼 곳 없음). -->
+      <div class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> 집</div>
+      <div class="navitem" data-page="schedule"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> 일정</div>
+      <div class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> 할일</div>
+      <div class="navitem" data-page="habits"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> 습관</div>
+      <div class="navitem" data-page="focus"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> 포커스</div>
       <div class="sidebar-footer">
-        <div class="navitem" data-page="settings">⚙ 설정</div>
+        <div class="navitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> 설정</div>
         <div class="sidebar-user" id="sidebarUserEmail"></div>
         <button id="logoutBtn">로그아웃</button>
       </div>
@@ -858,12 +861,12 @@
   </div>
 
   <div class="bottombar">
-    <div class="navitem" data-page="home">🏠<br/>집</div>
-    <div class="navitem" data-page="schedule">🗓️<br/>일정</div>
-    <div class="navitem" data-page="todos">✔️<br/>할일</div>
-    <div class="navitem" data-page="habits">🔁<br/>습관</div>
-    <div class="navitem" data-page="focus">⏱<br/>포커스</div>
-    <div class="navitem" data-page="settings">⚙<br/>설정</div>
+    <div class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><br/>집</div>
+    <div class="navitem" data-page="schedule"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><br/>일정</div>
+    <div class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><br/>할일</div>
+    <div class="navitem" data-page="habits"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg><br/>습관</div>
+    <div class="navitem" data-page="focus"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><br/>포커스</div>
+    <div class="navitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><br/>설정</div>
   </div>
 </div>
 
@@ -2052,6 +2055,14 @@
     if (!color) return `background:var(--card);border-color:var(--line);`;
     return `background:color-mix(in srgb, ${color} 24%, var(--card));border-color:color-mix(in srgb, ${color} 50%, var(--line));`;
   }
+  // 2026-09-20 — 1열(오늘 목록/다가오는/언젠가) 전용: itemTagBgStyle과 달리 테두리·흰배경 fallback 없이
+  // "배경색만" 옅게(범주 없으면 빈 문자열 = 완전히 플랫). 시간블럭 뷰처럼 플랫한 줄 위에 살짝 색만 얹으려고
+  // 결님이 콕 집어 요청한 부분만 반영(카드 느낌은 다시 뺌).
+  function itemTagFlatBgStyle(kind, catId) {
+    const color = itemTagColor(kind, catId);
+    if (!color) return "";
+    return `background:color-mix(in srgb, ${color} 18%, transparent);`;
+  }
   // 다가오는 계획 각 날짜 점 색상(장식용, 항목 있는 날만 색이 돌아가며 붙고 빈 날은 회색)
   const PLAN_DAY_DOTS = ["#4a90e2", "#f5a742", "#a56cf0", "#3fae6a", "#e2678a"];
 
@@ -2656,8 +2667,8 @@
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id);
     const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
-    const bgStyle = it.done ? "" : ` style="${itemTagBgStyle(it.kind, it.cat_id)}"`;
-    return `<div class="plan-row ag-block-row home-today-row home1-card-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}"${bgStyle}>
+    const bgStyle = it.done ? "" : ` style="${itemTagFlatBgStyle(it.kind, it.cat_id)}"`;
+    return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}"${bgStyle}>
       ${DRAG_HANDLE_SVG}
       ${lead}
       <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
@@ -3568,14 +3579,14 @@
       if (!count) return; // 날짜별 리스트라 항목 없는 날은 건너뜀(빈 칸을 다 채우지 않음)
 
       const habitHtml = dayHabits.map(t => `
-        <div class="plan-row habit home1-card-row" data-id="${t.id}" data-kind="habit" style="${itemTagBgStyle("habit", t.category_id)}">
+        <div class="plan-row habit home1-flat-row" data-id="${t.id}" data-kind="habit" style="${itemTagFlatBgStyle("habit", t.category_id)}">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="upcoming-habit-check" />
           <span class="plan-todo-title">${escapeHtml(t.name)}</span>
         </div>`).join("");
       const eventHtml = dayEvents.map(e => {
         const isRange = e.end_date && e.end_date !== e.event_date;
-        return `<div class="plan-row home1-card-row" data-id="${e.id}" data-kind="event" style="${itemTagBgStyle("event", e.category_id)}">
+        return `<div class="plan-row home1-flat-row" data-id="${e.id}" data-kind="event" style="${itemTagFlatBgStyle("event", e.category_id)}">
           ${DRAG_HANDLE_SVG}
           ${eventDotHtml(e.category_id, 8, 16)}
           <span class="plan-todo-title">${escapeHtml(e.title)}</span>
@@ -3584,9 +3595,9 @@
       }).join("");
       const todoHtml = dayTodos.map(td => {
         const tagColor = td.is_done ? null : itemTagColor("todo", td.tag_id);
-        const bgStyle = td.is_done ? "" : itemTagBgStyle("todo", td.tag_id);
+        const bgStyle = td.is_done ? "" : itemTagFlatBgStyle("todo", td.tag_id);
         return `
-        <div class="plan-row todo home1-card-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo" style="${bgStyle}">
+        <div class="plan-row todo home1-flat-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo" style="${bgStyle}">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
           <span class="plan-todo-title planup-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
@@ -3677,7 +3688,7 @@
     const rowsHtml = items.map(item => {
       const tagColor = item.tag_id ? itemTagColor("someday", item.tag_id) : null;
       return `
-      <div class="task-row ag-someday-row home1-card-row" data-someday-id="${item.id}" style="${itemTagBgStyle("someday", item.tag_id)}">
+      <div class="task-row ag-someday-row home1-flat-row" data-someday-id="${item.id}" style="${itemTagFlatBgStyle("someday", item.tag_id)}">
         ${DRAG_HANDLE_SVG}
         <input type="checkbox" data-id="${item.id}" class="somedaysum-check" />
         <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
