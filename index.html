@@ -245,6 +245,15 @@
   .home2-tab.active.tab-timeline{background:#D8F3E7;color:#2E8B6F;}
   .home2-tab.active.tab-focus{background:#FFF1C2;color:#A9820A;}
   .home2-tabpanel{min-width:0;}
+  /* 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간/타임라인) 높이에 맞추고, 언젠가·다가오는은
+     그 높이만큼 기본으로 펼쳐진 뒤 넘치는 분량만 내부 스크롤. #homeCol1의 실제 height는 JS(syncHomeCol1Height)가
+     2열 렌더 높이를 재서 매번 넣어줌 — 여기 CSS는 그 안에서 활성 탭패널이 남는 세로 공간을 꽉 채우고
+     목록 부분만 스크롤되도록 flex 구조만 잡아줌(2열 쪽 .home2-tabpanel은 건드리지 않음). */
+  #homeCol1{overflow:hidden;}
+  #homeCol1 .home2-tabpanel{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+  #homeTodayListWrap, #homeTodayBlockWrap{flex:1;min-height:0;overflow-y:auto;}
+  #homeUpcomingList{flex:1;min-height:0;overflow-y:auto;}
+  #somedayZone{flex:1;min-height:0;overflow-y:auto;}
   .home2-placeholder{border:1.5px dashed var(--line);border-radius:14px;padding:28px 14px;text-align:center;color:var(--sub);font-size:13px;line-height:1.6;}
   /* ── 오늘 탭(2026-09-20, 2단계) — 진행률 배지 + 목록/시간블럭 서브토글. 목업(파스텔 톤) 색상 그대로 적용. ── */
   .home2-today-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
@@ -287,7 +296,7 @@
   .agenda-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   /* ── 집 : 오늘 열의 타임블럭/타임라인(습관+일정 통합, 드래그로 이동/조절 가능) ── */
-  .ag-tl-grid{display:grid;grid-template-columns:34px 1fr;grid-auto-rows:13px;position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 0;overflow:hidden;}
+  .ag-tl-grid{display:grid;grid-template-columns:34px 1fr;grid-auto-rows:9px;position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 0;overflow:hidden;}
   /* 같은 시간대에 겹치는 항목을 나란히 배치하려고 grid-row 대신 이 안에서 절대좌표(top/left/width)로 배치함 */
   .ag-tl-content{grid-column:2;grid-row:1 / -1;position:relative;}
   .ag-tl-task{display:flex;align-items:flex-start;gap:6px;background:var(--accent-soft);border:1px solid #dfe3fb;border-radius:8px;padding:2px 6px;font-size:12px;line-height:1.3;position:absolute;box-sizing:border-box;overflow:hidden;z-index:1;touch-action:pan-y;cursor:pointer;}
@@ -323,8 +332,8 @@
   .plan-day-body{display:flex;flex-direction:column;gap:4px;}
   .plan-row{display:flex;align-items:center;gap:6px;font-size:13px;padding:2px 0;}
   /* 2026-09-20 — 카드형(테두리·그림자·여백)으로 한번 바꿨다가 결님이 "너무 넓다"고 해서 되돌림 —
-     시간블럭 뷰(agendaItemRowHtml)와 똑같이 플랫하게. 결님이 "배경색은 나쁘지 않다"고 한 부분만 살려서
-     범주색 옅은 배경만 살짝 남기고 테두리·그림자·여백은 다 뺌(itemTagFlatBgStyle, 아래 정의). */
+     시간블럭 뷰(agendaItemRowHtml)와 똑같이 플랫하게. 배경색 얹기도 잠깐 넣었다가 다시 "배경 없이
+     글자색만 범주색으로"로 확정 — 아래에서 각 항목 title에 itemTagColor를 직접 text color로 씀. */
   .plan-row.home1-flat-row, .task-row.home1-flat-row{border-radius:7px;padding:2px 6px;margin:0 -6px;}
   .plan-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
   .plan-row.done .plan-todo-title{color:var(--sub);text-decoration:line-through;}
@@ -1499,6 +1508,26 @@
     renderFocusCard();
   }
 
+  // 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간) 실제 렌더 높이에 맞춤. 2열 높이는
+  // 날짜 이동·탭 전환·항목 추가삭제 등으로 계속 바뀌므로, 렌더 함수마다 일일이 동기화를 끼워넣는 대신
+  // ResizeObserver로 #homeCol2 자체의 렌더 크기 변화를 감시해서 자동 반영(모바일 1단 레이아웃 폭에선 끔 —
+  // 그땐 한쪽 열만 보이므로 높이를 맞출 필요가 없음, auto로 되돌림).
+  function syncHomeCol1Height() {
+    const col1 = $("homeCol1"), col2 = $("homeCol2");
+    if (!col1 || !col2) return;
+    if (window.matchMedia("(max-width: 900px)").matches) { col1.style.height = ""; return; }
+    const h = col2.getBoundingClientRect().height;
+    if (h > 0) col1.style.height = h + "px";
+  }
+  (function initHomeColHeightSync() {
+    const col2 = $("homeCol2");
+    if (!col2) return;
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(() => syncHomeCol1Height()).observe(col2);
+    }
+    window.addEventListener("resize", syncHomeCol1Height);
+  })();
+
   // ── 집 : 오늘 한눈에 보기(2026-09-05 재개편 — 다가오는 일정 카드 제거, 오늘 열에 습관도 통합) ──
   function renderHome() {
     renderFocusCard();
@@ -1510,6 +1539,7 @@
     renderSomedaySummary();
     populateFocusTimerSelect();
     renderIncompleteBanner();
+    requestAnimationFrame(syncHomeCol1Height); // 위 렌더들 DOM 반영 뒤 1열 높이 재동기화
   }
 
   // ── 집 화면 미완료 알림 배너(2026-09-13, 6단계 → 7-4단계에서 할일/습관 각각 따로 물어보는 배너 2개로 분리) ──
@@ -2054,14 +2084,6 @@
     const color = itemTagColor(kind, catId);
     if (!color) return `background:var(--card);border-color:var(--line);`;
     return `background:color-mix(in srgb, ${color} 24%, var(--card));border-color:color-mix(in srgb, ${color} 50%, var(--line));`;
-  }
-  // 2026-09-20 — 1열(오늘 목록/다가오는/언젠가) 전용: itemTagBgStyle과 달리 테두리·흰배경 fallback 없이
-  // "배경색만" 옅게(범주 없으면 빈 문자열 = 완전히 플랫). 시간블럭 뷰처럼 플랫한 줄 위에 살짝 색만 얹으려고
-  // 결님이 콕 집어 요청한 부분만 반영(카드 느낌은 다시 뺌).
-  function itemTagFlatBgStyle(kind, catId) {
-    const color = itemTagColor(kind, catId);
-    if (!color) return "";
-    return `background:color-mix(in srgb, ${color} 18%, transparent);`;
   }
   // 다가오는 계획 각 날짜 점 색상(장식용, 항목 있는 날만 색이 돌아가며 붙고 빈 날은 회색)
   const PLAN_DAY_DOTS = ["#4a90e2", "#f5a742", "#a56cf0", "#3fae6a", "#e2678a"];
@@ -2667,8 +2689,7 @@
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id);
     const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
-    const bgStyle = it.done ? "" : ` style="${itemTagFlatBgStyle(it.kind, it.cat_id)}"`;
-    return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}"${bgStyle}>
+    return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
       ${DRAG_HANDLE_SVG}
       ${lead}
       <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
@@ -2841,7 +2862,7 @@
     else renderHomeTodayList();
   }
 
-  const AG_TL_SLOT_MIN = 15, AG_TL_ROW_PX = 13;
+  const AG_TL_SLOT_MIN = 15, AG_TL_ROW_PX = 9; // 2026-09-20: 사용자 요청으로 시간당 높이 약 30% 축소(13→9px, 1시간=36px)
   const TL_LONG_PRESS_MS = 300;
   const TL_EDGE_ZONE_PX = 8;
   // 8-3단계: dateStr/containerEl로 일반화 — 여러 날짜 열이 나란히 렌더되므로 각 열은 자기 min/max를
@@ -2872,7 +2893,7 @@
     placements.forEach(({ item: it, col, colCount }) => {
       const sRow = rowOf(it.start_minute), eRow = Math.max(sRow + 1, rowOf(it.start_minute + it.duration_minutes));
       const top = (sRow - 1) * AG_TL_ROW_PX;
-      // 15분처럼 짧은 항목은 실제 칸 높이(13px)로는 체크박스+글자가 다 안 들어가서 잘려버리므로
+      // 15분처럼 짧은 항목은 실제 칸 높이(AG_TL_ROW_PX)로는 체크박스+글자가 다 안 들어가서 잘려버리므로
       // 최소 높이를 보장(다음 항목과 살짝 겹쳐 보일 수 있지만 글자가 안 잘리는 쪽이 더 나음).
       const height = Math.max(20, (eRow - sRow) * AG_TL_ROW_PX);
       const widthPct = 100 / colCount;
@@ -3578,26 +3599,29 @@
       const count = dayHabits.length + dayEvents.length + dayTodos.length;
       if (!count) return; // 날짜별 리스트라 항목 없는 날은 건너뜀(빈 칸을 다 채우지 않음)
 
-      const habitHtml = dayHabits.map(t => `
-        <div class="plan-row habit home1-flat-row" data-id="${t.id}" data-kind="habit" style="${itemTagFlatBgStyle("habit", t.category_id)}">
+      const habitHtml = dayHabits.map(t => {
+        const tagColor = itemTagColor("habit", t.category_id);
+        return `
+        <div class="plan-row habit home1-flat-row" data-id="${t.id}" data-kind="habit">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="upcoming-habit-check" />
-          <span class="plan-todo-title">${escapeHtml(t.name)}</span>
-        </div>`).join("");
+          <span class="plan-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(t.name)}</span>
+        </div>`;
+      }).join("");
       const eventHtml = dayEvents.map(e => {
         const isRange = e.end_date && e.end_date !== e.event_date;
-        return `<div class="plan-row home1-flat-row" data-id="${e.id}" data-kind="event" style="${itemTagFlatBgStyle("event", e.category_id)}">
+        const tagColor = itemTagColor("event", e.category_id);
+        return `<div class="plan-row home1-flat-row" data-id="${e.id}" data-kind="event">
           ${DRAG_HANDLE_SVG}
           ${eventDotHtml(e.category_id, 8, 16)}
-          <span class="plan-todo-title">${escapeHtml(e.title)}</span>
+          <span class="plan-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(e.title)}</span>
           ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : e.event_time ? `<span class="plan-time">${e.event_time.slice(0, 5)}</span>` : ""}
         </div>`;
       }).join("");
       const todoHtml = dayTodos.map(td => {
         const tagColor = td.is_done ? null : itemTagColor("todo", td.tag_id);
-        const bgStyle = td.is_done ? "" : itemTagFlatBgStyle("todo", td.tag_id);
         return `
-        <div class="plan-row todo home1-flat-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo" style="${bgStyle}">
+        <div class="plan-row todo home1-flat-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
           <span class="plan-todo-title planup-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
@@ -3688,7 +3712,7 @@
     const rowsHtml = items.map(item => {
       const tagColor = item.tag_id ? itemTagColor("someday", item.tag_id) : null;
       return `
-      <div class="task-row ag-someday-row home1-flat-row" data-someday-id="${item.id}" style="${itemTagFlatBgStyle("someday", item.tag_id)}">
+      <div class="task-row ag-someday-row home1-flat-row" data-someday-id="${item.id}">
         ${DRAG_HANDLE_SVG}
         <input type="checkbox" data-id="${item.id}" class="somedaysum-check" />
         <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
