@@ -13,9 +13,12 @@
     /* 파스텔 테마 (Stitch 디자인 기준) */
     --bg:#faf9fc; --card:#ffffff; --line:#efe9f8; --text:#241f36; --sub:#7d7391;
     --accent:#8a63db; --accent-soft:#f1ecfc; --danger:#f28b82; --ok:#8fd6b7;
+    /* 2026-09-20 — 결님 요청: 기본은 시스템 글꼴, 설정에서 직접 컴퓨터에 설치된 폰트 이름을 적으면
+       JS(applyUserFont)가 이 변수만 바꿔 끼움(--font-family). 폰트 이름을 입력 안 했을 때 쓰는 기본값. */
+    --font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-family);}
 
   /* ── 로그인 ── */
   #authBox{max-width:360px;margin:80px auto;padding:24px;background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 6px 20px rgba(150,130,200,.08);}
@@ -38,20 +41,33 @@
   .brand-date{font-size:13px;color:#A79CC4;white-space:nowrap;}
   .topbar-settings{width:36px;height:36px;border-radius:18px;border:none;background:#F3EFFC;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
   .topbar-settings:hover{background:var(--accent-soft);}
-  .topbar-quickadd-row{position:fixed;top:64px;left:0;right:0;height:56px;box-sizing:border-box;background:var(--bg);border-bottom:1px solid var(--line);z-index:29;display:flex;align-items:center;padding:0 20px;}
+  /* 2026-09-20 — 결님 요청: 퀵 인풋(빠른 추가)은 모바일(사이드바 대신 하단바 쓰는 폭)에서만 상단바 아래
+     이 가로줄로 보여주고, 데스크톱(사이드바 있는 폭)에서는 사이드바 맨 위(.sidebar-quickadd)로 옮김.
+     그래서 기본은 숨기고 ≤760px에서만 보이게 뒤집음(예전엔 항상 보였음). */
+  .topbar-quickadd-row{display:none;position:fixed;top:64px;left:0;right:0;height:56px;box-sizing:border-box;background:var(--bg);border-bottom:1px solid var(--line);z-index:29;align-items:center;padding:0 20px;}
   .topbar-quickadd{flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 14px;max-width:480px;}
   .topbar-quickadd input{flex:1;border:none;background:transparent;outline:none;font-size:13px;color:var(--text);font-family:inherit;min-width:0;}
   .topbar-quickadd input::placeholder{color:var(--sub);}
   .topbar-quickadd button{flex-shrink:0;border:none;border-radius:999px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;}
   .topbar-quickadd button:active{transform:scale(.97);}
+  /* 사이드바용 퀵 인풋 — 사이드바 가로 폭(180px, 안쪽 패딩 12px씩 뺀 만큼)에 맞춰 인풋/버튼 모두 width:100%로
+     세로로 쌓음(가로로 나란히 놓기엔 폭이 좁아서). 사이드바 자체가 ≤760px에서 display:none이라 그때는
+     자동으로 같이 숨겨짐 — 따로 미디어쿼리 안 써도 됨. */
+  .sidebar-quickadd{margin-bottom:14px;flex-shrink:0;}
+  .sidebar-quickadd input{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:8px 10px;font-size:12.5px;color:var(--text);font-family:inherit;outline:none;margin-bottom:6px;}
+  .sidebar-quickadd input::placeholder{color:var(--sub);}
+  .sidebar-quickadd button{width:100%;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;padding:8px 0;cursor:pointer;font-family:inherit;}
+  .sidebar-quickadd button:active{transform:scale(.97);}
   @media (max-width:760px){
     .topbar{gap:8px;padding:0 14px;}
     .brand-logo{font-size:20px;}
-    .topbar-quickadd-row{padding:0 14px;}
+    .topbar-quickadd-row{display:flex;padding:0 14px;}
     .topbar-quickadd button span.lbl{display:none;}
+    .layout{padding-top:120px !important;}
+    .sidebar{top:120px !important;height:calc(100vh - 120px) !important;}
   }
-  .layout{display:flex;min-height:100vh;padding-top:120px;}
-  .sidebar{width:180px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);padding:20px 12px;position:sticky;top:120px;height:calc(100vh - 120px);box-shadow:2px 0 16px rgba(150,130,200,.06);display:flex;flex-direction:column;}
+  .layout{display:flex;min-height:100vh;padding-top:64px;}
+  .sidebar{width:180px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);padding:20px 12px;position:sticky;top:64px;height:calc(100vh - 64px);box-shadow:2px 0 16px rgba(150,130,200,.06);display:flex;flex-direction:column;}
   .sidebar .sidebar-label{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.03em;padding:0 8px 10px;}
   .navitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:var(--sub);font-size:14px;cursor:pointer;margin-bottom:4px;transition:background .15s,color .15s;}
   .nav-icon{flex-shrink:0;}
@@ -544,7 +560,11 @@
   </div>
   <div class="layout">
     <div class="sidebar">
-      <div class="sidebar-label">메뉴 탐색</div>
+      <div class="sidebar-quickadd">
+        <input id="quickTaskInputSide" type="text" placeholder="부담없이 딱 한 가지만 적어보세요..." />
+        <button type="button" id="quickAddBtnSide">+ 한칸 추가</button>
+      </div>
+      <div class="sidebar-label">카테고리</div>
       <!-- 2026-09-20: 이모지 아이콘 → 상단바 설정 아이콘과 같은 계열의 선 아이콘(SVG, currentColor)으로 교체.
            .navitem이 color:var(--sub)/active시 var(--accent)을 이미 쓰고 있어서 stroke="currentColor"만
            넣으면 활성/비활성 색이 자동으로 맞춰짐(따로 손볼 곳 없음). -->
@@ -834,6 +854,13 @@
         <div class="section-label" style="margin-top:20px;">테마</div>
         <div class="theme-grid" id="themeGrid"></div>
 
+        <div class="section-label" style="margin-top:20px;">글꼴 <span style="color:var(--sub);font-weight:400;">(기본은 시스템 글꼴. 컴퓨터에 설치된 폰트 이름을 적으면 그 글꼴로 바뀌어요)</span></div>
+        <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
+          <div style="flex:1;"><label>폰트 이름</label><input id="settingsFontName" type="text" placeholder="예: Pretendard, 맑은 고딕" /></div>
+          <button class="btn-ghost" id="settingsFontApplyBtn" type="button" style="flex:none;padding:0 12px;height:38px;">적용</button>
+          <button class="btn-ghost" id="settingsFontResetBtn" type="button" style="flex:none;padding:0 12px;height:38px;">기본값</button>
+        </div>
+
         <div class="section-label" style="margin-top:20px;">그룹 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
         <div class="hs-cat-list" id="settingsTagList"></div>
         <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
@@ -1103,6 +1130,28 @@
     });
   }
   document.documentElement.setAttribute("data-theme", currentThemeId());
+
+  // ── 글꼴(설정 화면) ── 2026-09-20: 기본값은 시스템 글꼴(위 :root --font-family), 결님이 컴퓨터에
+  // 설치된 폰트 이름을 직접 적으면 그 이름을 최우선으로 놓고 시스템 폰트를 뒤에 폴백으로 붙여서 CSS
+  // 변수만 갈아끼움 — 브라우저가 그 이름의 폰트를 로컬에서 찾아 쓰고, 없으면 자동으로 폴백됨(설치된
+  // 폰트 목록을 직접 나열해 보여줄 방법은 없어서 이름 입력 방식으로 구현).
+  const DEFAULT_FONT_STACK = `-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif`;
+  function currentUserFontName() { return localStorage.getItem("tok_font_name") || ""; }
+  function applyUserFont(name) {
+    const trimmed = (name || "").trim();
+    if (trimmed) {
+      document.documentElement.style.setProperty("--font-family", `"${trimmed}", ${DEFAULT_FONT_STACK}`);
+      localStorage.setItem("tok_font_name", trimmed);
+    } else {
+      document.documentElement.style.removeProperty("--font-family");
+      localStorage.removeItem("tok_font_name");
+    }
+    const input = $("settingsFontName");
+    if (input) input.value = trimmed;
+  }
+  applyUserFont(currentUserFontName()); // 저장된 폰트 있으면 페이지 열릴 때 바로 적용
+  $("settingsFontApplyBtn")?.addEventListener("click", () => applyUserFont($("settingsFontName")?.value));
+  $("settingsFontResetBtn")?.addEventListener("click", () => applyUserFont(""));
 
   let tasks = [];
   let logsToday = new Set(); // habit_id set, 오늘 완료된 것
@@ -3842,14 +3891,18 @@
   });
   $("todoQuickAddBtn").onclick = () => openTodoSheet(null);
 
-  // 2026-09-20: 상단 고정바 퀵 인풋 바 — 목업처럼 "부담없이 딱 한 가지만" 적고 엔터/버튼만 누르면
-  // 시트(모달) 없이 바로 "오늘" 할일로 저장. 카테고리·시간 없이 제목만(td_title 시트와 같은 tok_todos
-  // insert 로직 재사용, 시작일만 todayStr()로 고정). 저장 후 loadAll()로 1열 오늘 탭 등에 바로 반영됨.
-  async function quickAddTodoToday() {
-    const input = $("quickTaskInput");
+  // 2026-09-20: 퀵 인풋 바 — 목업처럼 "부담없이 딱 한 가지만" 적고 엔터/버튼만 누르면 시트(모달) 없이
+  // 바로 "오늘" 할일로 저장. 카테고리·시간 없이 제목만(td_title 시트와 같은 tok_todos insert 로직 재사용,
+  // 시작일만 todayStr()로 고정). 저장 후 loadAll()로 1열 오늘 탭 등에 바로 반영됨.
+  // 2026-09-20 추가: 결님 요청으로 데스크톱(사이드바)엔 이 인풋을 사이드바 맨 위(quickTaskInputSide)로
+  // 옮기고, 모바일(하단바 폭)엔 기존 상단바 아래 줄(quickTaskInput)을 그대로 둠 — 두 인풋이 같은 저장
+  // 로직을 쓰도록 inputId 파라미터로 일반화(버튼 id는 "Btn"→"BtnSide" 대응 규칙으로 유추).
+  async function quickAddTodoToday(inputId) {
+    const input = $(inputId);
+    if (!input) return;
     const title = input.value.trim();
     if (!title) return;
-    const btn = $("quickAddBtn");
+    const btn = $(inputId === "quickTaskInput" ? "quickAddBtn" : "quickAddBtnSide");
     if (btn) btn.disabled = true;
     const { error } = await sb.from("tok_todos").insert({ title, start_date: todayStr(), end_date: null, todo_time: null });
     if (btn) btn.disabled = false;
@@ -3857,8 +3910,10 @@
     input.value = "";
     await loadAll();
   }
-  $("quickAddBtn")?.addEventListener("click", quickAddTodoToday);
-  $("quickTaskInput")?.addEventListener("keydown", (e) => { if (e.key === "Enter") quickAddTodoToday(); });
+  $("quickAddBtn")?.addEventListener("click", () => quickAddTodoToday("quickTaskInput"));
+  $("quickTaskInput")?.addEventListener("keydown", (e) => { if (e.key === "Enter") quickAddTodoToday("quickTaskInput"); });
+  $("quickAddBtnSide")?.addEventListener("click", () => quickAddTodoToday("quickTaskInputSide"));
+  $("quickTaskInputSide")?.addEventListener("keydown", (e) => { if (e.key === "Enter") quickAddTodoToday("quickTaskInputSide"); });
 
   function renderTodosPage() {
     document.querySelectorAll("#todoTopTabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === todoTabView));
