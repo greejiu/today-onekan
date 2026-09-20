@@ -259,7 +259,6 @@
   .home2-tab.active.tab-upcoming{background:#DCEBFF;color:#3E6FB0;}
   .home2-tab.active.tab-someday{background:#ECE3FF;color:#6B4FA0;}
   .home2-tab.active.tab-timeline{background:#D8F3E7;color:#2E8B6F;}
-  .home2-tab.active.tab-focus{background:#FFF1C2;color:#A9820A;}
   .home2-tabpanel{min-width:0;}
   /* 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간/타임라인) 높이에 맞추고, 언젠가·다가오는은
      그 높이만큼 기본으로 펼쳐진 뒤 넘치는 분량만 내부 스크롤. #homeCol1의 실제 height는 JS(syncHomeCol1Height)가
@@ -282,8 +281,6 @@
   .home2-subtoggle button.active{background:#FFFFFF;color:#3A3350;box-shadow:0 1px 4px rgba(58,51,80,.10);}
   /* ── 4단계(2026-09-20) — 1열 3탭(오늘/다가오는/언젠가) 행 앞 드래그 손잡이 아이콘(장식용, 목업 참고). ── */
   .drag-handle-dots{color:#D9D2EC;flex-shrink:0;}
-  /* 8-6단계: "지금 할일" 카드는 집으로 되돌아가고 포커스 탭엔 타이머 카드 하나만 남아서(더 이상 2열로 나란히
-     안 놓임) 위 정렬 규칙은 필요 없어짐 — .focus-card 자체 스타일만으로 충분해서 별도 규칙 없이 정리함. */
   .agenda-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .agenda-date-wrap{display:flex;align-items:center;gap:6px;}
   .agenda-date-emoji{font-size:13px;}
@@ -476,56 +473,6 @@
   .habit-history-check{position:absolute;bottom:0;right:2px;font-size:8px;}
   .habit-history-note{font-size:11px;color:var(--sub);margin-top:12px;line-height:1.5;}
 
-  /* ── 집 : 지금 할 일 카드(할일 1개를 하위 행동으로 쪼개기, onekan v1 참고) ── */
-  .focus-card{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:0 8px 20px rgba(154,140,240,.12);margin-bottom:6px;}
-  .focus-head{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;}
-  .focus-sub-empty,.focus-empty{padding:4px 2px;color:var(--sub);font-size:12px;line-height:1.5;}
-  .focus-pick-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 0 6px;color:var(--sub);font-size:12px;}
-  .focus-pick-head button{border:none;background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer;}
-  .focus-pick-list{display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto;margin-bottom:8px;}
-  .focus-pick-row{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:13px;text-align:left;cursor:pointer;}
-  .focus-pick-row:hover{background:var(--bg);}
-  .focus-pick-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;}
-  .focus-pick-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .focus-add-form{display:grid;grid-template-columns:1fr auto;gap:8px;}
-  .focus-add-form input{width:100%;height:36px;padding:0 10px;border:1px solid var(--line);border-radius:9px;font:inherit;}
-  .focus-meta{display:flex;align-items:center;gap:8px;min-height:24px;margin-bottom:6px;}
-  .focus-time-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:700;}
-  .focus-state{margin-left:auto;color:var(--accent);font-size:11px;font-weight:700;}
-  .focus-state.late{color:#c07a4f;}
-  .focus-active-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;}
-  .focus-active-title{font-size:16px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;}
-  .focus-change-btn{flex:none;border:none;background:none;color:var(--sub);font-size:11px;padding:4px 6px;cursor:pointer;white-space:nowrap;}
-  .focus-change-btn:hover{color:var(--text);}
-  .focus-sub-label{font-size:11px;font-weight:700;color:var(--sub);margin-bottom:4px;}
-  .focus-sub-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px;}
-  .focus-sub-row{display:flex;align-items:center;gap:8px;padding:8px 9px;background:#fff;}
-  .focus-sub-row+.focus-sub-row{border-top:1px solid var(--line);}
-  .focus-sub-check{width:20px;height:20px;flex-shrink:0;border:1.5px solid var(--line);border-radius:6px;background:#fff;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-  .focus-sub-check.checked{background:var(--accent);border-color:var(--accent);}
-  .focus-sub-title{flex:1;min-width:0;overflow-wrap:anywhere;font-size:13px;}
-  .focus-sub-row.checked .focus-sub-title{color:var(--sub);text-decoration:line-through;}
-  .focus-sub-del{flex:none;border:none;background:none;color:var(--sub);font-size:15px;cursor:pointer;width:24px;height:24px;}
-  .focus-sub-del:hover{color:var(--danger);}
-  .focus-progress{color:var(--sub);font-size:11px;}
-
-  /* ── 집 : 포커스 타이머 카드(뽀모도로 아닌 진짜 스톱워치 — 시작한 시간부터 잰 만큼만 tok_focus_sessions에 기록) ── */
-  .ft-select{width:100%;height:36px;padding:0 10px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:13px;background:#fff;margin-bottom:14px;color:var(--text);}
-  .ft-select:disabled{opacity:.6;}
-  .ft-clock-wrap{display:flex;justify-content:center;margin-bottom:16px;}
-  .ft-clock{position:relative;width:168px;height:168px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 14px rgba(150,130,200,.10);flex-shrink:0;}
-  .ft-ticks{position:absolute;inset:0;}
-  .ft-tick{position:absolute;top:50%;left:50%;width:2px;height:8px;margin:-4px 0 0 -1px;background:var(--sub);opacity:.28;border-radius:1px;}
-  .ft-hand{position:absolute;bottom:50%;left:50%;width:3px;margin-left:-1.5px;border-radius:2px;background:var(--sub);opacity:.42;transform-origin:bottom center;}
-  .ft-hand-hour{height:40px;}
-  .ft-hand-min{height:60px;}
-  .ft-clock-center{position:absolute;top:50%;left:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--sub);opacity:.5;}
-  .ft-elapsed{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.4px;color:var(--text);background:var(--card);padding:5px 12px;border-radius:12px;box-shadow:0 1px 5px rgba(0,0,0,.07);white-space:nowrap;}
-  .ft-controls{display:flex;gap:8px;}
-  .ft-btn{flex:1;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:10px;padding:9px 0;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
-  .ft-btn:disabled{opacity:.4;cursor:default;}
-  .ft-btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;}
-
   .fab{position:fixed;right:20px;bottom:24px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:26px;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 45%,transparent);cursor:pointer;z-index:8;}
   @media (max-width:760px){ .fab{bottom:78px;} }
 
@@ -593,7 +540,6 @@
       <div class="navitem" data-page="schedule"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> 일정</div>
       <div class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> 할일</div>
       <div class="navitem" data-page="habits"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> 습관</div>
-      <div class="navitem" data-page="focus"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> 포커스</div>
       <div class="sidebar-footer">
         <div class="navitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> 설정</div>
         <div class="sidebar-user" id="sidebarUserEmail"></div>
@@ -618,28 +564,19 @@
           <button type="button" class="close" id="homeHabitBannerClose">✕</button>
         </div>
 
-        <!-- 2026-09-13 8-6단계(결 피드백 반영): "지금 할일" 카드는 8-1단계에서 포커스 탭으로 잘못 같이 옮겨진 것이라
-             다시 집으로 되돌림(포커스 타이머만 포커스 탭에 남음). 타임블럭 보기는 제거하고 타임라인만 남김,
-             언젠가는 원래처럼 타임라인과 나란히 2열로 되돌림(8-2단계에서 잠깐 상단 단독 카드였던 걸 되돌림). -->
-        <div class="focus-card card" id="focusTaskCard" style="margin-bottom:14px;">
-          <div class="focus-head"><span id="focusTaskTitle">지금 할 일</span></div>
-          <div id="focusTaskBody"></div>
-        </div>
-
-        <!-- 2026-09-20 1단계: 2열 카드 구조로 재설계. 1열=오늘/다가오는/언젠가 탭, 2열=타임라인/포커스 탭.
+        <!-- 2026-09-20 1단계: 2열 카드 구조로 재설계. 1열=오늘/다가오는/언젠가 탭, 2열=타임라인/다가오는 탭.
              1일/3일/7일 토글은 완전히 제거(집은 항상 "오늘"만). 기존 렌더 함수가 찾는 id는 그대로 유지한 채
              DOM만 옮겨서(agendaAllDayZone·agendaTimeWrap→2열 타임라인 탭, somedayZone→1열 언젠가 탭)
-             renderHome()의 나머지 호출부는 손대지 않아도 그대로 동작함. 오늘/다가오는/포커스 탭 내용물은
-             각각 2~5단계에서 채움(지금은 no-op placeholder). -->
+             renderHome()의 나머지 호출부는 손대지 않아도 그대로 동작함. -->
         <!-- 6단계: 모바일에서만 보이는 상단 세그먼트(≤900px, CSS 미디어쿼리로 데스크톱엔 숨김) — "목록"은
              1열(homeCol1) 전체를, "타임라인·다가오는·포커스"는 2열(homeCol2) 전체를 보여줌. 각 열 안의
              하위 탭은 그대로 유지. -->
         <div class="home2-mobile-switch" id="homeMobileSwitch">
           <button type="button" class="active" data-mobilecol="col1">목록</button>
-          <button type="button" data-mobilecol="col2">타임라인 · 다가오는 · 포커스</button>
+          <button type="button" data-mobilecol="col2">타임라인 · 다가오는</button>
         </div>
         <!-- 2026-09-20 — 결님 요청으로 탭 재배치: 1열(보관함)은 "목록"(옛 "오늘" 탭, 이제 날짜 이동 가능)/
-             "언젠가" 2개로, "다가오는"은 2열(실행공간)로 옮겨서 "타임라인/다가오는/포커스" 3개가 됨.
+             "언젠가" 2개로, "다가오는"은 2열(실행공간)로 옮겨서 "타임라인/다가오는" 2개가 됨.
              "목록" 탭은 homeAgendaDate를 2열 "타임라인"과 공유(연동) — 아래 goAgendaDate/resetAgendaDateToToday
              참고. 내부 데이터 속성(data-col1tab="today" 등)은 코드 여러 곳에서 참조하는 식별자라 그대로 두고
              화면에 보이는 라벨 텍스트만 바꿈. -->
@@ -691,7 +628,6 @@
             <div class="home2-tabs" id="homeCol2Tabs">
               <button type="button" class="home2-tab tab-timeline active" data-col2tab="timeline">타임라인</button>
               <button type="button" class="home2-tab tab-upcoming" data-col2tab="upcoming">다가오는</button>
-              <button type="button" class="home2-tab tab-focus" data-col2tab="focus">포커스</button>
             </div>
 
             <div class="home2-tabpanel" data-col2panel="timeline" id="homeTimelinePanel">
@@ -724,33 +660,6 @@
                 <button id="homeUpcomingNextBtn" class="agenda-nav">›</button>
               </div>
               <div id="homeUpcomingList"></div>
-            </div>
-
-            <!-- 2026-09-20 5단계: 사이드바 "⏱포커스" 페이지(#focusTimerCard)는 결님 선택대로 그대로 두고,
-                 여기 2열에 같은 모양의 타이머 카드를 하나 더 둠(id만 Home 접미사로 구분). "지금 할 일" 카드는
-                 이미 집 화면 맨 위에 항상 떠 있어서(#focusTaskCard) 여기서 또 안 보여줌(중복이라). 실제 타이머
-                 상태(ftElapsedSec 등)는 두 카드가 하나를 공유함 — populateFocusTimerSelect/buildFocusTimerTicks/
-                 renderFocusTimerClock/renderFocusTimerButtons/wireFocusTimer가 FT_ID_SUFFIXES로 두 세트를
-                 같이 갱신하도록 일반화됨. -->
-            <div class="home2-tabpanel" data-col2panel="focus" id="homeFocusPanel" style="display:none;">
-              <div class="focus-card card" id="focusTimerCardHome" style="max-width:420px;">
-                <div class="focus-head">⏱ 포커스 타이머</div>
-                <select id="ftSelectTodoHome" class="ft-select"><option value="">선택 안 함</option></select>
-                <div class="ft-clock-wrap">
-                  <div class="ft-clock">
-                    <div class="ft-ticks" id="ftClockTicksHome"></div>
-                    <div class="ft-hand ft-hand-hour" id="ftHourHandHome"></div>
-                    <div class="ft-hand ft-hand-min" id="ftMinHandHome"></div>
-                    <div class="ft-clock-center"></div>
-                    <div class="ft-elapsed" id="ftElapsedHome">00:00</div>
-                  </div>
-                </div>
-                <div class="ft-controls">
-                  <button type="button" class="ft-btn ft-btn-primary" id="ftToggleBtnHome">시작</button>
-                  <button type="button" class="ft-btn" id="ftEndBtnHome" disabled>종료</button>
-                  <button type="button" class="ft-btn" id="ftResetBtnHome" disabled>초기화</button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -856,34 +765,6 @@
         </div>
       </div>
 
-      <!-- 포커스 (2026-09-13 8-1단계: 집 화면에 있던 포커스 타이머 카드를 별도 탭으로 이동.
-           8-6단계: "지금 할일" 카드는 8-1에서 같이 옮겨진 게 결님 원래 의도가 아니었어서 집으로 되돌리고,
-           포커스 타이머 카드만 이 탭에 남김. DOM만 옮겼고 내부 로직(renderFocusCard/wireFocusTimer 등)은
-           id 기반이라 그대로 재사용 — 변경 없음. -->
-      <div class="page" data-page="focus" style="display:none;">
-        <div class="pagehead"><h2>⏱ 포커스</h2></div>
-
-        <!-- 8-6단계: "지금 할일" 카드는 집으로 되돌아가서 이제 포커스 타이머 카드만 이 탭에 남음(단독 카드라 home-grid 불필요). -->
-        <div class="focus-card card" id="focusTimerCard" style="max-width:420px;">
-          <div class="focus-head">⏱ 포커스 타이머</div>
-          <select id="ftSelectTodo" class="ft-select"><option value="">선택 안 함</option></select>
-          <div class="ft-clock-wrap">
-            <div class="ft-clock">
-              <div class="ft-ticks" id="ftClockTicks"></div>
-              <div class="ft-hand ft-hand-hour" id="ftHourHand"></div>
-              <div class="ft-hand ft-hand-min" id="ftMinHand"></div>
-              <div class="ft-clock-center"></div>
-              <div class="ft-elapsed" id="ftElapsed">00:00</div>
-            </div>
-          </div>
-          <div class="ft-controls">
-            <button type="button" class="ft-btn ft-btn-primary" id="ftToggleBtn">시작</button>
-            <button type="button" class="ft-btn" id="ftEndBtn" disabled>종료</button>
-            <button type="button" class="ft-btn" id="ftResetBtn" disabled>초기화</button>
-          </div>
-        </div>
-      </div>
-
       <!-- 설정 -->
       <div class="page" data-page="settings" style="display:none;">
         <div class="pagehead"><h2>⚙ 설정</h2></div>
@@ -941,7 +822,6 @@
     <div class="navitem" data-page="schedule"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><br/>일정</div>
     <div class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><br/>할일</div>
     <div class="navitem" data-page="habits"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg><br/>습관</div>
-    <div class="navitem" data-page="focus"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><br/>포커스</div>
     <div class="navitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><br/>설정</div>
   </div>
 </div>
@@ -1208,9 +1088,6 @@
   let todos = []; // tok_todos: 다가오는 계획 보드용 (날짜 있는 1회성 할일)
   let habitCategories = []; // tok_habit_categories: 습관·할일 공용 "그룹"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
   let eventCategories = []; // tok_event_categories: 일정 전용 "범주"(이름+색상), 그룹 풀과는 별개
-  let todoSubtasks = []; // tok_todo_subtasks: 지금 할일 카드에서 쓰는 하위 행동 목록
-  let manualFocusTodoId = null; // "다른 할일로 바꾸기"로 수동 지정한 할일 id — 새로고침하면 자동 선택으로 리셋(세션 전용, DB 저장 안 함)
-  let focusPickerOpen = false; // 지금 할일 카드가 "선택 목록" 모드인지
   let habitLogs = []; // tok_habit_logs 전체({habit_id, done_date}) — 반복주기 "마지막 완료일" 계산용
   let habitPauses = []; // tok_habit_pauses 전체({habit_id, paused_at, resumed_at, reason}) — 보관/재개 이력(2026-09-12, 여러 번 가능)
   let habitsTabView = "active"; // 습관 관리 목록 상단탭: "active"(진행중) | "archived"(보관) | "ended"(종료)
@@ -1252,7 +1129,6 @@
     $("sidebarUserEmail").textContent = session.user.email;
     $("settingsAccountCard").textContent = session.user.email;
     renderThemeGrid();
-    wireFocusTimer();
     await loadAll();
     showPage("home");
   }
@@ -1287,7 +1163,6 @@
       { data: blockData, error: e6 },
       { data: todoData, error: e7 },
       { data: habitCatData, error: e8 },
-      { data: subtaskData, error: e9 },
       { data: eventCatData, error: e10 },
       { data: settingsData, error: e12 },
       { data: pauseData, error: e13 },
@@ -1299,12 +1174,11 @@
       sb.from("tok_time_blocks").select("*").order("sort_order"),
       sb.from("tok_todos").select("*").order("start_date"),
       sb.from("tok_habit_categories").select("*").order("sort_order"),
-      sb.from("tok_todo_subtasks").select("*").order("sort_order"),
       sb.from("tok_event_categories").select("*").order("sort_order"),
       sb.from("tok_settings").select("*").maybeSingle(),
       sb.from("tok_habit_pauses").select("habit_id, paused_at, resumed_at, reason"),
     ]);
-    const firstError = e1 || e2 || e3 || e5 || e6 || e7 || e8 || e9 || e10 || e12 || e13;
+    const firstError = e1 || e2 || e3 || e5 || e6 || e7 || e8 || e10 || e12 || e13;
     if (firstError) { alert("불러오기 실패: " + firstError.message); return; }
     tasks = taskData || [];
     habitLogs = logData || []; // 전체 완료 이력(반복주기의 "마지막 완료일" 계산용)
@@ -1315,7 +1189,6 @@
     timeBlocks = (blockData || []).slice().sort((a, b) => a.start_minute - b.start_minute); // 2026-09-20: 저장 순서(sort_order)와 무관하게 항상 시작 시각순으로 정렬
     todos = todoData || [];
     habitCategories = habitCatData || [];
-    todoSubtasks = subtaskData || []; // tok_todo_subtasks: 지금 할일 카드의 하위 행동
     eventCategories = eventCatData || [];
     if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute, default_tag_color: settingsData.default_tag_color || null }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00, 기본색 없음) 유지
     await advancePastRepeatingEvents(events); // 반복 설정된 일정 중 날짜 지난 것은 다음 회차로 자동 이동
@@ -1386,217 +1259,6 @@
     }
   }
 
-  // ── 집 : 지금 할 일 카드(onekan v1의 focus-task-card 참고, 할일 1개를 하위 행동으로 쪼개기) ──
-  // 습관은 별도 탭에서 실행하므로 여기선 오늘 날짜의 tok_todos만 대상으로 함.
-  function todayFocusTodos() {
-    const t = todayStr();
-    return todos
-      .filter(td => !td.is_done && td.start_date === t)
-      .sort((a, b) => (a.todo_time || "99:99:99").localeCompare(b.todo_time || "99:99:99") || String(a.title || "").localeCompare(String(b.title || ""), "ko"));
-  }
-  function focusTimeWindow(todo) {
-    if (!todo.todo_time) return null;
-    const start = hhmmToMinutes(todo.todo_time.slice(0, 5));
-    return { start, end: start + 30 };
-  }
-  function minuteOfNow() {
-    const now = new Date();
-    return now.getHours() * 60 + now.getMinutes();
-  }
-  function focusMinuteLabel(m) {
-    return `${pad2(Math.floor(m / 60) % 24)}:${pad2(m % 60)}`;
-  }
-  function relativeMinutesLabel(mins) {
-    const value = Math.max(0, Math.round(mins));
-    if (value < 60) return `${value}분 후`;
-    const h = Math.floor(value / 60), r = value % 60;
-    return r ? `${h}시간 ${r}분 후` : `${h}시간 후`;
-  }
-  function windowMode(window, nowMin) {
-    if (!window) return "today";
-    if (window.start <= nowMin && nowMin < window.end) return "current";
-    if (window.start > nowMin) return "next";
-    return "past";
-  }
-  // 자동 선택: 수동 지정이 있으면 그걸 우선, 없으면 지금 시각이 걸쳐있는 항목 → 다음 시작할 항목 → 방금 지난 항목 → 시간 없는 첫 항목 순.
-  function selectFocusTodo() {
-    const list = todayFocusTodos();
-    if (!list.length) return null;
-    const nowMin = minuteOfNow();
-    if (manualFocusTodoId) {
-      const manual = list.find(td => td.id === manualFocusTodoId);
-      if (manual) {
-        const w = focusTimeWindow(manual);
-        return { todo: manual, mode: windowMode(w, nowMin), timing: w };
-      }
-      manualFocusTodoId = null; // 완료·삭제 등으로 오늘 목록에서 사라졌으면 자동 선택으로 되돌림
-    }
-    const timed = list.filter(td => td.todo_time);
-    const current = timed.find(td => windowMode(focusTimeWindow(td), nowMin) === "current");
-    if (current) return { todo: current, mode: "current", timing: focusTimeWindow(current) };
-    const upcoming = timed.filter(td => focusTimeWindow(td).start > nowMin).sort((a, b) => focusTimeWindow(a).start - focusTimeWindow(b).start)[0];
-    if (upcoming) return { todo: upcoming, mode: "next", timing: focusTimeWindow(upcoming) };
-    const past = [...timed].reverse().find(td => focusTimeWindow(td).end <= nowMin);
-    if (past) return { todo: past, mode: "past", timing: focusTimeWindow(past) };
-    return { todo: list[0], mode: "today", timing: null };
-  }
-  function focusMetaHtml(sel) {
-    if (!sel.timing) return `<span class="focus-time-badge">시간 없음</span><span class="focus-state">오늘</span>`;
-    if (sel.mode === "next") {
-      return `<span class="focus-time-badge">${focusMinuteLabel(sel.timing.start)} 시작 · ${relativeMinutesLabel(sel.timing.start - minuteOfNow())}</span><span class="focus-state">예정</span>`;
-    }
-    const label = sel.mode === "current" ? "진행 중" : "예정 시간 지남";
-    return `<span class="focus-time-badge">${focusMinuteLabel(sel.timing.start)}–${focusMinuteLabel(sel.timing.end)}</span><span class="focus-state${sel.mode === "past" ? " late" : ""}">${label}</span>`;
-  }
-  function subtasksFor(todoId) {
-    return todoSubtasks.filter(s => s.todo_id === todoId).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-  }
-  function focusActiveHtml(sel) {
-    const todo = sel.todo;
-    const steps = subtasksFor(todo.id);
-    const doneCount = steps.filter(s => s.is_done).length;
-    const rows = steps.map(s => `
-        <div class="focus-sub-row${s.is_done ? " checked" : ""}">
-          <button class="focus-sub-check${s.is_done ? " checked" : ""}" type="button" data-focus-sub-toggle="${s.id}">${s.is_done ? "✓" : ""}</button>
-          <span class="focus-sub-title">${escapeHtml(s.title)}</span>
-          <button class="focus-sub-del" type="button" data-focus-sub-del="${s.id}">×</button>
-        </div>`).join("");
-    // 집 화면 다른 카드들과 동일하게: 비어있으면 안내문구 자체가 클릭해서 추가하는 빈칸, 있으면 그 아래 "+ 추가" 줄.
-    const addRow = steps.length
-      ? `<div class="block-add-row" data-focus-sub-add="1"></div>`
-      : `<div class="focus-sub-empty block-add-row" data-focus-sub-add="1">아직 작은 행동이 없어요. 눌러서 추가</div>`;
-    return `
-      <div class="focus-meta">${focusMetaHtml(sel)}</div>
-      <div class="focus-active-head">
-        <div class="focus-active-title">${escapeHtml(todo.title || "이름 없는 할일")}</div>
-        <button class="focus-change-btn" type="button" id="focusChangeBtn">다른 할일로 바꾸기</button>
-      </div>
-      <div class="focus-sub-label">작은 행동</div>
-      <div class="focus-sub-list" data-todo-id="${todo.id}">${rows}${addRow}</div>
-      ${steps.length ? `<div class="focus-progress">${doneCount}/${steps.length} 완료</div>` : ""}
-    `;
-  }
-  function focusPickerHtml() {
-    const list = todayFocusTodos();
-    const body = list.length
-      ? `<div class="focus-pick-list">${list.map(td => `<button class="focus-pick-row" type="button" data-focus-pick="${td.id}"><span class="focus-pick-dot"></span><span class="focus-pick-title">${escapeHtml(td.title || "이름 없는 할일")}</span></button>`).join("")}</div>`
-      : `<div class="focus-sub-empty">오늘 할일이 아직 없어요. 아래에서 하나 추가해볼까요?</div>`;
-    return `
-      ${list.length ? `<div class="focus-pick-head"><span>지금 할 일을 직접 선택할 수 있어요.</span><button type="button" id="focusAutoBtn">자동 선택</button></div>` : ""}
-      ${body}
-      <form class="focus-add-form" id="focusAddForm" autocomplete="off">
-        <input type="text" maxlength="120" placeholder="새 할일 추가" />
-        <button class="btn-ghost" type="submit">추가</button>
-      </form>
-    `;
-  }
-  function renderFocusCard() {
-    const host = $("focusTaskBody");
-    if (!host) return;
-    const sel = focusPickerOpen ? null : selectFocusTodo();
-    $("focusTaskTitle").textContent = focusPickerOpen ? "할 일 선택" : (sel ? (sel.mode === "next" ? "다음 할 일" : "지금 할 일") : "지금 할 일");
-    host.innerHTML = sel ? focusActiveHtml(sel) : focusPickerHtml();
-    wireFocusCard();
-  }
-  function wireFocusCard() {
-    const changeBtn = $("focusChangeBtn");
-    if (changeBtn) changeBtn.onclick = () => { focusPickerOpen = true; renderFocusCard(); };
-    const autoBtn = $("focusAutoBtn");
-    if (autoBtn) autoBtn.onclick = () => { manualFocusTodoId = null; focusPickerOpen = false; renderFocusCard(); };
-    document.querySelectorAll("#focusTaskBody .focus-pick-row").forEach(btn => {
-      btn.onclick = () => { manualFocusTodoId = btn.dataset.focusPick; focusPickerOpen = false; renderFocusCard(); };
-    });
-    document.querySelectorAll("#focusTaskBody .focus-sub-check").forEach(btn => {
-      btn.onclick = () => toggleFocusSubtask(btn.dataset.focusSubToggle);
-    });
-    document.querySelectorAll("#focusTaskBody .focus-sub-del").forEach(btn => {
-      btn.onclick = async () => {
-        const id = btn.dataset.focusSubDel;
-        const { error } = await sb.from("tok_todo_subtasks").delete().eq("id", id);
-        if (error) { alert("삭제 실패: " + error.message); return; }
-        todoSubtasks = todoSubtasks.filter(s => s.id !== id);
-        renderFocusCard();
-      };
-    });
-    attachFocusSubAddClick();
-    const addForm = $("focusAddForm");
-    if (addForm) addForm.onsubmit = async (e) => {
-      e.preventDefault();
-      const input = addForm.querySelector("input");
-      const title = input.value.trim();
-      if (!title) return;
-      const { data, error } = await sb.from("tok_todos").insert({ title, start_date: todayStr() }).select().single();
-      if (error) { alert("추가 실패: " + error.message); return; }
-      todos.push(data);
-      manualFocusTodoId = data.id;
-      focusPickerOpen = false;
-      input.value = "";
-      await loadAll();
-    };
-  }
-  // "작은 행동" 추가도 다른 집 화면 카드들과 동일하게 눌러서(클릭) 인라인 입력으로 통일.
-  // autoOpen: true면 붙자마자 바로 입력창을 염(엔터로 연달아 추가할 때, 마우스로 다시 안 눌러도 되게).
-  function attachFocusSubAddClick(autoOpen) {
-    const row = document.querySelector('#focusTaskBody .block-add-row[data-focus-sub-add]');
-    if (!row) return;
-    const todoId = row.closest(".focus-sub-list")?.dataset.todoId;
-    if (!todoId) return;
-    const openInput = () => {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.maxLength = 120;
-      input.className = "inline-add-input";
-      input.placeholder = "작은 행동 추가";
-      row.replaceWith(input);
-      input.focus();
-      let done = false;
-      const commit = async (reopen) => {
-        if (done) return;
-        const title = input.value.trim();
-        if (!title) { done = true; renderFocusCard(); return; }
-        done = true;
-        const sortOrder = subtasksFor(todoId).length;
-        const { data, error } = await sb.from("tok_todo_subtasks").insert({ todo_id: todoId, title, sort_order: sortOrder }).select().single();
-        if (error) { alert("추가 실패: " + error.message); done = false; return; }
-        todoSubtasks.push(data);
-        renderFocusCard();
-        if (reopen) attachFocusSubAddClick(true); // 엔터로 저장한 거면 바로 다음 줄 입력창을 또 열어줌
-      };
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") { e.preventDefault(); commit(true); }
-        else if (e.key === "Escape") { done = true; renderFocusCard(); }
-      });
-      input.addEventListener("blur", () => commit(false));
-    };
-    row.onclick = openInput;
-    if (autoOpen) openInput();
-  }
-  async function toggleFocusSubtask(subId) {
-    const step = todoSubtasks.find(s => s.id === subId);
-    if (!step) return;
-    const turnedOn = !step.is_done;
-    const { error } = await sb.from("tok_todo_subtasks").update({ is_done: turnedOn }).eq("id", subId);
-    if (error) { alert("변경 실패: " + error.message); return; }
-    step.is_done = turnedOn;
-    const siblings = subtasksFor(step.todo_id);
-    const allDone = siblings.length > 0 && siblings.every(s => s.is_done);
-    if (turnedOn && allDone) {
-      const { error: doneErr } = await sb.from("tok_todos").update({ is_done: true }).eq("id", step.todo_id);
-      if (!doneErr) {
-        playCompleteSound(); // 하위 행동을 다 체크해서 상위 할일까지 완료된 순간 — 더 길고 풍성한 효과음
-        const t = todos.find(x => x.id === step.todo_id);
-        if (t) t.is_done = true;
-        if (manualFocusTodoId === step.todo_id) manualFocusTodoId = null;
-        if (t && t.repeat_unit) await completeTodoRepeatIfNeeded(t);
-        await loadAll();
-        return;
-      }
-    } else if (turnedOn) {
-      playCheckSound(); // 하위 행동 하나만 체크(아직 전체 완료 아님) — 기존의 짧은 효과음
-    }
-    renderFocusCard();
-  }
-
   // 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간) 실제 렌더 높이에 맞춤. 2열 높이는
   // 날짜 이동·탭 전환·항목 추가삭제 등으로 계속 바뀌므로, 렌더 함수마다 일일이 동기화를 끼워넣는 대신
   // ResizeObserver로 #homeCol2 자체의 렌더 크기 변화를 감시해서 자동 반영(모바일 1단 레이아웃 폭에선 끔 —
@@ -1619,14 +1281,12 @@
 
   // ── 집 : 오늘 한눈에 보기(2026-09-05 재개편 — 다가오는 일정 카드 제거, 오늘 열에 습관도 통합) ──
   function renderHome() {
-    renderFocusCard();
     renderAgendaAllDay();
     renderAgendaTimed();
     renderHomeTodayTab(); // 1열 "목록" 탭(목록형/시간블럭형) — homeAgendaDate 기준
     renderHomeUpcomingList(); // 2열 "다가오는" 탭(날짜별 리스트, 2026-09-20에 1열→2열로 이동)
     renderPlanUpcomingBoard();
     renderSomedaySummary();
-    populateFocusTimerSelect();
     renderIncompleteBanner();
     requestAnimationFrame(syncHomeCol1Height); // 위 렌더들 DOM 반영 뒤 1열 높이 재동기화
   }
@@ -1674,135 +1334,6 @@
   $("homeTodoBannerClose").onclick = () => dismissBannerToday("tok_todoBannerDismissed", $("homeTodoBanner"));
   $("homeHabitBannerYes").onclick = () => dismissBannerToday("tok_habitBannerDismissed", $("homeHabitBanner"));
   $("homeHabitBannerClose").onclick = () => dismissBannerToday("tok_habitBannerDismissed", $("homeHabitBanner"));
-
-  // ── 집 : 포커스 타이머(뽀모도로 아닌 진짜 스톱워치) ──
-  // 실행 중에도 loadAll()이 자주 다시 호출되지만(체크박스 등), 이 카드의 DOM은 renderHome()이 건드리지 않는 별도 영역이라
-  // 타이머 상태(변수)와 매초 갱신 중인 화면이 다른 곳 새로고침에 끊기지 않고 그대로 유지됨.
-  let ftElapsedSec = 0;
-  let ftRunning = false;
-  let ftTimerHandle = null;
-  let ftClockHandle = null;
-  let ftSessionStartedAt = null; // 세션 시작(첫 "시작" 누른) 시각 — 기록 저장용
-  let ftSessionTodoId = null;    // 세션 시작 시점에 스냅샷(중간에 할일 목록이 바뀌어도 이번 기록엔 영향 없게)
-  let ftSessionTodoTitle = null;
-  // 2026-09-20 5단계: 사이드바 "⏱포커스" 페이지(id 그대로, 접미사 없음)와 2열 "포커스" 탭(id에 Home 접미사)에
-  // 같은 타이머 카드를 두 벌 두되, 위 상태 변수는 하나만 써서 둘이 항상 같은 타이머를 보여주고 조작하게 함.
-  // 아래 함수들은 전부 이 배열을 돌면서 두 세트의 DOM을 같이 갱신하도록 일반화됨(로직 자체는 그대로).
-  const FT_ID_SUFFIXES = ["", "Home"];
-
-  function populateFocusTimerSelect() {
-    const options = todos.filter(t => !t.is_done);
-    const optionsHtml = `<option value="">선택 안 함</option>` + options.map(t => `<option value="${t.id}">${escapeHtml(t.title)}</option>`).join("");
-    FT_ID_SUFFIXES.forEach(suf => {
-      const sel = $("ftSelectTodo" + suf);
-      if (!sel) return;
-      const prevValue = sel.value;
-      sel.innerHTML = optionsHtml;
-      if (options.some(t => t.id === prevValue)) sel.value = prevValue;
-    });
-  }
-
-  function ftFormatElapsed(sec) {
-    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
-    return h > 0 ? `${h}:${pad2(m)}:${pad2(s)}` : `${pad2(m)}:${pad2(s)}`;
-  }
-
-  function buildFocusTimerTicks() {
-    let html = "";
-    for (let i = 0; i < 12; i++) html += `<div class="ft-tick" style="transform:rotate(${i * 30}deg) translateY(-78px)"></div>`;
-    FT_ID_SUFFIXES.forEach(suf => {
-      const wrap = $("ftClockTicks" + suf);
-      if (wrap) wrap.innerHTML = html;
-    });
-  }
-
-  // 시계 바탕(현재 시각을 가리키는 시침·분침)은 스톱워치가 멈춰있어도 계속 실제 시간에 맞게 흘러감.
-  function renderFocusTimerClock() {
-    const elapsedText = ftFormatElapsed(ftElapsedSec);
-    const now = new Date();
-    const hourDeg = ((now.getHours() % 12) + now.getMinutes() / 60) * 30;
-    const minDeg = (now.getMinutes() + now.getSeconds() / 60) * 6;
-    FT_ID_SUFFIXES.forEach(suf => {
-      const elapsedEl = $("ftElapsed" + suf);
-      if (elapsedEl) elapsedEl.textContent = elapsedText;
-      const hourHand = $("ftHourHand" + suf), minHand = $("ftMinHand" + suf);
-      if (hourHand) hourHand.style.transform = `rotate(${hourDeg}deg)`;
-      if (minHand) minHand.style.transform = `rotate(${minDeg}deg)`;
-    });
-  }
-
-  function renderFocusTimerButtons() {
-    FT_ID_SUFFIXES.forEach(suf => {
-      const toggleBtn = $("ftToggleBtn" + suf), endBtn = $("ftEndBtn" + suf), resetBtn = $("ftResetBtn" + suf), sel = $("ftSelectTodo" + suf);
-      if (!toggleBtn) return;
-      toggleBtn.textContent = ftRunning ? "일시정지" : (ftElapsedSec > 0 ? "이어하기" : "시작");
-      endBtn.disabled = ftElapsedSec === 0;
-      resetBtn.disabled = ftElapsedSec === 0;
-      if (sel) sel.disabled = ftRunning || ftElapsedSec > 0; // 세션 도중엔 할일을 바꿀 수 없게(기록은 시작할 때 스냅샷 고정)
-    });
-  }
-
-  function ftResetState() {
-    if (ftRunning) { ftRunning = false; clearInterval(ftTimerHandle); ftTimerHandle = null; }
-    ftElapsedSec = 0;
-    ftSessionStartedAt = null;
-    ftSessionTodoId = null;
-    ftSessionTodoTitle = null;
-  }
-
-  function wireFocusTimer() {
-    buildFocusTimerTicks();
-    populateFocusTimerSelect();
-    renderFocusTimerButtons();
-    renderFocusTimerClock();
-    // 스톱워치가 꺼져있는 동안에도 시계 바탕은 계속 흘러가야 하니 1초마다 갱신(돌고 있을 땐 ftTick이 이미 매초 처리).
-    ftClockHandle = setInterval(() => { if (!ftRunning) renderFocusTimerClock(); }, 1000);
-
-    FT_ID_SUFFIXES.forEach(suf => {
-      const toggleBtn = $("ftToggleBtn" + suf), endBtn = $("ftEndBtn" + suf), resetBtn = $("ftResetBtn" + suf);
-      if (!toggleBtn) return; // 둘 중 어느 한쪽 DOM이 없어도(옛 페이지 구조 등) 나머지는 정상 동작
-
-      toggleBtn.onclick = () => {
-        if (ftRunning) {
-          ftRunning = false;
-          clearInterval(ftTimerHandle);
-          ftTimerHandle = null;
-        } else {
-          if (!ftSessionStartedAt) {
-            ftSessionStartedAt = new Date();
-            const sel = $("ftSelectTodo" + suf); // 세션 시작 버튼을 누른 쪽 카드의 선택값을 스냅샷으로 씀
-            ftSessionTodoId = sel && sel.value ? sel.value : null;
-            ftSessionTodoTitle = sel && sel.value ? sel.options[sel.selectedIndex].textContent : null;
-          }
-          ftRunning = true;
-          ftTimerHandle = setInterval(() => { ftElapsedSec++; renderFocusTimerClock(); }, 1000);
-        }
-        renderFocusTimerButtons();
-      };
-
-      endBtn.onclick = async () => {
-        if (ftElapsedSec === 0) return;
-        if (ftRunning) { ftRunning = false; clearInterval(ftTimerHandle); ftTimerHandle = null; }
-        const { error } = await sb.from("tok_focus_sessions").insert({
-          todo_id: ftSessionTodoId, todo_title: ftSessionTodoTitle,
-          started_at: ftSessionStartedAt.toISOString(), ended_at: new Date().toISOString(),
-          duration_seconds: ftElapsedSec,
-        });
-        if (error) { alert("포커스 기록 저장 실패: " + error.message); renderFocusTimerButtons(); return; }
-        ftResetState();
-        populateFocusTimerSelect();
-        renderFocusTimerButtons();
-        renderFocusTimerClock();
-      };
-
-      resetBtn.onclick = () => {
-        ftResetState();
-        populateFocusTimerSelect();
-        renderFocusTimerButtons();
-        renderFocusTimerClock();
-      };
-    });
-  }
 
   function addDaysStr(dateStr, delta) {
     // toISOString()으로 변환하면 한국 시간(UTC+9)에서 날짜가 하루 어긋나므로 로컬 필드로 직접 조립
@@ -3874,9 +3405,12 @@
     else arr.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "")); // 기본값 recent(최근순)
     return arr;
   }
-  // 언젠가 목록 그룹 필터 — tagId가 null이면(=전체) 그대로 통과.
+  // 언젠가 목록 그룹 필터 — tagId가 null이면(=전체) 그대로 통과, SOMEDAY_NO_GROUP이면 그룹 없는("기본") 항목만.
+  const SOMEDAY_NO_GROUP = "__none__"; // "기본"(그룹 없음) 칩 전용 식별자 — null("전체")과 구분하기 위한 값, 실제 tag_id로 저장되지 않음
   function filterSomedayList(items, tagId) {
-    return tagId ? items.filter(s => s.tag_id === tagId) : items;
+    if (!tagId) return items;
+    if (tagId === SOMEDAY_NO_GROUP) return items.filter(s => !s.tag_id);
+    return items.filter(s => s.tag_id === tagId);
   }
   // 정렬 select 채우기(최근순/오래된순/이름순 공용) — onChange(newMode)를 호출부에서 넘겨받아 상태 갱신+재렌더.
   function renderSomedaySortSelect(selectEl, current, onChange) {
@@ -3887,10 +3421,13 @@
     selectEl.value = current;
     selectEl.onchange = () => onChange(selectEl.value);
   }
-  // 그룹 필터 칩 채우기(전체 + 그룹·할일 공용 풀 habitCategories) — onPick(tagIdOrNull)을 호출부에서 넘겨받음.
+  // 그룹 필터 칩 채우기(전체 + 기본(그룹 없음) + 그룹·할일 공용 풀 habitCategories) — onPick(tagIdOrNull)을 호출부에서 넘겨받음.
+  // "기본" 칩은 색상 인풋의 "기본" 색(daySettings.default_tag_color, 설정 페이지에서 지정 가능)을 점 색으로 씀.
   function renderSomedayTagChips(hostEl, activeTagId, onPick) {
-    const chips = [`<button type="button" class="someday-tag-chip${activeTagId ? "" : " active"}" data-tag="">전체</button>`]
-      .concat(habitCategories.map(c => `<button type="button" class="someday-tag-chip${activeTagId === c.id ? " active" : ""}" data-tag="${c.id}"><span class="tag-dot-sm" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(c.name)}</button>`));
+    const chips = [
+      `<button type="button" class="someday-tag-chip${activeTagId ? "" : " active"}" data-tag="">전체</button>`,
+      `<button type="button" class="someday-tag-chip${activeTagId === SOMEDAY_NO_GROUP ? " active" : ""}" data-tag="${SOMEDAY_NO_GROUP}"><span class="tag-dot-sm" style="background:${daySettings.default_tag_color || "var(--sub)"};"></span>기본</button>`,
+    ].concat(habitCategories.map(c => `<button type="button" class="someday-tag-chip${activeTagId === c.id ? " active" : ""}" data-tag="${c.id}"><span class="tag-dot-sm" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(c.name)}</button>`));
     hostEl.innerHTML = chips.join("");
     hostEl.querySelectorAll("button[data-tag]").forEach(btn => {
       btn.onclick = () => onPick(btn.dataset.tag || null);
@@ -3910,7 +3447,7 @@
     const all = filterSomedayList(sortSomedayList(undone, somedayHomeSort), somedayHomeFilterTag);
     const items = all.slice(0, somedayHomeVisible);
     const rowsHtml = items.map(item => {
-      const tagColor = item.tag_id ? itemTagColor("someday", item.tag_id) : null;
+      const tagColor = itemTagColor("someday", item.tag_id); // 그룹 없는 항목도 "기본" 색을 그대로 받아옴(itemTagColor 내부에서 처리)
       return `
       <div class="task-row ag-someday-row home1-flat-row" data-someday-id="${item.id}">
         ${DRAG_HANDLE_SVG}
@@ -4429,7 +3966,7 @@
     const done = sortSomedayList(filtered.filter(s => s.is_done), somedayTabSort);
     const sorted = [...undone, ...done]; // 완료 항목은 항상 뒤로(기존 규칙 유지), 각 그룹 안에서 선택한 정렬 기준 적용
     $("somedayList").innerHTML = sorted.length ? sorted.map(item => {
-      const tagColor = (!item.is_done && item.tag_id) ? itemTagColor("someday", item.tag_id) : null;
+      const tagColor = !item.is_done ? itemTagColor("someday", item.tag_id) : null; // 완료 항목만 무색, 그룹 없는 항목은 "기본" 색을 받음
       return `
       <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}">
         <input type="checkbox" ${item.is_done?"checked":""} data-id="${item.id}" class="someday-check" />
