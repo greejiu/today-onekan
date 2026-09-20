@@ -313,6 +313,12 @@
   .plan-day-label{font-size:11px;color:var(--sub);font-weight:700;margin-bottom:4px;}
   .plan-day-body{display:flex;flex-direction:column;gap:4px;}
   .plan-row{display:flex;align-items:center;gap:6px;font-size:13px;padding:2px 0;}
+  /* 2026-09-20 — 결님이 보내준 목업 반영: 1열(할일 보관함) 목록 줄을 밑줄 구분선 리스트가 아니라 살짝
+     둥근 카드형으로 바꿈. 그룹/범주 색이 있으면 기존 itemTagBgStyle()을 그대로 재사용해서(타임라인에서
+     이미 쓰던 것과 동일 로직) 옅은 배경까지 입혀 목업의 컬러 카드 느낌에 가깝게 함 — 단, 목업처럼 줄
+     높이를 크게 늘리진 않음(2주간 확정해온 조밀한 목록 밀도는 유지, 결님이 원한 건 색감·카드 느낌이라). */
+  .plan-row.home1-card-row, .task-row.home1-card-row{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:6px;box-shadow:0 1px 3px rgba(150,130,200,.06);background:var(--card);}
+  .plan-row.home1-card-row:last-child, .task-row.home1-card-row:last-child{margin-bottom:0;}
   .plan-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
   .plan-row.done .plan-todo-title{color:var(--sub);text-decoration:line-through;}
   .plan-row.habit{color:var(--accent);}
@@ -2627,7 +2633,8 @@
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id);
     const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
-    return `<div class="plan-row ag-block-row home-today-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
+    const bgStyle = it.done ? "" : ` style="${itemTagBgStyle(it.kind, it.cat_id)}"`;
+    return `<div class="plan-row ag-block-row home-today-row home1-card-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}"${bgStyle}>
       ${DRAG_HANDLE_SVG}
       ${lead}
       <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
@@ -3538,14 +3545,14 @@
       if (!count) return; // 날짜별 리스트라 항목 없는 날은 건너뜀(빈 칸을 다 채우지 않음)
 
       const habitHtml = dayHabits.map(t => `
-        <div class="plan-row habit" data-id="${t.id}" data-kind="habit">
+        <div class="plan-row habit home1-card-row" data-id="${t.id}" data-kind="habit" style="${itemTagBgStyle("habit", t.category_id)}">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="upcoming-habit-check" />
           <span class="plan-todo-title">${escapeHtml(t.name)}</span>
         </div>`).join("");
       const eventHtml = dayEvents.map(e => {
         const isRange = e.end_date && e.end_date !== e.event_date;
-        return `<div class="plan-row" data-id="${e.id}" data-kind="event">
+        return `<div class="plan-row home1-card-row" data-id="${e.id}" data-kind="event" style="${itemTagBgStyle("event", e.category_id)}">
           ${DRAG_HANDLE_SVG}
           ${eventDotHtml(e.category_id, 8, 16)}
           <span class="plan-todo-title">${escapeHtml(e.title)}</span>
@@ -3554,8 +3561,9 @@
       }).join("");
       const todoHtml = dayTodos.map(td => {
         const tagColor = td.is_done ? null : itemTagColor("todo", td.tag_id);
+        const bgStyle = td.is_done ? "" : itemTagBgStyle("todo", td.tag_id);
         return `
-        <div class="plan-row todo ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
+        <div class="plan-row todo home1-card-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo" style="${bgStyle}">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
           <span class="plan-todo-title planup-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
@@ -3646,7 +3654,7 @@
     const rowsHtml = items.map(item => {
       const tagColor = item.tag_id ? itemTagColor("someday", item.tag_id) : null;
       return `
-      <div class="task-row ag-someday-row" data-someday-id="${item.id}">
+      <div class="task-row ag-someday-row home1-card-row" data-someday-id="${item.id}" style="${itemTagBgStyle("someday", item.tag_id)}">
         ${DRAG_HANDLE_SVG}
         <input type="checkbox" data-id="${item.id}" class="somedaysum-check" />
         <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
