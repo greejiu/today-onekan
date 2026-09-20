@@ -1312,7 +1312,7 @@
     logsToday = new Set(habitLogs.filter(r => r.done_date === todayStr()).map(r => r.habit_id));
     events = eventData || [];
     somedayItems = somedayData || [];
-    timeBlocks = blockData || [];
+    timeBlocks = (blockData || []).slice().sort((a, b) => a.start_minute - b.start_minute); // 2026-09-20: 저장 순서(sort_order)와 무관하게 항상 시작 시각순으로 정렬
     todos = todoData || [];
     habitCategories = habitCatData || [];
     todoSubtasks = subtaskData || []; // tok_todo_subtasks: 지금 할일 카드의 하위 행동
@@ -5529,6 +5529,7 @@
       const { error } = await sb.from("tok_time_blocks").update({ [field]: minutes }).eq("id", id);
       if (error) { alert("시간 변경 실패: " + error.message); if (b) inp.value = minutesToHHMM(b[field]); return; }
       if (b) b[field] = minutes;
+      if (field === "start_minute") { timeBlocks.sort((a, c) => a.start_minute - c.start_minute); renderSettingsBlockList(); } // 시작 시각이 바뀌면 목록 순서도 즉시 재정렬
       renderTodo();
     };
     host.querySelectorAll(".hs-block-start-input").forEach(inp => { inp.onchange = () => commitTime(inp, "start_minute"); });
@@ -5557,6 +5558,7 @@
     const { data, error } = await sb.from("tok_time_blocks").insert({ title, start_minute, end_minute, sort_order: timeBlocks.length }).select().single();
     if (error) { alert("추가 실패: " + error.message); return; }
     timeBlocks.push(data);
+    timeBlocks.sort((a, b) => a.start_minute - b.start_minute); // 새 구간도 시작 시각순 위치에 삽입되도록 정렬
     $("settingsBlockName").value = ""; $("settingsBlockStart").value = ""; $("settingsBlockEnd").value = "";
     renderSettingsBlockList();
     renderTodo();
