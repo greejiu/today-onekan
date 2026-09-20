@@ -306,6 +306,14 @@
   #agendaAllDayZone.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;border-radius:14px;}
   #somedayZone.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;border-radius:14px;}
   .planup-day.drop-target{background:var(--accent-soft);border-radius:8px;}
+  /* 2026-09-20 — 결님 요청: 목록/다가오는 탭도 드래그 대상(drop zone)이 됨에 따라 같은 시각 피드백 추가. */
+  #homeTodayListWrap.drop-target, #homeTodayBlockAllDay.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;border-radius:14px;}
+  .upcoming-day.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft);border-radius:8px;}
+  /* .ag-section-head를 날짜별 .upcoming-day로 감싸면서 각 헤더가 자기 wrapper의 첫 자식이 돼 기존
+     ".ag-section-head:first-child{margin-top:0}" 규칙이 모든 날짜에 적용돼버림(원래는 목록 맨 위 하나만) —
+     날짜 사이 간격을 wrapper 쪽으로 옮겨서 복원. */
+  .upcoming-day{margin-top:14px;}
+  .upcoming-day:first-child{margin-top:0;}
   .ag-someday-row{cursor:grab;}
   .ag-someday-row.dragging{cursor:grabbing;}
   /* 드래그 가능한 목록 항목은 텍스트 드래그 선택(복사할 때처럼 파랗게 블록 잡히는 것)이 안 되게 함
@@ -614,27 +622,38 @@
              renderHome()의 나머지 호출부는 손대지 않아도 그대로 동작함. 오늘/다가오는/포커스 탭 내용물은
              각각 2~5단계에서 채움(지금은 no-op placeholder). -->
         <!-- 6단계: 모바일에서만 보이는 상단 세그먼트(≤900px, CSS 미디어쿼리로 데스크톱엔 숨김) — "목록"은
-             1열(homeCol1) 전체를, "타임라인·포커스"는 2열(homeCol2) 전체를 보여줌. 각 열 안의 하위 탭은
-             그대로 유지. -->
+             1열(homeCol1) 전체를, "타임라인·다가오는·포커스"는 2열(homeCol2) 전체를 보여줌. 각 열 안의
+             하위 탭은 그대로 유지. -->
         <div class="home2-mobile-switch" id="homeMobileSwitch">
           <button type="button" class="active" data-mobilecol="col1">목록</button>
-          <button type="button" data-mobilecol="col2">타임라인 · 포커스</button>
+          <button type="button" data-mobilecol="col2">타임라인 · 다가오는 · 포커스</button>
         </div>
+        <!-- 2026-09-20 — 결님 요청으로 탭 재배치: 1열(보관함)은 "목록"(옛 "오늘" 탭, 이제 날짜 이동 가능)/
+             "언젠가" 2개로, "다가오는"은 2열(실행공간)로 옮겨서 "타임라인/다가오는/포커스" 3개가 됨.
+             "목록" 탭은 homeAgendaDate를 2열 "타임라인"과 공유(연동) — 아래 goAgendaDate/resetAgendaDateToToday
+             참고. 내부 데이터 속성(data-col1tab="today" 등)은 코드 여러 곳에서 참조하는 식별자라 그대로 두고
+             화면에 보이는 라벨 텍스트만 바꿈. -->
         <div class="home2-grid">
           <div class="home2-col" id="homeCol1">
             <div class="home2-col-label">📥 할일 보관함</div>
             <div class="home2-tabs" id="homeCol1Tabs">
-              <button type="button" class="home2-tab tab-today active" data-col1tab="today">오늘</button>
-              <button type="button" class="home2-tab tab-upcoming" data-col1tab="upcoming">다가오는</button>
+              <button type="button" class="home2-tab tab-today active" data-col1tab="today">목록</button>
               <button type="button" class="home2-tab tab-someday" data-col1tab="someday">언젠가</button>
             </div>
 
             <div class="home2-tabpanel" data-col1panel="today" id="homeTodayPanel">
+              <!-- 2026-09-20 — "목록" 탭도 타임라인처럼 날짜 이동 가능(같은 homeAgendaDate 공유).
+                   id만 homeList*로 구분, 클릭 핸들러는 타임라인 쪽과 같은 goAgendaDate/resetAgendaDateToToday를 씀. -->
+              <div class="agenda-head">
+                <button id="homeListPrevBtn" class="agenda-nav">‹</button>
+                <span class="agenda-date-wrap"><span id="homeListDateLabel" style="cursor:pointer;">오늘</span></span>
+                <button id="homeListNextBtn" class="agenda-nav">›</button>
+              </div>
               <div class="home2-today-head">
                 <span class="home2-progress-badge" id="homeTodayProgressBadge">오늘 0/0 완료</span>
                 <div class="home2-subtoggle" id="homeTodaySubToggle">
-                  <button type="button" data-todaysub="list" class="active">목록</button>
-                  <button type="button" data-todaysub="block">시간블럭</button>
+                  <button type="button" data-todaysub="list" class="active">목록형</button>
+                  <button type="button" data-todaysub="block">시간블럭형</button>
                 </div>
               </div>
               <div id="homeTodayListWrap">
@@ -644,10 +663,6 @@
                 <div id="homeTodayBlockAllDay"></div>
                 <div id="homeTodayBlockBody"></div>
               </div>
-            </div>
-
-            <div class="home2-tabpanel" data-col1panel="upcoming" id="homeUpcomingPanel" style="display:none;">
-              <div id="homeUpcomingList"></div>
             </div>
 
             <div class="home2-tabpanel" data-col1panel="someday" id="homeSomedayPanel" style="display:none;">
@@ -665,6 +680,7 @@
             <div class="home2-col-label">🚀 실행 공간</div>
             <div class="home2-tabs" id="homeCol2Tabs">
               <button type="button" class="home2-tab tab-timeline active" data-col2tab="timeline">타임라인</button>
+              <button type="button" class="home2-tab tab-upcoming" data-col2tab="upcoming">다가오는</button>
               <button type="button" class="home2-tab tab-focus" data-col2tab="focus">포커스</button>
             </div>
 
@@ -687,6 +703,17 @@
               </div>
 
               <div id="agendaTimeWrap" style="margin-top:12px;"></div>
+            </div>
+
+            <div class="home2-tabpanel" data-col2panel="upcoming" id="homeUpcomingPanel" style="display:none;">
+              <!-- 2026-09-20 — 결님 요청으로 "다가오는"도 날짜 이동 가능해짐. 목록/타임라인과 같은 homeAgendaDate를
+                   공유하되(연동), 이 탭의 이전/다음 버튼은 7일(한 주) 단위로 이동. -->
+              <div class="agenda-head">
+                <button id="homeUpcomingPrevBtn" class="agenda-nav">‹</button>
+                <span class="agenda-date-wrap"><span id="homeUpcomingDateLabel" style="cursor:pointer;">다가오는 7일</span></span>
+                <button id="homeUpcomingNextBtn" class="agenda-nav">›</button>
+              </div>
+              <div id="homeUpcomingList"></div>
             </div>
 
             <!-- 2026-09-20 5단계: 사이드바 "⏱포커스" 페이지(#focusTimerCard)는 결님 선택대로 그대로 두고,
@@ -1585,8 +1612,8 @@
     renderFocusCard();
     renderAgendaAllDay();
     renderAgendaTimed();
-    renderHomeTodayTab(); // 2026-09-20 2단계: 1열 "오늘" 탭(목록/시간블럭)
-    renderHomeUpcomingList(); // 2026-09-20 3단계: 1열 "다가오는" 탭(날짜별 리스트)
+    renderHomeTodayTab(); // 1열 "목록" 탭(목록형/시간블럭형) — homeAgendaDate 기준
+    renderHomeUpcomingList(); // 2열 "다가오는" 탭(날짜별 리스트, 2026-09-20에 1열→2열로 이동)
     renderPlanUpcomingBoard();
     renderSomedaySummary();
     populateFocusTimerSelect();
@@ -1790,8 +1817,9 @@
   // 8-6단계: 타임블럭 보기를 없애고 타임라인 하나만 남겨서, "block"으로 바뀌는 경우가 이제 없음(토글 버튼 자체를 지움).
   // 그래도 renderAgendaTimed/renderAgendaAllDay 등 곳곳에서 이 값을 참조하므로 변수 자체는 남겨두고 "timeline"로 고정.
   let agendaView = "timeline"; // 항상 "timeline" — 오늘 열 전용(습관탭의 homeView와는 별개 상태)
-  // 2026-09-20 1단계: 1일/3일/7일 토글을 완전히 제거하고 집 화면은 항상 "오늘" 하루만 다룸 — agendaDayCount 고정 1,
-  // prev/next/오늘 버튼도 없앴으니 homeAgendaDate는 사실상 항상 todayStr()로 남음(agendaWindowDates 등 기존 함수는 그대로 재사용).
+  // 2026-09-20 1단계: 1일/3일/7일 토글을 완전히 제거 — agendaDayCount는 항상 1로 고정(agendaWindowDates 등
+  // 기존 함수는 그대로 재사용). 같은 날 이후 prev/next/오늘 버튼이 부활했고, 1열 "목록" 탭도 이 homeAgendaDate를
+  // 공유하게 돼서(goAgendaDate/resetAgendaDateToToday) 실제로 날짜가 자주 바뀜 — 더 이상 "항상 todayStr()"이 아님.
   let agendaDayCount = 1;
   function agendaWindowDates() {
     const arr = [];
@@ -2151,9 +2179,12 @@
   // 8-3단계: homeAgendaDate 하루가 아니라 agendaWindowDates()가 계산한 N일(1/3/7)을 나란히(열) 그림.
   async function renderAgendaAllDay() {
     const dates = agendaWindowDates();
-    $("agendaDateLabel").textContent = dates.length > 1
+    const dateLabelText = dates.length > 1
       ? `${formatDate(dates[0])} ~ ${formatDateShort(dates[dates.length - 1])}`
       : formatDate(dates[0]);
+    $("agendaDateLabel").textContent = dateLabelText;
+    // 2026-09-20: 1열 "목록" 탭도 같은 날짜를 공유하게 돼서 그쪽 라벨(homeListDateLabel)도 같이 갱신.
+    if ($("homeListDateLabel")) $("homeListDateLabel").textContent = dateLabelText;
 
     // 타임라인을 보고 있을 땐 하루종일도 타임라인과 같은 톤(작은 글씨+범주색 옅은 배경)으로 맞추고 동그라미 표시는 없앰
     // (배경색 자체가 구분 역할을 대신 함). 타임블럭을 보고 있을 땐 기존처럼 동그라미로 구분(2026-09-07, 결님 요청 —
@@ -2284,6 +2315,10 @@
   function homeDropZone(x, y) {
     const el = document.elementFromPoint(x, y);
     if (!el) return null;
+    // 2026-09-20 — 결님 요청: 언젠가/다가오는/목록/타임라인 네 탭 사이에서 자유롭게 드래그 가능해짐.
+    // "다가오는" 탭은 날짜별로 감싼 .upcoming-day(data-date)를 놓으면 그 날짜의 하루종일 항목으로 옮김.
+    const upcomingDay = el.closest(".upcoming-day[data-date]");
+    if (upcomingDay) return { zone: "today-allday", date: upcomingDay.dataset.date };
     const planDay = el.closest(".planup-day[data-idx]");
     if (planDay) {
       const date = homePlanDays[parseInt(planDay.dataset.idx, 10)];
@@ -2303,6 +2338,10 @@
     const alldayCol = el.closest(".ag-allday-col[data-date]");
     if (alldayCol) return { zone: "today-allday", date: alldayCol.dataset.date };
     if (el.closest("#agendaAllDayZone")) return { zone: "today-allday", date: homeAgendaDate };
+    // "목록" 탭(목록형 flat 리스트든 시간블럭형 하루종일 영역이든) 위에 놓으면 지금 보고 있는 homeAgendaDate의
+    // 하루종일 항목으로 옮김 — 시간블럭형의 "시간 있는" 카드 위는 위의 .ag-block-card 케이스가 이미 처리함.
+    if (el.closest("#homeTodayListWrap")) return { zone: "today-allday", date: homeAgendaDate };
+    if (el.closest("#homeTodayBlockAllDay")) return { zone: "today-allday", date: homeAgendaDate };
     if (el.closest("#somedayZone")) return { zone: "someday" };
     return null;
   }
@@ -2389,8 +2428,11 @@
           dragEl.classList.add("dragging");
         }
         if (!moved) return;
-        const drop = homeDropZone(e.clientX, e.clientY);
-        const under = drop && drop.zone !== "today-allday" ? document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card, .ag-tl-grid, .planup-day, #somedayZone") : null;
+        // 2026-09-20 — "today-allday" zone이 이제 #agendaAllDayZone 하나가 아니라 목록/다가오는 등 여러 컨테이너에
+        // 걸쳐 있어서, zone 문자열만으로 하이라이트를 끄던 예전 방식(드롭 zone이 today-allday면 무조건 숨김)은
+        // 너무 광범위해짐 — 셀렉터 목록에서 자기 자신의 존(#agendaAllDayZone)만 빼서 자기 위에선 안 뜨고,
+        // 다른 today-allday 컨테이너(목록/다가오는 등) 위에서는 정상적으로 뜨게 함.
+        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card, .ag-tl-grid, .planup-day, #homeTodayListWrap, #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
         if (under !== curTarget) {
           curTarget?.classList.remove("drop-target");
           curTarget = under || null;
@@ -2671,7 +2713,7 @@
         }
         if (!moved) return;
         if (ghost) { ghost.style.left = `${e.clientX + 14}px`; ghost.style.top = `${e.clientY + 10}px`; }
-        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], #agendaAllDayZone, .planup-day, #somedayZone");
+        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], #agendaAllDayZone, .planup-day, #homeTodayListWrap, #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
         if (under !== curTarget) {
           curTarget?.classList.remove("drop-target");
           curTarget = under || null;
@@ -2796,7 +2838,10 @@
         }
         if (!moved) return;
         if (ghost) { ghost.style.left = `${e.clientX + 14}px`; ghost.style.top = `${e.clientY + 10}px`; }
-        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #somedayZone");
+        // 2026-09-20 — 이 함수는 목록/다가오는 탭 행 모두에 쓰이는데, 이제 그 탭들 자신도 드롭 대상이라
+        // 자기가 지금 들어있는 컨테이너(같은 날짜) 위에선 하이라이트가 안 뜨게 .contains(row)로 걸러줌.
+        let under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #homeTodayListWrap, #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
+        if (under && under.contains(row)) under = null;
         if (under !== curTarget) {
           curTarget?.classList.remove("drop-target");
           curTarget = under || null;
@@ -2833,11 +2878,11 @@
   async function renderHomeTodayList() {
     const containerEl = $("homeTodayList");
     if (!containerEl) return;
-    const dateStr = todayStr();
+    const dateStr = homeAgendaDate; // 2026-09-20: "목록" 탭이 타임라인과 날짜를 공유하게 됨(예전엔 항상 todayStr())
     const items = await todayMergedListItems(dateStr);
     containerEl.innerHTML = items.length
       ? items.map(it => homeTodayRowHtml(it, dateStr)).join("")
-      : `<div class="agenda-empty-block">오늘 할 일이 없어요.</div>`;
+      : `<div class="agenda-empty-block">${formatDateShort(dateStr)} 할 일이 없어요.</div>`;
     // 시간블럭 뷰(renderAgendaBlocks 재사용)는 attachAgendaBlockDrag 안에서 우클릭 메뉴가 자동으로 붙는데
     // 목록 뷰는 직접 그려서 빠져 있었음 — 3단계에서 같이 붙여서 두 서브뷰 기능을 맞춤.
     containerEl.querySelectorAll(".home-today-row[data-id]").forEach(row => {
@@ -2855,7 +2900,7 @@
   // 따로 붙임(todayAllDayItems + homeTodayRowHtml 재사용, 옛 #agendaAllDayZone의 "하루종일" 라벨/점 색과
   // 동일한 스타일).
   async function renderHomeTodayBlock() {
-    const dateStr = todayStr();
+    const dateStr = homeAgendaDate; // 2026-09-20: "목록" 탭이 타임라인과 날짜를 공유하게 됨(예전엔 항상 todayStr())
 
     const allDayEl = $("homeTodayBlockAllDay");
     if (allDayEl) {
@@ -2887,11 +2932,11 @@
   async function renderHomeTodayProgress() {
     const el = $("homeTodayProgressBadge");
     if (!el) return;
-    const dateStr = todayStr();
+    const dateStr = homeAgendaDate; // 2026-09-20: "목록" 탭이 타임라인과 날짜를 공유하게 됨(예전엔 항상 todayStr())
     const items = await todayMergedListItems(dateStr);
     const checkable = items.filter(it => it.kind === "habit" || it.kind === "todo");
     const done = checkable.filter(it => it.done).length;
-    el.textContent = `오늘 ${done}/${checkable.length} 완료`;
+    el.textContent = `${formatDateShort(dateStr)} ${done}/${checkable.length} 완료`;
   }
 
   let homeTodaySub = "list"; // "list" | "block" — 오늘 탭 안의 목록/시간블럭 하위 토글 상태
@@ -3139,7 +3184,7 @@
         if (dragKind === "move") {
           // 8-3단계: 하루종일/언젠가뿐 아니라 "다른 날짜"의 타임라인 열도 바깥 존으로 침(자기 열은 제외 —
           // 그래야 같은 열 안에서의 기존 이동/시간조절 동작이 그대로 유지됨).
-          const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest("#agendaAllDayZone, .planup-day, #somedayZone, .ag-tl-content[data-date]");
+          const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest("#agendaAllDayZone, .planup-day, #homeTodayListWrap, #homeTodayBlockAllDay, .upcoming-day, #somedayZone, .ag-tl-content[data-date]");
           const el = (hit && hit.matches(".ag-tl-content") && hit.dataset.date === dateStr) ? null : hit;
           if (el !== outsideEl) {
             outsideEl?.classList.remove("drop-target");
@@ -3350,19 +3395,31 @@
   // 2026-09-20 1단계에서 agendaPrevBtn/agendaNextBtn/agendaTodayBtn/agendaDayCountToggle 버튼을 없앴다가,
   // 같은 날 결님 요청으로 prev/next + 날짜라벨 클릭(오늘로 복귀)만 부활시킴(2열 타임라인, agendaDayCount는
   // 1로 고정 유지 — 1/3/7일 토글과 별도 오늘버튼(agendaTodayBtn)은 부활 안 시킴, 라벨 클릭이 그 역할을 대신함).
-  // 1열 "오늘" 탭은 homeAgendaDate가 아니라 todayStr()을 직접 써서 이 날짜 이동과 무관하게 항상 실제 오늘만 보여줌.
-  $("agendaPrevBtn")?.addEventListener("click", () => { homeAgendaDate = addDaysStr(homeAgendaDate, -agendaDayCount); renderAgendaAllDay(); renderAgendaTimed(); });
-  $("agendaNextBtn")?.addEventListener("click", () => { homeAgendaDate = addDaysStr(homeAgendaDate, agendaDayCount); renderAgendaAllDay(); renderAgendaTimed(); });
-  $("agendaDateLabel")?.addEventListener("click", () => {
+  // 2026-09-20 추가 — 결님 요청으로 1열 "목록" 탭도 이 homeAgendaDate를 그대로 같이 씀(연동): 아래 두
+  // 헬퍼로 공용화해서 2열 타임라인 버튼(agendaPrevBtn 등)과 1열 목록 버튼(homeListPrevBtn 등) 모두가
+  // 같은 함수를 호출 — 날짜를 어느 쪽에서 옮기든 두 열이 같이 움직이고, renderHomeTodayTab()도 매번 같이 불림.
+  // 2026-09-20 추가 — "다가오는" 탭도 결님 요청으로 homeAgendaDate에 연동(같이 움직임), 단 이 탭 자체의
+  // 이전/다음 버튼(homeUpcomingPrevBtn/NextBtn)은 한 번에 7일씩 이동(다른 두 탭은 1일씩).
+  function goAgendaDate(stepDays) {
+    homeAgendaDate = addDaysStr(homeAgendaDate, stepDays * agendaDayCount);
+    renderAgendaAllDay();
+    renderAgendaTimed();
+    renderHomeTodayTab();
+    renderHomeUpcomingList();
+  }
+  function resetAgendaDateToToday() {
     if (homeAgendaDate === todayStr()) return;
     homeAgendaDate = todayStr();
-    renderAgendaAllDay(); renderAgendaTimed();
-  });
-  $("agendaTodayBtn")?.addEventListener("click", () => {
-    if (homeAgendaDate === todayStr()) return;
-    homeAgendaDate = todayStr();
-    renderAgendaAllDay(); renderAgendaTimed();
-  });
+    renderAgendaAllDay();
+    renderAgendaTimed();
+    renderHomeTodayTab();
+    renderHomeUpcomingList();
+  }
+  ["agendaPrevBtn", "homeListPrevBtn"].forEach(id => $(id)?.addEventListener("click", () => goAgendaDate(-1)));
+  ["agendaNextBtn", "homeListNextBtn"].forEach(id => $(id)?.addEventListener("click", () => goAgendaDate(1)));
+  ["homeUpcomingPrevBtn"].forEach(id => $(id)?.addEventListener("click", () => goAgendaDate(-7)));
+  ["homeUpcomingNextBtn"].forEach(id => $(id)?.addEventListener("click", () => goAgendaDate(7)));
+  ["agendaDateLabel", "homeListDateLabel", "homeUpcomingDateLabel", "agendaTodayBtn"].forEach(id => $(id)?.addEventListener("click", resetAgendaDateToToday));
   document.querySelectorAll("#agendaDayCountToggle button[data-days]").forEach(btn => {
     btn.onclick = () => {
       agendaDayCount = parseInt(btn.dataset.days, 10);
@@ -3627,8 +3684,12 @@
   async function renderHomeUpcomingList() {
     const containerEl = $("homeUpcomingList");
     if (!containerEl) return;
+    // 2026-09-20 — 결님 요청으로 "다가오는"도 날짜 이동 가능해짐(homeAgendaDate 연동, 이전/다음은 7일씩).
+    // 창 범위는 항상 homeAgendaDate 기준 +1일~+7일.
     const days = [];
-    for (let i = 1; i <= 7; i++) days.push(addDaysStr(todayStr(), i));
+    for (let i = 1; i <= 7; i++) days.push(addDaysStr(homeAgendaDate, i));
+    const dateLabelEl = $("homeUpcomingDateLabel");
+    if (dateLabelEl) dateLabelEl.textContent = `${formatDateShort(days[0])} ~ ${formatDateShort(days[days.length - 1])}`;
 
     const { data: logData } = await sb.from("tok_habit_logs").select("habit_id, done_date").in("done_date", days);
     const logsByDate = {};
@@ -3636,7 +3697,7 @@
     (logData || []).forEach(r => { if (logsByDate[r.done_date]) logsByDate[r.done_date].add(r.habit_id); });
 
     const active = tasks.filter(t => t.is_active);
-    const habitNextDate = new Map(active.map(t => [t.id, t.repeat_unit ? habitNextDueAfter(t, todayStr()) : null]));
+    const habitNextDate = new Map(active.map(t => [t.id, t.repeat_unit ? habitNextDueAfter(t, homeAgendaDate) : null]));
 
     let html = "";
     days.forEach(dateStr => {
@@ -3687,8 +3748,12 @@
       const addRowHtml = count
         ? `<div class="block-add-row" data-upcomingadd="${dateStr}"></div>`
         : `<div class="agenda-empty-block block-add-row" data-upcomingadd="${dateStr}">일정 없음. 눌러서 추가</div>`;
-      html += `<div class="ag-section-head"><span class="label">${formatDateShort(dateStr)}</span>${count ? `<span class="count">${count}건</span>` : ""}</div>
-        <div class="agenda-flat">${habitHtml}${eventHtml}${todoHtml}${addRowHtml}</div>`;
+      // 2026-09-20 — 결님 요청으로 언젠가/목록/타임라인과 서로 드래그 이동 가능해짐: 날짜별 묶음을
+      // .upcoming-day(data-date)로 감싸서 homeDropZone이 "이 날짜의 하루종일 항목"으로 인식하게 함.
+      html += `<div class="upcoming-day" data-date="${dateStr}">
+        <div class="ag-section-head"><span class="label">${formatDateShort(dateStr)}</span>${count ? `<span class="count">${count}건</span>` : ""}</div>
+        <div class="agenda-flat">${habitHtml}${eventHtml}${todoHtml}${addRowHtml}</div>
+      </div>`;
     });
 
     containerEl.innerHTML = html || `<div class="agenda-empty-block">앞으로 7일간 등록된 일정이 없어요. 🍃</div>`;
@@ -3907,7 +3972,7 @@
         }
         if (!moved) return;
         if (ghost) { ghost.style.left = `${e.clientX + 14}px`; ghost.style.top = `${e.clientY + 10}px`; }
-        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx]");
+        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #homeTodayListWrap, #homeTodayBlockAllDay, .upcoming-day");
         if (under !== curTarget) {
           curTarget?.classList.remove("drop-target");
           curTarget = under || null;
