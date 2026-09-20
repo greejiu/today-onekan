@@ -267,9 +267,12 @@
      목록 부분만 스크롤되도록 flex 구조만 잡아줌(2열 쪽 .home2-tabpanel은 건드리지 않음). */
   #homeCol1{overflow:hidden;}
   #homeCol1 .home2-tabpanel{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
-  #homeTodayListWrap, #homeTodayBlockWrap{flex:1;min-height:0;overflow-y:auto;}
-  #homeUpcomingList{flex:1;min-height:0;overflow-y:auto;}
-  #somedayZone{flex:1;min-height:0;overflow-y:auto;}
+  /* overflow-y:auto만 주면 CSS 스펙상 overflow-x도 자동으로 visible→auto로 바뀌어서(옆 축이 hidden이
+     아니면 같이 auto가 됨) 가로 스크롤이 필요 없는데도 아래쪽에 가로 스크롤바가 생기는 경우가 있었음
+     (결님 제보, 2026-09-20) — overflow-x:hidden을 명시해서 세로 스크롤만 남김. */
+  #homeTodayListWrap, #homeTodayBlockWrap{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;}
+  #homeUpcomingList{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;}
+  #somedayZone{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;}
   .home2-placeholder{border:1.5px dashed var(--line);border-radius:14px;padding:28px 14px;text-align:center;color:var(--sub);font-size:13px;line-height:1.6;}
   /* ── 오늘 탭(2026-09-20, 2단계) — 진행률 배지 + 목록/시간블럭 서브토글. 목업(파스텔 톤) 색상 그대로 적용. ── */
   .home2-today-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
