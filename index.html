@@ -9,14 +9,38 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&display=swap" rel="stylesheet" />
 <style>
-  :root, [data-theme="pastel"]{
-    /* 파스텔 테마 (Stitch 디자인 기준) */
-    --bg:#faf9fc; --card:#ffffff; --line:#efe9f8; --text:#241f36; --sub:#7d7391;
-    --accent:#8a63db; --accent-soft:#f1ecfc; --danger:#f28b82; --ok:#8fd6b7;
-    /* 2026-09-20 — 결님 요청: 기본은 시스템 글꼴, 설정에서 직접 컴퓨터에 설치된 폰트 이름을 적으면
-       JS(applyUserFont)가 이 변수만 바꿔 끼움(--font-family). 폰트 이름을 입력 안 했을 때 쓰는 기본값. */
+  /* 2026-09-23 — 테마 5종으로 전면 교체(파스텔/도파민/깔끔블루 폐기). 지피티와 확정한 스펙대로
+     "배경을 그 색으로 덮지 않고 accent만 바꾼다" 원칙 유지. --accent-soft/--danger/--ok는 스펙에
+     없어서 각 테마 배경에 맞게 직접 조정한 값(나중에 눈으로 보면서 미세조정 가능). */
+  :root, [data-theme="white"]{
+    /* 하양 — 기본 라이트 */
+    --bg:#FFFFFF; --card:#FFFFFF; --line:#E8E8E8; --text:#222222; --sub:#777777;
+    --accent:#222222; --accent-soft:#ECECEC; --danger:#f28b82; --ok:#8fd6b7;
     --font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;
   }
+  [data-theme="black"]{
+    /* 검정 — 기본 다크 */
+    --bg:#171717; --card:#222222; --line:#383838; --text:#F5F5F5; --sub:#AAAAAA;
+    --accent:#FFFFFF; --accent-soft:#333333; --danger:#f28b82; --ok:#8fd6b7;
+  }
+  [data-theme="sky"]{
+    /* 하늘 — 맑고 가벼운 느낌 */
+    --bg:#FAFCFF; --card:#FFFFFF; --line:#DDEEFF; --text:#222222; --sub:#777777;
+    --accent:#8AC8FF; --accent-soft:#E3F1FF; --danger:#f28b82; --ok:#8fd6b7;
+  }
+  [data-theme="purple"]{
+    /* 보라 — 차분하고 몽글몽글한 느낌 */
+    --bg:#FCFAFF; --card:#FFFFFF; --line:#E9DFFF; --text:#222222; --sub:#777777;
+    --accent:#B9A0E8; --accent-soft:#F1ECFC; --danger:#f28b82; --ok:#8fd6b7;
+  }
+  [data-theme="pink"]{
+    /* 분홍 — 따뜻하고 귀여운 느낌 */
+    --bg:#FFFBFC; --card:#FFFFFF; --line:#F5DEE3; --text:#222222; --sub:#777777;
+    --accent:#F2A6B8; --accent-soft:#FCEAEE; --danger:#f28b82; --ok:#8fd6b7;
+  }
+  /* 2026-09-20 — 결님 요청: 기본은 시스템 글꼴, 설정에서 직접 컴퓨터에 설치된 폰트 이름을 적으면
+     JS(applyUserFont)가 이 변수만 바꿔 끼움(--font-family). 폰트 이름을 입력 안 했을 때 쓰는 기본값
+     은 위 :root 블록의 --font-family 하나로 모든 테마가 공유(테마 바뀌어도 폰트는 안 바뀜). */
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-family);}
 
@@ -426,6 +450,7 @@
   .hs-cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
   .hs-cat-row{display:flex;align-items:center;gap:6px;}
   .hs-cat-row input[type="color"]{width:28px;height:28px;padding:1px;border:1px solid var(--line);border-radius:6px;flex-shrink:0;}
+  .hs-cat-row .color-swatch-btn{width:28px;height:28px;border-radius:6px;}
   .hs-cat-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .hs-cat-del{border:none;background:none;color:var(--sub);font-size:14px;cursor:pointer;flex-shrink:0;width:24px;height:24px;line-height:1;border-radius:6px;}
   .hs-cat-del:hover{color:var(--danger);background:var(--accent-soft);}
@@ -439,8 +464,9 @@
   /* "기본"(그룹 없음) 줄 — 순서 고정이라 손잡이 자리를 빈 여백으로만 맞춰서 색상칩 위치를 다른 줄과 정렬 */
   .hs-cat-drag-handle-spacer{display:inline-block;width:14px;height:14px;flex-shrink:0;}
   .hs-cat-name-fixed{flex:1;min-width:0;font-size:13px;color:var(--sub);padding:6px 8px;}
-  /* 그룹/범주 "새로 추가" 색상 선택(2026-09-23, 팝오버 방식으로 개편) — 네이티브 <input type="color">는 화면에서만 숨기고
-     (기능은 그대로 살아있음: "직접 선택하기"에서 이걸 트리거), 똑같은 자리에 스와치 버튼을 둬서 누르면 프리셋 팝오버가 뜸.
+  /* 그룹/범주 색상 선택(2026-09-23, 팝오버 방식) — "새로 추가" 입력칸 + 이미 만든 그룹/범주 수정 목록(renderCategoryManageList)
+     양쪽 다 적용. 네이티브 <input type="color">는 화면에서만 숨기고(기능은 그대로 살아있음: "직접 선택하기"에서 이걸 트리거),
+     똑같은 자리에 스와치 버튼을 둬서 누르면 프리셋 팝오버가 뜸.
      팝오버 자체는 JS에서 body 바로 아래에 하나만 만들어서 재사용(습관 설정 시트처럼 overflow:auto인 곳에서 열어도 안 잘리게 position:fixed). */
   .color-native-input{position:absolute;width:1px;height:1px;padding:0;margin:0;border:0;opacity:0;pointer-events:none;}
   .color-swatch-btn{width:38px;height:38px;padding:0;border:1px solid var(--line);border-radius:8px;cursor:pointer;flex-shrink:0;}
@@ -1043,13 +1069,21 @@
   }
 
   // ── 테마(설정 화면에서 선택) ──
-  // 파스텔만 실제 적용 가능, 나머지 2개는 결님이 Stitch에서 마저 만드는 중이라 준비중으로만 표시
+  // 2026-09-23: 파스텔/도파민/깔끔블루 폐기, 지피티와 확정한 5종(하양/검정/하늘/보라/분홍)으로 전면 교체.
+  // 전부 즉시 적용 가능(ready:true) — Stitch 준비중 개념 없어짐.
   const THEMES = [
-    { id: "pastel", name: "파스텔", desc: "지금 쓰는 라벤더 톤", swatch: ["#faf9fc", "#8a63db", "#f1ecfc"], ready: true },
-    { id: "dopamine", name: "도파민", desc: "준비중", swatch: ["#fff4e0", "#ff6b6b", "#ffd93d"], ready: false },
-    { id: "cleanblue", name: "깔끔블루", desc: "준비중", swatch: ["#eef4ff", "#2f6fed", "#dce8ff"], ready: false },
+    { id: "white", name: "하양", desc: "밝고 깨끗한 기본", swatch: ["#FFFFFF", "#222222", "#E8E8E8"], ready: true },
+    { id: "black", name: "검정", desc: "어둡고 차분한 다크", swatch: ["#171717", "#FFFFFF", "#383838"], ready: true },
+    { id: "sky", name: "하늘", desc: "맑고 가벼운 느낌", swatch: ["#FAFCFF", "#8AC8FF", "#DDEEFF"], ready: true },
+    { id: "purple", name: "보라", desc: "차분하고 몽글몽글한 느낌", swatch: ["#FCFAFF", "#B9A0E8", "#E9DFFF"], ready: true },
+    { id: "pink", name: "분홍", desc: "따뜻하고 귀여운 느낌", swatch: ["#FFFBFC", "#F2A6B8", "#F5DEE3"], ready: true },
   ];
-  function currentThemeId() { return localStorage.getItem("tok_theme") || "pastel"; }
+  // 기존에 localStorage에 남아있던 "pastel"/"dopamine"/"cleanblue" 값은 더 이상 유효한 id가 아니라서
+  // 자동으로 기본값("white")으로 마이그레이션됨(별도 마이그레이션 코드 없이 이 fallback으로 처리).
+  function currentThemeId() {
+    const v = localStorage.getItem("tok_theme");
+    return THEMES.some(t => t.id === v) ? v : "white";
+  }
   function applyTheme(themeId) {
     document.documentElement.setAttribute("data-theme", themeId);
     localStorage.setItem("tok_theme", themeId);
@@ -1165,8 +1199,7 @@
     if (pop) pop.classList.remove("open");
     _colorPopoverTargetInput = null;
   }
-  function openColorPopoverFor(btn, targetInputId) {
-    const input = $(targetInputId);
+  function openColorPopoverFor(btn, input) {
     if (!input) return;
     const pop = ensureColorPopover();
     _colorPopoverTargetInput = input;
@@ -1183,25 +1216,29 @@
     pop.style.left = left + "px";
     pop.style.top = top + "px";
   }
+  // 스와치 버튼 하나 + 그 옆(숨겨진) 네이티브 색상 인풋 하나를 짝지어 연결하는 공용 헬퍼.
+  // "새로 추가" 입력칸(고정 id)뿐 아니라, 그룹/범주 수정 목록처럼 매번 다시 그려지는 동적 목록에서도
+  // 재호출해서 그대로 쓸 수 있게 input을 id 문자열이 아니라 DOM 엘리먼트로 직접 받음
+  // (수정 목록은 같은 그룹 풀이 설정 페이지·습관 시트 두 군데에 동시에 렌더돼서 data-id가 전역에서 중복될 수 있음 — id 기반 조회 대신 이 방식으로 우회).
+  function wireColorSwatchButton(btn, input) {
+    if (!btn || !input) return;
+    btn.style.background = input.value;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const pop = $("colorPresetPopover");
+      if (pop && pop.classList.contains("open") && _colorPopoverTargetInput === input) {
+        closeColorPopover();
+      } else {
+        openColorPopoverFor(btn, input);
+      }
+    };
+    input.addEventListener("change", () => { btn.style.background = input.value; });
+  }
   function initColorSwatches() {
     document.querySelectorAll(".color-swatch-btn[data-for]").forEach(btn => {
       if (btn.dataset.wired) return;
       btn.dataset.wired = "1";
-      const targetId = btn.dataset.for;
-      const input = $(targetId);
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const pop = $("colorPresetPopover");
-        if (pop && pop.classList.contains("open") && _colorPopoverTargetInput === $(targetId)) {
-          closeColorPopover();
-        } else {
-          openColorPopoverFor(btn, targetId);
-        }
-      };
-      if (input && !input.dataset.swatchSynced) {
-        input.dataset.swatchSynced = "1";
-        input.addEventListener("change", () => { btn.style.background = input.value; });
-      }
+      wireColorSwatchButton(btn, $(btn.dataset.for));
     });
     if (!document._colorPopoverOutsideWired) {
       document._colorPopoverOutsideWired = true;
@@ -4980,14 +5017,16 @@
     const defaultRowHtml = withDefaultRow
       ? `<div class="hs-cat-row hs-cat-row-default" data-default="1">
            <span class="hs-cat-drag-handle-spacer"></span>
-           <input type="color" class="hs-cat-color-input hs-cat-default-color-input" value="${daySettings.default_tag_color || "#c7c2d6"}" />
+           <input type="color" class="hs-cat-color-input hs-cat-default-color-input color-native-input" value="${daySettings.default_tag_color || "#c7c2d6"}" />
+           <button type="button" class="color-swatch-btn hs-cat-default-color-swatch" title="색상 선택" style="background:${daySettings.default_tag_color || "#c7c2d6"};"></button>
            <span class="hs-cat-name-fixed">기본</span>
          </div>`
       : "";
     const rowsHtml = pool.map(c => `
       <div class="hs-cat-row" data-id="${c.id}">
         ${DRAG_HANDLE_SVG}
-        <input type="color" class="hs-cat-color-input" data-id="${c.id}" value="${c.color || "#9a8cf0"}" />
+        <input type="color" class="hs-cat-color-input color-native-input" data-id="${c.id}" value="${c.color || "#9a8cf0"}" />
+        <button type="button" class="color-swatch-btn hs-cat-color-swatch" data-id="${c.id}" title="색상 선택" style="background:${c.color || "#9a8cf0"};"></button>
         <input type="text" class="hs-cat-name-input" data-id="${c.id}" value="${escapeHtml(c.name)}" />
         <button type="button" class="hs-cat-del" data-id="${c.id}" title="삭제">✕</button>
       </div>
@@ -5000,6 +5039,7 @@
         if (!ok) return;
         onSaved?.();
       };
+      wireColorSwatchButton(host.querySelector(".hs-cat-default-color-swatch"), defaultColorInp);
     }
     host.querySelectorAll(".hs-cat-color-input[data-id]").forEach(inp => {
       inp.onchange = async () => {
@@ -5010,6 +5050,8 @@
         if (cat) cat.color = color;
         onSaved?.();
       };
+      const swatchBtn = host.querySelector(`.hs-cat-color-swatch[data-id="${inp.dataset.id}"]`);
+      wireColorSwatchButton(swatchBtn, inp);
     });
     host.querySelectorAll(".hs-cat-name-input").forEach(inp => {
       const commit = async () => {
