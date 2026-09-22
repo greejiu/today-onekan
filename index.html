@@ -439,11 +439,15 @@
   /* "기본"(그룹 없음) 줄 — 순서 고정이라 손잡이 자리를 빈 여백으로만 맞춰서 색상칩 위치를 다른 줄과 정렬 */
   .hs-cat-drag-handle-spacer{display:inline-block;width:14px;height:14px;flex-shrink:0;}
   .hs-cat-name-fixed{flex:1;min-width:0;font-size:13px;color:var(--sub);padding:6px 8px;}
-  /* 그룹/범주 "새로 추가" 색상 인풋 옆 프리셋 원형 버튼(2026-09-23) — 클릭하면 바로 옆 <input type="color">에 값만 채워줌, 저장은 기존 "추가" 버튼이 그대로 담당 */
-  .color-preset-groups{width:100%;margin-top:2px;}
-  .color-preset-toggle{display:block;background:none;border:none;padding:4px 0;margin:2px 0 0;font-size:12px;color:var(--accent);cursor:pointer;text-align:left;font-family:inherit;}
-  .color-preset-toggle:hover{text-decoration:underline;}
-  .color-preset-body{margin-top:2px;}
+  /* 그룹/범주 "새로 추가" 색상 선택(2026-09-23, 팝오버 방식으로 개편) — 네이티브 <input type="color">는 화면에서만 숨기고
+     (기능은 그대로 살아있음: "직접 선택하기"에서 이걸 트리거), 똑같은 자리에 스와치 버튼을 둬서 누르면 프리셋 팝오버가 뜸.
+     팝오버 자체는 JS에서 body 바로 아래에 하나만 만들어서 재사용(습관 설정 시트처럼 overflow:auto인 곳에서 열어도 안 잘리게 position:fixed). */
+  .color-native-input{position:absolute;width:1px;height:1px;padding:0;margin:0;border:0;opacity:0;pointer-events:none;}
+  .color-swatch-btn{width:38px;height:38px;padding:0;border:1px solid var(--line);border-radius:8px;cursor:pointer;flex-shrink:0;}
+  .color-preset-popover{position:fixed;display:none;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.16);padding:12px;width:230px;max-height:70vh;overflow-y:auto;z-index:500;}
+  .color-preset-popover.open{display:block;}
+  .color-preset-custom-btn{display:block;width:100%;margin-top:8px;padding:7px 0;border:1px dashed var(--line);border-radius:8px;background:none;font-size:12px;color:var(--sub);cursor:pointer;font-family:inherit;}
+  .color-preset-custom-btn:hover{border-color:var(--accent);color:var(--accent);}
   .color-preset-set{margin-top:8px;}
   .color-preset-set-label{display:block;font-size:10.5px;color:var(--sub);margin-bottom:4px;}
   .color-preset-row{display:flex;gap:6px;flex-wrap:wrap;width:100%;}
@@ -799,10 +803,10 @@
         <div class="field">
           <div style="display:flex;gap:6px;align-items:flex-end;">
             <div style="flex:1;"><label>새 그룹</label><input id="settingsTagName" type="text" placeholder="예: 집안일" /></div>
-            <input id="settingsTagColor" type="color" value="#FF6B6B" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
+            <input id="settingsTagColor" type="color" value="#FF6B6B" class="color-native-input" />
+            <button type="button" class="color-swatch-btn" data-for="settingsTagColor" title="색상 선택" style="background:#FF6B6B;"></button>
             <button class="btn-ghost" id="settingsTagAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
           </div>
-          <div class="color-preset-groups" data-target="settingsTagColor"></div>
         </div>
 
         <div class="section-label" style="margin-top:20px;">범주 <span style="color:var(--sub);font-weight:400;">(일정 전용)</span></div>
@@ -810,10 +814,10 @@
         <div class="field">
           <div style="display:flex;gap:6px;align-items:flex-end;">
             <div style="flex:1;"><label>새 범주</label><input id="settingsEventCatName" type="text" placeholder="예: 병원" /></div>
-            <input id="settingsEventCatColor" type="color" value="#5B8CFF" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
+            <input id="settingsEventCatColor" type="color" value="#5B8CFF" class="color-native-input" />
+            <button type="button" class="color-swatch-btn" data-for="settingsEventCatColor" title="색상 선택" style="background:#5B8CFF;"></button>
             <button class="btn-ghost" id="settingsEventCatAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
           </div>
-          <div class="color-preset-groups" data-target="settingsEventCatColor"></div>
         </div>
 
         <div class="section-label" style="margin-top:20px;">하루 시간 범위 <span style="color:var(--sub);font-weight:400;">(타임라인·타임블럭에서 보여줄 범위)</span></div>
@@ -905,10 +909,10 @@
     <div class="field">
       <div style="display:flex;gap:6px;align-items:flex-end;">
         <div style="flex:1;"><label>새 그룹</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
-        <input id="hs_newcat_color" type="color" value="#FF6B6B" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
+        <input id="hs_newcat_color" type="color" value="#FF6B6B" class="color-native-input" />
+        <button type="button" class="color-swatch-btn" data-for="hs_newcat_color" title="색상 선택" style="background:#FF6B6B;"></button>
         <button class="btn-ghost" id="hs_newcat_btn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
       </div>
-      <div class="color-preset-groups" data-target="hs_newcat_color"></div>
     </div>
     <div class="sheet-actions">
       <button class="btn-ghost" id="habitSheetCancelBtn">취소</button>
@@ -1118,47 +1122,98 @@
     { name: "비비드 포인트", colors: ["#FF6B6B", "#FFB347", "#FFD93D", "#00C2A8", "#5B8CFF", "#C084FC"] },
     { name: "모노톤 그린", colors: ["#2E7D32", "#43A047", "#81C784", "#C8E6C9", "#A7B8A8", "#E0E0E0"] },
   ];
-  // 2026-09-23: 5세트를 항상 다 펼쳐두면 "새 그룹" 입력칸이 너무 길어져서(결님 피드백), 기본은 접어두고
-  // 토글 버튼을 눌러야 펼쳐지는 형태로 변경.
-  function colorPresetGroupsHtml(targetInputId) {
-    const setsHtml = COLOR_PALETTE_SETS.map(set => `
+  // 2026-09-23: "색상 모음 보기" 토글 링크가 스와치 버튼과 따로 놀아서 자연스럽지 않다는 결님 피드백 →
+  // 스와치 버튼(추가 행의 색상 네모)을 누르면 그 자리에서 팝오버로 프리셋이 뜨는 방식으로 개편.
+  // 네이티브 <input type="color">는 화면에서만 숨기고(opacity:0 — display:none이면 .click()이 안 먹어서 안 됨)
+  // "직접 선택하기" 버튼으로 그걸 그대로 열어주니 커스텀 선택도 100% 유지됨.
+  // 팝오버는 habitSheet처럼 overflow:auto인 곳에서 열어도 잘리지 않게 position:fixed로 body 바로 아래 하나만 만들어 재사용.
+  let _colorPopoverTargetInput = null;
+  function ensureColorPopover() {
+    let pop = $("colorPresetPopover");
+    if (pop) return pop;
+    pop = document.createElement("div");
+    pop.id = "colorPresetPopover";
+    pop.className = "color-preset-popover";
+    pop.innerHTML = COLOR_PALETTE_SETS.map(set => `
       <div class="color-preset-set">
         <span class="color-preset-set-label">${escapeHtml(set.name)}</span>
-        <div class="color-preset-row" data-target="${targetInputId}">${set.colors.map(c =>
+        <div class="color-preset-row">${set.colors.map(c =>
           `<button type="button" class="color-preset-dot" data-color="${c}" style="background:${c};" title="${c}"></button>`
         ).join("")}</div>
       </div>
-    `).join("");
-    return `
-      <button type="button" class="color-preset-toggle">🎨 색상 모음 보기</button>
-      <div class="color-preset-body" hidden>${setsHtml}</div>
-    `;
-  }
-  function wireColorPresetSwatches() {
-    document.querySelectorAll(".color-preset-row[data-target]").forEach(row => {
-      const input = $(row.dataset.target);
-      if (!input || row.dataset.wired) return;
-      row.dataset.wired = "1";
-      row.querySelectorAll(".color-preset-dot").forEach(dot => {
-        dot.onclick = () => { input.value = dot.dataset.color; input.dispatchEvent(new Event("change")); };
-      });
-    });
-    document.querySelectorAll(".color-preset-groups .color-preset-toggle").forEach(btn => {
-      if (btn.dataset.wired) return;
-      btn.dataset.wired = "1";
-      const body = btn.nextElementSibling;
-      btn.onclick = () => {
-        const willOpen = body.hidden;
-        body.hidden = !willOpen;
-        btn.textContent = willOpen ? "🎨 색상 모음 접기" : "🎨 색상 모음 보기";
+    `).join("") + `<button type="button" class="color-preset-custom-btn" id="colorPresetCustomBtn">🖌 직접 선택하기</button>`;
+    document.body.appendChild(pop);
+    pop.addEventListener("click", (e) => e.stopPropagation());
+    pop.querySelectorAll(".color-preset-dot").forEach(dot => {
+      dot.onclick = () => {
+        if (!_colorPopoverTargetInput) return;
+        _colorPopoverTargetInput.value = dot.dataset.color;
+        _colorPopoverTargetInput.dispatchEvent(new Event("change"));
+        closeColorPopover();
       };
     });
+    $("colorPresetCustomBtn").onclick = () => {
+      const input = _colorPopoverTargetInput;
+      closeColorPopover();
+      if (!input) return;
+      input.showPicker ? input.showPicker() : input.click();
+    };
+    return pop;
   }
-  function renderAllColorPresetContainers() {
-    document.querySelectorAll(".color-preset-groups[data-target]").forEach(container => {
-      container.innerHTML = colorPresetGroupsHtml(container.dataset.target);
+  function closeColorPopover() {
+    const pop = $("colorPresetPopover");
+    if (pop) pop.classList.remove("open");
+    _colorPopoverTargetInput = null;
+  }
+  function openColorPopoverFor(btn, targetInputId) {
+    const input = $(targetInputId);
+    if (!input) return;
+    const pop = ensureColorPopover();
+    _colorPopoverTargetInput = input;
+    pop.classList.add("open");
+    const r = btn.getBoundingClientRect();
+    const popW = 230;
+    let left = r.left;
+    if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
+    if (left < 8) left = 8;
+    let top = r.bottom + 6;
+    const popH = pop.offsetHeight || 320;
+    if (top + popH > window.innerHeight - 8) top = r.top - popH - 6;
+    if (top < 8) top = 8;
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
+  }
+  function initColorSwatches() {
+    document.querySelectorAll(".color-swatch-btn[data-for]").forEach(btn => {
+      if (btn.dataset.wired) return;
+      btn.dataset.wired = "1";
+      const targetId = btn.dataset.for;
+      const input = $(targetId);
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const pop = $("colorPresetPopover");
+        if (pop && pop.classList.contains("open") && _colorPopoverTargetInput === $(targetId)) {
+          closeColorPopover();
+        } else {
+          openColorPopoverFor(btn, targetId);
+        }
+      };
+      if (input && !input.dataset.swatchSynced) {
+        input.dataset.swatchSynced = "1";
+        input.addEventListener("change", () => { btn.style.background = input.value; });
+      }
     });
-    wireColorPresetSwatches();
+    if (!document._colorPopoverOutsideWired) {
+      document._colorPopoverOutsideWired = true;
+      document.addEventListener("click", closeColorPopover);
+      window.addEventListener("resize", closeColorPopover);
+      window.addEventListener("scroll", (e) => {
+        const pop = $("colorPresetPopover");
+        if (pop && e.target && pop.contains(e.target)) return; // 팝오버 내부 스크롤은 닫지 않음
+        closeColorPopover();
+      }, true);
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeColorPopover(); });
+    }
   }
   let habitLogs = []; // tok_habit_logs 전체({habit_id, done_date}) — 반복주기 "마지막 완료일" 계산용
   let habitPauses = []; // tok_habit_pauses 전체({habit_id, paused_at, resumed_at, reason}) — 보관/재개 이력(2026-09-12, 여러 번 가능)
@@ -5083,7 +5138,7 @@
     $("settingsEventCatName").value = "";
     renderSettingsTagLists();
   };
-  renderAllColorPresetContainers(); // 설정 페이지 2곳 + 습관 설정 시트 "새 그룹" 프리셋 5세트 렌더+연결(정적 컨테이너라 한 번만 그리면 됨)
+  initColorSwatches(); // 설정 페이지 2곳 + 습관 설정 시트 "새 그룹" 스와치 버튼에 팝오버 연결(정적 버튼이라 한 번만 연결하면 됨)
 
   // ── 설정 페이지: 하루 시간 범위(타임라인·타임블럭 표시 범위) ──
   function renderSettingsDaySettings() {
