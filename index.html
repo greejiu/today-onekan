@@ -405,7 +405,8 @@
   .togglebtn.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft);}
   .del{border:none;background:none;color:var(--danger);font-size:12px;cursor:pointer;flex-shrink:0;}
   .settingsbtn{border:1px solid var(--line);background:#fff;border-radius:999px;font-size:12px;width:26px;height:26px;line-height:1;cursor:pointer;color:var(--sub);flex-shrink:0;}
-  .habit-cat-chip{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;color:#fff;}
+  /* 2026-09-23: 흰 글자+진한 배경(원색)에서 → 옅은 배경(색상 18%만 섞음)+진한 글자색으로 변경(결님 요청, 목록이 너무 쨍하지 않게) */
+  .habit-cat-chip{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;}
   /* 습관 예정 상태 배지(2026-09-12, 앵커 기준 며칠 밀렸는지/다음 회차까지 며칠) — 빨강=밀림, 파랑=오늘·예정 */
   .habit-due-chip{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600;vertical-align:middle;}
   .habit-due-chip.due-overdue{background:#fde2e2;color:#c0392b;}
@@ -438,6 +439,17 @@
   /* "기본"(그룹 없음) 줄 — 순서 고정이라 손잡이 자리를 빈 여백으로만 맞춰서 색상칩 위치를 다른 줄과 정렬 */
   .hs-cat-drag-handle-spacer{display:inline-block;width:14px;height:14px;flex-shrink:0;}
   .hs-cat-name-fixed{flex:1;min-width:0;font-size:13px;color:var(--sub);padding:6px 8px;}
+  /* 그룹/범주 "새로 추가" 색상 인풋 옆 프리셋 원형 버튼(2026-09-23) — 클릭하면 바로 옆 <input type="color">에 값만 채워줌, 저장은 기존 "추가" 버튼이 그대로 담당 */
+  .color-preset-groups{width:100%;margin-top:2px;}
+  .color-preset-toggle{display:block;background:none;border:none;padding:4px 0;margin:2px 0 0;font-size:12px;color:var(--accent);cursor:pointer;text-align:left;font-family:inherit;}
+  .color-preset-toggle:hover{text-decoration:underline;}
+  .color-preset-body{margin-top:2px;}
+  .color-preset-set{margin-top:8px;}
+  .color-preset-set-label{display:block;font-size:10.5px;color:var(--sub);margin-bottom:4px;}
+  .color-preset-row{display:flex;gap:6px;flex-wrap:wrap;width:100%;}
+  .color-preset-dot{width:20px;height:20px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer;flex-shrink:0;box-shadow:0 0 0 1px var(--line) inset;transition:transform .12s;}
+  .color-preset-dot:hover{transform:scale(1.15);}
+  .color-preset-dot:active{transform:scale(.95);}
   /* 설정 페이지 "타임블럭 구간" 목록(이름+시작+종료, 2026-09-09 추가) — .hs-cat-row와 같은 톤이되 입력칸이 하나 더 있음 */
   .hs-block-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
   .hs-block-row{display:flex;align-items:center;gap:6px;}
@@ -784,18 +796,24 @@
 
         <div class="section-label" style="margin-top:20px;">그룹 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
         <div class="hs-cat-list" id="settingsTagList"></div>
-        <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
-          <div style="flex:1;"><label>새 그룹</label><input id="settingsTagName" type="text" placeholder="예: 집안일" /></div>
-          <input id="settingsTagColor" type="color" value="#9a8cf0" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
-          <button class="btn-ghost" id="settingsTagAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
+        <div class="field">
+          <div style="display:flex;gap:6px;align-items:flex-end;">
+            <div style="flex:1;"><label>새 그룹</label><input id="settingsTagName" type="text" placeholder="예: 집안일" /></div>
+            <input id="settingsTagColor" type="color" value="#FF6B6B" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
+            <button class="btn-ghost" id="settingsTagAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
+          </div>
+          <div class="color-preset-groups" data-target="settingsTagColor"></div>
         </div>
 
         <div class="section-label" style="margin-top:20px;">범주 <span style="color:var(--sub);font-weight:400;">(일정 전용)</span></div>
         <div class="hs-cat-list" id="settingsEventCatList"></div>
-        <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
-          <div style="flex:1;"><label>새 범주</label><input id="settingsEventCatName" type="text" placeholder="예: 병원" /></div>
-          <input id="settingsEventCatColor" type="color" value="#4a90e2" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
-          <button class="btn-ghost" id="settingsEventCatAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
+        <div class="field">
+          <div style="display:flex;gap:6px;align-items:flex-end;">
+            <div style="flex:1;"><label>새 범주</label><input id="settingsEventCatName" type="text" placeholder="예: 병원" /></div>
+            <input id="settingsEventCatColor" type="color" value="#5B8CFF" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
+            <button class="btn-ghost" id="settingsEventCatAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
+          </div>
+          <div class="color-preset-groups" data-target="settingsEventCatColor"></div>
         </div>
 
         <div class="section-label" style="margin-top:20px;">하루 시간 범위 <span style="color:var(--sub);font-weight:400;">(타임라인·타임블럭에서 보여줄 범위)</span></div>
@@ -884,10 +902,13 @@
     <div class="field"><label>그룹</label><select id="hs_category"></select></div>
     <div class="hs-cat-manage-label">그룹 관리 (이름 수정 · 삭제)</div>
     <div class="hs-cat-list" id="hs_cat_list"></div>
-    <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
-      <div style="flex:1;"><label>새 그룹</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
-      <input id="hs_newcat_color" type="color" value="#9a8cf0" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
-      <button class="btn-ghost" id="hs_newcat_btn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
+    <div class="field">
+      <div style="display:flex;gap:6px;align-items:flex-end;">
+        <div style="flex:1;"><label>새 그룹</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
+        <input id="hs_newcat_color" type="color" value="#FF6B6B" style="width:38px;height:38px;padding:2px;border:1px solid var(--line);border-radius:8px;" />
+        <button class="btn-ghost" id="hs_newcat_btn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
+      </div>
+      <div class="color-preset-groups" data-target="hs_newcat_color"></div>
     </div>
     <div class="sheet-actions">
       <button class="btn-ghost" id="habitSheetCancelBtn">취소</button>
@@ -1088,6 +1109,57 @@
   let todos = []; // tok_todos: 다가오는 계획 보드용 (날짜 있는 1회성 할일)
   let habitCategories = []; // tok_habit_categories: 습관·할일 공용 "그룹"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
   let eventCategories = []; // tok_event_categories: 일정 전용 "범주"(이름+색상), 그룹 풀과는 별개
+  // 그룹/범주 새로 만들 때 빠르게 고를 수 있는 프리셋 팔레트(2026-09-23, 결님이 지피티로 뽑아온 5세트 전부) —
+  // 네이티브 <input type="color"> 커스텀 선택은 그대로 두고, 그 아래 세트별로 묶은 프리셋 원형 버튼을 덧붙이는 방식(둘 다 가능).
+  const COLOR_PALETTE_SETS = [
+    { name: "파스텔 플로럴", colors: ["#FFB6C1", "#FFD59E", "#FFF1A8", "#B7E4C7", "#A8D8FF", "#D7C8FF"] },
+    { name: "차분한 네이비톤", colors: ["#2E3A8C", "#4F7BFF", "#34C3B7", "#8FD694", "#A78BFA", "#D9D6FF"] },
+    { name: "따뜻한 내추럴", colors: ["#FF8A65", "#FDCB6E", "#A7D7A0", "#8FB89D", "#A0C4FF", "#D7BDE2"] },
+    { name: "비비드 포인트", colors: ["#FF6B6B", "#FFB347", "#FFD93D", "#00C2A8", "#5B8CFF", "#C084FC"] },
+    { name: "모노톤 그린", colors: ["#2E7D32", "#43A047", "#81C784", "#C8E6C9", "#A7B8A8", "#E0E0E0"] },
+  ];
+  // 2026-09-23: 5세트를 항상 다 펼쳐두면 "새 그룹" 입력칸이 너무 길어져서(결님 피드백), 기본은 접어두고
+  // 토글 버튼을 눌러야 펼쳐지는 형태로 변경.
+  function colorPresetGroupsHtml(targetInputId) {
+    const setsHtml = COLOR_PALETTE_SETS.map(set => `
+      <div class="color-preset-set">
+        <span class="color-preset-set-label">${escapeHtml(set.name)}</span>
+        <div class="color-preset-row" data-target="${targetInputId}">${set.colors.map(c =>
+          `<button type="button" class="color-preset-dot" data-color="${c}" style="background:${c};" title="${c}"></button>`
+        ).join("")}</div>
+      </div>
+    `).join("");
+    return `
+      <button type="button" class="color-preset-toggle">🎨 색상 모음 보기</button>
+      <div class="color-preset-body" hidden>${setsHtml}</div>
+    `;
+  }
+  function wireColorPresetSwatches() {
+    document.querySelectorAll(".color-preset-row[data-target]").forEach(row => {
+      const input = $(row.dataset.target);
+      if (!input || row.dataset.wired) return;
+      row.dataset.wired = "1";
+      row.querySelectorAll(".color-preset-dot").forEach(dot => {
+        dot.onclick = () => { input.value = dot.dataset.color; input.dispatchEvent(new Event("change")); };
+      });
+    });
+    document.querySelectorAll(".color-preset-groups .color-preset-toggle").forEach(btn => {
+      if (btn.dataset.wired) return;
+      btn.dataset.wired = "1";
+      const body = btn.nextElementSibling;
+      btn.onclick = () => {
+        const willOpen = body.hidden;
+        body.hidden = !willOpen;
+        btn.textContent = willOpen ? "🎨 색상 모음 접기" : "🎨 색상 모음 보기";
+      };
+    });
+  }
+  function renderAllColorPresetContainers() {
+    document.querySelectorAll(".color-preset-groups[data-target]").forEach(container => {
+      container.innerHTML = colorPresetGroupsHtml(container.dataset.target);
+    });
+    wireColorPresetSwatches();
+  }
   let habitLogs = []; // tok_habit_logs 전체({habit_id, done_date}) — 반복주기 "마지막 완료일" 계산용
   let habitPauses = []; // tok_habit_pauses 전체({habit_id, paused_at, resumed_at, reason}) — 보관/재개 이력(2026-09-12, 여러 번 가능)
   let habitsTabView = "active"; // 습관 관리 목록 상단탭: "active"(진행중) | "archived"(보관) | "ended"(종료)
@@ -4339,7 +4411,7 @@
     const todayS = todayStr();
     const cat = habitCategories.find(c => c.id === t.category_id);
     const repeatText = repeatSummaryText(t.repeat_unit, t.repeat_interval, t.repeat_days);
-    const catChip = cat ? `<span class="habit-cat-chip" style="background:${cat.color || "var(--accent-soft)"}">${escapeHtml(cat.name)}</span>` : "";
+    const catChip = cat ? `<span class="habit-cat-chip" style="background:${cat.color ? `color-mix(in srgb, ${cat.color} 18%, white)` : "var(--accent-soft)"};color:${cat.color || "var(--accent)"};">${escapeHtml(cat.name)}</span>` : "";
     // 시작일이 아직 안 왔거나 종료일이 있을 때만 기간을 같이 보여줌(평범하게 계속 진행 중인 습관은 굳이 안 보여줘서 안 복잡하게).
     const windowText = t.end_date ? ` · ~${formatDateShort(t.end_date)}까지`
       : (t.start_date && t.start_date > todayS) ? ` · ${formatDateShort(t.start_date)}부터 시작` : "";
@@ -5011,6 +5083,7 @@
     $("settingsEventCatName").value = "";
     renderSettingsTagLists();
   };
+  renderAllColorPresetContainers(); // 설정 페이지 2곳 + 습관 설정 시트 "새 그룹" 프리셋 5세트 렌더+연결(정적 컨테이너라 한 번만 그리면 됨)
 
   // ── 설정 페이지: 하루 시간 범위(타임라인·타임블럭 표시 범위) ──
   function renderSettingsDaySettings() {
