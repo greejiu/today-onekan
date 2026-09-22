@@ -1,4 +1,4 @@
-<!doctype html>
+<!-- claude-test-marker-A --><!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
@@ -17,24 +17,11 @@
     --bg:#FFFFFF; --card:#FFFFFF; --line:#E8E8E8; --text:#222222; --sub:#777777;
     --accent:#222222; --accent-soft:#ECECEC; --danger:#f28b82; --ok:#8fd6b7;
     --font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;
-    /* 2026-09-23 — 집 화면 4탭(목록/언젠가/타임라인/다가오는) 활성 색상. 결이 "구분은 유지하되 테마
-       톤에 맞추자"로 확정 — 배경이 흰색에 가까운 4테마(하양/하늘/보라/분홍)는 원래 쓰던 파스텔 4색
-       그대로 재사용(:root에서 정의해서 상속시킴, 각 테마 블록에서 따로 안 건드림), 배경이 어두운
-       검정만 아래서 다크에 맞는 색으로 따로 덮어씀. */
-    --tab-today-bg:#FFE1D6; --tab-today-text:#B75B3D;
-    --tab-someday-bg:#ECE3FF; --tab-someday-text:#6B4FA0;
-    --tab-timeline-bg:#D8F3E7; --tab-timeline-text:#2E8B6F;
-    --tab-upcoming-bg:#DCEBFF; --tab-upcoming-text:#3E6FB0;
   }
   [data-theme="black"]{
     /* 검정 — 기본 다크 */
     --bg:#171717; --card:#222222; --line:#383838; --text:#F5F5F5; --sub:#AAAAAA;
     --accent:#FFFFFF; --accent-soft:#333333; --danger:#f28b82; --ok:#8fd6b7;
-    /* 다크 배경에서도 4탭 구분이 잘 보이게: 어두운 톤 배경 + 밝은 파스텔 글자로 반전 */
-    --tab-today-bg:#4A342A; --tab-today-text:#FFB37E;
-    --tab-someday-bg:#3A2E52; --tab-someday-text:#C6AEFF;
-    --tab-timeline-bg:#234438; --tab-timeline-text:#7EE0B8;
-    --tab-upcoming-bg:#24344A; --tab-upcoming-text:#8FC1FF;
   }
   [data-theme="sky"]{
     /* 하늘 — 맑고 가벼운 느낌 */
@@ -293,11 +280,11 @@
      2열="실행 공간"(오늘 실제로 하는 곳). 탭 바로 위에 작은 라벨만 추가, 레이아웃/기능은 그대로. */
   .home2-col-label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:var(--text);margin-bottom:-2px;}
   .home2-tabs{display:flex;gap:8px;}
-  .home2-tab{flex:1;padding:9px 0;border:none;border-radius:14px;font-size:13px;font-weight:700;color:var(--sub);background:transparent;cursor:pointer;font-family:inherit;}
-  .home2-tab.active.tab-today{background:var(--tab-today-bg);color:var(--tab-today-text);}
-  .home2-tab.active.tab-upcoming{background:var(--tab-upcoming-bg);color:var(--tab-upcoming-text);}
-  .home2-tab.active.tab-someday{background:var(--tab-someday-bg);color:var(--tab-someday-text);}
-  .home2-tab.active.tab-timeline{background:var(--tab-timeline-bg);color:var(--tab-timeline-text);}
+  .home2-tab{flex:1;padding:9px 0;border:none;border-radius:14px;font-size:13px;font-weight:700;color:#A8A0BD;background:transparent;cursor:pointer;font-family:inherit;}
+  .home2-tab.active.tab-today{background:#FFE1D6;color:#B75B3D;}
+  .home2-tab.active.tab-upcoming{background:#DCEBFF;color:#3E6FB0;}
+  .home2-tab.active.tab-someday{background:#ECE3FF;color:#6B4FA0;}
+  .home2-tab.active.tab-timeline{background:#D8F3E7;color:#2E8B6F;}
   .home2-tabpanel{min-width:0;}
   /* 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간/타임라인) 높이에 맞추고, 언젠가·다가오는은
      그 높이만큼 기본으로 펼쳐진 뒤 넘치는 분량만 내부 스크롤. #homeCol1의 실제 height는 JS(syncHomeCol1Height)가
