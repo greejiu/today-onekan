@@ -59,12 +59,14 @@
   #app{display:none;min-height:100vh;}
   /* 상단 고정바 — 원본 목업(Main.dc.html/Mobile.dc.html) 그대로: 손글씨체 로고+오늘 날짜(왼쪽),
      둥근 설정 아이콘 버튼(오른쪽). 목업엔 없던 퀵 인풋 바는 바로 아래 얇은 줄로 따로 둠. */
-  .topbar{position:fixed;top:0;left:0;right:0;height:64px;background:var(--card);border-bottom:1px solid #F0EAFB;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 20px;}
+  .topbar{position:fixed;top:0;left:0;right:0;height:64px;background:var(--card);border-bottom:1px solid var(--line);z-index:30;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 20px;}
   .topbar-brand{display:flex;align-items:baseline;gap:10px;min-width:0;}
-  .brand-logo{font-family:'Gaegu',cursive;font-size:23px;font-weight:700;color:#7B4FA0;white-space:nowrap;}
-  .brand-date{font-size:13px;color:#A79CC4;white-space:nowrap;}
-  .topbar-settings{width:36px;height:36px;border-radius:18px;border:none;background:#F3EFFC;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
-  .topbar-settings:hover{background:var(--accent-soft);}
+  /* 2026-09-23 — 로고/상단바가 파스텔 시절 보라색(#7B4FA0 등)에 고정돼있어서 테마를 바꿔도 안 바뀌던 것을
+     수정: 전부 테마 변수(--accent/--sub/--line/--accent-soft)로 교체해서 5개 테마 전부 따라가게 함. */
+  .brand-logo{font-family:'Gaegu',cursive;font-size:23px;font-weight:700;color:var(--accent);white-space:nowrap;}
+  .brand-date{font-size:13px;color:var(--sub);white-space:nowrap;}
+  .topbar-settings{width:36px;height:36px;border-radius:18px;border:none;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+  .topbar-settings:hover{background:color-mix(in srgb, var(--accent) 15%, var(--accent-soft));}
   /* 2026-09-20 — 결님 요청: 퀵 인풋(빠른 추가)은 모바일(사이드바 대신 하단바 쓰는 폭)에서만 상단바 아래
      이 가로줄로 보여주고, 데스크톱(사이드바 있는 폭)에서는 사이드바 맨 위(.sidebar-quickadd)로 옮김.
      그래서 기본은 숨기고 ≤760px에서만 보이게 뒤집음(예전엔 항상 보였음). */
