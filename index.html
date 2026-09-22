@@ -1146,6 +1146,7 @@
   let somedayTabFilterTag = null;
   let timeBlocks = []; // tok_time_blocks: 타임블럭 탭의 이름표 그룹핑용(시작/종료 분 포함 — 설정 페이지에서 목록으로 추가/수정/삭제)
   let daySettings = { day_start_minute: 360, day_end_minute: 1440, default_tag_color: null }; // tok_settings: 타임라인/타임블럭에서 보여줄 하루 시작~종료 시간(분) + "기본"(그룹 없음) 색상. 행이 없으면 이 기본값 사용.
+  let lastLoadAllAt = 0; // 2026-09-23: 다른 기기/탭에서 바뀐 내용을 돌아왔을 때 자동으로 다시 불러오기 위한 마지막 로드 시각(아래 loadAll/자동새로고침 참고)
   let todos = []; // tok_todos: 다가오는 계획 보드용 (날짜 있는 1회성 할일)
   let habitCategories = []; // tok_habit_categories: 습관·할일 공용 "그룹"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
   let eventCategories = []; // tok_event_categories: 일정 전용 "범주"(이름+색상), 그룹 풀과는 별개
@@ -1299,6 +1300,22 @@
     showPage("home");
   }
 
+  // 2026-09-23 — 다른 기기(예: 웹에서 삭제)에서 바뀐 내용이 이 탭/기기엔 반영 안 되고 예전 상태 그대로
+  // 남아있던 문제 수정. 이 앱은 페이지를 열 때 딱 한 번만 서버에서 불러오고 그 뒤론 별도 실시간 동기화가
+  // 없어서, 탭을 안 닫고 계속 켜둔 채였다면(특히 모바일에서 앱 전환 후 돌아왔을 때) 목록/다가오는/타임라인이
+  // 전부 그 오래된 상태를 계속 보여주고 있었음. 탭이 다시 보이거나(백그라운드→포그라운드) 창에 포커스가
+  // 돌아오면 자동으로 다시 불러오도록 보강(3초 이내 중복 새로고침은 건너뜀).
+  async function autoRefreshIfStale() {
+    if (document.visibilityState === "hidden") return;
+    if (Date.now() - lastLoadAllAt < 3000) return;
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+    await loadAll();
+  }
+  document.addEventListener("visibilitychange", autoRefreshIfStale);
+  window.addEventListener("focus", autoRefreshIfStale);
+  window.addEventListener("pageshow", (e) => { if (e.persisted) autoRefreshIfStale(); }); // 뒤로가기 등으로 캐시(bfcache)에서 복귀한 경우
+
   // ── 네비게이션 ──
   document.querySelectorAll(".navitem").forEach(el => {
     el.onclick = () => showPage(el.dataset.page);
@@ -1321,6 +1338,7 @@
 
   // ── 데이터 로드 ──
   async function loadAll() {
+    lastLoadAllAt = Date.now();
     const [
       { data: taskData, error: e1 },
       { data: logData, error: e2 },
