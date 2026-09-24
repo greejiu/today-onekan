@@ -1397,25 +1397,53 @@
   // 할일: 체크(완료)해야 다음 회차가 생김(습관과 동일 — 안 하면 계속 그대로 남아있음, 자동으로 안 사라짐).
   //       완료된 회차 자체는 기록으로 그대로 남고, 다음 회차는 새 행으로 하나 생성됨(onekan v1 방식 참고).
   // 일정: 완료 개념이 없어서 "날짜가 지나면" 트리거 — 새 행을 만들지 않고 그 일정 자체의 날짜를 다음 회차로 옮김(기록 없음).
+  // 2026-09-24 중복 생성 수정: 다음 회차는 repeat_source_id(=원본 회차 id)로 원본에 연결되고, DB의 부분 unique
+  // 인덱스(tok_todos_repeat_source_id_key)가 "원본 1개당 다음 회차 1개"를 보장함. 체크 해제 후 재체크하면
+  // 이미 연결된 다음 회차를 그대로 재사용(제목·날짜 수정, 완료 기록 모두 건드리지 않음).
+  // 반환값: { ok: true } = 생성/재사용/생성 불필요, { ok: false, error } = 생성 실패(재시도 가능).
   async function completeTodoRepeatIfNeeded(todo) {
-    if (!todo || !todo.repeat_unit) return;
+    if (!todo || !todo.repeat_unit) return { ok: true };
+    // 이미 이 회차에서 만들어진 다음 회차가 있으면 재사용(화면 배열이 아니라 DB에서 확인)
+    const { data: linked, error: findErr } = await sb.from("tok_todos").select("id").eq("repeat_source_id", todo.id).limit(1);
+    if (findErr) return { ok: false, error: findErr };
+    if (linked && linked.length) return { ok: true };
     const nextStart = nextRepeatDateStr(todo.start_date, todo.repeat_unit, todo.repeat_interval, todo.repeat_days);
     // 종료일(반복이 끝나는 날, 선택)을 넘어서면 다음 회차를 만들지 않고 반복을 그만둠. 종료일 자체는 그대로 다음 회차에도 이어서 넘겨줌.
-    if (todo.end_date && nextStart > todo.end_date) return;
+    if (todo.end_date && nextStart > todo.end_date) return { ok: true };
     // repeat_chain_id: 같은 반복 체인끼리 묶는 연결고리(2026-09-13, 7-2단계 신규) — 부모가 이미 갖고 있으면 그대로
     // 물려주고, 아직 없으면(예전에 만들어진 회차라 이 컬럼이 비어있는 경우) 부모의 id를 체인 시작점으로 삼음.
     const chainId = todo.repeat_chain_id || todo.id;
+    // repeat_source_id 도입 전(예전) 데이터는 어떤 행이 이 회차의 다음 회차인지 알 수 없음 → 날짜·제목으로 추측해
+    // 연결하지 않고, 같은 체인에 이 회차보다 뒤 날짜인 연결 없는 회차가 있으면 새로 만들지 사용자에게 물어봄.
+    const legacyLater = todos.filter(x => x.id !== todo.id && !x.repeat_source_id
+      && (x.repeat_chain_id || x.id) === chainId && x.start_date > todo.start_date);
+    if (legacyLater.length) {
+      const dates = legacyLater.map(x => x.start_date).sort().slice(0, 3).join(", ");
+      if (!confirm(`이 반복 할일 뒤에 이미 회차가 있어요(${dates}).\n예전에 만든 회차라 이 회차와의 연결을 확인할 수 없어요.\n\n다음 회차를 새로 하나 더 만들까요?\n(취소 = 만들지 않음)`)) return { ok: true };
+    }
     const { error } = await sb.from("tok_todos").insert({
       title: todo.title, start_date: nextStart, end_date: todo.end_date || null,
       todo_time: todo.todo_time || null, duration_minutes: todo.duration_minutes || null,
       tag_id: todo.tag_id || null, repeat_unit: todo.repeat_unit, repeat_interval: todo.repeat_interval, repeat_days: todo.repeat_days || null,
-      repeat_chain_id: chainId,
+      repeat_chain_id: chainId, repeat_source_id: todo.id,
     });
-    if (error) alert("다음 회차 생성 실패: " + error.message);
+    // 23505 = unique 위반: 동시 요청 등으로 다른 쪽이 먼저 만들었음 → 이미 1개 있으니 성공으로 취급
+    if (error && error.code !== "23505") return { ok: false, error };
+    return { ok: true };
+  }
+  // 같은 할일에 대한 체크/해제 요청을 순서대로 처리(빠른 연속 클릭 시 저장 순서가 뒤섞이지 않게).
+  // 중복 생성 자체는 DB unique 인덱스가 막고, 이 줄세우기는 완료 상태 저장 순서를 지키기 위한 보조 장치.
+  const todoDoneQueue = new Map();
+  function setTodoDone(id, checked) {
+    const prev = todoDoneQueue.get(id) || Promise.resolve();
+    const run = prev.catch(() => {}).then(() => setTodoDoneNow(id, checked));
+    todoDoneQueue.set(id, run);
+    run.finally(() => { if (todoDoneQueue.get(id) === run) todoDoneQueue.delete(id); }).catch(() => {});
+    return run;
   }
   // 할일 완료 체크를 처리하는 공용 함수 — 반복이면 다음 회차 생성 후 전체 새로고침, 아니면 가벼운 렌더만.
   // 반환값 true = 이미 loadAll()로 전체 갱신했으니 호출부에서 추가로 렌더할 필요 없음.
-  async function setTodoDone(id, checked) {
+  async function setTodoDoneNow(id, checked) {
     // completed_date: 실제로 체크한 날짜를 남겨둠(2026-09-13, 7-2단계 신규) — 반복 할일 기록 화면에서
     // "예정일 대비 며칠 지나서 완료했는지" 계산할 때 씀. 체크 해제하면 다시 비움.
     const completed_date = checked ? todayStr() : null;
@@ -1425,7 +1453,12 @@
     const t = todos.find(x => x.id === id);
     if (t) { t.is_done = checked; t.completed_date = completed_date; }
     if (checked && t && t.repeat_unit) {
-      await completeTodoRepeatIfNeeded(t);
+      // 완료 저장은 위에서 이미 성공 — 다음 회차 생성 실패는 따로 알리고 재시도할 수 있게 함
+      // (취소해도 완료는 유지. 나중에 체크 해제 → 다시 체크하면 연결된 다음 회차가 없으니 다시 시도됨)
+      let res = await completeTodoRepeatIfNeeded(t);
+      while (!res.ok && confirm(`완료는 저장됐어요.\n다만 다음 회차를 만들지 못했어요: ${res.error.message}\n\n다시 시도할까요?`)) {
+        res = await completeTodoRepeatIfNeeded(t);
+      }
       await loadAll();
       return true;
     }
