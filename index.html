@@ -2024,8 +2024,8 @@
     dates.forEach(dateStr => attachAgendaAllDayAddClick(dateStr));
   }
 
-  // 09-24 — 빈칸 추가 입력창 공용 헬퍼(하루종일/시간블럭/다가오는). 결님 정정대로: 빈칸을 왼쪽 클릭·터치하면
-  // 오른쪽 클릭과 똑같은 "일정/할일/습관 추가" 메뉴(showAddKindMenu)가 뜨고, 거기서 고른 종류로 이 입력창이 열림
+  // 09-24 — 빈칸 추가 입력창 공용 헬퍼(하루종일/시간블럭/다가오는). 빈칸을 왼쪽 클릭·터치하면 기본 종류(할일)
+  // 입력창이 바로 열리고, 오른쪽 클릭하면 "일정/할일/습관 추가" 메뉴(showAddKindMenu)가 떠서 고른 종류로 이 입력창이 열림
   // (입력창 안에서 종류를 고르는 방식 아님). Enter 또는 "추가" 버튼으로 저장, Esc 취소, 바깥 클릭 시 저장.
   // 저장 로직(테이블/필드)은 구역마다 달라서 onCommit(kind, name)으로 받음 — true를 돌려주면 성공.
   // onCancel: 빈 값/Esc로 끝낼 때 원래 모습으로 되돌리는 재렌더. onReopen(kind): Enter로 저장한 뒤 같은 자리에
@@ -2075,8 +2075,8 @@
     return wrap;
   }
 
-  // 하루종일 영역 빈칸 → 09-24부터 왼쪽 클릭·터치도 오른쪽 클릭과 똑같이 "일정/할일/습관 추가" 메뉴(showAddKindMenu)를
-  // 띄우고, 고른 종류로 입력창(openAddInput)을 엶.
+  // 하루종일 영역 빈칸 → 왼쪽 클릭·터치는 할일 입력창(openAddInput)을 바로 열고, 오른쪽 클릭은
+  // "일정/할일/습관 추가" 메뉴(showAddKindMenu)를 띄워 고른 종류로 입력창을 엶.
   // dateStr: 이 add-row가 속한 열의 날짜(8-3단계 — 여러 날이 나란히 보이므로 열마다 따로 지정).
   // autoOpenKind: 지정돼 있으면 붙자마자 그 종류로 바로 입력창을 염(엔터로 연달아 추가할 때, 메뉴 없이 바로).
   function attachAgendaAllDayAddClick(dateStr, autoOpenKind) {
@@ -2106,8 +2106,8 @@
       onReopen: (kind) => attachAgendaAllDayAddClick(dateStr, kind),
     });
     const openMenu = (e) => { e.preventDefault(); showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind)); };
-    row.onclick = openMenu;       // 왼쪽 클릭·터치 = 종류 메뉴 → 고르면 입력창
-    row.oncontextmenu = openMenu; // 오른쪽 클릭도 같은 메뉴
+    row.onclick = () => openInput("todo"); // 왼쪽 클릭·터치 = 기본(할일) 입력창 바로 열기
+    row.oncontextmenu = openMenu;           // 오른쪽 클릭 = 종류 메뉴(일정/할일/습관) → 고르면 입력창
     if (autoOpenKind) openInput(autoOpenKind);
   }
 
@@ -2398,7 +2398,7 @@
     const freshFn = getFreshContainer || (() => document.querySelector(`#agendaTimeWrap .ag-col-body[data-date="${dateStr}"]`));
     containerEl.querySelectorAll(".block-add-row[data-block-start]").forEach(row => {
       const startMinute = parseInt(row.dataset.blockStart, 10);
-      // 09-24: 왼쪽 클릭·터치도 오른쪽 클릭과 같은 종류 메뉴 → 고른 종류로 입력창(openAddInput).
+      // 왼쪽 클릭·터치 = 할일 입력창 바로, 오른쪽 클릭 = 종류 메뉴 → 고른 종류로 입력창(openAddInput).
       // 저장 필드(블럭 시작 시각·30분)와 연속입력 규칙은 그대로.
       const openInput = (kind) => openAddInput(row, {
         kind,
@@ -2433,8 +2433,8 @@
         },
       });
       const openMenu = (e) => { e.preventDefault(); showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind)); };
-      row.onclick = openMenu;       // 왼쪽 클릭·터치 = 종류 메뉴 → 고르면 입력창
-      row.oncontextmenu = openMenu; // 오른쪽 클릭도 같은 메뉴
+      row.onclick = () => openInput("todo"); // 왼쪽 클릭·터치 = 기본(할일) 입력창 바로 열기
+      row.oncontextmenu = openMenu;           // 오른쪽 클릭 = 종류 메뉴(일정/할일/습관) → 고르면 입력창
       if (autoOpenTodoStart === startMinute) openInput("todo");
       if (autoOpenKind && autoOpenKindStart === startMinute) openInput(autoOpenKind);
     });
@@ -3047,8 +3047,8 @@
         preview.style.height = `${(hi - lo + 1) * AG_TL_ROW_PX}px`;
       }
     };
-    // 09-24: 빈칸 왼쪽 클릭·터치(또는 드래그로 범위 지정)도 오른쪽 클릭과 똑같이 "일정/할일/습관 추가" 메뉴를 띄우고,
-    // 고른 종류로 그 시간(범위)에 입력창을 엶(예전엔 메뉴 없이 할일 입력창이 바로 열렸음).
+    // 빈칸 왼쪽 클릭·터치(또는 드래그로 범위 지정) → 메뉴 없이 그 시간(범위)에 할일 입력창을 바로 엶.
+    // 다른 종류(일정/습관)는 오른쪽 클릭 메뉴(아래 oncontextmenu)에서 고름.
     const finish = (e) => {
       if (!agAddState) return;
       const { startSlot, currentSlot, moved } = agAddState;
@@ -3057,7 +3057,7 @@
       const durationMinutes = moved ? (hi - lo + 1) * AG_TL_SLOT_MIN : 30;
       $("agTlAddPreview")?.remove();
       agAddState = null;
-      showAddKindMenu(e.clientX, e.clientY, (kind) => showAgendaTimelineInlineAdd(content, lo, hi, startMinute, durationMinutes, kind, dateStr));
+      showAgendaTimelineInlineAdd(content, lo, hi, startMinute, durationMinutes, "todo", dateStr);
     };
     content.onpointerup = finish;
     content.onpointercancel = () => { $("agTlAddPreview")?.remove(); agAddState = null; };
@@ -3536,7 +3536,7 @@
   function attachUpcomingDayAddClick(dateStr, autoOpenKind) {
     const row = document.querySelector(`#homeUpcomingList .block-add-row[data-upcomingadd="${dateStr}"]`);
     if (!row) return;
-    // 09-24: 왼쪽 클릭·터치도 오른쪽 클릭과 같은 종류 메뉴 → 고른 종류로 입력창(openAddInput). 저장 필드·연속입력 규칙은 그대로.
+    // 왼쪽 클릭·터치 = 할일 입력창 바로, 오른쪽 클릭 = 종류 메뉴 → 고른 종류로 입력창(openAddInput). 저장 필드·연속입력 규칙은 그대로.
     const openInput = (kind) => openAddInput(row, {
       kind,
       onCancel: () => renderHomeUpcomingList(),
@@ -3564,8 +3564,8 @@
       onReopen: (kind) => attachUpcomingDayAddClick(dateStr, kind),
     });
     const openMenu = (e) => { e.preventDefault(); showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind)); };
-    row.onclick = openMenu;       // 왼쪽 클릭·터치 = 종류 메뉴 → 고르면 입력창
-    row.oncontextmenu = openMenu; // 오른쪽 클릭도 같은 메뉴
+    row.onclick = () => openInput("todo"); // 왼쪽 클릭·터치 = 기본(할일) 입력창 바로 열기
+    row.oncontextmenu = openMenu;           // 오른쪽 클릭 = 종류 메뉴(일정/할일/습관) → 고르면 입력창
     if (autoOpenKind) openInput(autoOpenKind);
   }
 
@@ -4703,8 +4703,7 @@
   // 빈 공간 오른쪽 클릭 공통 헬퍼(타임블럭/타임라인/다가오는 계획 3곳 공용, 2026-09-08 추가):
   // 오른쪽 클릭하면 "일정/할일/습관 추가" 중 고르는 작은 메뉴를 띄움(2026-09-12: 습관 추가 옵션 추가)
   // (2026-09-12: 메모 기능을 아예 없애면서 메뉴 두번째 항목을 메모→할일로 교체).
-  // 09-24: 하루종일/시간블럭/다가오는/타임라인 빈칸은 왼쪽 클릭·터치에도 이 메뉴가 똑같이 뜸(결님 요청) —
-  // 고른 종류로 입력창이 열림.
+  // 하루종일/시간블럭/다가오는/타임라인 빈칸의 왼쪽 클릭·터치는 이 메뉴 없이 할일 입력창을 바로 엶.
   function showAddKindMenu(x, y, onPick) {
     document.querySelector(".ctx-menu")?.remove();
     const menu = document.createElement("div");
