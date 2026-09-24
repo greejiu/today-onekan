@@ -501,7 +501,7 @@
   .color-preset-dot{width:20px;height:20px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer;flex-shrink:0;box-shadow:0 0 0 1px var(--line) inset;transition:transform .12s;}
   .color-preset-dot:hover{transform:scale(1.15);}
   .color-preset-dot:active{transform:scale(.95);}
-  /* 설정 페이지 "타임블럭 구간" 목록(이름+시작+종료, 2026-09-09 추가) — .hs-cat-row와 같은 톤이되 입력칸이 하나 더 있음 */
+  /* 설정 페이지 "시간블럭 구간" 목록(이름+시작+종료, 2026-09-09 추가) — .hs-cat-row와 같은 톤이되 입력칸이 하나 더 있음 */
   .hs-block-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
   .hs-block-row{display:flex;align-items:center;gap:6px;}
   .hs-block-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
@@ -613,7 +613,6 @@
     <div class="content">
       <!-- 집 -->
       <div class="page" data-page="home">
-        <div class="pagehead"><h2>🏠 집</h2></div>
 
         <!-- 09-13 7-4단계: 할일/습관 각각 따로 물어보는 배너로 분리(전엔 개수만 합쳐서 보여주는 배너 1개였음) -->
         <div class="home-incomplete-banner" id="homeTodoBanner" style="display:none;">
@@ -705,9 +704,6 @@
                 <span class="agenda-date-wrap"><span id="homeListDateLabel" style="cursor:pointer;">오늘</span></span>
                 <button id="homeListNextBtn" class="agenda-nav">›</button>
               </div>
-              <div class="home2-today-head">
-                <span class="home2-progress-badge" id="homeTodayProgressBadge">오늘 0/0 완료</span>
-              </div>
               <div id="homeTodayBlockWrap">
                 <div id="homeTodayBlockAllDay"></div>
                 <div id="homeTodayBlockBody"></div>
@@ -719,7 +715,6 @@
 
       <!-- 일정 (2026-09-12: 메모 기능 전체 제거 — 일정만 남음) -->
       <div class="page" data-page="schedule" style="display:none;">
-        <div class="pagehead"><h2>🗓️ 일정</h2></div>
         <div class="view-toggle-row" style="margin-bottom:12px;">
           <div class="view-toggle" id="scheduleModeToggle" style="flex:none;max-width:160px;">
             <button type="button" id="scheduleModeListBtn" class="active">목록</button>
@@ -755,7 +750,6 @@
 
       <!-- 할일 (2026-09-12: 사이드바에서 습관과 별도 탭으로 분리) -->
       <div class="page" data-page="todos" style="display:none;">
-        <div class="pagehead"><h2>✔️ 할일</h2></div>
 
         <div id="todosTodosView">
           <div class="view-toggle" id="todoTopTabs" style="margin-bottom:10px;">
@@ -793,7 +787,6 @@
 
       <!-- 습관 (2026-09-12: 사이드바에서 할일과 별도 탭으로 분리) -->
       <div class="page" data-page="habits" style="display:none;">
-        <div class="pagehead"><h2>🔁 습관</h2></div>
 
         <div id="todosHabitsView">
           <div class="section-label">습관 관리</div>
@@ -856,14 +849,14 @@
           </div>
         </div>
 
-        <div class="section-label" style="margin-top:20px;">하루 시간 범위 <span style="color:var(--sub);font-weight:400;">(타임라인·타임블럭에서 보여줄 범위)</span></div>
+        <div class="section-label" style="margin-top:20px;">하루 시간 범위 <span style="color:var(--sub);font-weight:400;">(타임라인·시간블럭에서 보여줄 범위)</span></div>
         <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
           <div style="flex:1;"><label>시작</label><input id="settingsDayStart" type="time" step="900" /></div>
           <div style="flex:1;"><label>종료</label><input id="settingsDayEnd" type="time" step="900" /></div>
           <button class="btn-ghost" id="settingsDaySaveBtn" type="button" style="flex:none;padding:0 12px;height:38px;">저장</button>
         </div>
 
-        <div class="section-label" style="margin-top:20px;">타임블럭 구간 <span style="color:var(--sub);font-weight:400;">(타임블럭 탭의 시간 구간)</span></div>
+        <div class="section-label" style="margin-top:20px;">시간블럭 구간 <span style="color:var(--sub);font-weight:400;">(시간블럭 탭의 시간 구간 · 손잡이로 순서 변경)</span></div>
         <div class="hs-block-list" id="settingsBlockList"></div>
         <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
           <div style="flex:1;"><label>이름</label><input id="settingsBlockName" type="text" placeholder="예: 오전" /></div>
@@ -1378,7 +1371,7 @@
     logsToday = new Set(habitLogs.filter(r => r.done_date === todayStr()).map(r => r.habit_id));
     events = eventData || [];
     somedayItems = somedayData || [];
-    timeBlocks = (blockData || []).slice().sort((a, b) => a.start_minute - b.start_minute); // 2026-09-20: 저장 순서(sort_order)와 무관하게 항상 시작 시각순으로 정렬
+    timeBlocks = blockData || []; // 09-24: 설정에서 손잡이로 직접 정한 순서(sort_order) 그대로 사용(예전엔 항상 시작 시각순 정렬)
     todos = todoData || [];
     habitCategories = habitCatData || [];
     eventCategories = eventCatData || [];
@@ -2371,7 +2364,6 @@
         const bs = agBlockStyle(block.title);
         html += `<div class="ag-section-head">
           <span class="label"><span class="ag-dot" style="background:${bs.dot};"></span>${escapeHtml(block.title)} <span style="color:var(--sub);font-weight:400;">(${minutesToHHMM(block.start_minute)}~${minutesToHHMM(block.end_minute)})</span></span>
-          ${inBlock.length ? `<span class="count">${inBlock.length}건</span>` : ""}
         </div>`;
         // 비어있을 땐 "일정 없음" 안내문구 자체가 곧 클릭해서 추가하는 빈칸(하루종일·언젠가와 동일 규칙),
         // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙임.
@@ -2382,7 +2374,7 @@
       });
       const uncovered = items.filter(it => !covered.has(it));
       if (uncovered.length) {
-        html += `<div class="ag-section-head"><span class="label">그 외 시간</span><span class="count">${uncovered.length}건</span></div>`;
+        html += `<div class="ag-section-head"><span class="label">그 외 시간</span></div>`;
         html += `<div class="agenda-flat">${uncovered.map(it => agendaItemRowHtml(it, dateStr)).join("")}</div>`;
       }
     } else if (items.length) {
@@ -2684,7 +2676,7 @@
     if (allDayEl) {
       const allDayItems = await todayAllDayItems(dateStr);
       allDayEl.innerHTML = allDayItems.length
-        ? `<div class="ag-section-head"><span class="label"><span class="ag-dot" style="background:${agBlockStyle("하루종일").dot};"></span>하루종일</span><span class="count">${allDayItems.length}건</span></div>
+        ? `<div class="ag-section-head"><span class="label"><span class="ag-dot" style="background:${agBlockStyle("하루종일").dot};"></span>하루종일</span></div>
            <div class="agenda-flat">${allDayItems.map(it => homeTodayRowHtml(it, dateStr)).join("")}</div>`
         : "";
       allDayEl.querySelectorAll(".home-today-row[data-id]").forEach(row => {
@@ -2706,21 +2698,9 @@
     wireHomeTodayChecks(containerEl);
   }
 
-  // 오늘 진행률 배지("오늘 N/M 완료") — 체크 가능한 항목(할일+습관)만 셈, 일정은 완료 개념이 없어 제외.
-  async function renderHomeTodayProgress() {
-    const el = $("homeTodayProgressBadge");
-    if (!el) return;
-    const dateStr = homeAgendaDate; // 2026-09-20: "목록" 탭이 타임라인과 날짜를 공유하게 됨(예전엔 항상 todayStr())
-    const items = await todayMergedListItems(dateStr);
-    const checkable = items.filter(it => it.kind === "habit" || it.kind === "todo");
-    const done = checkable.filter(it => it.done).length;
-    el.textContent = `${formatDateShort(dateStr)} ${done}/${checkable.length} 완료`;
-  }
-
   // 09-24: 목록형/시간블럭형 하위 토글 삭제(결님 요청) — 이제 시간블럭형 하나만 남아서 분기 필요 없음.
-  // "시간블럭" 탭 전체(진행률 배지 + 시간블럭 뷰) 다시 그림 — renderHome()이 매번, 체크박스 변경 시에도 호출됨.
+  // "시간블럭" 탭 전체(시간블럭 뷰 — 진행률 배지는 09-24 결님 요청으로 삭제) 다시 그림 — renderHome()이 매번, 체크박스 변경 시에도 호출됨.
   function renderHomeTodayTab() {
-    renderHomeTodayProgress();
     renderHomeTodayBlock();
   }
 
@@ -5240,7 +5220,8 @@
     const host = $("settingsBlockList");
     if (!host) return;
     host.innerHTML = timeBlocks.length ? timeBlocks.map(b => `
-      <div class="hs-block-row" data-id="${b.id}">
+      <div class="hs-block-row hs-cat-row" data-id="${b.id}">
+        ${DRAG_HANDLE_SVG}
         <input type="text" class="hs-block-name-input" data-id="${b.id}" value="${escapeHtml(b.title)}" />
         <input type="time" step="900" class="hs-block-start-input" data-id="${b.id}" value="${minutesToHHMM(b.start_minute)}" />
         <input type="time" step="900" class="hs-block-end-input" data-id="${b.id}" value="${minutesToHHMM(b.end_minute)}" />
@@ -5270,7 +5251,6 @@
       const { error } = await sb.from("tok_time_blocks").update({ [field]: minutes }).eq("id", id);
       if (error) { alert("시간 변경 실패: " + error.message); if (b) inp.value = minutesToHHMM(b[field]); return; }
       if (b) b[field] = minutes;
-      if (field === "start_minute") { timeBlocks.sort((a, c) => a.start_minute - c.start_minute); renderSettingsBlockList(); } // 시작 시각이 바뀌면 목록 순서도 즉시 재정렬
       renderTodo();
     };
     host.querySelectorAll(".hs-block-start-input").forEach(inp => { inp.onchange = () => commitTime(inp, "start_minute"); });
@@ -5288,6 +5268,8 @@
         renderTodo();
       };
     });
+    // 순서 변경: 그룹/범주 목록과 같은 손잡이 드래그 재사용(09-24 결님 요청) — sort_order로 저장.
+    attachCategoryReorderDrag(host, timeBlocks, "tok_time_blocks", renderTodo);
   }
   $("settingsBlockAddBtn").onclick = async () => {
     const title = $("settingsBlockName").value.trim();
@@ -5296,10 +5278,9 @@
     if (!startVal || !endVal) { alert("시작·종료 시간을 모두 입력해주세요."); return; }
     const start_minute = hhmmToMinutes(startVal), end_minute = hhmmToMinutes(endVal);
     if (end_minute <= start_minute) { alert("종료 시간이 시작 시간보다 늦어야 해요."); return; }
-    const { data, error } = await sb.from("tok_time_blocks").insert({ title, start_minute, end_minute, sort_order: timeBlocks.length }).select().single();
+    const { data, error } = await sb.from("tok_time_blocks").insert({ title, start_minute, end_minute, sort_order: timeBlocks.reduce((m, b) => Math.max(m, (b.sort_order ?? 0) + 1), 0) }).select().single();
     if (error) { alert("추가 실패: " + error.message); return; }
-    timeBlocks.push(data);
-    timeBlocks.sort((a, b) => a.start_minute - b.start_minute); // 새 구간도 시작 시각순 위치에 삽입되도록 정렬
+    timeBlocks.push(data); // 새 구간은 맨 뒤에 추가(순서는 손잡이로 변경)
     $("settingsBlockName").value = ""; $("settingsBlockStart").value = ""; $("settingsBlockEnd").value = "";
     renderSettingsBlockList();
     renderTodo();
