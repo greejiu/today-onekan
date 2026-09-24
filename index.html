@@ -559,6 +559,9 @@
   .sheet-actions button{flex:1;padding:11px;border-radius:12px;border:none;font-size:14px;cursor:pointer;}
   .btn-primary{background:var(--accent);color:#fff;}
   .btn-ghost{background:var(--bg);color:var(--sub);}
+  /* 09-24: 저장 완료 등을 잠깐 알려주는 작은 팝업(토스트) — 화면 아래 가운데, 모바일 하단 메뉴에 안 가리게 살짝 위로. */
+  .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,8px);background:var(--text);color:var(--card);font-size:13px;font-weight:600;padding:9px 16px;border-radius:999px;box-shadow:0 6px 16px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:1000;white-space:nowrap;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
 </style>
 </head>
 <body>
@@ -5213,6 +5216,22 @@
     if (e) e.value = minutesToHHMM(daySettings.day_end_minute);
     renderSettingsBlockList();
   }
+  // 09-24: 저장 완료 같은 짧은 알림을 화면 아래에 잠깐(1.6초) 띄움. 연달아 불러도 요소 하나를 재사용.
+  let toastTimer = null;
+  function showToast(msg) {
+    let el = $("appToast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "appToast";
+      el.className = "toast";
+      el.setAttribute("role", "status");
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    requestAnimationFrame(() => el.classList.add("show"));
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 1600);
+  }
   $("settingsDaySaveBtn").onclick = async () => {
     const startVal = $("settingsDayStart").value, endVal = $("settingsDayEnd").value;
     if (!startVal || !endVal) { alert("시작·종료 시간을 모두 입력해주세요."); return; }
@@ -5223,6 +5242,7 @@
     if (error) { alert("저장 실패: " + error.message); return; }
     daySettings = { ...daySettings, day_start_minute, day_end_minute }; // 2026-09-20: default_tag_color 등 다른 설정값 안 날아가게 스프레드로 병합
     renderAgendaTimed();
+    showToast("저장되었습니다");
   };
 
   // ── 설정 페이지: 타임블럭 구간(이름+시작+종료) 목록 관리 ──
