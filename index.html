@@ -1145,7 +1145,7 @@
   // 언젠가 목록 정렬/필터/더보기 상태 — 집 카드와 할일 탭이 각자 따로 기억(둘이 다른 뷰라 독립적으로 고를 수 있어야 함).
   let somedayHomeSort = "recent"; // "recent"(최근순)|"old"(오래된순)|"name"(이름순)
   let somedayHomeFilterTag = null; // null=전체, 아니면 tok_habit_categories.id
-  let somedayHomeVisible = 8; // "+더보기" 누를 때마다 8씩 증가
+  let somedayHomeVisible = 15; // 09-24: 결님 요청으로 기본 8→15개로 확대. "+더보기" 누를 때마다 8씩 증가(그대로 유지)
   let somedayTabSort = "recent";
   let somedayTabFilterTag = null;
   let timeBlocks = []; // tok_time_blocks: 타임블럭 탭의 이름표 그룹핑용(시작/종료 분 포함 — 설정 페이지에서 목록으로 추가/수정/삭제)
@@ -3640,14 +3640,15 @@
     });
   }
 
-  // "언젠가" 열: 정렬/그룹필터 적용 후 일정 개수(somedayHomeVisible, 기본 8)까지만 보여주고 나머지는 "+더보기"로 8개씩 더.
+  // "언젠가" 열: 정렬/그룹필터 적용 후 일정 개수(somedayHomeVisible, 09-24부터 기본 15)까지만 보여주고
+  // 나머지는 "+더보기"로 8개씩 더.
   // ⚠️ data-id 대신 data-someday-id를 씀: 습관 탭의 attachBlockDrag가 전역으로 ".task-row[data-id]"를
   //   찾기 때문에, 여기서 data-id를 그대로 쓰면 이 행에도 그 핸들러가 잘못 붙어버림(이름공간 충돌 방지).
   function renderSomedaySummary() {
     const sortSel = $("somedayHomeSortSelect");
-    if (sortSel) renderSomedaySortSelect(sortSel, somedayHomeSort, (v) => { somedayHomeSort = v; somedayHomeVisible = 8; renderSomedaySummary(); });
+    if (sortSel) renderSomedaySortSelect(sortSel, somedayHomeSort, (v) => { somedayHomeSort = v; somedayHomeVisible = 15; renderSomedaySummary(); });
     const chipsHost = $("somedayHomeTagChips");
-    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; somedayHomeVisible = 8; renderSomedaySummary(); });
+    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; somedayHomeVisible = 15; renderSomedaySummary(); });
 
     const undone = somedayItems.filter(s => !s.is_done);
     const all = filterSomedayList(sortSomedayList(undone, somedayHomeSort), somedayHomeFilterTag);
