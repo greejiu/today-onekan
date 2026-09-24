@@ -1,4 +1,4 @@
-<!doctype html>
+<!-- claude-test-marker-A --><!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
@@ -17,13 +17,6 @@
     --bg:#FFFFFF; --card:#FFFFFF; --line:#E8E8E8; --text:#222222; --sub:#777777;
     --accent:#222222; --accent-soft:#ECECEC; --danger:#f28b82; --ok:#8fd6b7;
     --font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;
-    /* 2026-09-23 — 집 화면 4탭(목록/언젠가/타임라인/다가오는) 활성 색상 기본값. 하늘/보라/분홍은
-       이 파스텔 4색을 그대로 상속해서 씀(각자 블록에서 안 건드림). 하양/검정만 바로 아래
-       [data-theme="white"/"black"] 오버라이드에서 무채색(accent 불투명도 단계)으로 따로 덮어씀. */
-    --tab-today-bg:#FFE1D6; --tab-today-text:#B75B3D;
-    --tab-someday-bg:#ECE3FF; --tab-someday-text:#6B4FA0;
-    --tab-timeline-bg:#D8F3E7; --tab-timeline-text:#2E8B6F;
-    --tab-upcoming-bg:#DCEBFF; --tab-upcoming-text:#3E6FB0;
   }
   [data-theme="black"]{
     /* 검정 — 기본 다크 */
@@ -44,20 +37,6 @@
     /* 분홍 — 따뜻하고 귀여운 느낌 */
     --bg:#FFFBFC; --card:#FFFFFF; --line:#F5DEE3; --text:#222222; --sub:#777777;
     --accent:#F2A6B8; --accent-soft:#FCEAEE; --danger:#f28b82; --ok:#8fd6b7;
-  }
-  /* 2026-09-23 — 하양/검정은 배경이 무채색이라 파스텔 탭이 알록달록하게 튀어서, 대신
-     accent를 불투명도만 다르게 섞어(color-mix) 4단계 무채색 톤으로 구분(결 요청). */
-  [data-theme="white"]{
-    --tab-today-bg:color-mix(in srgb, var(--accent) 14%, var(--card)); --tab-today-text:var(--text);
-    --tab-someday-bg:color-mix(in srgb, var(--accent) 26%, var(--card)); --tab-someday-text:var(--text);
-    --tab-timeline-bg:color-mix(in srgb, var(--accent) 20%, var(--card)); --tab-timeline-text:var(--text);
-    --tab-upcoming-bg:color-mix(in srgb, var(--accent) 32%, var(--card)); --tab-upcoming-text:var(--text);
-  }
-  [data-theme="black"]{
-    --tab-today-bg:color-mix(in srgb, var(--accent) 14%, var(--card)); --tab-today-text:var(--text);
-    --tab-someday-bg:color-mix(in srgb, var(--accent) 26%, var(--card)); --tab-someday-text:var(--text);
-    --tab-timeline-bg:color-mix(in srgb, var(--accent) 20%, var(--card)); --tab-timeline-text:var(--text);
-    --tab-upcoming-bg:color-mix(in srgb, var(--accent) 32%, var(--card)); --tab-upcoming-text:var(--text);
   }
   /* 2026-09-20 — 결님 요청: 기본은 시스템 글꼴, 설정에서 직접 컴퓨터에 설치된 폰트 이름을 적으면
      JS(applyUserFont)가 이 변수만 바꿔 끼움(--font-family). 폰트 이름을 입력 안 했을 때 쓰는 기본값
@@ -285,27 +264,24 @@
   /* ── 집 : 2열 탭 구조 재설계(2026-09-20, 1단계) — 1열 오늘/다가오는/언젠가, 2열 타임라인/포커스.
      목업(Claude 아티팩트 "오늘한칸 — 홈 재설계") 기준 파스텔 탭 색상·둥근 카드 톤 적용. ── */
   .home2-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
-  /* 6단계(2026-09-20) — 모바일(≤900px)에선 2열을 세로로 쌓지 않고, 상단 "목록"/"타임라인·포커스" 2단
-     세그먼트로 둘 중 하나만 보여줌(목업 참고). 데스크톱에선 이 스위치 자체를 숨기고 기존 2열 그대로 둠. */
-  .home2-mobile-switch{display:none;}
+  /* 09-24: 모바일 상단 "목록"/"타임라인·다가오는" 세그먼트 토글 제거(결님 요청 — 눌러도 탭이 안 바뀌고
+     불필요하다고 판단). 원인: 이 media query 안의 .home2-col{display:none}이 아래(라인 278 근처)의
+     비-media-query .home2-col{display:flex}보다 소스 순서상 먼저 나와서 항상 뒤 규칙에 덮여
+     두 열이 늘 같이 보였음 — 즉 토글이 원래도 실질적으로 아무 효과가 없었음. 대신 모바일에서는
+     그냥 2열을 세로로 자연스럽게 쌓기만 함. */
   @media (max-width:900px){
-    .home2-mobile-switch{display:flex;background:#F3EFFC;border-radius:16px;padding:4px;gap:4px;margin-bottom:14px;}
-    .home2-mobile-switch button{flex:1;padding:10px 0;border-radius:13px;font-weight:700;font-size:13px;border:none;cursor:pointer;background:transparent;color:#A79CC4;font-family:inherit;}
-    .home2-mobile-switch button.active{background:#FFFFFF;color:#3A3350;box-shadow:0 1px 4px rgba(58,51,80,.10);}
     .home2-grid{grid-template-columns:1fr;}
-    .home2-col{display:none;}
-    .home2-col.mobile-active{display:flex;}
   }
   .home2-col{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 6px 20px rgba(150,130,200,.08);display:flex;flex-direction:column;gap:14px;}
   /* 결님 요청(2026-09-20) — 1열/2열 각각의 역할을 이름표로 구분: 1열="할일 보관함"(모아두는 곳),
      2열="실행 공간"(오늘 실제로 하는 곳). 탭 바로 위에 작은 라벨만 추가, 레이아웃/기능은 그대로. */
   .home2-col-label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:var(--text);margin-bottom:-2px;}
   .home2-tabs{display:flex;gap:8px;}
-  .home2-tab{flex:1;padding:9px 0;border:none;border-radius:14px;font-size:13px;font-weight:700;color:var(--sub);background:transparent;cursor:pointer;font-family:inherit;}
-  .home2-tab.active.tab-today{background:var(--tab-today-bg);color:var(--tab-today-text);}
-  .home2-tab.active.tab-upcoming{background:var(--tab-upcoming-bg);color:var(--tab-upcoming-text);}
-  .home2-tab.active.tab-someday{background:var(--tab-someday-bg);color:var(--tab-someday-text);}
-  .home2-tab.active.tab-timeline{background:var(--tab-timeline-bg);color:var(--tab-timeline-text);}
+  .home2-tab{flex:1;padding:9px 0;border:none;border-radius:14px;font-size:13px;font-weight:700;color:#A8A0BD;background:transparent;cursor:pointer;font-family:inherit;}
+  .home2-tab.active.tab-today{background:#FFE1D6;color:#B75B3D;}
+  .home2-tab.active.tab-upcoming{background:#DCEBFF;color:#3E6FB0;}
+  .home2-tab.active.tab-someday{background:#ECE3FF;color:#6B4FA0;}
+  .home2-tab.active.tab-timeline{background:#D8F3E7;color:#2E8B6F;}
   .home2-tabpanel{min-width:0;}
   /* 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간/타임라인) 높이에 맞추고, 언젠가·다가오는은
      그 높이만큼 기본으로 펼쳐진 뒤 넘치는 분량만 내부 스크롤. #homeCol1의 실제 height는 JS(syncHomeCol1Height)가
@@ -633,13 +609,9 @@
              1일/3일/7일 토글은 완전히 제거(집은 항상 "오늘"만). 기존 렌더 함수가 찾는 id는 그대로 유지한 채
              DOM만 옮겨서(agendaAllDayZone·agendaTimeWrap→2열 타임라인 탭, somedayZone→1열 언젠가 탭)
              renderHome()의 나머지 호출부는 손대지 않아도 그대로 동작함. -->
-        <!-- 6단계: 모바일에서만 보이는 상단 세그먼트(≤900px, CSS 미디어쿼리로 데스크톱엔 숨김) — "목록"은
-             1열(homeCol1) 전체를, "타임라인·다가오는·포커스"는 2열(homeCol2) 전체를 보여줌. 각 열 안의
-             하위 탭은 그대로 유지. -->
-        <div class="home2-mobile-switch" id="homeMobileSwitch">
-          <button type="button" class="active" data-mobilecol="col1">목록</button>
-          <button type="button" data-mobilecol="col2">타임라인 · 다가오는</button>
-        </div>
+        <!-- 09-24: 모바일 상단 "목록"/"타임라인·다가오는" 토글 버튼 제거(클릭해도 탭이 안 바뀌는
+             버그가 있었고, 결님 판단으로도 없어도 되는 카드라 삭제. 모바일에선 아래 .home2-grid가
+             그냥 1열로 쌓여서 목록/타임라인이 순서대로 보임). -->
         <!-- 2026-09-20 — 결님 요청으로 탭 재배치: 1열(보관함)은 "목록"(옛 "오늘" 탭, 이제 날짜 이동 가능)/
              "언젠가" 2개로, "다가오는"은 2열(실행공간)로 옮겨서 "타임라인/다가오는" 2개가 됨.
              "목록" 탭은 homeAgendaDate를 2열 "타임라인"과 공유(연동) — 아래 goAgendaDate/resetAgendaDateToToday
@@ -2170,11 +2142,6 @@
 
   function attachAgendaAllDayDrag() {
     let dragEl = null, dragId = null, dragKindAttr = null, dragDateAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
-    // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴(showAgendaItemMenu)를 열기 위한 타이머. 데스크톱은 실제
-    // 우클릭(contextmenu 이벤트)이 있어서 그대로 동작하지만, 터치는 setPointerCapture 때문에 브라우저가
-    // 자체적으로 발생시키는 롱프레스 contextmenu가 씹혀서(포인터가 이미 우리 코드로 캡처돼버림) 직접 흉내내야 함.
-    let longPressTimer = null, longPressFired = false;
-    const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
 
     document.querySelectorAll(".ag-allday-row[data-id]").forEach(row => {
       row.addEventListener("pointerdown", (e) => {
@@ -2182,22 +2149,11 @@
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; dragDateAttr = row.dataset.date; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
-        clearLongPress(); longPressFired = false;
-        if (e.pointerType === "touch") {
-          const sx = startX, sy = startY;
-          longPressTimer = setTimeout(() => {
-            longPressTimer = null;
-            if (moved) return;
-            longPressFired = true;
-            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
-          }, 550);
-        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!dragEl) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
-          clearLongPress();
           dragEl.classList.add("dragging");
         }
         if (!moved) return;
@@ -2214,13 +2170,11 @@
       });
       const finish = async (e) => {
         if (!dragEl) return;
-        clearLongPress();
-        const el = dragEl, id = dragId, kind = dragKindAttr, srcDate = dragDateAttr, wasMoved = moved, wasLongPress = longPressFired;
-        dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false; longPressFired = false;
+        const el = dragEl, id = dragId, kind = dragKindAttr, srcDate = dragDateAttr, wasMoved = moved;
+        dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false;
         el.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) { startAgendaItemInlineEdit(el, id, kind, renderAgendaAllDay); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         if (!drop) return;
@@ -2235,7 +2189,6 @@
         showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
       };
       row.addEventListener("pointercancel", () => {
-        clearLongPress(); longPressFired = false;
         dragEl?.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
         dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false; curTarget = null;
@@ -2469,9 +2422,6 @@
     let dragEl = null, dragId = null, dragKindAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
     let ghost = null; // 타임라인처럼 커서를 따라다니는 항목 미리보기(2026-09-06 결님 요청 — 카드형 뷰는 절대좌표가 아니라
                        // 정적 dim+테두리만으론 "따라 움직이는" 느낌이 안 나서, 손가락을 따라오는 작은 칩을 하나 더 붙임).
-    // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴를 열기 위한 타이머(attachAgendaAllDayDrag와 동일한 이유/패턴).
-    let longPressTimer = null, longPressFired = false;
-    const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
 
     containerEl.querySelectorAll(".ag-block-row[data-id]").forEach(row => {
       row.addEventListener("pointerdown", (e) => {
@@ -2479,22 +2429,11 @@
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
-        clearLongPress(); longPressFired = false;
-        if (e.pointerType === "touch") {
-          const sx = startX, sy = startY;
-          longPressTimer = setTimeout(() => {
-            longPressTimer = null;
-            if (moved) return;
-            longPressFired = true;
-            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
-          }, 550);
-        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!dragEl) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
-          clearLongPress();
           dragEl.classList.add("dragging");
           ghost = document.createElement("div");
           ghost.className = "ag-drag-ghost";
@@ -2512,21 +2451,18 @@
       });
       const finish = async (e) => {
         if (!dragEl) return;
-        clearLongPress();
-        const el = dragEl, id = dragId, kind = dragKindAttr, wasMoved = moved, wasLongPress = longPressFired;
-        dragEl = null; dragId = null; dragKindAttr = null; moved = false; longPressFired = false;
+        const el = dragEl, id = dragId, kind = dragKindAttr, wasMoved = moved;
+        dragEl = null; dragId = null; dragKindAttr = null; moved = false;
         el.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) { startAgendaItemInlineEdit(el, id, kind, rerender); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         await moveItemToZone(kind, id, drop);
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
-        clearLongPress(); longPressFired = false;
         dragEl?.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
@@ -2613,31 +2549,16 @@
   function attachHomeRowDrag(containerEl, rowSelector, onRerender, skipInlineEditKinds = []) {
     containerEl.querySelectorAll(rowSelector).forEach(row => {
       let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
-      // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴를 열기 위한 타이머(attachAgendaAllDayDrag와 동일한 이유/패턴).
-      // 이 함수가 "목록"/"다가오는" 두 탭 모두에 쓰이는 공용 드래그 로직이라, 여기 한 곳만 고치면 두 탭 다 해결됨.
-      let longPressTimer = null, longPressFired = false;
-      const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
       row.addEventListener("pointerdown", (e) => {
         if (e.target.closest("input")) return;
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
-        clearLongPress(); longPressFired = false;
-        if (e.pointerType === "touch") {
-          const sx = startX, sy = startY;
-          longPressTimer = setTimeout(() => {
-            longPressTimer = null;
-            if (moved) return;
-            longPressFired = true;
-            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
-          }, 550);
-        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
-          clearLongPress();
           row.classList.add("dragging");
           ghost = document.createElement("div");
           ghost.className = "ag-drag-ghost";
@@ -2658,14 +2579,12 @@
       });
       const finish = async (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
-        clearLongPress();
-        const wasMoved = moved, id = row.dataset.id, kind = row.dataset.kind, wasLongPress = longPressFired;
-        moved = false; longPressFired = false;
+        const wasMoved = moved, id = row.dataset.id, kind = row.dataset.kind;
+        moved = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) {
           if (skipInlineEditKinds.includes(kind)) return; // 다른 곳(예: 제목 클릭)이 처리하도록 그대로 둠
           startAgendaItemInlineEdit(row, id, kind, onRerender);
@@ -2676,7 +2595,6 @@
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
-        clearLongPress(); longPressFired = false;
         moved = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
@@ -3020,7 +2938,7 @@
         }
         applyPreview();
       });
-      const finish = async (e) => {
+      const finish = async () => {
         clearTimer();
         pressed = false;
         const k = dragKind, dropZone = outsideZone;
@@ -3035,13 +2953,7 @@
           if (!cancelled) startEditTitle();
           return;
         }
-        if (!moved) {
-          // 2026-09-23 — 터치에서 0.3초 이상 누르고 있었지만(그래서 k==="move"로 전환됨) 끝까지 손가락을 안
-          // 움직였다면, 예전엔 여기서 아무 일도 안 일어나고 조용히 씹혔음(이동도 아니고 제목수정도 아니라서) —
-          // 이게 바로 모바일에서 롱프레스로 삭제 메뉴를 열 수 없던 원인. 이제 이 경우엔 삭제 메뉴를 대신 열어줌.
-          if (k === "move" && !isMouse) task.oncontextmenu?.({ preventDefault(){}, clientX: e?.clientX ?? task.getBoundingClientRect().left, clientY: e?.clientY ?? startY });
-          return;
-        }
+        if (!moved) return;
         if (dropZone) {
           await moveItemToZone(kind, id, dropZone);
           return;
@@ -3263,17 +3175,9 @@
     btn.onclick = () => switchHomeCol2Tab(btn.dataset.col2tab);
   });
 
-  // 6단계(2026-09-20): 모바일 상단 세그먼트("목록"/"타임라인·포커스") — 데스크톱에선 CSS가 이 스위치 자체를
-  // 숨기고 .home2-col의 mobile-active 클래스도 무시하게 해둬서(위 CSS 참고), 여기 로직은 모바일 폭에서만 실제로 보임.
-  function switchHomeMobileCol(col) {
-    document.querySelectorAll("#homeMobileSwitch button").forEach(btn => btn.classList.toggle("active", btn.dataset.mobilecol === col));
-    $("homeCol1")?.classList.toggle("mobile-active", col === "col1");
-    $("homeCol2")?.classList.toggle("mobile-active", col === "col2");
-  }
-  document.querySelectorAll("#homeMobileSwitch button").forEach(btn => {
-    btn.onclick = () => switchHomeMobileCol(btn.dataset.mobilecol);
-  });
-  switchHomeMobileCol("col1"); // 기본값: 목록(1열)
+  // 09-24: 모바일 상단 "목록"/"타임라인·다가오는" 토글 제거 — switchHomeMobileCol 등 관련 로직 삭제.
+  // (원래도 CSS 소스 순서 버그로 클릭해도 탭이 안 바뀌었고, 모바일에선 .home2-grid가 1열로 쌓여
+  // 목록/타임라인이 순서대로 그냥 다 보임)
 
   // "다가오는 계획" 열: 내일부터 7일, 일정+할일+습관을 모두 보여줌.
   // 습관은 반복주기상 "다음 차례" 날짜에만 뜸 — 완료해야 그 다음 차례가 새로 생기는 방식이라
@@ -3783,30 +3687,16 @@
   function attachSomedayDrag() {
     document.querySelectorAll(".ag-someday-row[data-someday-id]").forEach(row => {
       let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
-      // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴(showSomedayItemMenu)를 열기 위한 타이머(다른 attach*Drag와 동일 패턴).
-      let longPressTimer = null, longPressFired = false;
-      const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
       row.addEventListener("pointerdown", (e) => {
         if (e.target.closest("input")) return;
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
-        clearLongPress(); longPressFired = false;
-        if (e.pointerType === "touch") {
-          const sx = startX, sy = startY;
-          longPressTimer = setTimeout(() => {
-            longPressTimer = null;
-            if (moved) return;
-            longPressFired = true;
-            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
-          }, 550);
-        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
-          clearLongPress();
           row.classList.add("dragging");
           ghost = document.createElement("div");
           ghost.className = "ag-drag-ghost";
@@ -3824,14 +3714,12 @@
       });
       const finish = async (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
-        clearLongPress();
-        const wasMoved = moved, id = row.dataset.somedayId, wasLongPress = longPressFired;
-        moved = false; longPressFired = false;
+        const wasMoved = moved, id = row.dataset.somedayId;
+        moved = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) { startAgendaItemInlineEdit(row, id, "someday", renderSomedaySummary); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         if (!drop || drop.zone === "someday") return; // 이미 언젠가라 놓아도 변화 없음
@@ -3839,7 +3727,6 @@
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
-        clearLongPress(); longPressFired = false;
         moved = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
@@ -4856,9 +4743,7 @@
       };
       document.addEventListener("click", closeOnOutside);
       document.addEventListener("contextmenu", closeOnOutside);
-    }, 300); // 2026-09-23: 0 → 300ms. 모바일 롱프레스로 이 메뉴를 열면 손가락 뗄 때 그 자리에서 클릭이 한 번
-             // 더 합성돼서(터치 종료 시 브라우저가 만드는 호환용 click) 열리자마자 바로 닫혀버리는 문제가 있어서,
-             // 그 클릭이 지나갈 동안만 바깥클릭 감지를 늦게 켬(진짜 "바깥 탭해서 닫기"는 이보다 늦게 일어나 정상 동작).
+    }, 0);
   }
 
   // 습관 탭 목록 항목 오른쪽 클릭 메뉴(09-13 7-3단계 신규) — 습관 탭엔 체크박스가 없어서 지금까진 집 화면에서만
@@ -4907,8 +4792,7 @@
       };
       document.addEventListener("click", closeOnOutside);
       document.addEventListener("contextmenu", closeOnOutside);
-    }, 300); // 2026-09-23: 0 → 300ms, showDeleteMenu와 동일한 이유(모바일 롱프레스로 연 메뉴가 손가락 뗄 때 합성되는
-             // click 때문에 바로 닫혀버리는 문제 방지).
+    }, 0);
   }
   function agendaItemById(kind, id) {
     if (kind === "habit") return tasks.find(t => t.id === id);
