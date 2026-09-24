@@ -251,6 +251,7 @@
   .someday-sort-select{font-size:11px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--sub);cursor:pointer;}
   .someday-tag-chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;}
   .someday-tag-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--sub);cursor:pointer;}
+  .someday-tag-chip.archived{border-style:dashed;}
   .someday-tag-chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700;}
   .someday-more-row{text-align:center;font-size:12px;color:var(--accent);cursor:pointer;padding:6px 0;}
   .someday-more-row:hover{text-decoration:underline;}
@@ -477,6 +478,14 @@
   .hs-cat-row input[type="color"]{width:28px;height:28px;padding:1px;border:1px solid var(--line);border-radius:6px;flex-shrink:0;}
   .hs-cat-row .color-swatch-btn{width:28px;height:28px;border-radius:6px;}
   .hs-cat-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
+  .hs-cat-view-tabs{display:flex;gap:4px;margin-bottom:4px;}
+  .hs-cat-view-tabs button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:999px;font-size:11.5px;padding:3px 10px;cursor:pointer;font-family:inherit;}
+  .hs-cat-view-tabs button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700;}
+  .hs-cat-archive,.hs-cat-unarchive,.hs-cat-purge{flex-shrink:0;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:8px;font-size:11.5px;padding:5px 8px;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .hs-cat-archive:hover,.hs-cat-unarchive:hover{border-color:var(--accent);color:var(--accent);}
+  .hs-cat-purge{border-color:transparent;background:none;}
+  .hs-cat-purge:hover{color:var(--danger);background:var(--accent-soft);}
+  .hs-cat-archived-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;margin:0 7px 0 21px;}
   .hs-cat-del{border:none;background:none;color:var(--sub);font-size:14px;cursor:pointer;flex-shrink:0;width:24px;height:24px;line-height:1;border-radius:6px;}
   .hs-cat-del:hover{color:var(--danger);background:var(--accent-soft);}
   /* 2026-09-20 — 그룹 순서 드래그(결님 요청): 손잡이(drag-handle-dots)만 잡고 옮기게 해서 옆 색상칩·이름칸·삭제버튼
@@ -2095,6 +2104,13 @@
   function agBlockStyle(title) { return AG_BLOCK_STYLE[title] || { dot: "var(--accent)" }; }
   // 항목의 그룹/범주 색상(습관·할일은 공용 그룹 풀 habitCategories, 일정은 별도 eventCategories에서 찾음)
   function itemTagPool(kind) { return kind === "event" ? eventCategories : habitCategories; }
+  // 2026-09-24 그룹·범주 보관 — 전체 pool(보관 포함)은 기존 항목 렌더링·정렬·그룹화에 그대로 쓰고,
+  // "새로 지정하는" 선택 UI에서만 이 함수로 보관된 것을 거름. keepId: 지금 항목에 이미 연결된 값이
+  // 보관 상태라면 그 하나만 예외로 남겨서(“구직 · 보관됨”) 그대로 유지할 수 있게 함.
+  function assignableTagPool(pool, keepId = null) { return pool.filter(c => !c.is_archived || (keepId && c.id === keepId)); }
+  function tagPickLabel(c) { return c.is_archived ? `${c.name} · 보관됨` : c.name; }
+  // 새 그룹/범주·보관 해제 항목을 사용 중 목록 맨 아래에 두기 위한 다음 sort_order(보관된 행 포함 전체 최댓값 + 1)
+  function nextCategorySortOrder(pool) { return pool.reduce((m, c) => Math.max(m, Number.isFinite(c.sort_order) ? c.sort_order : -1), -1) + 1; }
   function itemTagColor(kind, catId) {
     if (!catId) return kind === "event" ? null : (daySettings.default_tag_color || null); // 2026-09-20: 습관/할일/언젠가는 "그룹 없음"도 "기본" 색을 가질 수 있음(일정 범주는 그대로 무색)
     const cat = itemTagPool(kind).find(c => c.id === catId);
@@ -3791,11 +3807,15 @@
   }
   // 그룹 필터 칩 채우기(전체 + 기본(그룹 없음) + 그룹·할일 공용 풀 habitCategories) — onPick(tagIdOrNull)을 호출부에서 넘겨받음.
   // "기본" 칩은 색상 인풋의 "기본" 색(daySettings.default_tag_color, 설정 페이지에서 지정 가능)을 점 색으로 씀.
-  function renderSomedayTagChips(hostEl, activeTagId, onPick) {
+  // 2026-09-24 보관: 보관된 그룹 칩은 숨기되, 지금 목록(shownItems)에 그 그룹을 쓰는 항목이 있거나 이미 그 칩으로
+  // 거르는 중이면 “이름 · 보관됨” 칩으로 남겨서 해당 항목의 분류를 계속 확인·필터할 수 있게 함.
+  function renderSomedayTagChips(hostEl, activeTagId, onPick, shownItems = []) {
+    const usedIds = new Set(shownItems.map(s => s.tag_id).filter(Boolean));
+    const chipPool = habitCategories.filter(c => !c.is_archived || usedIds.has(c.id) || c.id === activeTagId);
     const chips = [
       `<button type="button" class="someday-tag-chip${activeTagId ? "" : " active"}" data-tag="">전체</button>`,
       `<button type="button" class="someday-tag-chip${activeTagId === SOMEDAY_NO_GROUP ? " active" : ""}" data-tag="${SOMEDAY_NO_GROUP}"><span class="tag-dot-sm" style="background:${daySettings.default_tag_color || "var(--sub)"};"></span>기본</button>`,
-    ].concat(habitCategories.map(c => `<button type="button" class="someday-tag-chip${activeTagId === c.id ? " active" : ""}" data-tag="${c.id}"><span class="tag-dot-sm" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(c.name)}</button>`));
+    ].concat(chipPool.map(c => `<button type="button" class="someday-tag-chip${activeTagId === c.id ? " active" : ""}${c.is_archived ? " archived" : ""}" data-tag="${c.id}"><span class="tag-dot-sm" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(tagPickLabel(c))}</button>`));
     hostEl.innerHTML = chips.join("");
     hostEl.querySelectorAll("button[data-tag]").forEach(btn => {
       btn.onclick = () => onPick(btn.dataset.tag || null);
@@ -3810,7 +3830,7 @@
     const sortSel = $("somedayHomeSortSelect");
     if (sortSel) renderSomedaySortSelect(sortSel, somedayHomeSort, (v) => { somedayHomeSort = v; somedayHomeVisible = 15; renderSomedaySummary(); });
     const chipsHost = $("somedayHomeTagChips");
-    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; somedayHomeVisible = 15; renderSomedaySummary(); });
+    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; somedayHomeVisible = 15; renderSomedaySummary(); }, somedayItems.filter(s => !s.is_done));
 
     const undone = somedayItems.filter(s => !s.is_done);
     const all = filterSomedayList(sortSomedayList(undone, somedayHomeSort), somedayHomeFilterTag);
@@ -4180,11 +4200,14 @@
   };
 
   // ── 습관 반복·그룹 설정 시트 ──
+  // 보관된 그룹은 목록에서 숨김 — 단 지금 선택값(selectedId)이 보관된 그룹이면 그 하나만 “이름 · 보관됨”으로 남김.
+  // 다른 값으로 바꾸는 순간 onchange에서 새 값 기준으로 다시 채우므로, 보관된 값은 다시 고를 수 없게 됨.
   function populateHabitCategorySelect(selectedId) {
     const sel = $("hs_category");
     sel.innerHTML = `<option value="">기본</option>` +
-      habitCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+      assignableTagPool(habitCategories, selectedId || null).map(c => `<option value="${c.id}">${escapeHtml(tagPickLabel(c))}</option>`).join("");
     sel.value = selectedId || "";
+    sel.onchange = () => { if (sel.value !== (selectedId || "")) populateHabitCategorySelect(sel.value); };
   }
   // 반복 선택 UI 공용 헬퍼(hs_/idt_ 두 시트에서 같이 씀) ──
   // 2026-09-12: 원래 있던 "평일마다"/"특정 요일마다"라는 별도 반복 단위를 없애고 "주마다" 안으로 합침.
@@ -4267,7 +4290,7 @@
     if (!name) { alert("그룹 이름을 입력해주세요."); return; }
     const color = $("hs_newcat_color").value;
     const { data, error } = await sb.from("tok_habit_categories")
-      .insert({ name, color, sort_order: habitCategories.length })
+      .insert({ name, color, sort_order: nextCategorySortOrder(habitCategories) })
       .select().single();
     if (error) { alert("그룹 추가 실패: " + error.message); return; }
     habitCategories.push(data);
@@ -4328,7 +4351,7 @@
     const sortSel = $("somedayTabSortSelect");
     if (sortSel) renderSomedaySortSelect(sortSel, somedayTabSort, (v) => { somedayTabSort = v; renderSomeday(); });
     const chipsHost = $("somedayTabTagChips");
-    if (chipsHost) renderSomedayTagChips(chipsHost, somedayTabFilterTag, (tagId) => { somedayTabFilterTag = tagId; renderSomeday(); });
+    if (chipsHost) renderSomedayTagChips(chipsHost, somedayTabFilterTag, (tagId) => { somedayTabFilterTag = tagId; renderSomeday(); }, somedayItems);
 
     const filtered = filterSomedayList(somedayItems, somedayTabFilterTag);
     const undone = sortSomedayList(filtered.filter(s => !s.is_done), somedayTabSort);
@@ -5092,7 +5115,8 @@
     const noneLabel = kind === "event" ? "범주 없음" : "기본";
     const noneDot = kind === "event" ? "" : `<span class="ctx-tag-dot" style="background:${daySettings.default_tag_color || "var(--sub)"};"></span>`;
     const noneBtn = `<button type="button" class="default${currentVal ? "" : " selected"}" data-tag="">${noneDot}${noneLabel}${currentVal ? "" : " ✓"}</button>`;
-    const items = pool.map(c => `<button type="button" class="default${c.id === currentVal ? " selected" : ""}" data-tag="${c.id}"><span class="ctx-tag-dot" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(c.name)}${c.id === currentVal ? " ✓" : ""}</button>`).join("");
+    // 보관된 그룹/범주는 숨기되, 이 항목의 현재 연결값이 보관 상태면 그 하나만 “이름 · 보관됨”으로 남겨 유지 가능하게 함.
+    const items = assignableTagPool(pool, currentVal).map(c => `<button type="button" class="default${c.id === currentVal ? " selected" : ""}" data-tag="${c.id}"><span class="ctx-tag-dot" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(tagPickLabel(c))}${c.id === currentVal ? " ✓" : ""}</button>`).join("");
     menu.innerHTML = noneBtn + items;
     document.body.appendChild(menu);
     positionCtxMenu(menu, x, y);
@@ -5220,10 +5244,24 @@
   // ── 설정 페이지: 그룹(습관·할일 공용) / 범주(일정 전용) 관리 ──
   // withDefaultRow: true면 목록 맨 위에 "기본"(그룹 없음) 줄을 하나 더 붙임 — 이 행은 순서 고정(드래그 불가),
   // 이름 수정·삭제 불가, 색상만 daySettings.default_tag_color에 저장(2026-09-20, 결님 요청).
+  // 2026-09-24 보관 — 목록 위에 "사용 중 / 보관됨" 전환 탭. 사용 중 줄은 이름·색상·순서 변경 + "보관",
+  // 보관됨 줄은 이름·색상 표시 + "다시 사용" + "완전 삭제"(일반 화면에선 삭제 대신 보관이 기본 동작).
+  // 보관해도 행은 그대로라 기존 항목 연결·이름·색 표시는 유지됨. 탭 상태는 목록(hostId)별로 기억.
+  const categoryManageView = {};
   function renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow = false) {
     const host = $(hostId);
     if (!host) return;
-    const defaultRowHtml = withDefaultRow
+    const isEvent = table === "tok_event_categories";
+    const noun = isEvent ? "범주" : "그룹";
+    const noneLabel = isEvent ? "범주 없음" : "기본";
+    const view = categoryManageView[hostId] === "archived" ? "archived" : "active";
+    const activeList = pool.filter(c => !c.is_archived);
+    const archivedList = pool.filter(c => c.is_archived);
+    const tabsHtml = `<div class="hs-cat-view-tabs">
+        <button type="button" class="${view === "active" ? "active" : ""}" data-catview="active">사용 중 ${activeList.length}</button>
+        <button type="button" class="${view === "archived" ? "active" : ""}" data-catview="archived">보관됨 ${archivedList.length}</button>
+      </div>`;
+    const defaultRowHtml = withDefaultRow && view === "active"
       ? `<div class="hs-cat-row hs-cat-row-default" data-default="1">
            <span class="hs-cat-drag-handle-spacer"></span>
            <input type="color" class="hs-cat-color-input hs-cat-default-color-input color-native-input" value="${daySettings.default_tag_color || "#c7c2d6"}" />
@@ -5231,16 +5269,84 @@
            <span class="hs-cat-name-fixed">기본</span>
          </div>`
       : "";
-    const rowsHtml = pool.map(c => `
+    let bodyHtml;
+    if (view === "active") {
+      const rowsHtml = activeList.map(c => `
       <div class="hs-cat-row" data-id="${c.id}">
         ${DRAG_HANDLE_SVG}
         <input type="color" class="hs-cat-color-input color-native-input" data-id="${c.id}" value="${c.color || "#9a8cf0"}" />
         <button type="button" class="color-swatch-btn hs-cat-color-swatch" data-id="${c.id}" title="색상 선택" style="background:${c.color || "#9a8cf0"};"></button>
         <input type="text" class="hs-cat-name-input" data-id="${c.id}" value="${escapeHtml(c.name)}" />
-        <button type="button" class="hs-cat-del" data-id="${c.id}" title="삭제">✕</button>
+        <button type="button" class="hs-cat-archive" data-id="${c.id}" title="보관하면 새로 고르는 목록에서만 숨겨지고, 기존 항목의 ${noun}은 그대로 유지돼요">보관</button>
       </div>
     `).join("");
-    host.innerHTML = defaultRowHtml + (pool.length ? rowsHtml : (withDefaultRow ? "" : `<div class="empty" style="font-size:12px;padding:4px 0;">아직 없어요. 아래에서 추가해보세요.</div>`));
+      bodyHtml = defaultRowHtml + (activeList.length ? rowsHtml : (withDefaultRow ? "" : `<div class="empty" style="font-size:12px;padding:4px 0;">아직 없어요. 아래에서 추가해보세요.</div>`));
+    } else {
+      const rowsHtml = archivedList.map(c => `
+      <div class="hs-cat-row hs-cat-row-archived" data-archived-id="${c.id}">
+        <span class="hs-cat-archived-dot" style="background:${c.color || "#9a8cf0"};"></span>
+        <span class="hs-cat-name-fixed">${escapeHtml(c.name)}</span>
+        <button type="button" class="hs-cat-unarchive" data-id="${c.id}">다시 사용</button>
+        <button type="button" class="hs-cat-purge" data-id="${c.id}">완전 삭제</button>
+      </div>
+    `).join("");
+      bodyHtml = archivedList.length ? rowsHtml : `<div class="empty" style="font-size:12px;padding:4px 0;">보관된 ${noun}이 없어요.</div>`;
+    }
+    host.innerHTML = tabsHtml + bodyHtml;
+    const rerender = () => renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow);
+    host.querySelectorAll("button[data-catview]").forEach(btn => {
+      btn.onclick = () => { categoryManageView[hostId] = btn.dataset.catview; rerender(); };
+    });
+    host.querySelectorAll(".hs-cat-archive").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
+        const { error } = await sb.from(table).update({ is_archived: true }).eq("id", id);
+        if (error) { alert("보관 실패: " + error.message); return; }
+        const cat = pool.find(c => c.id === id);
+        if (cat) cat.is_archived = true;
+        rerender();
+        onSaved?.();
+      };
+    });
+    host.querySelectorAll(".hs-cat-unarchive").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
+        const sort_order = nextCategorySortOrder(pool); // 사용 중 목록 맨 아래로
+        const { error } = await sb.from(table).update({ is_archived: false, sort_order }).eq("id", id);
+        if (error) { alert("보관 해제 실패: " + error.message); return; }
+        const idx = pool.findIndex(c => c.id === id);
+        if (idx >= 0) {
+          const [cat] = pool.splice(idx, 1);
+          cat.is_archived = false;
+          cat.sort_order = sort_order;
+          pool.push(cat);
+        }
+        rerender();
+        onSaved?.();
+      };
+    });
+    host.querySelectorAll(".hs-cat-purge").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
+        const cat = pool.find(c => c.id === id);
+        if (!confirm(`"${cat ? cat.name : "항목"}" ${noun}을 완전히 삭제할까요?\n\n이 ${noun}을 쓰던 기존 항목의 연결은 "${noneLabel}"(으)로 바뀌어요. 되돌릴 수 없어요.`)) return;
+        const { error } = await sb.from(table).delete().eq("id", id);
+        if (error) { alert("삭제 실패: " + error.message); return; }
+        const idx = pool.findIndex(c => c.id === id);
+        if (idx >= 0) pool.splice(idx, 1);
+        // DB에는 ON DELETE로 참조가 알아서 풀리지만(다음 loadAll에 반영), 지금 화면에 바로 "기본"으로
+        // 보이도록 메모리상 참조도 같이 정리함(습관 시트에 있던 기존 최적화 업데이트를 공용 함수로 옮기며 일반화).
+        if (table === "tok_habit_categories") {
+          tasks.forEach(t => { if (t.category_id === id) t.category_id = null; });
+          todos.forEach(td => { if (td.tag_id === id) td.tag_id = null; });
+          somedayItems.forEach(s => { if (s.tag_id === id) s.tag_id = null; });
+        } else if (table === "tok_event_categories") {
+          events.forEach(e => { if (e.category_id === id) e.category_id = null; });
+        }
+        rerender();
+        onSaved?.();
+      };
+    });
     const defaultColorInp = host.querySelector(".hs-cat-default-color-input");
     if (defaultColorInp) {
       defaultColorInp.onchange = async () => {
@@ -5275,28 +5381,6 @@
       };
       inp.onblur = commit;
       inp.onkeydown = (e) => { if (e.key === "Enter") inp.blur(); };
-    });
-    host.querySelectorAll(".hs-cat-del").forEach(btn => {
-      btn.onclick = async () => {
-        const id = btn.dataset.id;
-        const cat = pool.find(c => c.id === id);
-        if (!confirm(`"${cat ? cat.name : "항목"}"을 삭제할까요?`)) return;
-        const { error } = await sb.from(table).delete().eq("id", id);
-        if (error) { alert("삭제 실패: " + error.message); return; }
-        const idx = pool.findIndex(c => c.id === id);
-        if (idx >= 0) pool.splice(idx, 1);
-        // DB에는 ON DELETE로 참조가 알아서 풀리지만(다음 loadAll에 반영), 지금 화면에 바로 "기본"으로
-        // 보이도록 메모리상 참조도 같이 정리함(습관 시트에 있던 기존 최적화 업데이트를 공용 함수로 옮기며 일반화).
-        if (table === "tok_habit_categories") {
-          tasks.forEach(t => { if (t.category_id === id) t.category_id = null; });
-          todos.forEach(td => { if (td.tag_id === id) td.tag_id = null; });
-          somedayItems.forEach(s => { if (s.tag_id === id) s.tag_id = null; });
-        } else if (table === "tok_event_categories") {
-          events.forEach(e => { if (e.category_id === id) e.category_id = null; });
-        }
-        renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow);
-        onSaved?.();
-      };
     });
     attachCategoryReorderDrag(host, pool, table, onSaved, withDefaultRow);
   }
@@ -5350,7 +5434,10 @@
         const newOrder = [...host.querySelectorAll(".hs-cat-row[data-id]")].map(r => r.dataset.id);
         const byId = new Map(pool.map(c => [c.id, c]));
         const reordered = newOrder.map(id => byId.get(id)).filter(Boolean);
-        pool.length = 0; pool.push(...reordered);
+        // 화면엔 사용 중 줄만 있으므로 그 순서만 다시 매기고, 보관된 항목은 pool 뒤쪽에 그대로 붙여 둠(연결·표시용으로 계속 필요).
+        const rest = pool.filter(c => !reordered.includes(c));
+        reordered.forEach((c, idx) => { c.sort_order = idx; });
+        pool.length = 0; pool.push(...reordered, ...rest);
         const { error } = await Promise.all(
           reordered.map((c, idx) => sb.from(table).update({ sort_order: idx }).eq("id", c.id))
         ).then(results => ({ error: results.find(r => r.error)?.error }));
@@ -5373,7 +5460,7 @@
     const name = $("settingsTagName").value.trim();
     if (!name) { alert("그룹 이름을 입력해주세요."); return; }
     const color = $("settingsTagColor").value;
-    const { data, error } = await sb.from("tok_habit_categories").insert({ name, color, sort_order: habitCategories.length }).select().single();
+    const { data, error } = await sb.from("tok_habit_categories").insert({ name, color, sort_order: nextCategorySortOrder(habitCategories) }).select().single();
     if (error) { alert("그룹 추가 실패: " + error.message); return; }
     habitCategories.push(data);
     $("settingsTagName").value = "";
@@ -5383,7 +5470,7 @@
     const name = $("settingsEventCatName").value.trim();
     if (!name) { alert("범주 이름을 입력해주세요."); return; }
     const color = $("settingsEventCatColor").value;
-    const { data, error } = await sb.from("tok_event_categories").insert({ name, color, sort_order: eventCategories.length }).select().single();
+    const { data, error } = await sb.from("tok_event_categories").insert({ name, color, sort_order: nextCategorySortOrder(eventCategories) }).select().single();
     if (error) { alert("범주 추가 실패: " + error.message); return; }
     eventCategories.push(data);
     $("settingsEventCatName").value = "";
