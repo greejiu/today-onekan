@@ -2191,11 +2191,6 @@
 
   function attachAgendaAllDayDrag() {
     let dragEl = null, dragId = null, dragKindAttr = null, dragDateAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
-    // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴(showAgendaItemMenu)를 열기 위한 타이머. 데스크톱은 실제
-    // 우클릭(contextmenu 이벤트)이 있어서 그대로 동작하지만, 터치는 setPointerCapture 때문에 브라우저가
-    // 자체적으로 발생시키는 롱프레스 contextmenu가 씹혀서(포인터가 이미 우리 코드로 캡처돼버림) 직접 흉내내야 함.
-    let longPressTimer = null, longPressFired = false;
-    const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
 
     document.querySelectorAll(".ag-allday-row[data-id]").forEach(row => {
       row.addEventListener("pointerdown", (e) => {
@@ -2203,22 +2198,11 @@
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; dragDateAttr = row.dataset.date; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
-        clearLongPress(); longPressFired = false;
-        if (e.pointerType === "touch") {
-          const sx = startX, sy = startY;
-          longPressTimer = setTimeout(() => {
-            longPressTimer = null;
-            if (moved) return;
-            longPressFired = true;
-            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
-          }, 550);
-        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!dragEl) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
-          clearLongPress();
           dragEl.classList.add("dragging");
         }
         if (!moved) return;
@@ -2235,13 +2219,11 @@
       });
       const finish = async (e) => {
         if (!dragEl) return;
-        clearLongPress();
-        const el = dragEl, id = dragId, kind = dragKindAttr, srcDate = dragDateAttr, wasMoved = moved, wasLongPress = longPressFired;
-        dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false; longPressFired = false;
+        const el = dragEl, id = dragId, kind = dragKindAttr, srcDate = dragDateAttr, wasMoved = moved;
+        dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false;
         el.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) { startAgendaItemInlineEdit(el, id, kind, renderAgendaAllDay); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         if (!drop) return;
@@ -2256,7 +2238,6 @@
         showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
       };
       row.addEventListener("pointercancel", () => {
-        clearLongPress(); longPressFired = false;
         dragEl?.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
         dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false; curTarget = null;
@@ -2477,9 +2458,6 @@
     let dragEl = null, dragId = null, dragKindAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
     let ghost = null; // 타임라인처럼 커서를 따라다니는 항목 미리보기(2026-09-06 결님 요청 — 카드형 뷰는 절대좌표가 아니라
                        // 정적 dim+테두리만으론 "따라 움직이는" 느낌이 안 나서, 손가락을 따라오는 작은 칩을 하나 더 붙임).
-    // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴를 열기 위한 타이머(attachAgendaAllDayDrag와 동일한 이유/패턴).
-    let longPressTimer = null, longPressFired = false;
-    const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
 
     containerEl.querySelectorAll(".ag-block-row[data-id]").forEach(row => {
       row.addEventListener("pointerdown", (e) => {
@@ -2487,22 +2465,11 @@
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
-        clearLongPress(); longPressFired = false;
-        if (e.pointerType === "touch") {
-          const sx = startX, sy = startY;
-          longPressTimer = setTimeout(() => {
-            longPressTimer = null;
-            if (moved) return;
-            longPressFired = true;
-            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
-          }, 550);
-        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!dragEl) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
-          clearLongPress();
           dragEl.classList.add("dragging");
           ghost = document.createElement("div");
           ghost.className = "ag-drag-ghost";
@@ -2520,21 +2487,18 @@
       });
       const finish = async (e) => {
         if (!dragEl) return;
-        clearLongPress();
-        const el = dragEl, id = dragId, kind = dragKindAttr, wasMoved = moved, wasLongPress = longPressFired;
-        dragEl = null; dragId = null; dragKindAttr = null; moved = false; longPressFired = false;
+        const el = dragEl, id = dragId, kind = dragKindAttr, wasMoved = moved;
+        dragEl = null; dragId = null; dragKindAttr = null; moved = false;
         el.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) { startAgendaItemInlineEdit(el, id, kind, rerender); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         await moveItemToZone(kind, id, drop);
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
-        clearLongPress(); longPressFired = false;
         dragEl?.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
@@ -2621,31 +2585,16 @@
   function attachHomeRowDrag(containerEl, rowSelector, onRerender, skipInlineEditKinds = []) {
     containerEl.querySelectorAll(rowSelector).forEach(row => {
       let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
-      // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴를 열기 위한 타이머(attachAgendaAllDayDrag와 동일한 이유/패턴).
-      // 이 함수가 "목록"/"다가오는" 두 탭 모두에 쓰이는 공용 드래그 로직이라, 여기 한 곳만 고치면 두 탭 다 해결됨.
-      let longPressTimer = null, longPressFired = false;
-      const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
       row.addEventListener("pointerdown", (e) => {
         if (e.target.closest("input")) return;
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
-        clearLongPress(); longPressFired = false;
-        if (e.pointerType === "touch") {
-          const sx = startX, sy = startY;
-          longPressTimer = setTimeout(() => {
-            longPressTimer = null;
-            if (moved) return;
-            longPressFired = true;
-            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
-          }, 550);
-        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
-          clearLongPress();
           row.classList.add("dragging");
           ghost = document.createElement("div");
           ghost.className = "ag-drag-ghost";
@@ -2666,14 +2615,12 @@
       });
       const finish = async (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
-        clearLongPress();
-        const wasMoved = moved, id = row.dataset.id, kind = row.dataset.kind, wasLongPress = longPressFired;
-        moved = false; longPressFired = false;
+        const wasMoved = moved, id = row.dataset.id, kind = row.dataset.kind;
+        moved = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) {
           if (skipInlineEditKinds.includes(kind)) return; // 다른 곳(예: 제목 클릭)이 처리하도록 그대로 둠
           startAgendaItemInlineEdit(row, id, kind, onRerender);
@@ -2684,7 +2631,6 @@
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
-        clearLongPress(); longPressFired = false;
         moved = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
@@ -3010,13 +2956,7 @@
           if (!cancelled) startEditTitle();
           return;
         }
-        if (!moved) {
-          // 2026-09-23 — 터치에서 0.3초 이상 누르고 있었지만(그래서 k==="move"로 전환됨) 끝까지 손가락을 안
-          // 움직였다면, 예전엔 여기서 아무 일도 안 일어나고 조용히 씹혔음(이동도 아니고 제목수정도 아니라서) —
-          // 이게 바로 모바일에서 롱프레스로 삭제 메뉴를 열 수 없던 원인. 이제 이 경우엔 삭제 메뉴를 대신 열어줌.
-          if (k === "move" && !isMouse) task.oncontextmenu?.({ preventDefault(){}, clientX: e?.clientX ?? task.getBoundingClientRect().left, clientY: e?.clientY ?? startY });
-          return;
-        }
+        if (!moved) return;
         if (dropZone) {
           await moveItemToZone(kind, id, dropZone);
           return;
@@ -3738,30 +3678,16 @@
   function attachSomedayDrag() {
     document.querySelectorAll(".ag-someday-row[data-someday-id]").forEach(row => {
       let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
-      // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴(showSomedayItemMenu)를 열기 위한 타이머(다른 attach*Drag와 동일 패턴).
-      let longPressTimer = null, longPressFired = false;
-      const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
       row.addEventListener("pointerdown", (e) => {
         if (e.target.closest("input")) return;
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
-        clearLongPress(); longPressFired = false;
-        if (e.pointerType === "touch") {
-          const sx = startX, sy = startY;
-          longPressTimer = setTimeout(() => {
-            longPressTimer = null;
-            if (moved) return;
-            longPressFired = true;
-            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
-          }, 550);
-        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
-          clearLongPress();
           row.classList.add("dragging");
           ghost = document.createElement("div");
           ghost.className = "ag-drag-ghost";
@@ -3779,14 +3705,12 @@
       });
       const finish = async (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
-        clearLongPress();
-        const wasMoved = moved, id = row.dataset.somedayId, wasLongPress = longPressFired;
-        moved = false; longPressFired = false;
+        const wasMoved = moved, id = row.dataset.somedayId;
+        moved = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) { startAgendaItemInlineEdit(row, id, "someday", renderSomedaySummary); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         if (!drop || drop.zone === "someday") return; // 이미 언젠가라 놓아도 변화 없음
@@ -3794,7 +3718,6 @@
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
-        clearLongPress(); longPressFired = false;
         moved = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
