@@ -1,4 +1,4 @@
-<!-- claude-test-marker-A --><!doctype html>
+<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
@@ -17,6 +17,13 @@
     --bg:#FFFFFF; --card:#FFFFFF; --line:#E8E8E8; --text:#222222; --sub:#777777;
     --accent:#222222; --accent-soft:#ECECEC; --danger:#f28b82; --ok:#8fd6b7;
     --font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;
+    /* 2026-09-23 — 집 화면 4탭(시간블럭/언젠가/타임라인/다가오는) 활성 색상 기본값. 하늘/보라/분홍은
+       이 파스텔 4색을 그대로 상속해서 씀(각자 블록에서 안 건드림). 하양/검정만 바로 아래
+       [data-theme="white"/"black"] 오버라이드에서 무채색(accent 불투명도 단계)으로 따로 덮어씀. */
+    --tab-block-bg:#FFE1D6; --tab-block-text:#B75B3D;
+    --tab-someday-bg:#ECE3FF; --tab-someday-text:#6B4FA0;
+    --tab-timeline-bg:#D8F3E7; --tab-timeline-text:#2E8B6F;
+    --tab-upcoming-bg:#DCEBFF; --tab-upcoming-text:#3E6FB0;
   }
   [data-theme="black"]{
     /* 검정 — 기본 다크 */
@@ -37,6 +44,20 @@
     /* 분홍 — 따뜻하고 귀여운 느낌 */
     --bg:#FFFBFC; --card:#FFFFFF; --line:#F5DEE3; --text:#222222; --sub:#777777;
     --accent:#F2A6B8; --accent-soft:#FCEAEE; --danger:#f28b82; --ok:#8fd6b7;
+  }
+  /* 2026-09-23 — 하양/검정은 배경이 무채색이라 파스텔 탭이 알록달록하게 튀어서, 대신
+     accent를 불투명도만 다르게 섞어(color-mix) 4단계 무채색 톤으로 구분(결 요청). */
+  [data-theme="white"]{
+    --tab-block-bg:color-mix(in srgb, var(--accent) 14%, var(--card)); --tab-block-text:var(--text);
+    --tab-someday-bg:color-mix(in srgb, var(--accent) 26%, var(--card)); --tab-someday-text:var(--text);
+    --tab-timeline-bg:color-mix(in srgb, var(--accent) 20%, var(--card)); --tab-timeline-text:var(--text);
+    --tab-upcoming-bg:color-mix(in srgb, var(--accent) 32%, var(--card)); --tab-upcoming-text:var(--text);
+  }
+  [data-theme="black"]{
+    --tab-block-bg:color-mix(in srgb, var(--accent) 14%, var(--card)); --tab-block-text:var(--text);
+    --tab-someday-bg:color-mix(in srgb, var(--accent) 26%, var(--card)); --tab-someday-text:var(--text);
+    --tab-timeline-bg:color-mix(in srgb, var(--accent) 20%, var(--card)); --tab-timeline-text:var(--text);
+    --tab-upcoming-bg:color-mix(in srgb, var(--accent) 32%, var(--card)); --tab-upcoming-text:var(--text);
   }
   /* 2026-09-20 — 결님 요청: 기본은 시스템 글꼴, 설정에서 직접 컴퓨터에 설치된 폰트 이름을 적으면
      JS(applyUserFont)가 이 변수만 바꿔 끼움(--font-family). 폰트 이름을 입력 안 했을 때 쓰는 기본값
@@ -265,7 +286,7 @@
      목업(Claude 아티팩트 "오늘한칸 — 홈 재설계") 기준 파스텔 탭 색상·둥근 카드 톤 적용. ── */
   .home2-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
   /* 09-24: 모바일 상단 "목록"/"타임라인·다가오는" 세그먼트 토글 제거(결님 요청 — 눌러도 탭이 안 바뀌고
-     불필요하다고 판단). 원인: 이 media query 안의 .home2-col{display:none}이 아래(라인 278 근처)의
+     불필요하다고 판단). 원인: 이 media query 안의 .home2-col{display:none}이 아래(라인 근처)의
      비-media-query .home2-col{display:flex}보다 소스 순서상 먼저 나와서 항상 뒤 규칙에 덮여
      두 열이 늘 같이 보였음 — 즉 토글이 원래도 실질적으로 아무 효과가 없었음. 대신 모바일에서는
      그냥 2열을 세로로 자연스럽게 쌓기만 함. */
@@ -277,11 +298,11 @@
      2열="실행 공간"(오늘 실제로 하는 곳). 탭 바로 위에 작은 라벨만 추가, 레이아웃/기능은 그대로. */
   .home2-col-label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:var(--text);margin-bottom:-2px;}
   .home2-tabs{display:flex;gap:8px;}
-  .home2-tab{flex:1;padding:9px 0;border:none;border-radius:14px;font-size:13px;font-weight:700;color:#A8A0BD;background:transparent;cursor:pointer;font-family:inherit;}
-  .home2-tab.active.tab-today{background:#FFE1D6;color:#B75B3D;}
-  .home2-tab.active.tab-upcoming{background:#DCEBFF;color:#3E6FB0;}
-  .home2-tab.active.tab-someday{background:#ECE3FF;color:#6B4FA0;}
-  .home2-tab.active.tab-timeline{background:#D8F3E7;color:#2E8B6F;}
+  .home2-tab{flex:1;padding:9px 0;border:none;border-radius:14px;font-size:13px;font-weight:700;color:var(--sub);background:transparent;cursor:pointer;font-family:inherit;}
+  .home2-tab.active.tab-block{background:var(--tab-block-bg);color:var(--tab-block-text);}
+  .home2-tab.active.tab-upcoming{background:var(--tab-upcoming-bg);color:var(--tab-upcoming-text);}
+  .home2-tab.active.tab-someday{background:var(--tab-someday-bg);color:var(--tab-someday-text);}
+  .home2-tab.active.tab-timeline{background:var(--tab-timeline-bg);color:var(--tab-timeline-text);}
   .home2-tabpanel{min-width:0;}
   /* 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간/타임라인) 높이에 맞추고, 언젠가·다가오는은
      그 높이만큼 기본으로 펼쳐진 뒤 넘치는 분량만 내부 스크롤. #homeCol1의 실제 height는 JS(syncHomeCol1Height)가
@@ -292,16 +313,13 @@
   /* overflow-y:auto만 주면 CSS 스펙상 overflow-x도 자동으로 visible→auto로 바뀌어서(옆 축이 hidden이
      아니면 같이 auto가 됨) 가로 스크롤이 필요 없는데도 아래쪽에 가로 스크롤바가 생기는 경우가 있었음
      (결님 제보, 2026-09-20) — overflow-x:hidden을 명시해서 세로 스크롤만 남김. */
-  #homeTodayListWrap, #homeTodayBlockWrap{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;}
+  #homeTodayBlockWrap{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;}
   #homeUpcomingList{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;}
   #somedayZone{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;}
   .home2-placeholder{border:1.5px dashed var(--line);border-radius:14px;padding:28px 14px;text-align:center;color:var(--sub);font-size:13px;line-height:1.6;}
-  /* ── 오늘 탭(2026-09-20, 2단계) — 진행률 배지 + 목록/시간블럭 서브토글. 목업(파스텔 톤) 색상 그대로 적용. ── */
+  /* ── 시간블럭 탭(2026-09-20, 2단계; 09-24 목록형 서브뷰 삭제로 진행률 배지만 남음) — 목업(파스텔 톤) 색상 그대로 적용. ── */
   .home2-today-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
   .home2-progress-badge{display:inline-flex;align-items:center;background:#FFF1E8;color:#B75B3D;font-size:13px;font-weight:700;padding:6px 12px;border-radius:12px;white-space:nowrap;}
-  .home2-subtoggle{display:flex;background:#F3EFFC;border-radius:12px;padding:3px;gap:2px;}
-  .home2-subtoggle button{padding:6px 14px;border-radius:10px;font-weight:700;font-size:13px;border:none;cursor:pointer;background:transparent;color:#A79CC4;font-family:inherit;}
-  .home2-subtoggle button.active{background:#FFFFFF;color:#3A3350;box-shadow:0 1px 4px rgba(58,51,80,.10);}
   /* ── 4단계(2026-09-20) — 1열 3탭(오늘/다가오는/언젠가) 행 앞 드래그 손잡이 아이콘(장식용, 목업 참고). ── */
   .drag-handle-dots{color:#D9D2EC;flex-shrink:0;}
   .agenda-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
@@ -327,7 +345,7 @@
   #somedayZone.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;border-radius:14px;}
   .planup-day.drop-target{background:var(--accent-soft);border-radius:8px;}
   /* 2026-09-20 — 결님 요청: 목록/다가오는 탭도 드래그 대상(drop zone)이 됨에 따라 같은 시각 피드백 추가. */
-  #homeTodayListWrap.drop-target, #homeTodayBlockAllDay.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;border-radius:14px;}
+  #homeTodayBlockAllDay.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;border-radius:14px;}
   .upcoming-day.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft);border-radius:8px;}
   /* .ag-section-head를 날짜별 .upcoming-day로 감싸면서 각 헤더가 자기 wrapper의 첫 자식이 돼 기존
      ".ag-section-head:first-child{margin-top:0}" 규칙이 모든 날짜에 적용돼버림(원래는 목록 맨 위 하나만) —
@@ -612,44 +630,20 @@
         <!-- 09-24: 모바일 상단 "목록"/"타임라인·다가오는" 토글 버튼 제거(클릭해도 탭이 안 바뀌는
              버그가 있었고, 결님 판단으로도 없어도 되는 카드라 삭제. 모바일에선 아래 .home2-grid가
              그냥 1열로 쌓여서 목록/타임라인이 순서대로 보임). -->
-        <!-- 2026-09-20 — 결님 요청으로 탭 재배치: 1열(보관함)은 "목록"(옛 "오늘" 탭, 이제 날짜 이동 가능)/
-             "언젠가" 2개로, "다가오는"은 2열(실행공간)로 옮겨서 "타임라인/다가오는" 2개가 됨.
-             "목록" 탭은 homeAgendaDate를 2열 "타임라인"과 공유(연동) — 아래 goAgendaDate/resetAgendaDateToToday
-             참고. 내부 데이터 속성(data-col1tab="today" 등)은 코드 여러 곳에서 참조하는 식별자라 그대로 두고
-             화면에 보이는 라벨 텍스트만 바꿈. -->
+        <!-- 09-24 — 결님 요청으로 탭 재배치: 1열(보관함)은 "언젠가/다가오는" 2개로, 2열(실행공간)은
+             "타임라인/시간블럭" 2개로 재구성. 1열 옛 "목록"(오늘) 탭은 삭제하고, 그 안의 목록형/시간블럭형
+             하위 토글에서 시간블럭형 쪽만 남겨 2열 "시간블럭" 탭으로 승격(타임라인과 같은 homeAgendaDate를
+             공유하는 대안 보기 — 사용자가 편한 쪽을 골라 씀). "다가오는"은 2열→1열로 이동. id는 기존
+             homeList*/homeTodayBlock*/homeUpcoming* 그대로 재사용(코드 여러 곳에서 참조하는 식별자). -->
         <div class="home2-grid">
           <div class="home2-col" id="homeCol1">
             <div class="home2-col-label">📥 할일 보관함</div>
             <div class="home2-tabs" id="homeCol1Tabs">
-              <button type="button" class="home2-tab tab-today active" data-col1tab="today">목록</button>
-              <button type="button" class="home2-tab tab-someday" data-col1tab="someday">언젠가</button>
+              <button type="button" class="home2-tab tab-someday active" data-col1tab="someday">언젠가</button>
+              <button type="button" class="home2-tab tab-upcoming" data-col1tab="upcoming">다가오는</button>
             </div>
 
-            <div class="home2-tabpanel" data-col1panel="today" id="homeTodayPanel">
-              <!-- 2026-09-20 — "목록" 탭도 타임라인처럼 날짜 이동 가능(같은 homeAgendaDate 공유).
-                   id만 homeList*로 구분, 클릭 핸들러는 타임라인 쪽과 같은 goAgendaDate/resetAgendaDateToToday를 씀. -->
-              <div class="agenda-head">
-                <button id="homeListPrevBtn" class="agenda-nav">‹</button>
-                <span class="agenda-date-wrap"><span id="homeListDateLabel" style="cursor:pointer;">오늘</span></span>
-                <button id="homeListNextBtn" class="agenda-nav">›</button>
-              </div>
-              <div class="home2-today-head">
-                <span class="home2-progress-badge" id="homeTodayProgressBadge">오늘 0/0 완료</span>
-                <div class="home2-subtoggle" id="homeTodaySubToggle">
-                  <button type="button" data-todaysub="list" class="active">목록형</button>
-                  <button type="button" data-todaysub="block">시간블럭형</button>
-                </div>
-              </div>
-              <div id="homeTodayListWrap">
-                <div class="agenda-flat" id="homeTodayList"></div>
-              </div>
-              <div id="homeTodayBlockWrap" style="display:none;">
-                <div id="homeTodayBlockAllDay"></div>
-                <div id="homeTodayBlockBody"></div>
-              </div>
-            </div>
-
-            <div class="home2-tabpanel" data-col1panel="someday" id="homeSomedayPanel" style="display:none;">
+            <div class="home2-tabpanel" data-col1panel="someday" id="homeSomedayPanel">
               <div class="someday-toolbar">
                 <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
               </div>
@@ -658,13 +652,24 @@
                 <div id="somedaySummaryList"></div>
               </div>
             </div>
+
+            <div class="home2-tabpanel" data-col1panel="upcoming" id="homeUpcomingPanel" style="display:none;">
+              <!-- 2026-09-20 — 결님 요청으로 "다가오는"도 날짜 이동 가능해짐. 다른 탭들과 같은 homeAgendaDate를
+                   공유하되(연동), 이 탭의 이전/다음 버튼은 7일(한 주) 단위로 이동. -->
+              <div class="agenda-head">
+                <button id="homeUpcomingPrevBtn" class="agenda-nav">‹</button>
+                <span class="agenda-date-wrap"><span id="homeUpcomingDateLabel" style="cursor:pointer;">다가오는 7일</span></span>
+                <button id="homeUpcomingNextBtn" class="agenda-nav">›</button>
+              </div>
+              <div id="homeUpcomingList"></div>
+            </div>
           </div>
 
           <div class="home2-col" id="homeCol2">
             <div class="home2-col-label">🚀 실행 공간</div>
             <div class="home2-tabs" id="homeCol2Tabs">
               <button type="button" class="home2-tab tab-timeline active" data-col2tab="timeline">타임라인</button>
-              <button type="button" class="home2-tab tab-upcoming" data-col2tab="upcoming">다가오는</button>
+              <button type="button" class="home2-tab tab-block" data-col2tab="block">시간블럭</button>
             </div>
 
             <div class="home2-tabpanel" data-col2panel="timeline" id="homeTimelinePanel">
@@ -688,15 +693,21 @@
               <div id="agendaTimeWrap" style="margin-top:12px;"></div>
             </div>
 
-            <div class="home2-tabpanel" data-col2panel="upcoming" id="homeUpcomingPanel" style="display:none;">
-              <!-- 2026-09-20 — 결님 요청으로 "다가오는"도 날짜 이동 가능해짐. 목록/타임라인과 같은 homeAgendaDate를
-                   공유하되(연동), 이 탭의 이전/다음 버튼은 7일(한 주) 단위로 이동. -->
+            <div class="home2-tabpanel" data-col2panel="block" id="homeBlockPanel" style="display:none;">
+              <!-- 09-24 — 1열 옛 "목록" 탭의 시간블럭형 서브뷰를 그대로 승격(같은 homeAgendaDate를
+                   "타임라인"과 공유). 목록형(flat list) 서브뷰는 결님 요청으로 완전히 삭제. -->
               <div class="agenda-head">
-                <button id="homeUpcomingPrevBtn" class="agenda-nav">‹</button>
-                <span class="agenda-date-wrap"><span id="homeUpcomingDateLabel" style="cursor:pointer;">다가오는 7일</span></span>
-                <button id="homeUpcomingNextBtn" class="agenda-nav">›</button>
+                <button id="homeListPrevBtn" class="agenda-nav">‹</button>
+                <span class="agenda-date-wrap"><span id="homeListDateLabel" style="cursor:pointer;">오늘</span></span>
+                <button id="homeListNextBtn" class="agenda-nav">›</button>
               </div>
-              <div id="homeUpcomingList"></div>
+              <div class="home2-today-head">
+                <span class="home2-progress-badge" id="homeTodayProgressBadge">오늘 0/0 완료</span>
+              </div>
+              <div id="homeTodayBlockWrap">
+                <div id="homeTodayBlockAllDay"></div>
+                <div id="homeTodayBlockBody"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -1460,8 +1471,8 @@
   function renderHome() {
     renderAgendaAllDay();
     renderAgendaTimed();
-    renderHomeTodayTab(); // 1열 "목록" 탭(목록형/시간블럭형) — homeAgendaDate 기준
-    renderHomeUpcomingList(); // 2열 "다가오는" 탭(날짜별 리스트, 2026-09-20에 1열→2열로 이동)
+    renderHomeTodayTab(); // 2열 "시간블럭" 탭 — homeAgendaDate 기준
+    renderHomeUpcomingList(); // 1열 "다가오는" 탭(날짜별 리스트, 09-24에 2열→1열로 이동)
     renderPlanUpcomingBoard();
     renderSomedaySummary();
     renderIncompleteBanner();
@@ -2067,9 +2078,8 @@
     const alldayCol = el.closest(".ag-allday-col[data-date]");
     if (alldayCol) return { zone: "today-allday", date: alldayCol.dataset.date };
     if (el.closest("#agendaAllDayZone")) return { zone: "today-allday", date: homeAgendaDate };
-    // "목록" 탭(목록형 flat 리스트든 시간블럭형 하루종일 영역이든) 위에 놓으면 지금 보고 있는 homeAgendaDate의
-    // 하루종일 항목으로 옮김 — 시간블럭형의 "시간 있는" 카드 위는 위의 .ag-block-card 케이스가 이미 처리함.
-    if (el.closest("#homeTodayListWrap")) return { zone: "today-allday", date: homeAgendaDate };
+    // "시간블럭" 탭의 하루종일 영역 위에 놓으면 지금 보고 있는 homeAgendaDate의 하루종일 항목으로 옮김
+    // — "시간 있는" 카드 위는 위의 .ag-block-card 케이스가 이미 처리함.
     if (el.closest("#homeTodayBlockAllDay")) return { zone: "today-allday", date: homeAgendaDate };
     if (el.closest("#somedayZone")) return { zone: "someday" };
     return null;
@@ -2142,6 +2152,11 @@
 
   function attachAgendaAllDayDrag() {
     let dragEl = null, dragId = null, dragKindAttr = null, dragDateAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
+    // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴(showAgendaItemMenu)를 열기 위한 타이머. 데스크톱은 실제
+    // 우클릭(contextmenu 이벤트)이 있어서 그대로 동작하지만, 터치는 setPointerCapture 때문에 브라우저가
+    // 자체적으로 발생시키는 롱프레스 contextmenu가 씹혀서(포인터가 이미 우리 코드로 캡처돼버림) 직접 흉내내야 함.
+    let longPressTimer = null, longPressFired = false;
+    const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
 
     document.querySelectorAll(".ag-allday-row[data-id]").forEach(row => {
       row.addEventListener("pointerdown", (e) => {
@@ -2149,11 +2164,22 @@
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; dragDateAttr = row.dataset.date; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
+        clearLongPress(); longPressFired = false;
+        if (e.pointerType === "touch") {
+          const sx = startX, sy = startY;
+          longPressTimer = setTimeout(() => {
+            longPressTimer = null;
+            if (moved) return;
+            longPressFired = true;
+            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
+          }, 550);
+        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!dragEl) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
+          clearLongPress();
           dragEl.classList.add("dragging");
         }
         if (!moved) return;
@@ -2161,7 +2187,7 @@
         // 걸쳐 있어서, zone 문자열만으로 하이라이트를 끄던 예전 방식(드롭 zone이 today-allday면 무조건 숨김)은
         // 너무 광범위해짐 — 셀렉터 목록에서 자기 자신의 존(#agendaAllDayZone)만 빼서 자기 위에선 안 뜨고,
         // 다른 today-allday 컨테이너(목록/다가오는 등) 위에서는 정상적으로 뜨게 함.
-        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card, .ag-tl-grid, .planup-day, #homeTodayListWrap, #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
+        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card, .ag-tl-grid, .planup-day, #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
         if (under !== curTarget) {
           curTarget?.classList.remove("drop-target");
           curTarget = under || null;
@@ -2170,11 +2196,13 @@
       });
       const finish = async (e) => {
         if (!dragEl) return;
-        const el = dragEl, id = dragId, kind = dragKindAttr, srcDate = dragDateAttr, wasMoved = moved;
-        dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false;
+        clearLongPress();
+        const el = dragEl, id = dragId, kind = dragKindAttr, srcDate = dragDateAttr, wasMoved = moved, wasLongPress = longPressFired;
+        dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false; longPressFired = false;
         el.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
         curTarget = null;
+        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) { startAgendaItemInlineEdit(el, id, kind, renderAgendaAllDay); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         if (!drop) return;
@@ -2189,6 +2217,7 @@
         showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
       };
       row.addEventListener("pointercancel", () => {
+        clearLongPress(); longPressFired = false;
         dragEl?.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
         dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false; curTarget = null;
@@ -2422,6 +2451,9 @@
     let dragEl = null, dragId = null, dragKindAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
     let ghost = null; // 타임라인처럼 커서를 따라다니는 항목 미리보기(2026-09-06 결님 요청 — 카드형 뷰는 절대좌표가 아니라
                        // 정적 dim+테두리만으론 "따라 움직이는" 느낌이 안 나서, 손가락을 따라오는 작은 칩을 하나 더 붙임).
+    // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴를 열기 위한 타이머(attachAgendaAllDayDrag와 동일한 이유/패턴).
+    let longPressTimer = null, longPressFired = false;
+    const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
 
     containerEl.querySelectorAll(".ag-block-row[data-id]").forEach(row => {
       row.addEventListener("pointerdown", (e) => {
@@ -2429,11 +2461,22 @@
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
+        clearLongPress(); longPressFired = false;
+        if (e.pointerType === "touch") {
+          const sx = startX, sy = startY;
+          longPressTimer = setTimeout(() => {
+            longPressTimer = null;
+            if (moved) return;
+            longPressFired = true;
+            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
+          }, 550);
+        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!dragEl) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
+          clearLongPress();
           dragEl.classList.add("dragging");
           ghost = document.createElement("div");
           ghost.className = "ag-drag-ghost";
@@ -2442,7 +2485,7 @@
         }
         if (!moved) return;
         if (ghost) { ghost.style.left = `${e.clientX + 14}px`; ghost.style.top = `${e.clientY + 10}px`; }
-        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], #agendaAllDayZone, .planup-day, #homeTodayListWrap, #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
+        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], #agendaAllDayZone, .planup-day, #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
         if (under !== curTarget) {
           curTarget?.classList.remove("drop-target");
           curTarget = under || null;
@@ -2451,18 +2494,21 @@
       });
       const finish = async (e) => {
         if (!dragEl) return;
-        const el = dragEl, id = dragId, kind = dragKindAttr, wasMoved = moved;
-        dragEl = null; dragId = null; dragKindAttr = null; moved = false;
+        clearLongPress();
+        const el = dragEl, id = dragId, kind = dragKindAttr, wasMoved = moved, wasLongPress = longPressFired;
+        dragEl = null; dragId = null; dragKindAttr = null; moved = false; longPressFired = false;
         el.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
+        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) { startAgendaItemInlineEdit(el, id, kind, rerender); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         await moveItemToZone(kind, id, drop);
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
+        clearLongPress(); longPressFired = false;
         dragEl?.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
@@ -2549,16 +2595,31 @@
   function attachHomeRowDrag(containerEl, rowSelector, onRerender, skipInlineEditKinds = []) {
     containerEl.querySelectorAll(rowSelector).forEach(row => {
       let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
+      // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴를 열기 위한 타이머(attachAgendaAllDayDrag와 동일한 이유/패턴).
+      // 이 함수가 "목록"/"다가오는" 두 탭 모두에 쓰이는 공용 드래그 로직이라, 여기 한 곳만 고치면 두 탭 다 해결됨.
+      let longPressTimer = null, longPressFired = false;
+      const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
       row.addEventListener("pointerdown", (e) => {
         if (e.target.closest("input")) return;
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
+        clearLongPress(); longPressFired = false;
+        if (e.pointerType === "touch") {
+          const sx = startX, sy = startY;
+          longPressTimer = setTimeout(() => {
+            longPressTimer = null;
+            if (moved) return;
+            longPressFired = true;
+            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
+          }, 550);
+        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
+          clearLongPress();
           row.classList.add("dragging");
           ghost = document.createElement("div");
           ghost.className = "ag-drag-ghost";
@@ -2569,7 +2630,7 @@
         if (ghost) { ghost.style.left = `${e.clientX + 14}px`; ghost.style.top = `${e.clientY + 10}px`; }
         // 2026-09-20 — 이 함수는 목록/다가오는 탭 행 모두에 쓰이는데, 이제 그 탭들 자신도 드롭 대상이라
         // 자기가 지금 들어있는 컨테이너(같은 날짜) 위에선 하이라이트가 안 뜨게 .contains(row)로 걸러줌.
-        let under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #homeTodayListWrap, #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
+        let under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
         if (under && under.contains(row)) under = null;
         if (under !== curTarget) {
           curTarget?.classList.remove("drop-target");
@@ -2579,12 +2640,14 @@
       });
       const finish = async (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
-        const wasMoved = moved, id = row.dataset.id, kind = row.dataset.kind;
-        moved = false;
+        clearLongPress();
+        const wasMoved = moved, id = row.dataset.id, kind = row.dataset.kind, wasLongPress = longPressFired;
+        moved = false; longPressFired = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
+        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) {
           if (skipInlineEditKinds.includes(kind)) return; // 다른 곳(예: 제목 클릭)이 처리하도록 그대로 둠
           startAgendaItemInlineEdit(row, id, kind, onRerender);
@@ -2595,6 +2658,7 @@
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
+        clearLongPress(); longPressFired = false;
         moved = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
@@ -2602,26 +2666,6 @@
         curTarget = null;
       });
     });
-  }
-
-  async function renderHomeTodayList() {
-    const containerEl = $("homeTodayList");
-    if (!containerEl) return;
-    const dateStr = homeAgendaDate; // 2026-09-20: "목록" 탭이 타임라인과 날짜를 공유하게 됨(예전엔 항상 todayStr())
-    const items = await todayMergedListItems(dateStr);
-    containerEl.innerHTML = items.length
-      ? items.map(it => homeTodayRowHtml(it, dateStr)).join("")
-      : `<div class="agenda-empty-block">${formatDateShort(dateStr)} 할 일이 없어요.</div>`;
-    // 시간블럭 뷰(renderAgendaBlocks 재사용)는 attachAgendaBlockDrag 안에서 우클릭 메뉴가 자동으로 붙는데
-    // 목록 뷰는 직접 그려서 빠져 있었음 — 3단계에서 같이 붙여서 두 서브뷰 기능을 맞춤.
-    containerEl.querySelectorAll(".home-today-row[data-id]").forEach(row => {
-      row.oncontextmenu = (e) => {
-        e.preventDefault();
-        showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
-      };
-    });
-    wireHomeTodayChecks(containerEl);
-    attachHomeRowDrag(containerEl, ".home-today-row[data-id]", renderHomeTodayList); // 4단계: 2열 타임라인 등으로 드래그
   }
 
   // 2026-09-20: 시간블럭 뷰는 renderAgendaBlocks 자체가 "시간 있는" 항목 전용이라 하루종일(시간 없는) 항목이
@@ -2668,24 +2712,11 @@
     el.textContent = `${formatDateShort(dateStr)} ${done}/${checkable.length} 완료`;
   }
 
-  let homeTodaySub = "list"; // "list" | "block" — 오늘 탭 안의 목록/시간블럭 하위 토글 상태
-  function switchHomeTodaySub(sub) {
-    homeTodaySub = sub;
-    document.querySelectorAll("#homeTodaySubToggle button").forEach(btn => btn.classList.toggle("active", btn.dataset.todaysub === sub));
-    const listWrap = $("homeTodayListWrap"), blockWrap = $("homeTodayBlockWrap");
-    if (listWrap) listWrap.style.display = sub === "list" ? "" : "none";
-    if (blockWrap) blockWrap.style.display = sub === "block" ? "" : "none";
-    if (sub === "block") renderHomeTodayBlock();
-  }
-  document.querySelectorAll("#homeTodaySubToggle button").forEach(btn => {
-    btn.onclick = () => switchHomeTodaySub(btn.dataset.todaysub);
-  });
-
-  // 오늘 탭 전체(진행률 배지 + 현재 보이는 서브뷰) 다시 그림 — renderHome()이 매번, 체크박스 변경 시에도 호출됨.
+  // 09-24: 목록형/시간블럭형 하위 토글 삭제(결님 요청) — 이제 시간블럭형 하나만 남아서 분기 필요 없음.
+  // "시간블럭" 탭 전체(진행률 배지 + 시간블럭 뷰) 다시 그림 — renderHome()이 매번, 체크박스 변경 시에도 호출됨.
   function renderHomeTodayTab() {
     renderHomeTodayProgress();
-    if (homeTodaySub === "block") renderHomeTodayBlock();
-    else renderHomeTodayList();
+    renderHomeTodayBlock();
   }
 
   const AG_TL_SLOT_MIN = 15, AG_TL_ROW_PX = 9; // 2026-09-20: 사용자 요청으로 시간당 높이 약 30% 축소(13→9px, 1시간=36px)
@@ -2913,7 +2944,7 @@
         if (dragKind === "move") {
           // 8-3단계: 하루종일/언젠가뿐 아니라 "다른 날짜"의 타임라인 열도 바깥 존으로 침(자기 열은 제외 —
           // 그래야 같은 열 안에서의 기존 이동/시간조절 동작이 그대로 유지됨).
-          const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest("#agendaAllDayZone, .planup-day, #homeTodayListWrap, #homeTodayBlockAllDay, .upcoming-day, #somedayZone, .ag-tl-content[data-date]");
+          const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest("#agendaAllDayZone, .planup-day, #homeTodayBlockAllDay, .upcoming-day, #somedayZone, .ag-tl-content[data-date]");
           const el = (hit && hit.matches(".ag-tl-content") && hit.dataset.date === dateStr) ? null : hit;
           if (el !== outsideEl) {
             outsideEl?.classList.remove("drop-target");
@@ -2938,7 +2969,7 @@
         }
         applyPreview();
       });
-      const finish = async () => {
+      const finish = async (e) => {
         clearTimer();
         pressed = false;
         const k = dragKind, dropZone = outsideZone;
@@ -2953,7 +2984,13 @@
           if (!cancelled) startEditTitle();
           return;
         }
-        if (!moved) return;
+        if (!moved) {
+          // 2026-09-23 — 터치에서 0.3초 이상 누르고 있었지만(그래서 k==="move"로 전환됨) 끝까지 손가락을 안
+          // 움직였다면, 예전엔 여기서 아무 일도 안 일어나고 조용히 씹혔음(이동도 아니고 제목수정도 아니라서) —
+          // 이게 바로 모바일에서 롱프레스로 삭제 메뉴를 열 수 없던 원인. 이제 이 경우엔 삭제 메뉴를 대신 열어줌.
+          if (k === "move" && !isMouse) task.oncontextmenu?.({ preventDefault(){}, clientX: e?.clientX ?? task.getBoundingClientRect().left, clientY: e?.clientY ?? startY });
+          return;
+        }
         if (dropZone) {
           await moveItemToZone(kind, id, dropZone);
           return;
@@ -3687,16 +3724,30 @@
   function attachSomedayDrag() {
     document.querySelectorAll(".ag-someday-row[data-someday-id]").forEach(row => {
       let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
+      // 2026-09-23 — 모바일 롱프레스로 삭제 메뉴(showSomedayItemMenu)를 열기 위한 타이머(다른 attach*Drag와 동일 패턴).
+      let longPressTimer = null, longPressFired = false;
+      const clearLongPress = () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } };
       row.addEventListener("pointerdown", (e) => {
         if (e.target.closest("input")) return;
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
+        clearLongPress(); longPressFired = false;
+        if (e.pointerType === "touch") {
+          const sx = startX, sy = startY;
+          longPressTimer = setTimeout(() => {
+            longPressTimer = null;
+            if (moved) return;
+            longPressFired = true;
+            row.oncontextmenu?.({ preventDefault(){}, clientX: sx, clientY: sy });
+          }, 550);
+        }
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
         if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
+          clearLongPress();
           row.classList.add("dragging");
           ghost = document.createElement("div");
           ghost.className = "ag-drag-ghost";
@@ -3705,7 +3756,7 @@
         }
         if (!moved) return;
         if (ghost) { ghost.style.left = `${e.clientX + 14}px`; ghost.style.top = `${e.clientY + 10}px`; }
-        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #homeTodayListWrap, #homeTodayBlockAllDay, .upcoming-day");
+        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #homeTodayBlockAllDay, .upcoming-day");
         if (under !== curTarget) {
           curTarget?.classList.remove("drop-target");
           curTarget = under || null;
@@ -3714,12 +3765,14 @@
       });
       const finish = async (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
-        const wasMoved = moved, id = row.dataset.somedayId;
-        moved = false;
+        clearLongPress();
+        const wasMoved = moved, id = row.dataset.somedayId, wasLongPress = longPressFired;
+        moved = false; longPressFired = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
+        if (wasLongPress) return; // 롱프레스로 이미 삭제 메뉴를 열었으니 탭/드래그로 추가 처리하지 않음
         if (!wasMoved) { startAgendaItemInlineEdit(row, id, "someday", renderSomedaySummary); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         if (!drop || drop.zone === "someday") return; // 이미 언젠가라 놓아도 변화 없음
@@ -3727,6 +3780,7 @@
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
+        clearLongPress(); longPressFired = false;
         moved = false;
         row.classList.remove("dragging");
         ghost?.remove(); ghost = null;
@@ -4743,7 +4797,9 @@
       };
       document.addEventListener("click", closeOnOutside);
       document.addEventListener("contextmenu", closeOnOutside);
-    }, 0);
+    }, 300); // 2026-09-23: 0 → 300ms. 모바일 롱프레스로 이 메뉴를 열면 손가락 뗄 때 그 자리에서 클릭이 한 번
+             // 더 합성돼서(터치 종료 시 브라우저가 만드는 호환용 click) 열리자마자 바로 닫혀버리는 문제가 있어서,
+             // 그 클릭이 지나갈 동안만 바깥클릭 감지를 늦게 켬(진짜 "바깥 탭해서 닫기"는 이보다 늦게 일어나 정상 동작).
   }
 
   // 습관 탭 목록 항목 오른쪽 클릭 메뉴(09-13 7-3단계 신규) — 습관 탭엔 체크박스가 없어서 지금까진 집 화면에서만
@@ -4792,7 +4848,8 @@
       };
       document.addEventListener("click", closeOnOutside);
       document.addEventListener("contextmenu", closeOnOutside);
-    }, 0);
+    }, 300); // 2026-09-23: 0 → 300ms, showDeleteMenu와 동일한 이유(모바일 롱프레스로 연 메뉴가 손가락 뗄 때 합성되는
+             // click 때문에 바로 닫혀버리는 문제 방지).
   }
   function agendaItemById(kind, id) {
     if (kind === "habit") return tasks.find(t => t.id === id);
