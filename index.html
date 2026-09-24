@@ -59,9 +59,10 @@
     --tab-timeline-bg:color-mix(in srgb, var(--accent) 20%, var(--card)); --tab-timeline-text:var(--text);
     --tab-upcoming-bg:color-mix(in srgb, var(--accent) 32%, var(--card)); --tab-upcoming-text:var(--text);
   }
-  /* 2026-09-20 — 결님 요청: 기본은 시스템 글꼴, 설정에서 직접 컴퓨터에 설치된 폰트 이름을 적으면
-     JS(applyUserFont)가 이 변수만 바꿔 끼움(--font-family). 폰트 이름을 입력 안 했을 때 쓰는 기본값
-     은 위 :root 블록의 --font-family 하나로 모든 테마가 공유(테마 바뀌어도 폰트는 안 바뀜). */
+  /* 2026-09-20 — 결님 요청: 기본은 시스템 글꼴, 설정에서 고른(09-24부터 설치 글꼴 목록에서 선택 가능,
+     이름 직접 입력도 유지) 글꼴이 있으면 JS(applyUserFont)가 이 변수만 바꿔 끼움(--font-family). 글꼴을
+     안 골랐을 때 쓰는 기본값은 위 :root 블록의 --font-family 하나로 모든 테마가 공유(테마 바뀌어도 폰트는
+     안 바뀜). 로고(.brand-logo)는 Gaegu를 따로 지정해 두어서 이 설정의 영향을 받지 않음. */
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-family);}
 
@@ -559,6 +560,36 @@
   .sheet-actions button{flex:1;padding:11px;border-radius:12px;border:none;font-size:14px;cursor:pointer;}
   .btn-primary{background:var(--accent);color:#fff;}
   .btn-ghost{background:var(--bg);color:var(--sub);}
+  /* 09-24: 설정 > 글꼴 — 내 컴퓨터 설치 글꼴 목록에서 고르기. 모바일에서도 버튼이 줄바꿈되고 목록은 내부 스크롤. */
+  .font-picker{display:flex;flex-direction:column;gap:10px;}
+  .font-picker button{font-family:inherit;}
+  .font-current{font-size:12.5px;color:var(--sub);overflow-wrap:anywhere;}
+  .font-current strong{color:var(--text);}
+  .font-btn{border:1px solid var(--line);border-radius:12px;padding:9px 14px;font-size:13px;cursor:pointer;}
+  .font-btn:disabled{opacity:.55;cursor:default;}
+  .font-load-btn{align-self:flex-start;max-width:100%;}
+  .font-msg{font-size:12px;color:var(--sub);line-height:1.5;}
+  .font-msg:empty{display:none;}
+  .font-msg.warn{color:var(--danger);}
+  .font-list-wrap{display:flex;flex-direction:column;gap:6px;}
+  .font-list-wrap[hidden]{display:none;}
+  .font-search{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:12px;font-size:14px;font-family:inherit;background:var(--card);color:var(--text);}
+  .font-list{max-height:240px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:4px;background:var(--bg);}
+  .font-option{display:block;width:100%;text-align:left;border:none;background:none;border-radius:8px;padding:8px 10px;font-size:14px;color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .font-option:hover{background:var(--accent-soft);}
+  .font-option[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:700;}
+  .font-list-note{font-size:11px;color:var(--sub);}
+  .font-list-empty{font-size:12px;color:var(--sub);padding:10px;text-align:center;}
+  .font-preview-label{font-size:12px;color:var(--sub);overflow-wrap:anywhere;}
+  .font-preview{border:1px dashed var(--line);border-radius:12px;padding:14px;font-size:17px;line-height:1.5;color:var(--text);background:var(--bg);overflow-wrap:anywhere;}
+  .font-actions{display:flex;flex-wrap:wrap;gap:6px;}
+  .font-actions .font-btn{flex:1 1 120px;}
+  .font-apply-btn{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;}
+  .font-manual summary{font-size:12px;color:var(--sub);cursor:pointer;}
+  .font-manual-row{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end;margin-top:8px;}
+  .font-manual-row > div{flex:1 1 180px;min-width:0;}
+  .font-manual-row label{font-size:12px;color:var(--sub);display:block;margin-bottom:4px;}
+  .font-manual-row input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:12px;font-size:14px;font-family:inherit;}
   /* 09-24: 저장 완료 등을 잠깐 알려주는 작은 팝업(토스트) — 화면 아래 가운데, 모바일 하단 메뉴에 안 가리게 살짝 위로. */
   .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,8px);background:var(--text);color:var(--card);font-size:13px;font-weight:600;padding:9px 16px;border-radius:999px;box-shadow:0 6px 16px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:1000;white-space:nowrap;}
   .toast.show{opacity:1;transform:translate(-50%,0);}
@@ -825,11 +856,29 @@
         <div class="section-label" style="margin-top:20px;">테마</div>
         <div class="theme-grid" id="themeGrid"></div>
 
-        <div class="section-label" style="margin-top:20px;">글꼴 <span style="color:var(--sub);font-weight:400;">(기본은 시스템 글꼴. 컴퓨터에 설치된 폰트 이름을 적으면 그 글꼴로 바뀌어요)</span></div>
-        <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
-          <div style="flex:1;"><label>폰트 이름</label><input id="settingsFontName" type="text" placeholder="예: Pretendard, 맑은 고딕" /></div>
-          <button class="btn-ghost" id="settingsFontApplyBtn" type="button" style="flex:none;padding:0 12px;height:38px;">적용</button>
-          <button class="btn-ghost" id="settingsFontResetBtn" type="button" style="flex:none;padding:0 12px;height:38px;">기본값</button>
+        <div class="section-label" style="margin-top:20px;">글꼴 <span style="color:var(--sub);font-weight:400;">(기본은 시스템 글꼴. 내 컴퓨터에 설치된 글꼴을 골라 쓸 수 있어요)</span></div>
+        <div class="card font-picker" id="settingsFontCard">
+          <div class="font-current">현재 글꼴: <strong id="settingsFontCurrent">기본(시스템 글꼴)</strong></div>
+          <button class="btn-ghost font-btn font-load-btn" id="settingsFontLoadBtn" type="button">내 컴퓨터 글꼴 불러오기</button>
+          <div class="font-msg" id="settingsFontMsg" role="status" aria-live="polite"></div>
+          <div class="font-list-wrap" id="settingsFontListWrap" hidden>
+            <input class="font-search" id="settingsFontSearch" type="search" placeholder="글꼴 이름 검색" autocomplete="off" aria-label="글꼴 이름 검색" />
+            <div class="font-list" id="settingsFontList" role="listbox" aria-label="설치된 글꼴 목록"></div>
+            <div class="font-list-note" id="settingsFontListNote"></div>
+          </div>
+          <div class="font-preview-label">미리보기: <span id="settingsFontPreviewName">기본(시스템 글꼴)</span></div>
+          <div class="font-preview" id="settingsFontPreview">오늘 한 칸, 가볍게 시작해요. 가나다 ABC 123</div>
+          <div class="font-actions">
+            <button class="font-btn font-apply-btn" id="settingsFontPickApplyBtn" type="button">적용</button>
+            <button class="btn-ghost font-btn" id="settingsFontResetBtn" type="button">기본 글꼴로 복원</button>
+          </div>
+          <details class="font-manual">
+            <summary>목록에 없으면 이름 직접 입력</summary>
+            <div class="font-manual-row">
+              <div><label for="settingsFontName">폰트 이름</label><input id="settingsFontName" type="text" placeholder="예: Pretendard, 맑은 고딕" /></div>
+              <button class="btn-ghost font-btn" id="settingsFontApplyBtn" type="button">적용</button>
+            </div>
+          </details>
         </div>
 
         <div class="section-label" style="margin-top:20px;">그룹 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
@@ -1118,27 +1167,161 @@
   }
   document.documentElement.setAttribute("data-theme", currentThemeId());
 
-  // ── 글꼴(설정 화면) ── 2026-09-20: 기본값은 시스템 글꼴(위 :root --font-family), 결님이 컴퓨터에
-  // 설치된 폰트 이름을 직접 적으면 그 이름을 최우선으로 놓고 시스템 폰트를 뒤에 폴백으로 붙여서 CSS
-  // 변수만 갈아끼움 — 브라우저가 그 이름의 폰트를 로컬에서 찾아 쓰고, 없으면 자동으로 폴백됨(설치된
-  // 폰트 목록을 직접 나열해 보여줄 방법은 없어서 이름 입력 방식으로 구현).
+  // ── 글꼴(설정 화면) ── 2026-09-20: 기본값은 시스템 글꼴(위 :root --font-family). 고른 글꼴 이름을
+  // 최우선으로 놓고 시스템 폰트를 뒤에 폴백으로 붙여서 CSS 변수만 갈아끼움 — 브라우저가 그 이름의 폰트를
+  // 로컬에서 찾아 쓰고, 없거나 그 글꼴에 없는 글자(한글 등)는 뒤의 시스템 글꼴로 자동 대체됨.
+  // 09-24: 설치 글꼴 목록 선택 추가 — 크롬·엣지(PC)의 Local Font Access API(window.queryLocalFonts)로
+  // "내 컴퓨터 글꼴 불러오기"를 눌렀을 때만 목록을 받아 옴(페이지 진입 시 권한 요청 없음). 목록은 이 화면
+  // 메모리에만 두고 서버로 보내지 않음. 미지원 브라우저는 아래 "이름 직접 입력"으로 계속 쓸 수 있음.
+  // 저장 위치는 전과 같은 이 브라우저의 localStorage("tok_font_name") — DB 변경 없음.
   const DEFAULT_FONT_STACK = `-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif`;
-  function currentUserFontName() { return localStorage.getItem("tok_font_name") || ""; }
+  const FONT_NAME_MAX = 100;
+  const FONT_LIST_LIMIT = 300; // 목록에 한 번에 그리는 최대 개수(글꼴이 수천 개여도 화면이 버벅이지 않게)
+  // 폰트 이름 정리: 제어문자 제거 + 길이 제한. CSS에는 아래 cssFontString으로 따옴표 문자열로만 넣음.
+  function sanitizeFontName(name) {
+    return String(name || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, FONT_NAME_MAX);
+  }
+  function cssFontString(name) { return `"${name.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`; }
+  function fontStackFor(name) {
+    const n = sanitizeFontName(name);
+    return n ? `${cssFontString(n)}, ${DEFAULT_FONT_STACK}` : DEFAULT_FONT_STACK;
+  }
+  function currentUserFontName() {
+    try { return sanitizeFontName(localStorage.getItem("tok_font_name")); } catch (_) { return ""; }
+  }
   function applyUserFont(name) {
-    const trimmed = (name || "").trim();
+    const trimmed = sanitizeFontName(name);
     if (trimmed) {
-      document.documentElement.style.setProperty("--font-family", `"${trimmed}", ${DEFAULT_FONT_STACK}`);
-      localStorage.setItem("tok_font_name", trimmed);
+      document.documentElement.style.setProperty("--font-family", fontStackFor(trimmed));
+      try { localStorage.setItem("tok_font_name", trimmed); } catch (_) {}
     } else {
       document.documentElement.style.removeProperty("--font-family");
-      localStorage.removeItem("tok_font_name");
+      try { localStorage.removeItem("tok_font_name"); } catch (_) {}
     }
     const input = $("settingsFontName");
     if (input) input.value = trimmed;
+    const cur = $("settingsFontCurrent");
+    if (cur) cur.textContent = trimmed || "기본(시스템 글꼴)";
+    setFontPreview(trimmed);
+  }
+  // 미리보기만 바꿈 — 저장·앱 전체 적용은 "적용" 버튼을 눌러야 일어남.
+  let fontPreviewName = "";
+  function setFontPreview(name) {
+    fontPreviewName = sanitizeFontName(name);
+    const box = $("settingsFontPreview");
+    if (box) box.style.fontFamily = fontStackFor(fontPreviewName);
+    const label = $("settingsFontPreviewName");
+    if (label) label.textContent = fontPreviewName || "기본(시스템 글꼴)";
+    $("settingsFontList")?.querySelectorAll(".font-option").forEach(el => {
+      el.setAttribute("aria-selected", el.dataset.family === fontPreviewName ? "true" : "false");
+    });
+  }
+  function setFontMsg(msg, warn) {
+    const el = $("settingsFontMsg");
+    if (!el) return;
+    el.textContent = msg || "";
+    el.classList.toggle("warn", !!warn);
+  }
+  function localFontsSupport() {
+    if (!window.isSecureContext) return "insecure";
+    if (typeof window.queryLocalFonts !== "function") return "unsupported";
+    return "ok";
+  }
+  const FONT_UNSUPPORTED_MSG = "이 브라우저는 설치 글꼴 목록 불러오기를 지원하지 않아요. PC의 크롬·엣지에서 쓰거나, 아래 '이름 직접 입력'을 이용해 주세요.";
+  const FONT_INSECURE_MSG = "보안 연결(https)에서만 설치 글꼴 목록을 불러올 수 있어요. 아래 '이름 직접 입력'은 그대로 쓸 수 있어요.";
+  const FONT_DENIED_MSG = "글꼴 접근 권한이 허용되지 않아 목록을 불러오지 못했어요. 주소창 왼쪽의 사이트 설정에서 '글꼴'을 허용한 뒤 다시 눌러 주세요. 지금 글꼴은 그대로예요.";
+  let localFontFamilies = []; // [{ family, search }] — family 기준 중복 제거·이름순
+  function renderFontList() {
+    const list = $("settingsFontList"), note = $("settingsFontListNote");
+    if (!list) return;
+    const q = ($("settingsFontSearch")?.value || "").trim().toLowerCase();
+    const matched = q ? localFontFamilies.filter(f => f.search.includes(q)) : localFontFamilies;
+    const shown = matched.slice(0, FONT_LIST_LIMIT);
+    list.replaceChildren();
+    if (!shown.length) {
+      const empty = document.createElement("div");
+      empty.className = "font-list-empty";
+      empty.textContent = "검색 결과가 없어요.";
+      list.appendChild(empty);
+    }
+    shown.forEach(f => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "font-option";
+      btn.setAttribute("role", "option");
+      btn.dataset.family = f.family;
+      btn.textContent = f.family;
+      btn.title = f.family;
+      btn.style.fontFamily = fontStackFor(f.family);
+      btn.setAttribute("aria-selected", f.family === fontPreviewName ? "true" : "false");
+      btn.addEventListener("click", () => setFontPreview(f.family));
+      list.appendChild(btn);
+    });
+    if (note) {
+      note.textContent = matched.length > shown.length
+        ? `${matched.length}개 중 ${shown.length}개만 보여요. 검색어로 좁혀 보세요.`
+        : `${matched.length}개 글꼴`;
+    }
+  }
+  async function loadLocalFonts() {
+    const support = localFontsSupport();
+    if (support === "insecure") { setFontMsg(FONT_INSECURE_MSG, true); return; }
+    if (support === "unsupported") { setFontMsg(FONT_UNSUPPORTED_MSG, true); return; }
+    const btn = $("settingsFontLoadBtn");
+    if (btn) { btn.disabled = true; btn.textContent = "불러오는 중…"; }
+    setFontMsg("브라우저가 글꼴 접근 권한을 물어보면 '허용'을 눌러 주세요.");
+    try {
+      const fonts = await window.queryLocalFonts();
+      const byFamily = new Map();
+      for (const f of fonts || []) {
+        const family = sanitizeFontName(f && f.family);
+        if (!family) continue;
+        const prev = byFamily.get(family) || "";
+        byFamily.set(family, `${prev} ${family} ${f.fullName || ""}`.toLowerCase());
+      }
+      localFontFamilies = [...byFamily.entries()]
+        .map(([family, search]) => ({ family, search }))
+        .sort((a, b) => a.family.localeCompare(b.family, "ko", { sensitivity: "base" }));
+      if (!localFontFamilies.length) {
+        // 크롬은 권한이 거부·미허용이면 에러 대신 빈 목록을 돌려줌 → 권한 상태로 "거부"와 "진짜 빈 목록"을 구분.
+        let state = "";
+        try { state = (await navigator.permissions.query({ name: "local-fonts" })).state; } catch (_) {}
+        $("settingsFontListWrap").hidden = true;
+        setFontMsg(state && state !== "granted" ? FONT_DENIED_MSG
+          : "불러온 글꼴이 없어요. 아래 '이름 직접 입력'을 이용해 주세요. 지금 글꼴은 그대로예요.", true);
+        return;
+      }
+      $("settingsFontListWrap").hidden = false;
+      setFontMsg("목록에서 글꼴을 눌러 미리 본 뒤 '적용'을 눌러 주세요.");
+      renderFontList();
+    } catch (err) {
+      const denied = err && (err.name === "NotAllowedError" || err.name === "SecurityError");
+      setFontMsg(denied ? FONT_DENIED_MSG
+        : "글꼴 목록을 불러오지 못했어요. 잠시 후 다시 시도하거나 아래 '이름 직접 입력'을 이용해 주세요. 지금 글꼴은 그대로예요.", true);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "내 컴퓨터 글꼴 불러오기"; }
+    }
   }
   applyUserFont(currentUserFontName()); // 저장된 폰트 있으면 페이지 열릴 때 바로 적용
-  $("settingsFontApplyBtn")?.addEventListener("click", () => applyUserFont($("settingsFontName")?.value));
-  $("settingsFontResetBtn")?.addEventListener("click", () => applyUserFont(""));
+  if (localFontsSupport() !== "ok") { // 지원 여부만 확인(권한 요청 X) — 미지원이면 미리 안내
+    setFontMsg(localFontsSupport() === "insecure" ? FONT_INSECURE_MSG : FONT_UNSUPPORTED_MSG);
+    if ($("settingsFontLoadBtn")) $("settingsFontLoadBtn").disabled = true;
+  }
+  $("settingsFontLoadBtn")?.addEventListener("click", loadLocalFonts);
+  $("settingsFontSearch")?.addEventListener("input", renderFontList);
+  $("settingsFontName")?.addEventListener("input", (e) => setFontPreview(e.target.value));
+  $("settingsFontPickApplyBtn")?.addEventListener("click", () => {
+    applyUserFont(fontPreviewName);
+    showToast(fontPreviewName ? "글꼴을 적용했어요" : "기본 글꼴로 되돌렸어요");
+  });
+  $("settingsFontApplyBtn")?.addEventListener("click", () => {
+    applyUserFont($("settingsFontName")?.value);
+    showToast(currentUserFontName() ? "글꼴을 적용했어요" : "기본 글꼴로 되돌렸어요");
+  });
+  $("settingsFontResetBtn")?.addEventListener("click", () => {
+    applyUserFont("");
+    showToast("기본 글꼴로 되돌렸어요");
+  });
 
   let tasks = [];
   let logsToday = new Set(); // habit_id set, 오늘 완료된 것
