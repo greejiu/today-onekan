@@ -167,9 +167,19 @@
   .task-row span{font-size:14px;}
   .task-row.done span{color:var(--sub);text-decoration:line-through;}
   .task-row.dragging{opacity:.5;touch-action:none;}
-  /* "+ 추가" 라벨 없이, 마지막 줄 바로 아래 빈 공간 자체가 클릭해서 추가하는 영역(호버 시에만 살짝 티 남). */
-  .block-add-row{min-height:16px;padding:8px 4px;cursor:pointer;border-radius:8px;}
-  .block-add-row:hover{background:var(--accent-soft);color:var(--accent);}
+  /* 마지막 줄 바로 아래 빈 공간이 클릭해서 추가하는 영역. 09-24(지피티 논의 반영): 처음 보는 사람도
+     알 수 있게 "＋ 눌러서 추가해요" 보조 문구를 항상 보여줌(예전엔 호버 시에만 티 났음). 너무 연하면
+     놓치니까 --sub 색(보조 문구 톤)으로. PC에선 마우스 올리면 배경+테두리로 한 번 더 강조. */
+  .block-add-row{min-height:16px;padding:8px 6px;cursor:pointer;border-radius:8px;font-size:12px;color:var(--sub);border:1px solid transparent;}
+  .block-add-row:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
+  /* 09-24 — 빈칸 클릭 시 종류 선택(할일/습관/일정)과 입력을 한 창에서 처리(openKindPickerInput). */
+  .inline-add-wrap.inline-add-kindpick{flex-direction:column;align-items:stretch;gap:4px;} /* 클래스 2개로 특이도를 높여서, 아래쪽 .inline-add-wrap{align-items:center}에 소스 순서로 덮이지 않게 */
+  .addkind-toggle{display:flex;gap:4px;}
+  .addkind-toggle button{padding:3px 10px;border:1px solid var(--line);border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;background:var(--card);color:var(--sub);font-family:inherit;}
+  .addkind-toggle button.active{background:var(--accent);color:var(--card);border-color:var(--accent);}
+  .addkind-row{display:flex;gap:4px;align-items:center;}
+  .addkind-row .inline-add-input{flex:1;width:auto;min-width:0;}
+  .addkind-row .addkind-submit{padding:4px 10px;border:none;border-radius:6px;background:var(--accent);color:var(--card);font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:inherit;}
   .card.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft);}
 
   /* ── 집 : 목록/타임라인 보기 전환 ── */
@@ -1966,8 +1976,8 @@
       // 비어있을 땐 안내문구 자체가 곧 클릭해서 추가하는 빈칸(안내문+추가버튼 따로 안 두고 하나로 합침),
       // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙여서 더 추가할 수 있게 함.
       const bodyHtml = rows.length
-        ? rows.join("") + `<div class="block-add-row" data-alladd="${dateStr}"></div>`
-        : `<div class="agenda-empty-block block-add-row" data-alladd="${dateStr}">하루종일 항목이 없어요. 눌러서 추가</div>`;
+        ? rows.join("") + `<div class="block-add-row" data-alladd="${dateStr}">＋ 눌러서 추가해요</div>`
+        : `<div class="agenda-empty-block block-add-row" data-alladd="${dateStr}">＋ 계획이 없어요. 눌러서 추가해요</div>`;
       const isToday = dateStr === todayStr();
       const headHtml = dates.length > 1
         ? `<div class="ag-mday-col-head${isToday ? " is-today" : ""}">${formatDateShort(dateStr)}${isToday ? ` <span class="ag-today-tag">오늘</span>` : ""}</div>`
@@ -1994,27 +2004,82 @@
     dates.forEach(dateStr => attachAgendaAllDayAddClick(dateStr));
   }
 
-  // 하루종일 영역 "+ 추가"/빈칸 → 왼쪽 클릭은 시간 없는 할일 바로 생성(타임블럭의 block-add-row와 동일 패턴),
-  // 오른쪽 클릭은 일정/할일/습관 중 고르는 메뉴(showAddKindMenu, 2026-09-12 추가 — 원래 이 구역만 빠져있었음).
+  // 09-24(지피티 논의 반영) — 빈칸 클릭 시 종류 선택(할일/습관/일정)과 입력을 "한 창"에서 처리하는 공용 헬퍼.
+  // 예전엔 왼쪽 클릭=할일 입력창이 바로 열리고, 다른 종류는 오른쪽 클릭 메뉴를 따로 거쳐야 했음 → 이제 왼쪽 클릭·터치만으로
+  // 종류 선택+입력+저장이 끝남(오른쪽 클릭 메뉴는 "그 종류가 미리 선택된 채로 여는" 지름길로 그대로 남김).
+  // defaultKind: 처음 선택돼 있을 종류(구역 맥락에 맞게 호출부에서 넘김). 저장 로직(테이블/필드)은 구역마다 달라서
+  // onCommit(kind, name)으로 받음 — true를 돌려주면 성공. onCancel: 빈 값/Esc로 끝낼 때 원래 모습으로 되돌리는 재렌더.
+  // onReopen(kind): Enter(또는 "추가" 버튼)로 저장한 뒤 같은 자리에 같은 종류로 다음 입력창을 다시 열 때(연속 입력) 호출.
+  const ADD_KIND_LABEL = { todo: "할일", habit: "습관", event: "일정" };
+  const ADD_KIND_PLACEHOLDER = { todo: "할일 이름", habit: "습관 이름", event: "일정 이름" };
+  function openKindPickerInput(mountEl, { kinds = ["todo", "habit", "event"], defaultKind = "todo", onCommit, onCancel, onReopen }) {
+    let kind = kinds.includes(defaultKind) ? defaultKind : kinds[0];
+    const wrap = document.createElement("div");
+    wrap.className = "inline-add-wrap inline-add-kindpick";
+    wrap.innerHTML = `
+      <div class="addkind-toggle">${kinds.map(k => `<button type="button" data-kind="${k}" class="${k === kind ? "active" : ""}">${ADD_KIND_LABEL[k]}</button>`).join("")}</div>
+      <div class="addkind-row">
+        <input type="text" class="inline-add-input" placeholder="${ADD_KIND_PLACEHOLDER[kind]}" />
+        <button type="button" class="addkind-submit">추가</button>
+      </div>`;
+    mountEl.replaceWith(wrap);
+    const input = wrap.querySelector("input");
+    let done = false;
+    let interacting = false; // 창 안의 버튼(종류/추가)을 누르는 중엔 input blur로 저장·닫힘이 발동하지 않게
+    const commit = async (reopen) => {
+      if (done) return;
+      const name = input.value.trim();
+      if (!name) { done = true; onCancel(); return; }
+      done = true;
+      const ok = await onCommit(kind, name);
+      if (!ok) { done = false; return; } // 저장 실패 시 그대로 두고 다시 시도할 수 있게
+      if (reopen && onReopen) onReopen(kind);
+    };
+    wrap.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("pointerdown", () => { interacting = true; });
+      btn.addEventListener("mousedown", (e) => e.preventDefault()); // 버튼을 눌러도 input 포커스가 안 빠지게
+    });
+    wrap.querySelectorAll(".addkind-toggle button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        interacting = false;
+        kind = btn.dataset.kind;
+        wrap.querySelectorAll(".addkind-toggle button").forEach(b => b.classList.toggle("active", b === btn));
+        input.placeholder = ADD_KIND_PLACEHOLDER[kind];
+        input.focus(); // 종류를 고르면 바로 아래 입력란으로 커서 이동
+      });
+    });
+    wrap.querySelector(".addkind-submit").addEventListener("click", () => {
+      interacting = false;
+      if (!input.value.trim()) { input.focus(); return; } // 빈 값에서 "추가"를 누르면 닫지 않고 입력 대기
+      commit(true);
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); commit(true); }
+      else if (e.key === "Escape") { done = true; onCancel(); }
+    });
+    input.addEventListener("blur", () => {
+      // 버튼 클릭이 blur를 먼저 일으키는 브라우저(주로 모바일)가 있어서 한 박자 늦춰서 판단
+      setTimeout(() => {
+        if (interacting) { interacting = false; return; }
+        if (wrap.contains(document.activeElement)) return;
+        commit(false);
+      }, 0);
+    });
+    input.focus();
+    return wrap;
+  }
+
+  // 하루종일 영역 빈칸 → 09-24부터 왼쪽 클릭/터치 = 종류 선택+입력 한 창(openKindPickerInput, 기본 "할일"),
+  // 오른쪽 클릭 = 일정/할일/습관 메뉴(showAddKindMenu)에서 고른 종류가 미리 선택된 채로 같은 창을 엶.
   // dateStr: 이 add-row가 속한 열의 날짜(8-3단계 — 여러 날이 나란히 보이므로 열마다 따로 지정).
   // autoOpenKind: 지정돼 있으면 붙자마자 그 종류로 바로 입력창을 염(엔터로 연달아 추가할 때, 마우스로 다시 안 눌러도 되게).
   function attachAgendaAllDayAddClick(dateStr, autoOpenKind) {
     const row = document.querySelector(`#agendaAllDayList .block-add-row[data-alladd="${dateStr}"]`);
     if (!row) return;
-    const openInput = (kind) => { // kind: "todo" | "event" | "habit"
-      const wrap = document.createElement("div");
-      wrap.className = "inline-add-wrap";
-      const placeholder = kind === "event" ? "일정 이름" : kind === "habit" ? "습관 이름" : "할일 이름";
-      wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
-      row.replaceWith(wrap);
-      const input = wrap.querySelector("input");
-      input.focus();
-      let done = false;
-      const commit = async (reopen) => {
-        if (done) return;
-        const name = input.value.trim();
-        if (!name) { done = true; renderAgendaAllDay(); return; }
-        done = true;
+    const openInput = (defaultKind) => openKindPickerInput(row, {
+      defaultKind,
+      onCancel: () => renderAgendaAllDay(),
+      onCommit: async (kind, name) => {
         let error;
         if (kind === "habit") {
           ({ error } = await sb.from("tok_habits").insert({
@@ -2025,20 +2090,16 @@
         } else {
           ({ error } = await sb.from("tok_todos").insert({ title: name, start_date: dateStr, todo_time: null }));
         }
-        if (error) { alert("저장 실패: " + error.message); done = false; return; }
+        if (error) { alert("저장 실패: " + error.message); return false; }
         await loadAll();
         // 2026-09-20 — 다가오는 탭과 같은 레이스 수정(위 attachUpcomingDayAddClick 주석 참고):
         // renderAgendaAllDay도 async라 loadAll() 안에서 await 없이 불려서 여기서 아직 안 끝났을 수 있음.
         await renderAgendaAllDay();
-        if (reopen) attachAgendaAllDayAddClick(dateStr, kind);
-      };
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") { e.preventDefault(); commit(true); }
-        else if (e.key === "Escape") { done = true; renderAgendaAllDay(); }
-      });
-      input.addEventListener("blur", () => commit(false));
-    };
-    row.onclick = () => openInput("todo"); // 왼쪽 클릭 = 할일 바로 추가(기존 규칙 유지)
+        return true;
+      },
+      onReopen: (kind) => attachAgendaAllDayAddClick(dateStr, kind),
+    });
+    row.onclick = () => openInput("todo"); // 왼쪽 클릭·터치 = 종류 선택+입력 창(기본 할일)
     row.oncontextmenu = (e) => {
       e.preventDefault();
       showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind));
@@ -2324,8 +2385,8 @@
         // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙임.
         // data-date: 이 블럭 카드가 어느 열(날짜) 소속인지(8-3단계, homeDropZone이 드롭 대상 날짜를 여기서 읽음).
         html += inBlock.length
-          ? `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}">${inBlock.map(it => agendaItemRowHtml(it, dateStr)).join("")}<div class="block-add-row" data-block-start="${block.start_minute}"></div></div>`
-          : `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}"><div class="agenda-empty-block block-add-row" data-block-start="${block.start_minute}">일정 없음. 눌러서 추가</div></div>`;
+          ? `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}">${inBlock.map(it => agendaItemRowHtml(it, dateStr)).join("")}<div class="block-add-row" data-block-start="${block.start_minute}">＋ 눌러서 추가해요</div></div>`
+          : `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}"><div class="agenda-empty-block block-add-row" data-block-start="${block.start_minute}">＋ 계획이 없어요. 눌러서 추가해요</div></div>`;
       });
       const uncovered = items.filter(it => !covered.has(it));
       if (uncovered.length) {
@@ -2353,20 +2414,11 @@
     const freshFn = getFreshContainer || (() => document.querySelector(`#agendaTimeWrap .ag-col-body[data-date="${dateStr}"]`));
     containerEl.querySelectorAll(".block-add-row[data-block-start]").forEach(row => {
       const startMinute = parseInt(row.dataset.blockStart, 10);
-      const openInput = (kind) => { // kind: "todo" | "event" | "habit"
-        const wrap = document.createElement("div");
-        wrap.className = "inline-add-wrap";
-        const placeholder = kind === "event" ? "일정 이름" : kind === "habit" ? "습관 이름" : "할일 이름";
-        wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
-        row.replaceWith(wrap);
-        const input = wrap.querySelector("input");
-        input.focus();
-        let done = false;
-        const commit = async (reopen) => {
-          if (done) return;
-          const name = input.value.trim();
-          if (!name) { done = true; rerender(); return; }
-          done = true;
+      // 09-24: 종류 선택+입력 한 창(openKindPickerInput)으로 교체 — 저장 필드(블럭 시작 시각·30분)와 연속입력 규칙은 그대로.
+      const openInput = (defaultKind) => openKindPickerInput(row, {
+        defaultKind,
+        onCancel: () => rerender(),
+        onCommit: async (kind, name) => {
           let error;
           if (kind === "habit") {
             ({ error } = await sb.from("tok_habits").insert({
@@ -2382,23 +2434,20 @@
               [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
             }));
           }
-          if (error) { alert("저장 실패: " + error.message); done = false; return; }
+          if (error) { alert("저장 실패: " + error.message); return false; }
           await loadAll();
-          if (reopen) {
-            const freshContainer = freshFn();
-            if (freshContainer) {
-              if (kind === "todo") attachAgendaBlockAddClick(freshContainer, dateStr, startMinute, null, null, onRerender, getFreshContainer);
-              else attachAgendaBlockAddClick(freshContainer, dateStr, null, kind, startMinute, onRerender, getFreshContainer);
-            }
-          }
-        };
-        input.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") { e.preventDefault(); commit(true); }
-          else if (e.key === "Escape") { done = true; rerender(); }
-        });
-        input.addEventListener("blur", () => commit(false));
-      };
-      row.onclick = () => openInput("todo");
+          // 하루종일/다가오는과 같은 레이스 방지: 재렌더가 확실히 끝난 뒤에 다음 입력창을 붙임
+          await rerender();
+          return true;
+        },
+        onReopen: (kind) => {
+          const freshContainer = freshFn();
+          if (!freshContainer) return;
+          if (kind === "todo") attachAgendaBlockAddClick(freshContainer, dateStr, startMinute, null, null, onRerender, getFreshContainer);
+          else attachAgendaBlockAddClick(freshContainer, dateStr, null, kind, startMinute, onRerender, getFreshContainer);
+        },
+      });
+      row.onclick = () => openInput("todo"); // 왼쪽 클릭·터치 = 종류 선택+입력 창(기본 할일)
       row.oncontextmenu = (e) => {
         e.preventDefault();
         showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind));
@@ -3504,8 +3553,8 @@
       }).join("");
 
       const addRowHtml = count
-        ? `<div class="block-add-row" data-upcomingadd="${dateStr}"></div>`
-        : `<div class="agenda-empty-block block-add-row" data-upcomingadd="${dateStr}">일정 없음. 눌러서 추가</div>`;
+        ? `<div class="block-add-row" data-upcomingadd="${dateStr}">＋ 눌러서 추가해요</div>`
+        : `<div class="agenda-empty-block block-add-row" data-upcomingadd="${dateStr}">＋ 계획이 없어요. 눌러서 추가해요</div>`;
       // 2026-09-20 — 결님 요청으로 언젠가/목록/타임라인과 서로 드래그 이동 가능해짐: 날짜별 묶음을
       // .upcoming-day(data-date)로 감싸서 homeDropZone이 "이 날짜의 하루종일 항목"으로 인식하게 함.
       html += `<div class="upcoming-day" data-date="${dateStr}">
@@ -3555,20 +3604,11 @@
   function attachUpcomingDayAddClick(dateStr, autoOpenKind) {
     const row = document.querySelector(`#homeUpcomingList .block-add-row[data-upcomingadd="${dateStr}"]`);
     if (!row) return;
-    const openInput = (kind) => { // kind: "todo" | "event" | "habit"
-      const wrap = document.createElement("div");
-      wrap.className = "inline-add-wrap";
-      const placeholder = kind === "event" ? "일정 이름" : kind === "habit" ? "습관 이름" : "할일 이름";
-      wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
-      row.replaceWith(wrap);
-      const input = wrap.querySelector("input");
-      input.focus();
-      let done = false;
-      const commit = async (reopen) => {
-        if (done) return;
-        const name = input.value.trim();
-        if (!name) { done = true; renderHomeUpcomingList(); return; }
-        done = true;
+    // 09-24: 종류 선택+입력 한 창(openKindPickerInput)으로 교체 — 저장 필드·연속입력 규칙은 그대로.
+    const openInput = (defaultKind) => openKindPickerInput(row, {
+      defaultKind,
+      onCancel: () => renderHomeUpcomingList(),
+      onCommit: async (kind, name) => {
         let error;
         if (kind === "habit") {
           ({ error } = await sb.from("tok_habits").insert({
@@ -3579,7 +3619,7 @@
         } else {
           ({ error } = await sb.from("tok_todos").insert({ title: name, start_date: dateStr, todo_time: null }));
         }
-        if (error) { alert("저장 실패: " + error.message); done = false; return; }
+        if (error) { alert("저장 실패: " + error.message); return false; }
         await loadAll();
         // 2026-09-20 — 결님 제보: 연속 입력(엔터로 계속 추가)이 가끔 씹히던 버그 수정.
         // renderHomeUpcomingList는 async라 loadAll() 안에서 await 없이 불려서, 여기 도착했을 때
@@ -3587,15 +3627,11 @@
         // 통째로 덮어써서 입력창이 사라지는 레이스였음. 재조회는 이미 끝났으니 한 번 더 await로 확실히
         // 그린 다음에 입력창을 다시 열어줌(중복 렌더는 비용만 조금 더 들 뿐 안전).
         await renderHomeUpcomingList();
-        if (reopen) attachUpcomingDayAddClick(dateStr, kind);
-      };
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") { e.preventDefault(); commit(true); }
-        else if (e.key === "Escape") { done = true; renderHomeUpcomingList(); }
-      });
-      input.addEventListener("blur", () => commit(false));
-    };
-    row.onclick = () => openInput("todo"); // 왼쪽 클릭 = 할일 바로 추가(기존 규칙 유지)
+        return true;
+      },
+      onReopen: (kind) => attachUpcomingDayAddClick(dateStr, kind),
+    });
+    row.onclick = () => openInput("todo"); // 왼쪽 클릭·터치 = 종류 선택+입력 창(기본 할일)
     row.oncontextmenu = (e) => {
       e.preventDefault();
       showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind));
@@ -3664,10 +3700,10 @@
     }).join("");
     const moreHtml = all.length > items.length ? `<div class="someday-more-row" data-somedaymore="1">+ 더보기 (${all.length - items.length}개 더)</div>` : "";
     $("somedaySummaryList").innerHTML = items.length
-      ? rowsHtml + moreHtml + `<div class="block-add-row" data-somedayadd="1"></div>`
+      ? rowsHtml + moreHtml + `<div class="block-add-row" data-somedayadd="1">＋ 눌러서 추가해요</div>`
       : undone.length === 0
-        ? `<div class="agenda-empty-block block-add-row" data-somedayadd="1">등록된 항목이 없어요. 눌러서 추가</div>`
-        : `<div class="agenda-empty-block">이 그룹의 항목이 없어요.</div><div class="block-add-row" data-somedayadd="1"></div>`;
+        ? `<div class="agenda-empty-block block-add-row" data-somedayadd="1">＋ 계획이 없어요. 눌러서 추가해요</div>`
+        : `<div class="agenda-empty-block">이 그룹의 항목이 없어요.</div><div class="block-add-row" data-somedayadd="1">＋ 눌러서 추가해요</div>`;
     document.querySelectorAll(".somedaysum-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
@@ -4752,8 +4788,10 @@
   }
 
   // 빈 공간 오른쪽 클릭 공통 헬퍼(타임블럭/타임라인/다가오는 계획 3곳 공용, 2026-09-08 추가):
-  // 왼쪽 클릭=할일 추가는 그대로 두고, 오른쪽 클릭하면 "일정/할일/습관 추가" 중 고르는 작은 메뉴를 띄움(2026-09-12: 습관 추가 옵션 추가)
+  // 오른쪽 클릭하면 "일정/할일/습관 추가" 중 고르는 작은 메뉴를 띄움(2026-09-12: 습관 추가 옵션 추가)
   // (2026-09-12: 메모 기능을 아예 없애면서 메뉴 두번째 항목을 메모→할일로 교체).
+  // 09-24: 하루종일/시간블럭/다가오는에선 왼쪽 클릭만으로도 종류를 고를 수 있게 됐고(openKindPickerInput),
+  // 이 메뉴는 "고른 종류가 미리 선택된 채로 같은 창을 여는" 추가 지름길로 남김.
   function showAddKindMenu(x, y, onPick) {
     document.querySelector(".ctx-menu")?.remove();
     const menu = document.createElement("div");
