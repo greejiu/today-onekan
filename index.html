@@ -170,7 +170,7 @@
   /* 마지막 줄 바로 아래 빈 공간이 클릭해서 추가하는 영역. 09-24(지피티 논의 반영): 처음 보는 사람도
      알 수 있게 "＋ 눌러서 추가해요" 보조 문구를 항상 보여줌(예전엔 호버 시에만 티 났음). 너무 연하면
      놓치니까 --sub 색(보조 문구 톤)으로. PC에선 마우스 올리면 배경+테두리로 한 번 더 강조. */
-  .block-add-row{min-height:16px;padding:8px 6px;cursor:pointer;border-radius:8px;font-size:12px;color:var(--sub);border:1px solid transparent;}
+  .block-add-row{min-height:16px;padding:8px 6px;cursor:pointer;border-radius:8px;font-size:12px;color:var(--sub);border:1px solid transparent;text-align:center;} /* 09-24: "＋ 눌러서 추가해요"도 빈 상태 문구(.agenda-empty-block)처럼 가운데 정렬(결님 요청) */
   .block-add-row:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
   /* 09-24 — 빈칸 추가 입력창(openAddInput) 옆 "추가" 버튼. 종류는 입력창을 열기 전 메뉴(showAddKindMenu)에서 고름. */
   .inline-add-wrap .addkind-submit{padding:4px 10px;border:none;border-radius:6px;background:var(--accent);color:var(--card);font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:inherit;}
@@ -818,7 +818,6 @@
 
       <!-- 설정 -->
       <div class="page" data-page="settings" style="display:none;">
-        <div class="pagehead"><h2>⚙ 설정</h2></div>
 
         <div class="section-label">계정</div>
         <div class="card" id="settingsAccountCard" style="font-size:13px;color:var(--sub);"></div>
