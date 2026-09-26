@@ -101,7 +101,11 @@
   /* 사이드바용 퀵 인풋 — 사이드바 가로 폭(180px, 안쪽 패딩 12px씩 뺀 만큼)에 맞춰 인풋/버튼 모두 width:100%로
      세로로 쌓음(가로로 나란히 놓기엔 폭이 좁아서). 사이드바 자체가 ≤760px에서 display:none이라 그때는
      자동으로 같이 숨겨짐 — 따로 미디어쿼리 안 써도 됨. */
-  .sidebar-quickadd{margin-bottom:14px;flex-shrink:0;}
+  /* 2026-09-27 — 빠른 입력(모바일 상단 줄·PC 사이드바)은 '집' 탭에서만 보임: showPage가 body.qa-on을 켜고 끔.
+     다른 탭에선 숨기고 자리도 비우지 않음. --header-h = 고정 상단 영역 높이(스크롤 여백 계산에 씀). */
+  :root{--header-h:64px;}
+  .sidebar-quickadd{display:none;margin-bottom:14px;flex-shrink:0;}
+  body.qa-on .sidebar-quickadd{display:block;}
   .sidebar-quickadd input{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:8px 10px;font-size:12.5px;color:var(--text);font-family:inherit;outline:none;margin-bottom:6px;}
   .sidebar-quickadd input::placeholder{color:var(--sub);}
   .sidebar-quickadd button{width:100%;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;padding:8px 0;cursor:pointer;font-family:inherit;}
@@ -109,10 +113,11 @@
   @media (max-width:760px){
     .topbar{gap:8px;padding:0 14px;}
     .brand-logo{font-size:20px;}
-    .topbar-quickadd-row{display:flex;padding:0 14px;}
+    body.qa-on{--header-h:120px;}
+    body.qa-on .topbar-quickadd-row{display:flex;padding:0 14px;}
     .topbar-quickadd button span.lbl{display:none;}
-    .layout{padding-top:120px !important;}
-    .sidebar{top:120px !important;height:calc(100vh - 120px) !important;}
+    body.qa-on .layout{padding-top:120px !important;}
+    body.qa-on .sidebar{top:120px !important;height:calc(100vh - 120px) !important;}
   }
   .layout{display:flex;min-height:100vh;padding-top:64px;}
   .sidebar{width:180px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);padding:20px 12px;position:sticky;top:64px;height:calc(100vh - 64px);box-shadow:2px 0 16px rgba(150,130,200,.06);display:flex;flex-direction:column;}
@@ -488,7 +493,7 @@
   .sched-jump-note{font-size:12.5px;color:var(--sub);}
   .sched-empty button{margin-top:12px;border:none;background:var(--accent);color:var(--card);border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;padding:0 18px;min-height:40px;cursor:pointer;}
   /* 날짜 그룹 — 같은 날 일정은 카드 하나에. 스크롤 시 고정 상단바에 제목이 가리지 않게 scroll-margin */
-  .day-group{scroll-margin-top:76px;}
+  .day-group{scroll-margin-top:calc(var(--header-h) + 12px);}
   .day-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 2px 4px;}
   .day-head .day-label{margin:0;font-size:13px;color:var(--text);font-weight:700;display:flex;align-items:center;gap:6px;min-width:0;}
   .day-head .day-label:focus{outline:none;}
@@ -529,7 +534,7 @@
   .cal-head .agenda-nav{min-width:32px;min-height:32px;}
   .cal-head .agenda-nav:focus-visible, .cal-today-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
   /* 선택한 날짜의 일정 목록(모바일 전용 — PC는 기존처럼 칸 안에서 바로 추가/칩 메뉴) */
-  .cal-day-panel{display:none;margin-top:14px;scroll-margin-top:132px;}
+  .cal-day-panel{display:none;margin-top:14px;scroll-margin-top:calc(var(--header-h) + 12px);}
   .cal-day-title{font-size:14px;font-weight:700;margin:0 2px 8px;color:var(--text);}
   .cal-day-list{display:flex;flex-direction:column;}
   .cal-day-item{display:flex;align-items:flex-start;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);}
@@ -561,7 +566,14 @@
   .cal-day-add:hover{background:var(--accent-soft);}
   .cal-day-actions button:focus-visible, .cal-day-add:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
   /* 모바일 일정 추가/수정 시트 — 키보드가 열리면 JS(visualViewport)가 보이는 영역에 맞춰 높이/위치를 줄임 */
-  .sheet-bg.cal-ev-sheet-bg{z-index:40;} /* 고정 상단바(z-index 30)보다 위 */
+  .sheet-bg.cal-ev-sheet-bg{z-index:40;}
+  /* 추가 창(일정·할일·습관): PC에선 가운데 모달, 모바일(≤760px)에선 하단 시트 — 입력 항목·저장 규칙은 같음 */
+  @media (min-width:761px){
+    .sheet-bg.add-sheet{align-items:center;padding:24px;}
+    .sheet-bg.add-sheet .sheet{border-radius:20px;max-height:calc(100% - 48px);box-shadow:0 20px 50px rgba(0,0,0,.25);}
+    .sheet-bg.add-sheet .sheet-actions{padding-bottom:16px;}
+  }
+  .tab-add-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 2px 10px;} /* 고정 상단바(z-index 30)보다 위 */
   .cal-ev-sheet-bg .sheet{background:var(--card);color:var(--text);display:flex;flex-direction:column;max-height:calc(100% - 12px);padding-bottom:0;}
   .cal-ev-sheet-bg .cal-ev-fields{overflow-y:auto;min-height:0;flex:1 1 auto;}
   .cal-ev-sheet-bg .field input, .cal-ev-sheet-bg .field select{background:var(--card);color:var(--text);min-height:44px;}
@@ -580,7 +592,6 @@
     .sched-jump-btn{min-height:44px;}
     .day-add{width:44px;height:44px;margin:-4px -6px -4px 0;}
     .sched-more{min-width:44px;min-height:44px;}
-    .day-group{scroll-margin-top:132px;}
     .cal-today-btn{height:44px;padding:0 16px;}
     /* 모든 주가 같은 높이: 칸 높이 고정, 넘치는 내용은 칸 안에서만 잘림(일정 수는 최대 2개 + "+N개") */
     .cal-grid{grid-auto-rows:74px;}
@@ -939,7 +950,7 @@
           <div id="scheduleEventsView">
             <div class="sched-list-bar">
               <span class="sched-count" id="schedMonthCount"></span>
-              <button type="button" class="sched-add-btn" id="schedAddBtn">+ 일정 추가</button>
+              <button type="button" class="sched-add-btn" id="schedAddBtn">+ 일정</button>
             </div>
             <div class="sched-jump-row" id="schedJumpRow"></div>
             <div id="scheduleList"></div>
@@ -971,7 +982,7 @@
 
           <div id="todoUnifiedView">
             <div class="someday-toolbar" style="justify-content:space-between;gap:8px;flex-wrap:wrap;">
-              <button id="todoQuickAddBtn" type="button" class="btn-ghost" style="flex:none;">+ 할일 추가</button>
+              <button id="todoQuickAddBtn" type="button" class="sched-add-btn" style="flex:none;">+ 할일</button>
               <div style="display:flex;gap:6px;">
                 <select id="todoSortSelect" class="someday-sort-select"></select>
                 <select id="todoGroupSelect" class="someday-sort-select"></select>
@@ -1000,12 +1011,9 @@
       <div class="page" data-page="habits" style="display:none;">
 
         <div id="todosHabitsView">
-          <div class="section-label">습관 관리</div>
-          <div class="inline-add-row">
-            <input id="tk_name" type="text" placeholder="습관 이름" />
-            <input id="tk_start" type="time" />
-            <input id="tk_duration" type="number" min="15" step="15" placeholder="분" value="30" />
-            <button id="taskAddBtn">추가</button>
+          <div class="tab-add-bar">
+            <div class="section-label" style="margin:0;">습관 관리</div>
+            <button type="button" class="sched-add-btn" id="habitAddBtn">+ 습관</button>
           </div>
           <div class="view-toggle" id="habitsTabRow" style="margin-bottom:10px;">
             <button type="button" data-tab="active" class="active">진행중</button>
@@ -1106,18 +1114,26 @@
 </div>
 
 <!-- 할일 추가/수정 시트 (다가오는 계획 보드용) -->
-<div class="sheet-bg" id="todoSheetBg">
-  <div class="sheet">
+<!-- 2026-09-27: 일정·습관 추가 창과 같은 규칙(명시적 저장/취소, 빈 제목·중복 저장 방지, 실패 시 입력 유지). PC=모달, 모바일=하단 시트 -->
+<div class="sheet-bg cal-ev-sheet-bg add-sheet" id="todoSheetBg">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="todoSheetTitle">
     <h2 id="todoSheetTitle">할일 추가</h2>
-    <div class="field"><label>할일 제목</label><input id="td_title" type="text" placeholder="예: 은행 다녀오기" /></div>
-    <div class="field split">
-      <div><label>시작 날짜</label><input id="td_start" type="date" /></div>
-      <div><label>종료 날짜(선택, 반복이 끝나는 날)</label><input id="td_end" type="date" /></div>
-    </div>
-    <div class="field"><label>시간(선택)</label><input id="td_time" type="time" /></div>
+    <form id="todoForm" class="cal-ev-fields" novalidate>
+      <div class="field"><label for="td_title">제목</label><input id="td_title" type="text" placeholder="예: 은행 다녀오기" autocomplete="off" enterkeyhint="done" /></div>
+      <div class="field split">
+        <div><label for="td_start">시작일</label><input id="td_start" type="date" aria-describedby="td_date_hint" /></div>
+        <div><label for="td_end">종료일 <span class="cev-opt">(선택)</span></label><input id="td_end" type="date" aria-describedby="td_date_hint" /></div>
+      </div>
+      <div class="cev-hint" id="td_date_hint">제목만 적고 저장해도 돼요. 시작일을 비우면 오늘로 저장돼요.</div>
+      <div class="field split">
+        <div><label for="td_time">시간 <span class="cev-opt">(선택)</span></label><input id="td_time" type="time" /></div>
+        <div><label for="td_tag">그룹</label><select id="td_tag"></select></div>
+      </div>
+      <div class="cal-ev-error" id="td_error" role="alert"></div>
+    </form>
     <div class="sheet-actions">
-      <button class="btn-ghost" id="todoCancelBtn">취소</button>
-      <button class="btn-primary" id="todoSaveBtn">저장</button>
+      <button type="button" class="btn-ghost" id="todoCancelBtn">취소</button>
+      <button type="button" class="btn-primary" id="todoSaveBtn">저장</button>
     </div>
     <div class="sheet-actions" id="todoDeleteRow" style="display:none;">
       <button class="btn-ghost" id="todoDeleteBtn" style="color:var(--danger);">이 할일 삭제</button>
@@ -1126,7 +1142,7 @@
 </div>
 
 <!-- 일정 캘린더(모바일) 일정 추가/수정 시트 — 2026-09-26. 저장/취소는 버튼으로만(포커스 잃어도 저장 안 함) -->
-<div class="sheet-bg cal-ev-sheet-bg" id="calEventSheetBg">
+<div class="sheet-bg cal-ev-sheet-bg add-sheet" id="calEventSheetBg">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="calEvSheetTitle">
     <h2 id="calEvSheetTitle">일정 추가</h2>
     <form id="calEvForm" class="cal-ev-fields" novalidate>
@@ -1162,6 +1178,41 @@
       <button type="button" class="btn-ghost" id="evd_close">닫기</button>
       <button type="button" class="btn-ghost evd-danger" id="evd_delete">삭제</button>
       <button type="button" class="btn-primary" id="evd_edit">수정</button>
+    </div>
+  </div>
+</div>
+
+<!-- 습관 추가 창 — 2026-09-27 습관 탭 [+ 습관]. 일정·할일 추가 창과 같은 규칙, PC=모달, 모바일=하단 시트 -->
+<div class="sheet-bg cal-ev-sheet-bg add-sheet" id="habitAddSheetBg">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="habitAddTitle">
+    <h2 id="habitAddTitle">습관 추가</h2>
+    <form id="habitAddForm" class="cal-ev-fields" novalidate>
+      <div class="field"><label for="ha_name">이름</label><input id="ha_name" type="text" placeholder="예: 물 한 컵 마시기" autocomplete="off" enterkeyhint="done" /></div>
+      <div class="field split">
+        <div><label for="ha_start">시작일</label><input id="ha_start" type="date" /></div>
+        <div><label for="ha_time">시간 <span class="cev-opt">(선택)</span></label><input id="ha_time" type="time" /></div>
+      </div>
+      <div class="field split">
+        <div>
+          <label for="ha_repeat_unit">반복</label>
+          <select id="ha_repeat_unit">
+            <option value="day">일마다</option>
+            <option value="week">주마다</option>
+            <option value="month">개월마다</option>
+          </select>
+        </div>
+        <div><label for="ha_repeat_interval">주기(숫자)</label><input id="ha_repeat_interval" type="number" min="1" value="1" inputmode="numeric" /></div>
+      </div>
+      <div class="field split">
+        <div><label for="ha_duration">소요 시간(분)</label><input id="ha_duration" type="number" min="5" step="5" value="30" inputmode="numeric" /></div>
+        <div><label for="ha_category">그룹</label><select id="ha_category"></select></div>
+      </div>
+      <div class="cev-hint">이름만 적고 저장하면 오늘부터 매일 반복돼요. 요일 지정 등은 저장 후 습관 설정에서 바꿀 수 있어요.</div>
+      <div class="cal-ev-error" id="ha_error" role="alert"></div>
+    </form>
+    <div class="sheet-actions">
+      <button type="button" class="btn-ghost" id="ha_cancel">취소</button>
+      <button type="button" class="btn-primary" id="ha_save">저장</button>
     </div>
   </div>
 </div>
@@ -1619,7 +1670,7 @@
     let top = r.bottom + 6;
     const popH = pop.offsetHeight || 320;
     if (top + popH > window.innerHeight - 8) top = r.top - popH - 6;
-    if (top < 8) top = 8;
+    if (top < fixedHeaderBottom() + 8) top = fixedHeaderBottom() + 8;
     pop.style.left = left + "px";
     pop.style.top = top + "px";
   }
@@ -1730,9 +1781,23 @@
     const prevPage = currentPage;
     if (prevPage === "schedule" && page !== "schedule") scheduleScrollY = window.scrollY;
     currentPage = page;
+    // 빠른 입력은 '집'에서만(모바일 상단 줄 + PC 사이드바). 입력 중이던 제목은 그대로 두고, 탭 이동만으로는 저장하지 않음.
+    document.body.classList.toggle("qa-on", page === "home");
     document.querySelectorAll(".navitem").forEach(el => el.classList.toggle("active", el.dataset.page === page));
     document.querySelectorAll(".page").forEach(el => el.style.display = el.dataset.page === page ? "block" : "none");
+    // 숨겨진 입력창에 포커스가 남으면(모바일 키보드가 열린 채) 해제
+    const ae = document.activeElement;
+    if (ae && ae !== document.body && ae.getClientRects().length === 0) ae.blur();
     if (page === "schedule" && prevPage !== "schedule") window.scrollTo(0, scheduleScrollY);
+  }
+  // 고정 상단 영역(상단바 + 보이는 경우 빠른 입력 줄)의 실제 아래쪽 좌표 — 스크롤·팝업 위치 계산용
+  function fixedHeaderBottom() {
+    let bottom = 0;
+    document.querySelectorAll(".topbar, .topbar-quickadd-row").forEach(el => {
+      if (getComputedStyle(el).display === "none") return;
+      bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+    });
+    return bottom;
   }
   // 상단바 설정 아이콘 — 사이드바의 "⚙ 설정" 탭과 동일한 showPage("settings") 재사용.
   $("topbarSettingsBtn")?.addEventListener("click", () => showPage("settings"));
@@ -4196,8 +4261,13 @@
     if (btn) btn.disabled = false;
     if (error) { alert("저장 실패: " + error.message); return; }
     input.value = "";
+    ["quickTaskInput", "quickTaskInputSide"].forEach(id => { if ($(id)) $(id).value = ""; });
     await loadAll();
   }
+  // 모바일 상단 줄과 PC 사이드바 입력칸 내용을 맞춰서, 화면 폭이 바뀌어도 쓰던 제목이 유지되게
+  ["quickTaskInput", "quickTaskInputSide"].forEach((id, i, ids) => {
+    $(id)?.addEventListener("input", () => { const other = $(ids[1 - i]); if (other) other.value = $(id).value; });
+  });
   $("quickAddBtn")?.addEventListener("click", () => quickAddTodoToday("quickTaskInput"));
   $("quickTaskInput")?.addEventListener("keydown", (e) => { if (e.key === "Enter") quickAddTodoToday("quickTaskInput"); });
   $("quickAddBtnSide")?.addEventListener("click", () => quickAddTodoToday("quickTaskInputSide"));
@@ -4370,34 +4440,74 @@
   }
 
   // existing: 수정, null: 새로 추가(prefill로 시작~종료 날짜 지정 가능)
+  // 2026-09-27: 일정·습관 추가 창과 같은 저장 규칙 — [저장]/[취소]로만, 제목만 있으면 저장(시작일 비우면 오늘),
+  // 빈 제목·중복 저장 방지, 실패하면 입력값 유지. prefill(날짜·시간·그룹)이 있으면 기본값으로 넣고 창 제목에 날짜 표시.
+  let todoSheetState = { saving: false, opener: null };
+  function todoSheetTitleFor(dateStr) {
+    if (!dateStr) return "할일 추가";
+    return (dateStr.slice(0, 4) !== todayStr().slice(0, 4) ? `${dateStr.slice(0, 4)}년 ` : "") + `${calDateLabel(dateStr, false)}에 할일 추가`;
+  }
+  function populateTodoTagSelect(selectedId) {
+    const sel = $("td_tag");
+    sel.innerHTML = `<option value="">기본</option>` +
+      assignableTagPool(habitCategories, selectedId || null).map(c => `<option value="${c.id}">${escapeHtml(tagPickLabel(c))}</option>`).join("");
+    sel.value = selectedId || "";
+  }
   function openTodoSheet(existing, prefill) {
-    $("todoSheetTitle").textContent = existing ? "할일 수정" : "할일 추가";
+    todoSheetState = { saving: false, opener: document.activeElement && document.activeElement !== document.body ? document.activeElement : null };
+    const start = existing ? existing.start_date : (prefill?.startDate || todayStr());
+    $("todoSheetTitle").textContent = existing ? "할일 수정" : todoSheetTitleFor(start);
     $("td_title").value = existing ? existing.title : "";
-    $("td_start").value = existing ? existing.start_date : (prefill?.startDate || todayStr());
+    $("td_start").value = start || "";
     $("td_end").value = existing ? (existing.end_date || "") : (prefill?.endDate || "");
     $("td_time").value = existing ? (existing.todo_time ? existing.todo_time.slice(0, 5) : "") : (prefill?.time || "");
+    populateTodoTagSelect(existing ? (existing.tag_id || null) : (prefill?.tagId || null));
+    $("td_error").textContent = "";
+    $("todoSaveBtn").disabled = false;
+    $("todoSaveBtn").textContent = "저장";
     $("todoSheetBg").dataset.editId = existing ? existing.id : "";
     $("todoDeleteRow").style.display = existing ? "flex" : "none";
     $("todoSheetBg").classList.add("open");
+    fitCalEventSheetToViewport();
     $("td_title").focus();
   }
-  $("todoCancelBtn").onclick = () => $("todoSheetBg").classList.remove("open");
+  function closeTodoSheet() {
+    if (todoSheetState.saving) return;
+    $("todoSheetBg").classList.remove("open");
+    fitCalEventSheetToViewport();
+    const o = todoSheetState.opener;
+    if (o && document.body.contains(o) && o.getClientRects().length) o.focus({ preventScroll: true });
+  }
+  $("todoCancelBtn").onclick = closeTodoSheet;
+  $("todoForm").onsubmit = (e) => { e.preventDefault(); $("todoSaveBtn").click(); };
+  $("todoSheetBg").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); closeTodoSheet(); } });
+  $("td_start").addEventListener("change", () => { if (!$("todoSheetBg").dataset.editId) $("todoSheetTitle").textContent = todoSheetTitleFor($("td_start").value || todayStr()); });
   $("todoSaveBtn").onclick = async () => {
+    if (todoSheetState.saving) return; // 저장 중 중복 제출 방지
     const title = $("td_title").value.trim();
-    const start_date = $("td_start").value;
+    const start_date = $("td_start").value || todayStr();
     const end_date = $("td_end").value || null;
     const todo_time = $("td_time").value ? $("td_time").value + ":00" : null;
-    if (!title || !start_date) { alert("제목과 시작 날짜는 꼭 입력해주세요."); return; }
-    if (end_date && end_date < start_date) { alert("종료 날짜는 시작 날짜보다 빠를 수 없어요."); return; }
+    const tag_id = $("td_tag").value || null;
+    const showErr = (msg, el) => { $("td_error").textContent = msg; el?.focus(); };
+    if (!title) { showErr("할일 제목을 입력해주세요.", $("td_title")); return; }
+    if (end_date && end_date < start_date) { showErr("종료일은 시작일보다 빠를 수 없어요.", $("td_end")); return; }
     const editId = $("todoSheetBg").dataset.editId;
+    todoSheetState.saving = true;
+    $("td_error").textContent = "";
+    $("todoSaveBtn").disabled = true;
+    $("todoSaveBtn").textContent = "저장 중…";
     let error;
-    if (editId) {
-      ({ error } = await sb.from("tok_todos").update({ title, start_date, end_date, todo_time }).eq("id", editId));
-    } else {
-      ({ error } = await sb.from("tok_todos").insert({ title, start_date, end_date, todo_time }));
-    }
-    if (error) { alert("저장 실패: " + error.message); return; }
-    $("todoSheetBg").classList.remove("open");
+    try {
+      ({ error } = editId
+        ? await sb.from("tok_todos").update({ title, start_date, end_date, todo_time, tag_id }).eq("id", editId)
+        : await sb.from("tok_todos").insert({ title, start_date, end_date, todo_time, tag_id }));
+    } catch (err) { error = err; }
+    todoSheetState.saving = false;
+    $("todoSaveBtn").disabled = false;
+    $("todoSaveBtn").textContent = "저장";
+    if (error) { showErr("저장하지 못했어요. 입력한 내용은 그대로 있어요. (" + (error.message || error) + ")"); return; }
+    closeTodoSheet();
     await loadAll();
   };
   $("todoDeleteBtn").onclick = async () => {
@@ -4766,7 +4876,7 @@
       const r = el.getBoundingClientRect();
       const bar = document.querySelector(".bottombar");
       const visibleBottom = window.innerHeight - (bar && getComputedStyle(bar).display !== "none" ? bar.offsetHeight : 0); // 고정 요소라 offsetParent로는 판별 불가
-      if (r.top >= 64 && r.top < visibleBottom - 60) return;
+      if (r.top >= fixedHeaderBottom() && r.top < visibleBottom - 60) return;
     }
     const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
     el.scrollIntoView({ block: "start", behavior });
@@ -4944,7 +5054,7 @@
   function revealCalDayPanel(mode) {
     const panel = $("calDayPanel");
     if (!panel || !isCalMobile()) return;
-    const headerBottom = (document.querySelector(".topbar-quickadd-row")?.getBoundingClientRect().bottom) || 120; // 고정 상단바(+빠른 추가 줄) 아래
+    const headerBottom = fixedHeaderBottom(); // 고정 상단바(+집 탭이면 빠른 입력 줄) 아래
     const bottomBar = document.querySelector(".bottombar");
     const visibleBottom = window.innerHeight - (bottomBar ? bottomBar.offsetHeight : 0);
     const r = panel.getBoundingClientRect();
@@ -5192,21 +5302,23 @@
     if (calEvSheet.mode === "add") $("calEvSheetTitle").textContent = calEvSheetTitleFor($("cev_date").value);
   });
   // 모바일 키보드가 열리면 보이는 영역(visualViewport)에 시트를 맞춰서 입력창과 [저장]이 키보드에 가리지 않게 함.
+  // (2026-09-27: 일정·할일·습관 추가 창 공용)
   function fitCalEventSheetToViewport() {
-    const bg = $("calEventSheetBg");
     const vv = window.visualViewport;
-    if (!vv || !bg.classList.contains("open")) { bg.style.top = ""; bg.style.height = ""; bg.style.bottom = ""; return; }
-    bg.style.top = vv.offsetTop + "px";
-    bg.style.height = vv.height + "px";
-    bg.style.bottom = "auto";
+    document.querySelectorAll(".sheet-bg.add-sheet").forEach(bg => {
+      if (!vv || !bg.classList.contains("open")) { bg.style.top = ""; bg.style.height = ""; bg.style.bottom = ""; return; }
+      bg.style.top = vv.offsetTop + "px";
+      bg.style.height = vv.height + "px";
+      bg.style.bottom = "auto";
+    });
   }
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", fitCalEventSheetToViewport);
     window.visualViewport.addEventListener("scroll", fitCalEventSheetToViewport);
   }
-  $("calEvForm").addEventListener("focusin", (e) => {
+  ["calEvForm", "todoForm", "habitAddForm"].forEach(id => $(id).addEventListener("focusin", (e) => {
     setTimeout(() => e.target.scrollIntoView?.({ block: "nearest" }), 250); // 키보드가 올라온 뒤 위치 보정
-  });
+  }));
 
   // (PC) 캘린더 빈 칸을 눌렀을 때 팝업 없이 그 자리에서 바로 일정을 추가(집 화면의 다른 인라인 추가와 동일한 패턴).
   function openCalendarInlineAdd(cell, dateStr) {
@@ -5389,7 +5501,7 @@
     });
     const sorted = sortItemsBy(visible, settings.sort, "start_date", habitCategories, "category_id");
     const sections = groupItemsBy(sorted, settings.group, "start_date", habitCategories, "category_id");
-    const emptyText = habitsTabView === "active" ? "진행중인 습관이 없어요.<br/>위 입력창에서 바로 추가해보세요."
+    const emptyText = habitsTabView === "active" ? "진행중인 습관이 없어요.<br/>[+ 습관]으로 추가해보세요."
       : habitsTabView === "archived" ? "보관 중인 습관이 없어요."
       : "종료된 습관이 없어요.";
     $("todoEmpty").style.display = "none"; // 빈 상태는 renderSections가 #todoList 안에 직접 그려줌
@@ -5486,19 +5598,66 @@
   // ── 습관 화면 상단 인라인 추가 입력 (팝업 없이 바로 입력) ──
   // (일정 목록의 상시 입력칸은 2026-09-27에 [+ 일정 추가] 버튼 + 공용 추가 창으로 바뀜)
 
-  $("taskAddBtn").onclick = async () => {
-    const name = $("tk_name").value.trim();
-    if (!name) { alert("습관 이름을 입력해주세요."); return; }
-    const startVal = $("tk_start").value; // "HH:MM" 또는 빈 문자열
-    const start_minute = startVal ? (parseInt(startVal.slice(0,2),10)*60 + parseInt(startVal.slice(3,5),10)) : null;
-    const duration_minutes = parseInt($("tk_duration").value, 10) || 30;
-    const { error } = await sb.from("tok_habits").insert({ name, sort_order: tasks.length, start_minute, duration_minutes, repeat_unit: "day", repeat_interval: 1, start_date: todayStr() });
-    if (error) { alert("저장 실패: " + error.message); return; }
-    $("tk_name").value = "";
+  // 2026-09-27: 습관 탭 [+ 습관] → 추가 창(예전 상시 입력줄 대신). 기본값은 예전 입력줄과 같음(오늘부터 매일, 30분).
+  let habitAddState = { saving: false, opener: null };
+  function openHabitAddSheet(opener, prefill) {
+    habitAddState = { saving: false, opener: opener || null };
+    $("ha_name").value = "";
+    $("ha_start").value = prefill?.startDate || todayStr();
+    $("ha_time").value = prefill?.time || "";
+    $("ha_repeat_unit").value = "day";
+    $("ha_repeat_interval").value = 1;
+    $("ha_duration").value = 30;
+    $("ha_category").innerHTML = `<option value="">기본</option>` +
+      assignableTagPool(habitCategories, null).map(c => `<option value="${c.id}">${escapeHtml(tagPickLabel(c))}</option>`).join("");
+    $("ha_category").value = prefill?.categoryId || "";
+    $("ha_error").textContent = "";
+    $("ha_save").disabled = false;
+    $("ha_save").textContent = "저장";
+    $("habitAddSheetBg").classList.add("open");
+    fitCalEventSheetToViewport();
+    $("ha_name").focus();
+  }
+  function closeHabitAddSheet() {
+    if (habitAddState.saving) return;
+    $("habitAddSheetBg").classList.remove("open");
+    fitCalEventSheetToViewport();
+    const o = habitAddState.opener;
+    if (o && document.body.contains(o) && o.getClientRects().length) o.focus({ preventScroll: true });
+  }
+  async function saveHabitAdd() {
+    if (habitAddState.saving) return; // 저장 중 중복 제출 방지
+    const name = $("ha_name").value.trim();
+    const showErr = (msg, el) => { $("ha_error").textContent = msg; el?.focus(); };
+    if (!name) { showErr("습관 이름을 입력해주세요.", $("ha_name")); return; }
+    const timeVal = $("ha_time").value;
+    const row = {
+      name, sort_order: tasks.length,
+      start_minute: timeVal ? hhmmToMinutes(timeVal) : null,
+      duration_minutes: parseInt($("ha_duration").value, 10) || 30,
+      repeat_unit: $("ha_repeat_unit").value || "day",
+      repeat_interval: Math.max(1, parseInt($("ha_repeat_interval").value, 10) || 1),
+      start_date: $("ha_start").value || todayStr(),
+      category_id: $("ha_category").value || null,
+    };
+    habitAddState.saving = true;
+    $("ha_error").textContent = "";
+    $("ha_save").disabled = true;
+    $("ha_save").textContent = "저장 중…";
+    let error;
+    try { ({ error } = await sb.from("tok_habits").insert(row)); } catch (err) { error = err; }
+    habitAddState.saving = false;
+    $("ha_save").disabled = false;
+    $("ha_save").textContent = "저장";
+    if (error) { showErr("저장하지 못했어요. 입력한 내용은 그대로 있어요. (" + (error.message || error) + ")"); return; }
+    closeHabitAddSheet();
     await loadAll();
-    $("tk_name").focus();
-  };
-  $("tk_name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("taskAddBtn").click(); });
+  }
+  $("habitAddBtn").onclick = (e) => openHabitAddSheet(e.currentTarget);
+  $("ha_save").onclick = saveHabitAdd;
+  $("ha_cancel").onclick = closeHabitAddSheet;
+  $("habitAddForm").onsubmit = (e) => { e.preventDefault(); saveHabitAdd(); };
+  $("habitAddSheetBg").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); closeHabitAddSheet(); } });
 
   function escapeHtml(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
@@ -5510,6 +5669,8 @@
     let left = x, top = y;
     if (left + mw + pad > window.innerWidth) left = Math.max(pad, x - mw);
     if (top + mh + pad > window.innerHeight) top = Math.max(pad, y - mh);
+    const minTop = fixedHeaderBottom() + pad; // 위로 뒤집혀도 고정 상단 영역 밑으로 숨지 않게
+    if (top < minTop && minTop + mh + pad <= window.innerHeight) top = minTop;
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
   }
