@@ -460,9 +460,73 @@
   #scheduleModeToggle{flex:none;flex-wrap:nowrap;}
   #scheduleModeToggle button{white-space:nowrap;flex:0 0 auto;}
   .cal-head{display:flex;align-items:center;gap:4px;margin-bottom:8px;}
-  .cal-head #calMonthLabel{flex:1;text-align:center;font-weight:700;font-size:14px;white-space:nowrap;}
+  /* 2026-09-27 공통 조회 월 제목 — 누르면 연·월 선택 */
+  .sched-month-title-wrap{flex:1;min-width:0;display:flex;justify-content:center;position:relative;}
+  .sched-month-title{border:none;background:none;color:var(--text);font-family:inherit;font-weight:700;font-size:15px;white-space:nowrap;min-height:40px;padding:0 10px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
+  .sched-month-title::after{content:"▾";font-size:11px;color:var(--sub);}
+  .sched-month-title:hover{background:var(--accent-soft);}
+  .sched-month-title:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  .sched-month-picker{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);z-index:25;width:264px;max-width:calc(100vw - 32px);background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.16);padding:10px;}
+  .sched-month-picker[hidden]{display:none;}
+  .smp-year{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-weight:700;font-size:14px;}
+  .smp-year button{min-width:40px;min-height:40px;border:none;background:none;color:var(--sub);font-size:18px;border-radius:10px;cursor:pointer;}
+  .smp-months{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+  .smp-months button{min-height:40px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;font-family:inherit;font-size:13px;cursor:pointer;}
+  .smp-months button.this-month{border-color:var(--accent);}
+  .smp-months button[aria-current="true"]{background:var(--accent);color:var(--card);border-color:var(--accent);font-weight:700;}
+  .smp-year button:hover, .smp-months button:hover{background:var(--accent-soft);}
+  .smp-months button[aria-current="true"]:hover{background:var(--accent);}
+  .smp-year button:focus-visible, .smp-months button:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  /* 목록 상단(월 건수 + 일정 추가) · 오늘 이후로 이동 */
+  .sched-list-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 2px 8px;}
+  .sched-count{font-size:12.5px;color:var(--sub);min-width:0;}
+  .sched-add-btn{flex:none;border:none;background:var(--accent);color:var(--card);border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;padding:0 16px;min-height:38px;cursor:pointer;white-space:nowrap;}
+  .sched-add-btn:focus-visible, .sched-jump-btn:focus-visible, .day-add:focus-visible, .sched-open:focus-visible, .sched-more:focus-visible, .sched-empty button:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  .sched-jump-row{margin:0 2px 12px;}
+  .sched-jump-row:empty{display:none;}
+  .sched-jump-btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;font-family:inherit;font-size:12.5px;padding:0 14px;min-height:36px;cursor:pointer;white-space:nowrap;}
+  .sched-jump-note{font-size:12.5px;color:var(--sub);}
+  .sched-empty button{margin-top:12px;border:none;background:var(--accent);color:var(--card);border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;padding:0 18px;min-height:40px;cursor:pointer;}
+  /* 날짜 그룹 — 같은 날 일정은 카드 하나에. 스크롤 시 고정 상단바에 제목이 가리지 않게 scroll-margin */
+  .day-group{scroll-margin-top:76px;}
+  .day-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 2px 4px;}
+  .day-head .day-label{margin:0;font-size:13px;color:var(--text);font-weight:700;display:flex;align-items:center;gap:6px;min-width:0;}
+  .day-head .day-label:focus{outline:none;}
+  .today-badge{font-size:10.5px;font-weight:700;color:var(--card);background:var(--accent);border-radius:999px;padding:2px 7px;line-height:1.3;}
+  .day-add{flex:none;width:36px;height:36px;border:none;background:none;color:var(--sub);border-radius:10px;font-size:20px;line-height:1;cursor:pointer;}
+  .day-add:hover{background:var(--accent-soft);color:var(--accent);}
+  /* 지난 날짜: 제목만 옅은 색 + 카드 바탕을 살짝 눌러서 구분(일정 글자는 그대로 읽히게, 완료 표시 없음) */
+  .day-group.past .day-label{color:var(--sub);}
+  .day-group.past .card{background:color-mix(in srgb, var(--card) 94%, var(--sub));box-shadow:none;}
+  .day-group .card{padding:0 12px;}
+  .sched-row{min-height:56px;align-items:center;gap:8px;padding:8px 0;}
+  .sched-row.just-added{animation:schedFlash 1.8s ease-out;}
+  @keyframes schedFlash{from{background:var(--accent-soft);}to{background:transparent;}}
+  .sched-row .t{width:40px;font-variant-numeric:tabular-nums;}
+  .sched-open{flex:1;min-width:0;display:block;text-align:left;border:none;background:none;color:var(--text);font-family:inherit;padding:4px 0;cursor:pointer;border-radius:8px;}
+  .sched-open .title{display:block;font-size:14px;line-height:1.45;overflow-wrap:anywhere;word-break:keep-all;}
+  .sched-meta{display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;margin-top:3px;font-size:11.5px;color:var(--sub);}
+  .sched-phase{font-size:10.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:1px 7px;}
+  [data-theme="black"] .sched-phase{color:var(--text);}
+  .sched-open .memo{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere;font-size:12px;color:var(--sub);margin-top:3px;}
+  .sched-more{flex:none;min-width:40px;min-height:40px;border:none;background:none;color:var(--sub);font-size:18px;letter-spacing:-1px;border-radius:10px;cursor:pointer;}
+  .sched-more:hover{background:var(--accent-soft);}
+  .ctx-menu.sched-menu{background:var(--card);}
+  .ctx-menu.sched-menu button{min-height:40px;}
+  .ctx-menu.sched-menu button:hover, .ctx-menu.sched-menu button:focus-visible{background:var(--accent-soft);outline:none;}
+  /* 일정 상세 */
+  .evd-title{font-size:17px !important;line-height:1.4;overflow-wrap:anywhere;margin:4px 0 14px !important;}
+  .evd-list{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 14px;font-size:13.5px;}
+  .evd-list dt{color:var(--sub);white-space:nowrap;}
+  .evd-list dd{margin:0;min-width:0;overflow-wrap:anywhere;}
+  .evd-list dd.memo{white-space:pre-wrap;}
+  .evd-danger{color:var(--danger) !important;}
+  .cev-opt{color:var(--sub);font-weight:400;}
+  .cev-hint{font-size:11.5px;color:var(--sub);margin:-4px 2px 10px;line-height:1.4;}
+  .cal-ev-sheet-bg .field textarea{background:var(--card);color:var(--text);resize:vertical;}
   .cal-today-btn{flex:none;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;font-size:12.5px;font-family:inherit;padding:0 14px;height:32px;cursor:pointer;white-space:nowrap;}
   .cal-today-btn:hover{background:var(--accent-soft);}
+  .cal-head .agenda-nav{min-width:32px;min-height:32px;}
   .cal-head .agenda-nav:focus-visible, .cal-today-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
   /* 선택한 날짜의 일정 목록(모바일 전용 — PC는 기존처럼 칸 안에서 바로 추가/칩 메뉴) */
   .cal-day-panel{display:none;margin-top:14px;scroll-margin-top:132px;}
@@ -482,8 +546,12 @@
   .cal-day-actions button:hover{background:var(--accent-soft);}
   .cal-day-actions button.danger{color:var(--danger);}
   .cal-day-actions button[data-act="more"]{font-size:18px;line-height:1;letter-spacing:-1px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   /* 터치 기기에서 누른 뒤 hover 배경이 남아 선택된 것처럼 보이지 않게 */
   @media (hover:none){
+    .sched-month-title:hover, .sched-more:hover, .smp-year button:hover{background:none;}
+    .day-add:hover{background:none;color:var(--sub);}
+    .smp-months button:hover{background:var(--card);}
     .cal-head .agenda-nav:hover{background:none;color:var(--sub);}
     .cal-today-btn:hover, .cal-day-add:hover{background:var(--card);}
     .cal-day-actions button:hover{background:none;}
@@ -501,12 +569,18 @@
   .cal-ev-sheet-bg .sheet-actions button{min-height:44px;}
   .cal-ev-sheet-bg .btn-primary{color:var(--card);}
   .cal-ev-sheet-bg .btn-primary:disabled{opacity:.6;cursor:default;}
-  [data-theme="black"] .cal-ev-sheet-bg .field input, [data-theme="black"] .cal-ev-sheet-bg .field select{color-scheme:dark;} /* 날짜·시간 아이콘이 어두운 배경에서 보이게 */
+  [data-theme="black"] .cal-ev-sheet-bg .field input, [data-theme="black"] .cal-ev-sheet-bg .field select, [data-theme="black"] .cal-ev-sheet-bg .field textarea{color-scheme:dark;} /* 날짜·시간 아이콘이 어두운 배경에서 보이게 */
   .cal-ev-error{font-size:12px;color:var(--danger);min-height:0;margin-top:2px;}
   .cal-ev-error:empty{display:none;}
   @media (max-width:760px){
     #scheduleModeToggle button{min-height:38px;padding:0 16px;}
     .cal-head .agenda-nav{min-width:44px;min-height:44px;font-size:22px;display:inline-flex;align-items:center;justify-content:center;}
+    .sched-month-title{min-height:44px;padding:0 6px;}
+    .sched-add-btn{min-height:44px;}
+    .sched-jump-btn{min-height:44px;}
+    .day-add{width:44px;height:44px;margin:-4px -6px -4px 0;}
+    .sched-more{min-width:44px;min-height:44px;}
+    .day-group{scroll-margin-top:132px;}
     .cal-today-btn{height:44px;padding:0 16px;}
     /* 모든 주가 같은 높이: 칸 높이 고정, 넘치는 내용은 칸 안에서만 잘림(일정 수는 최대 2개 + "+N개") */
     .cal-grid{grid-auto-rows:74px;}
@@ -843,28 +917,37 @@
           </div>
         </div>
 
+        <!-- 2026-09-27 목록·캘린더 공통 조회 월 조작부(이전 달 / 연·월 선택 / 다음 달 / 이번 달) -->
+        <div class="cal-head sched-month-bar" role="group" aria-label="조회 월">
+          <button type="button" id="calPrevBtn" class="agenda-nav" aria-label="이전 달">‹</button>
+          <div class="sched-month-title-wrap">
+            <button type="button" id="calMonthLabel" class="sched-month-title" aria-haspopup="dialog" aria-expanded="false" aria-controls="schedMonthPicker"></button>
+            <div id="schedMonthPicker" class="sched-month-picker" role="dialog" aria-label="연·월 선택" hidden>
+              <div class="smp-year">
+                <button type="button" id="smpPrevYear" aria-label="이전 해">‹</button>
+                <span id="smpYearLabel" aria-live="polite"></span>
+                <button type="button" id="smpNextYear" aria-label="다음 해">›</button>
+              </div>
+              <div class="smp-months" id="smpMonths"></div>
+            </div>
+          </div>
+          <button type="button" id="calNextBtn" class="agenda-nav" aria-label="다음 달">›</button>
+          <button type="button" id="schedThisMonthBtn" class="cal-today-btn">이번 달</button>
+        </div>
+
         <div id="scheduleListMode">
           <div id="scheduleEventsView">
-            <div class="inline-add-row">
-              <input id="ev_date" type="date" />
-              <span style="align-self:center;color:var(--sub);font-size:12px;">~</span>
-              <input id="ev_end" type="date" title="종료 날짜(선택, 비우면 하루짜리 일정)" />
-              <input id="ev_time" type="time" />
-              <input id="ev_title" type="text" placeholder="일정 제목" />
-              <button id="eventAddBtn">추가</button>
+            <div class="sched-list-bar">
+              <span class="sched-count" id="schedMonthCount"></span>
+              <button type="button" class="sched-add-btn" id="schedAddBtn">+ 일정 추가</button>
             </div>
+            <div class="sched-jump-row" id="schedJumpRow"></div>
             <div id="scheduleList"></div>
-            <div id="scheduleEmpty" class="empty" style="display:none;">등록된 일정이 없어요.<br/>위 입력창에서 바로 추가해보세요.</div>
+            <div id="scheduleEmpty" class="empty sched-empty" style="display:none;"></div>
           </div>
         </div>
 
         <div id="scheduleCalendarMode" style="display:none;">
-          <div class="cal-head">
-            <button type="button" id="calPrevBtn" class="agenda-nav" aria-label="이전 달">‹</button>
-            <span id="calMonthLabel" aria-live="polite"></span>
-            <button type="button" id="calNextBtn" class="agenda-nav" aria-label="다음 달">›</button>
-            <button type="button" id="calTodayBtn" class="cal-today-btn">오늘</button>
-          </div>
           <div class="cal-weekday-row" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
           <div class="cal-grid" id="calGrid" aria-label="월간 달력"></div>
           <!-- 2026-09-26 모바일: 선택한 날짜의 전체 일정 목록 + 추가 버튼(칸 안에서 입력하지 않음) -->
@@ -1047,20 +1130,38 @@
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="calEvSheetTitle">
     <h2 id="calEvSheetTitle">일정 추가</h2>
     <form id="calEvForm" class="cal-ev-fields" novalidate>
-      <div class="field"><label for="cev_title">일정 제목</label><input id="cev_title" type="text" placeholder="예: 면접 준비" autocomplete="off" enterkeyhint="done" /></div>
+      <div class="field"><label for="cev_title">제목</label><input id="cev_title" type="text" placeholder="예: 면접 준비" autocomplete="off" enterkeyhint="done" /></div>
       <div class="field split">
-        <div><label for="cev_date">시작 날짜</label><input id="cev_date" type="date" /></div>
-        <div><label for="cev_end">종료 날짜(선택)</label><input id="cev_end" type="date" /></div>
+        <div><label for="cev_date">시작일</label><input id="cev_date" type="date" /></div>
+        <div><label for="cev_end">종료일 <span class="cev-opt">(선택)</span></label><input id="cev_end" type="date" aria-describedby="cev_end_hint" /></div>
       </div>
+      <div class="cev-hint" id="cev_end_hint">종료일은 여러 날 일정일 때만 넣어요. 비우면 하루 일정이에요.</div>
       <div class="field split">
-        <div><label for="cev_time">시간(선택, 비우면 종일)</label><input id="cev_time" type="time" /></div>
+        <div><label for="cev_time">시간 <span class="cev-opt">(선택)</span></label><input id="cev_time" type="time" aria-describedby="cev_time_hint" /></div>
         <div><label for="cev_category">범주</label><select id="cev_category"></select></div>
       </div>
+      <div class="cev-hint" id="cev_time_hint">시간을 비우면 ‘종일’ 일정이 돼요.</div>
+      <div class="field"><label for="cev_memo">메모 <span class="cev-opt">(선택)</span></label><textarea id="cev_memo" rows="2"></textarea></div>
       <div class="cal-ev-error" id="cev_error" role="alert"></div>
     </form>
     <div class="sheet-actions">
       <button type="button" class="btn-ghost" id="cev_cancel">취소</button>
       <button type="button" class="btn-primary" id="cev_save">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 일정 상세 보기 — 2026-09-27 목록에서 일정을 누르면 전체 내용(기간·시간·범주·반복·메모)을 보여주고 수정/삭제로 이어짐 -->
+<div class="sheet-bg cal-ev-sheet-bg" id="evDetailBg">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="evd_title">
+    <div class="cal-ev-fields">
+      <h2 id="evd_title" class="evd-title"></h2>
+      <dl class="evd-list" id="evd_list"></dl>
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="btn-ghost" id="evd_close">닫기</button>
+      <button type="button" class="btn-ghost evd-danger" id="evd_delete">삭제</button>
+      <button type="button" class="btn-primary" id="evd_edit">수정</button>
     </div>
   </div>
 </div>
@@ -1624,10 +1725,14 @@
   document.querySelectorAll(".navitem").forEach(el => {
     el.onclick = () => showPage(el.dataset.page);
   });
+  let scheduleScrollY = 0; // 일정 탭을 떠날 때 목록 스크롤 위치를 기억했다가 돌아오면 복원(2026-09-27)
   function showPage(page) {
+    const prevPage = currentPage;
+    if (prevPage === "schedule" && page !== "schedule") scheduleScrollY = window.scrollY;
     currentPage = page;
     document.querySelectorAll(".navitem").forEach(el => el.classList.toggle("active", el.dataset.page === page));
     document.querySelectorAll(".page").forEach(el => el.style.display = el.dataset.page === page ? "block" : "none");
+    if (page === "schedule" && prevPage !== "schedule") window.scrollTo(0, scheduleScrollY);
   }
   // 상단바 설정 아이콘 — 사이드바의 "⚙ 설정" 탭과 동일한 showPage("settings") 재사용.
   $("topbarSettingsBtn")?.addEventListener("click", () => showPage("settings"));
@@ -4546,89 +4651,193 @@
   });
 
   // ── 일정 화면 ──
+  // 2026-09-27 목록 개편: 조회 월(calCursor, 캘린더와 공유) 안의 일정만 날짜 오름차순으로 보여줌.
+  // 여러 날 일정은 "기간이 조회 월과 하루라도 겹치면" 포함하고, 조회 월 안의 날짜들만 펼침(시작일부터 366일 제한 없음).
+  // 지난 일정도 숨기지 않음(날짜 제목만 옅게), 같은 날 일정은 카드 하나에 모음.
+  const evEndDate = (e) => (e.end_date && e.end_date > e.event_date) ? e.end_date : e.event_date;
+  // 종일 먼저, 시간 지정은 시간순(같으면 불러온 순서 유지)
+  function eventTimeSort(a, b) {
+    const at = a.event_time || "", bt = b.event_time || "";
+    if (!at !== !bt) return at ? 1 : -1;
+    return at < bt ? -1 : at > bt ? 1 : 0;
+  }
+  function schedMonthInfo() {
+    const ms = calMonthOf(calCursor);
+    const [y, m] = ms.split("-").map(Number);
+    const me = `${ms.slice(0, 8)}${pad2(new Date(y, m, 0).getDate())}`;
+    const label = (String(y) === todayStr().slice(0, 4) ? "" : `${y}년 `) + `${m}월`;
+    return { ms, me, y, m, label };
+  }
+  function schedMonthEvents() {
+    const { ms, me } = schedMonthInfo();
+    return events.filter(e => e.event_date <= me && evEndDate(e) >= ms);
+  }
+  // 목록 상단 [+ 일정 추가] 기본 시작일: 이번 달이면 오늘, 다른 달이면 조회 월 1일
+  function schedDefaultAddDate() {
+    const t = todayStr();
+    return calMonthOf(t) === calMonthOf(calCursor) ? t : calMonthOf(calCursor);
+  }
+  function eventCategoryOf(e) { return e.category_id ? eventCategories.find(c => c.id === e.category_id) || null : null; }
+  function eventCategoryHtml(cat) {
+    return `<span class="cal-day-cat"><span class="dot" style="background:${cat.color || "var(--accent)"};"></span>${escapeHtml(tagPickLabel(cat))}</span>`;
+  }
   function renderSchedule() {
-    $("scheduleEmpty").style.display = events.length ? "none" : "block";
+    renderSchedMonthBar();
+    const { ms, me, label } = schedMonthInfo();
+    const t = todayStr();
+    const isThisMonth = calMonthOf(t) === ms;
+    const monthEvents = schedMonthEvents(); // events 자체가 id당 1행이라 이 길이가 곧 중복 없는 건수
     const groups = {};
-    // 기간(여러 날) 일정은 시작~종료 사이 모든 날짜의 그룹에 다 들어가게 함(다가오는 계획/집 화면과 동일한 규칙).
-    events.forEach(e => {
-      const last = e.end_date && e.end_date > e.event_date ? e.end_date : e.event_date;
-      let d = e.event_date, guard = 0;
-      while (d <= last && guard < 366) { (groups[d] ||= []).push(e); d = addDaysStr(d, 1); guard++; }
+    monthEvents.forEach(e => {
+      const last = evEndDate(e) < me ? evEndDate(e) : me;
+      for (let d = e.event_date > ms ? e.event_date : ms; d <= last; d = addDaysStr(d, 1)) (groups[d] ||= []).push(e);
     });
     const dates = Object.keys(groups).sort();
-    $("scheduleList").innerHTML = dates.map(d => `
-      <div class="day-group">
-        <div class="day-label">${formatDate(d)}</div>
+    $("schedMonthCount").textContent = `${label} 일정 ${monthEvents.length}개`;
+    // 이번 달에서만: 오늘(진행 중인 기간 일정 포함) 또는 가장 가까운 미래 일정 그룹으로 이동
+    const jumpTarget = isThisMonth ? dates.find(d => d >= t) : null;
+    $("schedJumpRow").innerHTML = !isThisMonth || !monthEvents.length ? ""
+      : jumpTarget ? `<button type="button" class="sched-jump-btn" id="schedJumpBtn" data-date="${jumpTarget}">오늘 이후로 이동 ↓</button>`
+      : `<span class="sched-jump-note">이번 달 남은 일정이 없어요</span>`;
+    $("schedJumpBtn")?.addEventListener("click", (e) => schedScrollToDate(e.currentTarget.dataset.date, { focus: true }));
+    $("scheduleEmpty").style.display = monthEvents.length ? "none" : "block";
+    $("scheduleEmpty").innerHTML = monthEvents.length ? "" : `${escapeHtml(label)}에는 등록된 일정이 없어요<br/><button type="button" id="schedEmptyAddBtn">일정 추가</button>`;
+    $("schedEmptyAddBtn")?.addEventListener("click", (e) => openEventEditor({ mode: "add", date: schedDefaultAddDate(), opener: e.currentTarget }));
+
+    $("scheduleList").innerHTML = dates.map(d => {
+      const isToday = d === t, isPast = d < t;
+      const dayLabel = calDateLabel(d);
+      return `
+      <section class="day-group${isPast ? " past" : ""}${isToday ? " today" : ""}" id="sched-day-${d}" data-date="${d}">
+        <div class="day-head">
+          <h3 class="day-label" tabindex="-1">${dayLabel}${isToday ? ` <span class="today-badge">오늘</span>` : ""}${isPast ? `<span class="sr-only"> (지난 날)</span>` : ""}</h3>
+          <button type="button" class="day-add" data-date="${d}" aria-label="${dayLabel}에 일정 추가">+</button>
+        </div>
         <div class="card">
-          ${groups[d].map(e => {
-            const isRange = e.end_date && e.end_date !== e.event_date;
+          ${groups[d].slice().sort(eventTimeSort).map(e => {
+            const cat = eventCategoryOf(e);
+            const end = evEndDate(e);
+            const isRange = end > e.event_date;
+            const phase = !isRange ? "" : d === e.event_date ? "시작" : d === end ? "마지막 날" : "진행 중";
             return `
-            <div class="event-row" data-id="${e.id}">
-              <div class="t">${e.event_time ? e.event_time.slice(0,5) : ""}</div>
-              <div class="body">
-                <div class="title">${escapeHtml(e.title)}</div>
-                ${e.memo ? `<div class="memo">${escapeHtml(e.memo)}</div>` : ""}
-              </div>
-              ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : ""}
-              <button class="del" data-id="${e.id}">삭제</button>
+            <div class="event-row sched-row" data-id="${e.id}">
+              <div class="t">${e.event_time ? e.event_time.slice(0, 5) : "종일"}</div>
+              <button type="button" class="sched-open" data-id="${e.id}">
+                <span class="title">${escapeHtml(e.title)}</span>
+                ${(cat || isRange) ? `<span class="sched-meta">${isRange ? `<span class="sched-phase">${phase}</span><span>${calRangeLabel(e)}</span>` : ""}${cat ? eventCategoryHtml(cat) : ""}</span>` : ""}
+                ${e.memo ? `<span class="memo">${escapeHtml(e.memo)}</span>` : ""}
+              </button>
+              <button type="button" class="sched-more" data-id="${e.id}" aria-haspopup="menu" aria-label="${escapeHtml(e.title)} 메뉴(수정·삭제)">⋯</button>
             </div>`;
           }).join("")}
         </div>
-      </div>
-    `).join("");
-    document.querySelectorAll("#scheduleList .del").forEach(btn => {
-      btn.onclick = async () => {
-        if (!confirm("이 일정을 삭제할까요?")) return;
-        const { error } = await sb.from("tok_events").delete().eq("id", btn.dataset.id);
-        if (error) { alert("삭제 실패: " + error.message); return; }
-        await loadAll();
-      };
-    });
+      </section>`;
+    }).join("");
 
-    // 클릭 → 제목 인라인 수정
-    document.querySelectorAll("#scheduleList .title").forEach(titleEl => {
-      titleEl.onclick = () => {
-        const id = titleEl.closest(".event-row").dataset.id;
-        const current = titleEl.textContent;
-        const wrap = document.createElement("div");
-        wrap.className = "inline-add-wrap";
-        wrap.style.flex = "1"; wrap.style.minWidth = "0";
-        wrap.innerHTML = `<input type="text" class="inline-add-input" />`;
-        titleEl.replaceWith(wrap);
-        const input = wrap.querySelector("input");
-        input.value = current;
-        input.focus(); input.select();
-        let done = false;
-        const commit = async () => {
-          if (done) return;
-          const title = input.value.trim();
-          const titleChanged = title && title !== current;
-          if (!titleChanged) { renderSchedule(); return; }
-          done = true;
-          const { error } = await sb.from("tok_events").update({ title }).eq("id", id);
-          if (error) { alert("수정 실패: " + error.message); done = false; return; }
-          await loadAll();
-        };
-        input.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") { e.preventDefault(); commit(); }
-          else if (e.key === "Escape") { done = true; renderSchedule(); }
-        });
-        input.addEventListener("blur", () => commit());
+    const list = $("scheduleList");
+    list.querySelectorAll(".day-add").forEach(btn => {
+      btn.onclick = () => openEventEditor({ mode: "add", date: btn.dataset.date, opener: btn });
+    });
+    list.querySelectorAll(".sched-open").forEach(btn => {
+      btn.onclick = () => openEventDetail(btn.dataset.id, btn);
+    });
+    list.querySelectorAll(".sched-more").forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const r = btn.getBoundingClientRect();
+        showScheduleRowMenu(r.right - 120, r.bottom + 2, btn.dataset.id, btn);
       };
     });
-    // 오른쪽 클릭 → 삭제 메뉴
-    document.querySelectorAll("#scheduleList .event-row").forEach(row => {
+    // PC 오른쪽 클릭도 같은 수정/삭제 메뉴
+    list.querySelectorAll(".sched-row").forEach(row => {
       row.oncontextmenu = (e) => {
         e.preventDefault();
-        showDeleteMenu(e.clientX, e.clientY, async () => {
-          if (!confirm("이 일정을 삭제할까요?")) return;
-          const { error } = await sb.from("tok_events").delete().eq("id", row.dataset.id);
-          if (error) { alert("삭제 실패: " + error.message); return; }
-          await loadAll();
-        });
+        showScheduleRowMenu(e.clientX, e.clientY, row.dataset.id, row.querySelector(".sched-more"));
       };
     });
   }
+  $("schedAddBtn").onclick = (e) => openEventEditor({ mode: "add", date: schedDefaultAddDate(), opener: e.currentTarget });
+
+  // 날짜 그룹으로 스크롤(scroll-margin-top 덕분에 고정 상단바 아래에 제목이 옴)
+  function schedScrollToDate(dateStr, { focus = false, onlyIfHidden = false } = {}) {
+    const el = document.getElementById(`sched-day-${dateStr}`);
+    if (!el) return;
+    if (onlyIfHidden) {
+      const r = el.getBoundingClientRect();
+      const bar = document.querySelector(".bottombar");
+      const visibleBottom = window.innerHeight - (bar && getComputedStyle(bar).display !== "none" ? bar.offsetHeight : 0); // 고정 요소라 offsetParent로는 판별 불가
+      if (r.top >= 64 && r.top < visibleBottom - 60) return;
+    }
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    el.scrollIntoView({ block: "start", behavior });
+    if (focus) el.querySelector(".day-label")?.focus({ preventScroll: true });
+  }
+
+  // ⋯ 메뉴: 수정 / 삭제 (항상 보이던 삭제 버튼 대신)
+  function showScheduleRowMenu(x, y, id, anchor) {
+    document.querySelector(".ctx-menu")?.remove();
+    const menu = document.createElement("div");
+    menu.className = "ctx-menu sched-menu";
+    menu.setAttribute("role", "menu");
+    menu.innerHTML = `<button type="button" role="menuitem" class="default" data-act="edit">수정</button><button type="button" role="menuitem" data-act="delete">삭제</button>`;
+    document.body.appendChild(menu);
+    positionCtxMenu(menu, x, y);
+    const close = () => { menu.remove(); anchor?.focus({ preventScroll: true }); };
+    menu.querySelector('[data-act="edit"]').onclick = (e) => { e.stopPropagation(); menu.remove(); openEventEditor({ mode: "edit", id, opener: anchor }); };
+    menu.querySelector('[data-act="delete"]').onclick = async (e) => { e.stopPropagation(); menu.remove(); await deleteEventWithConfirm(id); };
+    menu.addEventListener("keydown", (e) => {
+      const items = [...menu.querySelectorAll("button")];
+      const i = items.indexOf(document.activeElement);
+      if (e.key === "Escape") { e.preventDefault(); close(); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+    });
+    menu.querySelector("button").focus({ preventScroll: true });
+    attachCtxMenuOutsideClose(menu);
+  }
+  async function deleteEventWithConfirm(id) {
+    const ev = events.find(x => x.id === id);
+    if (!confirm(`"${ev ? ev.title : "이 일정"}"을(를) 삭제할까요?`)) return false;
+    const { error } = await sb.from("tok_events").delete().eq("id", id);
+    if (error) { alert("삭제 실패: " + error.message); return false; }
+    await loadAll(); // 조회 월·선택 날짜는 상태로 남아있어서 그대로, 스크롤도 그대로
+    return true;
+  }
+
+  // 일정 상세 보기(목록에서 일정 누르면): 전체 제목·기간·시간·범주·반복·메모
+  let evDetail = { id: null, opener: null };
+  function openEventDetail(id, opener) {
+    const e = events.find(x => x.id === id);
+    if (!e) return;
+    evDetail = { id, opener: opener || null };
+    const thisYear = todayStr().slice(0, 4);
+    const end = evEndDate(e);
+    const withYear = e.event_date.slice(0, 4) !== thisYear || end.slice(0, 4) !== thisYear; // 기간 양끝 연도 표시를 맞춤
+    const full = (d) => (withYear ? `${d.slice(0, 4)}년 ` : "") + calDateLabel(d);
+    const days = Math.round((new Date(end + "T00:00:00") - new Date(e.event_date + "T00:00:00")) / 86400000) + 1;
+    const cat = eventCategoryOf(e);
+    const unitLabel = { day: "일", week: "주", month: "개월", year: "년" }[e.repeat_unit] || "";
+    const repeat = e.repeat_unit ? `${(e.repeat_interval || 1) > 1 ? e.repeat_interval : ""}${unitLabel}마다` : "";
+    $("evd_title").textContent = e.title;
+    $("evd_list").innerHTML = `
+      <dt>날짜</dt><dd>${end > e.event_date ? `${full(e.event_date)} ~ ${full(end)} (${days}일)` : full(e.event_date)}</dd>
+      <dt>시간</dt><dd>${e.event_time ? e.event_time.slice(0, 5) : "종일"}</dd>
+      <dt>범주</dt><dd>${cat ? eventCategoryHtml(cat) : "없음"}</dd>
+      ${repeat ? `<dt>반복</dt><dd>${repeat}</dd>` : ""}
+      <dt>메모</dt><dd class="memo">${e.memo ? escapeHtml(e.memo) : `<span style="color:var(--sub);">없음</span>`}</dd>`;
+    $("evDetailBg").classList.add("open");
+    $("evd_close").focus();
+  }
+  function closeEventDetail(restoreFocus = true) {
+    $("evDetailBg").classList.remove("open");
+    const o = evDetail.opener;
+    if (restoreFocus && o && document.body.contains(o)) o.focus({ preventScroll: true });
+  }
+  $("evd_close").onclick = () => closeEventDetail();
+  $("evd_edit").onclick = () => { const { id, opener } = evDetail; closeEventDetail(false); openEventEditor({ mode: "edit", id, opener }); };
+  $("evd_delete").onclick = async () => { if (await deleteEventWithConfirm(evDetail.id)) closeEventDetail(false); };
+  $("evDetailBg").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); closeEventDetail(); } });
+  $("evDetailBg").addEventListener("click", (e) => { if (e.target === $("evDetailBg")) closeEventDetail(); }); // 읽기 전용이라 바깥 누르면 닫기
 
   // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가).
   function showScheduleMode(mode) {
@@ -4639,7 +4848,8 @@
     $("scheduleModeCalendarBtn").setAttribute("aria-pressed", String(mode === "calendar"));
     $("scheduleListMode").style.display = mode === "list" ? "block" : "none";
     $("scheduleCalendarMode").style.display = mode === "calendar" ? "block" : "none";
-    if (mode === "calendar") renderScheduleCalendar();
+    // 조회 월(calCursor)은 두 보기가 공유 — 전환해도 그대로
+    if (mode === "calendar") renderScheduleCalendar(); else renderSchedule();
   }
   $("scheduleModeListBtn").onclick = () => showScheduleMode("list");
   $("scheduleModeCalendarBtn").onclick = () => showScheduleMode("calendar");
@@ -4674,14 +4884,56 @@
         return at < bt ? -1 : at > bt ? 1 : 0;
       });
   }
-  // 이전/다음 달 이동: 오늘이 있는 달이면 오늘, 아니면 그 달 1일을 선택.
-  function calGoToMonth(monthStart) {
+  // 조회 월 이동(목록·캘린더 공통): 캘린더는 오늘이 있는 달이면 오늘, 아니면 그 달 1일을 선택.
+  // 목록은 새 달의 처음부터 보이게 맨 위로.
+  function schedGoToMonth(monthStart) {
     calCursor = calMonthOf(monthStart);
     calExpanded.clear();
     const t = todayStr();
     calSelected = calMonthOf(t) === calCursor ? t : calCursor;
-    renderScheduleCalendar();
+    if (scheduleMode === "calendar") renderScheduleCalendar();
+    else { renderSchedule(); if (window.scrollY > 0) window.scrollTo(0, 0); }
   }
+  function renderSchedMonthBar() {
+    const [y, m] = calCursor.split("-").map(Number);
+    $("calMonthLabel").textContent = `${y}년 ${m}월`;
+    $("calMonthLabel").setAttribute("aria-label", `${y}년 ${m}월, 연·월 선택`);
+  }
+  // 월 제목 → 연·월 선택(먼 달로 바로 이동)
+  let smpYear = null;
+  function renderMonthPicker() {
+    const [cy, cm] = calCursor.split("-").map(Number);
+    const t = todayStr();
+    const ty = Number(t.slice(0, 4)), tm = Number(t.slice(5, 7));
+    $("smpYearLabel").textContent = `${smpYear}년`;
+    $("smpMonths").innerHTML = Array.from({ length: 12 }, (_, i) => i + 1).map(mm => {
+      const cur = smpYear === cy && mm === cm, isThis = smpYear === ty && mm === tm;
+      return `<button type="button" data-m="${mm}"${cur ? ` aria-current="true"` : ""} class="${isThis ? "this-month" : ""}" aria-label="${smpYear}년 ${mm}월${isThis ? "(이번 달)" : ""}">${mm}월</button>`;
+    }).join("");
+    $("smpMonths").querySelectorAll("button").forEach(b => {
+      b.onclick = () => { closeMonthPicker(true); schedGoToMonth(`${smpYear}-${pad2(Number(b.dataset.m))}-01`); };
+    });
+  }
+  function openMonthPicker() {
+    smpYear = Number(calCursor.slice(0, 4));
+    renderMonthPicker();
+    $("schedMonthPicker").hidden = false;
+    $("calMonthLabel").setAttribute("aria-expanded", "true");
+    ($("smpMonths").querySelector('[aria-current="true"]') || $("smpMonths").querySelector("button")).focus();
+    setTimeout(() => document.addEventListener("click", monthPickerOutside), 0);
+  }
+  function closeMonthPicker(restoreFocus = false) {
+    if ($("schedMonthPicker").hidden) return;
+    $("schedMonthPicker").hidden = true;
+    $("calMonthLabel").setAttribute("aria-expanded", "false");
+    document.removeEventListener("click", monthPickerOutside);
+    if (restoreFocus) $("calMonthLabel").focus({ preventScroll: true });
+  }
+  function monthPickerOutside(e) { if (!e.target.closest(".sched-month-title-wrap")) closeMonthPicker(); }
+  $("calMonthLabel").onclick = () => ($("schedMonthPicker").hidden ? openMonthPicker() : closeMonthPicker(true));
+  $("smpPrevYear").onclick = () => { smpYear--; renderMonthPicker(); };
+  $("smpNextYear").onclick = () => { smpYear++; renderMonthPicker(); };
+  $("schedMonthPicker").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); closeMonthPicker(true); } });
   // 날짜 선택(다른 달 칸이면 그 달로 이동). reveal: "top"=목록 시작으로 스크롤, "auto"=목록 제목이 안 보일 때만 살짝.
   function calSelectDate(dateStr, reveal = null) {
     if (calMonthOf(dateStr) !== calCursor) { calCursor = calMonthOf(dateStr); calExpanded.clear(); }
@@ -4712,7 +4964,7 @@
     const [y, m] = calCursor.split("-").map(Number);
     const t = todayStr();
     if (!calSelected || calMonthOf(calSelected) !== calMonthOf(calCursor)) calSelected = calMonthOf(t) === calMonthOf(calCursor) ? t : calMonthOf(calCursor);
-    $("calMonthLabel").textContent = `${y}년 ${m}월`;
+    renderSchedMonthBar();
     const firstOfMonth = new Date(y, m - 1, 1);
     const startWeekday = firstOfMonth.getDay(); // 0=일요일
     const daysInMonth = new Date(y, m, 0).getDate();
@@ -4841,7 +5093,7 @@
     }
     $("calDayList").querySelectorAll(".cal-day-item").forEach(row => {
       const id = row.dataset.id;
-      row.querySelector('[data-act="edit"]').onclick = (e) => openCalEventSheet("edit", id, e.currentTarget);
+      row.querySelector('[data-act="edit"]').onclick = (e) => openEventEditor({ mode: "edit", id, opener: e.currentTarget });
       row.querySelector('[data-act="more"]').onclick = (e) => {
         e.stopPropagation();
         const r = e.currentTarget.getBoundingClientRect();
@@ -4856,24 +5108,30 @@
       };
     });
   }
-  $("calDayAddBtn").onclick = (e) => openCalEventSheet("add", null, e.currentTarget);
+  $("calDayAddBtn").onclick = (e) => openEventEditor({ mode: "add", date: calSelected, opener: e.currentTarget });
 
-  // 일정 추가/수정 시트 — 저장은 [저장] 버튼(또는 제목에서 Enter)으로만, 포커스를 잃어도 저장하지 않음.
+  // 일정 추가/수정 시트(목록·캘린더 공용) — 저장은 [저장] 버튼(또는 제목에서 Enter)으로만, 포커스를 잃어도 저장하지 않음.
+  // 추가할 때 기본 시작일은 호출하는 쪽이 date로 넘김(목록: 오늘/조회 월 1일/그룹 날짜, 캘린더: 선택한 날짜).
   let calEvSheet = { mode: "add", id: null, saving: false, opener: null };
-  function calEvSheetTitleFor(dateStr) { return dateStr ? `${calDateLabel(dateStr, false)}에 일정 추가` : "일정 추가"; }
-  function openCalEventSheet(mode, id, opener) {
+  function calEvSheetTitleFor(dateStr) {
+    if (!dateStr) return "일정 추가";
+    return (dateStr.slice(0, 4) !== todayStr().slice(0, 4) ? `${dateStr.slice(0, 4)}년 ` : "") + `${calDateLabel(dateStr, false)}에 일정 추가`;
+  }
+  function openEventEditor({ mode = "add", id = null, date = null, opener = null } = {}) {
     const ev = mode === "edit" ? events.find(x => x.id === id) : null;
     if (mode === "edit" && !ev) return;
+    const addDate = date || todayStr();
     calEvSheet = { mode, id: ev ? ev.id : null, saving: false, opener: opener || null };
     const keep = ev ? (ev.category_id || null) : null;
     $("cev_category").innerHTML = `<option value="">범주 없음</option>` + assignableTagPool(eventCategories, keep)
       .map(c => `<option value="${c.id}">${escapeHtml(tagPickLabel(c))}</option>`).join("");
     $("cev_title").value = ev ? ev.title : "";
-    $("cev_date").value = ev ? ev.event_date : calSelected;
+    $("cev_date").value = ev ? ev.event_date : addDate;
     $("cev_end").value = ev ? (ev.end_date || "") : "";
     $("cev_time").value = ev && ev.event_time ? ev.event_time.slice(0, 5) : "";
     $("cev_category").value = keep || "";
-    $("calEvSheetTitle").textContent = mode === "edit" ? "일정 수정" : calEvSheetTitleFor(calSelected);
+    $("cev_memo").value = ev ? (ev.memo || "") : "";
+    $("calEvSheetTitle").textContent = mode === "edit" ? "일정 수정" : calEvSheetTitleFor(addDate);
     $("cev_error").textContent = "";
     $("cev_save").disabled = false;
     $("cev_save").textContent = "저장";
@@ -4886,8 +5144,8 @@
     $("calEventSheetBg").classList.remove("open");
     fitCalEventSheetToViewport();
     const opener = calEvSheet.opener;
-    // 목록이 다시 그려졌으면 원래 버튼 대신 추가 버튼으로 포커스를 돌려줌
-    (opener && document.body.contains(opener) ? opener : $("calDayAddBtn")).focus({ preventScroll: true });
+    // 목록이 다시 그려졌으면 원래 버튼 대신 지금 보기의 추가 버튼으로 포커스를 돌려줌
+    (opener && document.body.contains(opener) ? opener : (scheduleMode === "calendar" ? $("calDayAddBtn") : $("schedAddBtn"))).focus({ preventScroll: true });
   }
   async function saveCalEvent() {
     if (calEvSheet.saving) return; // 저장 중 중복 제출 방지
@@ -4899,23 +5157,32 @@
     if (!title) { showErr("일정 제목을 입력해주세요.", $("cev_title")); return; }
     if (!event_date) { showErr("시작 날짜를 입력해주세요.", $("cev_date")); return; }
     if (end_date && end_date < event_date) { showErr("종료 날짜는 시작 날짜보다 빠를 수 없어요.", $("cev_end")); return; }
-    const row = { title, event_date, end_date, event_time: time || null, category_id: $("cev_category").value || null };
+    const row = { title, event_date, end_date, event_time: time || null, category_id: $("cev_category").value || null, memo: $("cev_memo").value.trim() || null };
     calEvSheet.saving = true;
     $("cev_error").textContent = "";
     $("cev_save").disabled = true;
     $("cev_save").textContent = "저장 중…";
-    let error;
+    const isAdd = calEvSheet.mode !== "edit";
+    let error, data;
     try {
-      ({ error } = calEvSheet.mode === "edit"
-        ? await sb.from("tok_events").update(row).eq("id", calEvSheet.id)
-        : await sb.from("tok_events").insert({ ...row, memo: null }));
+      ({ data, error } = isAdd
+        ? await sb.from("tok_events").insert(row).select().single()
+        : await sb.from("tok_events").update(row).eq("id", calEvSheet.id));
     } catch (err) { error = err; }
     calEvSheet.saving = false;
     $("cev_save").disabled = false;
     $("cev_save").textContent = "저장";
     if (error) { showErr("저장하지 못했어요. 입력한 내용은 그대로 있어요. (" + (error.message || error) + ")"); return; }
     closeCalEventSheet();
-    await loadAll(); // 선택한 날짜 유지 → 달력과 목록이 함께 갱신
+    // 새 일정이 조회 월 밖이면 그 시작일의 달로 이동해서 바로 확인할 수 있게(캘린더는 그 날짜 선택).
+    const movedMonth = isAdd && calMonthOf(event_date) !== calMonthOf(calCursor);
+    if (movedMonth) { calCursor = calMonthOf(event_date); calExpanded.clear(); calSelected = event_date; }
+    await loadAll(); // 그 외에는 조회 월·선택 날짜·스크롤 유지 → 달력과 목록이 함께 갱신
+    if (isAdd && scheduleMode === "list") {
+      if (movedMonth) window.scrollTo(0, 0);
+      schedScrollToDate(event_date, { onlyIfHidden: !movedMonth });
+      if (data?.id) document.querySelector(`#sched-day-${event_date} .sched-row[data-id="${data.id}"]`)?.classList.add("just-added");
+    }
   }
   $("cev_save").onclick = saveCalEvent;
   $("cev_cancel").onclick = closeCalEventSheet;
@@ -4967,9 +5234,10 @@
     });
     input.addEventListener("blur", () => commit());
   }
-  $("calPrevBtn").onclick = () => calGoToMonth(addMonthsStr(calCursor, -1));
-  $("calNextBtn").onclick = () => calGoToMonth(addMonthsStr(calCursor, 1));
-  $("calTodayBtn").onclick = () => { calExpanded.clear(); calSelectDate(todayStr()); };
+  $("calPrevBtn").onclick = () => { closeMonthPicker(); schedGoToMonth(addMonthsStr(calCursor, -1)); };
+  $("calNextBtn").onclick = () => { closeMonthPicker(); schedGoToMonth(addMonthsStr(calCursor, 1)); };
+  // [이번 달] — 캘린더의 예전 [오늘] 버튼을 대신함(캘린더에서는 오늘이 선택됨)
+  $("schedThisMonthBtn").onclick = () => { closeMonthPicker(); schedGoToMonth(todayStr()); };
 
   // 메모 목록(일정 탭의 "메모" 뷰) — 일정 목록(renderSchedule)과 동일한 패턴, 범주 풀만 공유해서 씀.
   // ── 할일/습관은 2026-09-12부터 사이드바에서 각각 별도 탭(data-page="todos"/"habits")으로 분리됨. 전용 전환 토글 없음 ──
@@ -5215,24 +5483,8 @@
     });
   }
 
-  // ── 일정/습관 화면 상단 인라인 추가 입력 (팝업 없이 바로 입력) ──
-  $("ev_date").value = todayStr();
-  $("eventAddBtn").onclick = async () => {
-    const title = $("ev_title").value.trim();
-    const event_date = $("ev_date").value;
-    const end_date = $("ev_end").value || null;
-    if (!title || !event_date) { alert("날짜와 제목은 꼭 입력해주세요."); return; }
-    if (end_date && end_date < event_date) { alert("종료 날짜는 시작 날짜보다 빠를 수 없어요."); return; }
-    const { error } = await sb.from("tok_events").insert({
-      event_date, end_date, event_time: $("ev_time").value || null, title, memo: null,
-    });
-    if (error) { alert("저장 실패: " + error.message); return; }
-    $("ev_title").value = "";
-    $("ev_end").value = "";
-    await loadAll();
-    $("ev_title").focus();
-  };
-  $("ev_title").addEventListener("keydown", (e) => { if (e.key === "Enter") $("eventAddBtn").click(); });
+  // ── 습관 화면 상단 인라인 추가 입력 (팝업 없이 바로 입력) ──
+  // (일정 목록의 상시 입력칸은 2026-09-27에 [+ 일정 추가] 버튼 + 공용 추가 창으로 바뀜)
 
   $("taskAddBtn").onclick = async () => {
     const name = $("tk_name").value.trim();
