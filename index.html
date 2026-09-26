@@ -14,8 +14,12 @@
      없어서 각 테마 배경에 맞게 직접 조정한 값(나중에 눈으로 보면서 미세조정 가능). */
   :root, [data-theme="white"]{
     /* 하양 — 기본 라이트 */
-    --bg:#FFFFFF; --card:#FFFFFF; --line:#E8E8E8; --text:#222222; --sub:#777777;
-    --accent:#222222; --accent-soft:#ECECEC; --danger:#f28b82; --ok:#8fd6b7;
+    --bg:#FAFAF9; --card:#FFFFFF; --line:#E7E7E5; --text:#2A2A2A; --sub:#737373;
+    --accent:#2A2A2A; --accent-soft:#EFEFED; --danger:#f28b82; --ok:#8fd6b7;
+    /* 2026-09-26 — --accent-text: 옅은 바탕 위 강조 글자(파스텔 accent를 그대로 글자에 쓰면 흐려서 테마별 진한 톤),
+       --accent-on: accent 바탕 버튼 위 글자색. 간격·모서리 기준값(4·8·12·16·24·32 / 카드 18·버튼 12·태그 999). */
+    --accent-text:#2A2A2A; --accent-on:#FFFFFF;
+    --r-card:18px; --r-btn:12px; --r-pill:999px;
     --font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;
     /* 2026-09-23 — 집 화면 4탭(시간블럭/언젠가/타임라인/다가오는) 활성 색상 기본값. 하늘/보라/분홍은
        이 파스텔 4색을 그대로 상속해서 씀(각자 블록에서 안 건드림). 하양/검정만 바로 아래
@@ -28,22 +32,26 @@
   [data-theme="black"]{
     /* 검정 — 기본 다크 */
     --bg:#171717; --card:#222222; --line:#383838; --text:#F5F5F5; --sub:#AAAAAA;
-    --accent:#FFFFFF; --accent-soft:#333333; --danger:#f28b82; --ok:#8fd6b7;
+    --accent:#F5F5F5; --accent-soft:#333333; --danger:#f28b82; --ok:#8fd6b7;
+    --accent-text:#FFFFFF; --accent-on:#1A1A1A;
   }
   [data-theme="sky"]{
     /* 하늘 — 맑고 가벼운 느낌 */
-    --bg:#FAFCFF; --card:#FFFFFF; --line:#DDEEFF; --text:#222222; --sub:#777777;
+    --bg:#FAFCFF; --card:#FFFFFF; --line:#E1ECF7; --text:#2A2A2A; --sub:#737373;
     --accent:#8AC8FF; --accent-soft:#E3F1FF; --danger:#f28b82; --ok:#8fd6b7;
+    --accent-text:#2A6AA6; --accent-on:#0F2F4D;
   }
   [data-theme="purple"]{
     /* 보라 — 차분하고 몽글몽글한 느낌 */
-    --bg:#FCFAFF; --card:#FFFFFF; --line:#E9DFFF; --text:#222222; --sub:#777777;
+    --bg:#FCFAFF; --card:#FFFFFF; --line:#ECE5F8; --text:#2A2A2A; --sub:#737373;
     --accent:#B9A0E8; --accent-soft:#F1ECFC; --danger:#f28b82; --ok:#8fd6b7;
+    --accent-text:#6A4FAE; --accent-on:#2B1A4F;
   }
   [data-theme="pink"]{
     /* 분홍 — 따뜻하고 귀여운 느낌 */
-    --bg:#FFFBFC; --card:#FFFFFF; --line:#F5DEE3; --text:#222222; --sub:#777777;
+    --bg:#FFFBFC; --card:#FFFFFF; --line:#F3E3E7; --text:#2A2A2A; --sub:#737373;
     --accent:#F2A6B8; --accent-soft:#FCEAEE; --danger:#f28b82; --ok:#8fd6b7;
+    --accent-text:#B24766; --accent-on:#4D1426;
   }
   /* 2026-09-23 — 하양/검정은 배경이 무채색이라 파스텔 탭이 알록달록하게 튀어서, 대신
      accent를 불투명도만 다르게 섞어(color-mix) 4단계 무채색 톤으로 구분(결 요청). */
@@ -64,14 +72,18 @@
      안 골랐을 때 쓰는 기본값은 위 :root 블록의 --font-family 하나로 모든 테마가 공유(테마 바뀌어도 폰트는
      안 바뀜). 로고(.brand-logo)는 Gaegu를 따로 지정해 두어서 이 설정의 영향을 받지 않음. */
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-family);}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-family);font-size:14px;line-height:1.5;}
+  /* 2026-09-26 — 입력칸 기본색을 테마 변수로(검정 테마에서 흰 입력칸이 튀지 않게). 개별 클래스 규칙이 뒤에서 덮어씀. */
+  input, select, textarea, button{font-family:inherit;}
+  :is(input[type=text], input[type=search], input[type=email], input[type=password], input[type=date], input[type=time], input[type=number], textarea, select){background-color:var(--card);color:var(--text);}
+  [data-theme="black"] :is(input, select, textarea){color-scheme:dark;}
 
   /* ── 로그인 ── */
   #authBox{max-width:360px;margin:80px auto;padding:24px;background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 6px 20px rgba(150,130,200,.08);}
   #authBox h1{font-size:18px;margin:0 0 16px;}
   #authBox input{width:100%;padding:10px 12px;margin-bottom:8px;border:1px solid var(--line);border-radius:12px;font-size:14px;}
-  #authBox button{width:100%;padding:10px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:14px;cursor:pointer;margin-top:4px;}
-  #authBox .alt{background:none;color:var(--accent);font-size:12px;padding:6px;}
+  #authBox button{width:100%;padding:10px;border:none;border-radius:12px;background:var(--accent);color:var(--accent-on);font-size:14px;cursor:pointer;margin-top:4px;}
+  #authBox .alt{background:none;color:var(--accent-text);font-size:12px;padding:6px;}
   #authMsg{font-size:12px;color:var(--danger);min-height:16px;margin-top:4px;}
 
   /* ── 레이아웃 ──
@@ -96,7 +108,7 @@
   .topbar-quickadd{flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 14px;max-width:480px;}
   .topbar-quickadd input{flex:1;border:none;background:transparent;outline:none;font-size:13px;color:var(--text);font-family:inherit;min-width:0;}
   .topbar-quickadd input::placeholder{color:var(--sub);}
-  .topbar-quickadd button{flex-shrink:0;border:none;border-radius:999px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;}
+  .topbar-quickadd button{flex-shrink:0;border:none;border-radius:999px;background:var(--accent);color:var(--accent-on);font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;}
   .topbar-quickadd button:active{transform:scale(.97);}
   /* 사이드바용 퀵 인풋 — 사이드바 가로 폭(180px, 안쪽 패딩 12px씩 뺀 만큼)에 맞춰 인풋/버튼 모두 width:100%로
      세로로 쌓음(가로로 나란히 놓기엔 폭이 좁아서). 사이드바 자체가 ≤760px에서 display:none이라 그때는
@@ -108,7 +120,7 @@
   body.qa-on .sidebar-quickadd{display:block;}
   .sidebar-quickadd input{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:8px 10px;font-size:12.5px;color:var(--text);font-family:inherit;outline:none;margin-bottom:6px;}
   .sidebar-quickadd input::placeholder{color:var(--sub);}
-  .sidebar-quickadd button{width:100%;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;padding:8px 0;cursor:pointer;font-family:inherit;}
+  .sidebar-quickadd button{width:100%;border:none;border-radius:12px;background:var(--accent);color:var(--accent-on);font-size:12.5px;font-weight:700;padding:8px 0;cursor:pointer;font-family:inherit;}
   .sidebar-quickadd button:active{transform:scale(.97);}
   @media (max-width:760px){
     .topbar{gap:8px;padding:0 14px;}
@@ -125,7 +137,7 @@
   .navitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:var(--sub);font-size:14px;cursor:pointer;margin-bottom:4px;transition:background .15s,color .15s;}
   .nav-icon{flex-shrink:0;}
   .bottombar .nav-icon{vertical-align:-4px;}
-  .navitem.active{background:var(--accent-soft);color:var(--accent);font-weight:600;box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 15%,transparent);}
+  .navitem.active{background:var(--accent-soft);color:var(--accent-text);font-weight:600;box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 15%,transparent);}
   .content{flex:1;min-width:0;padding:20px 24px 100px;max-width:1100px;}
   .pagehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
   .pagehead h2{font-size:18px;margin:0;}
@@ -164,7 +176,7 @@
   /* ── 집 : 다가오는 일정 ── */
   .upcoming-row{display:flex;align-items:baseline;gap:8px;padding:8px 4px;border-bottom:1px solid var(--line);font-size:13px;}
   .upcoming-row:last-child{border-bottom:none;}
-  .upcoming-row .d{color:var(--accent);font-weight:600;flex-shrink:0;font-size:12px;}
+  .upcoming-row .d{color:var(--accent-text);font-weight:600;flex-shrink:0;font-size:12px;}
   .upcoming-row .t{color:var(--sub);flex-shrink:0;font-size:11px;}
   .upcoming-row .ti{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
@@ -179,20 +191,20 @@
      알 수 있게 "＋ 눌러서 추가해요" 보조 문구를 항상 보여줌(예전엔 호버 시에만 티 났음). 너무 연하면
      놓치니까 --sub 색(보조 문구 톤)으로. PC에선 마우스 올리면 배경+테두리로 한 번 더 강조. */
   .block-add-row{min-height:16px;padding:8px 6px;cursor:pointer;border-radius:8px;font-size:12px;color:var(--sub);border:1px solid transparent;text-align:center;} /* 09-24: "＋ 눌러서 추가해요"도 빈 상태 문구(.agenda-empty-block)처럼 가운데 정렬(결님 요청) */
-  .block-add-row:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
+  .block-add-row:hover{background:var(--accent-soft);color:var(--accent-text);border-color:var(--accent);}
   /* 09-24 — 빈칸 추가 입력창(openAddInput) 옆 "추가" 버튼. 종류는 입력창을 열기 전 메뉴(showAddKindMenu)에서 고름. */
-  .inline-add-wrap .addkind-submit{padding:4px 10px;border:none;border-radius:6px;background:var(--accent);color:var(--card);font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:inherit;}
+  .inline-add-wrap .addkind-submit{padding:4px 10px;border:none;border-radius:6px;background:var(--accent);color:var(--accent-on);font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:inherit;}
   .card.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft);}
 
   /* ── 집 : 목록/타임라인 보기 전환 ── */
   .view-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
   .view-toggle-row .view-toggle{flex:none;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:3px;gap:8px;}
   .view-toggle-row .view-toggle button{border:none;background:transparent;border-radius:11px;color:var(--sub);padding:5px 14px;font-size:13px;}
-  .view-toggle-row .view-toggle button.active{background:var(--card);color:var(--accent);box-shadow:0 1px 5px rgba(150,130,200,.18);}
+  .view-toggle-row .view-toggle button.active{background:var(--card);color:var(--accent-text);box-shadow:0 1px 5px rgba(150,130,200,.18);}
   .view-toggle{display:flex;gap:6px;flex:1;}
-  .view-toggle button{flex:1;padding:8px 0;border:1px solid var(--line);background:#fff;border-radius:12px;font-size:13px;color:var(--sub);cursor:pointer;}
-  .view-toggle button.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft);font-weight:600;}
-  .today-btn{flex:none;padding:8px 16px;border:none;background:var(--accent-soft);border-radius:999px;font-size:13px;color:var(--accent);font-weight:700;cursor:pointer;}
+  .view-toggle button{flex:1;padding:8px 0;border:1px solid var(--line);background:var(--card);border-radius:12px;font-size:13px;color:var(--sub);cursor:pointer;}
+  .view-toggle button.active{background:var(--accent-soft);color:var(--accent-text);border-color:var(--accent-soft);font-weight:600;}
+  .today-btn{flex:none;padding:8px 16px;border:none;background:var(--accent-soft);border-radius:999px;font-size:13px;color:var(--accent-text);font-weight:700;cursor:pointer;}
   .today-btn:hover{background:color-mix(in srgb, var(--accent) 15%, var(--accent-soft));}
   /* ── 오늘 열 : 하루종일 + 타임블럭(사용자 스크린샷 시안 참고 — 항목별 둥근 카드형) ── */
   .agenda-flat{display:flex;flex-direction:column;}
@@ -201,7 +213,7 @@
   .ag-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:14px 2px 8px;}
   .ag-section-head:first-child{margin-top:0;}
   .ag-section-head .label{font-size:13px;color:var(--text);font-weight:700;}
-  .ag-section-head .count{font-size:11px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:1px 8px;font-weight:700;flex-shrink:0;}
+  .ag-section-head .count{font-size:11px;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:1px 8px;font-weight:700;flex-shrink:0;}
   .ag-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
   /* 하루종일·타임블럭 체크박스: 다가오는 계획과 같은 네이티브 체크박스+accent-color 방식(옆의 일정 네모와 크기만 20px로 맞춤). */
   .ag-allday-row input[type=checkbox],.ag-block-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
@@ -218,7 +230,7 @@
   .ag-mday-row{display:flex;gap:10px;align-items:flex-start;overflow-x:auto;padding-bottom:2px;}
   .ag-allday-col,.ag-block-col,.ag-tl-col{flex:1 1 0;min-width:150px;}
   .ag-mday-col-head{font-size:11px;font-weight:700;color:var(--sub);text-align:center;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--line);}
-  .ag-mday-col-head.is-today{color:var(--accent);}
+  .ag-mday-col-head.is-today{color:var(--accent-text);}
   .ag-mday-col-head .ag-today-tag{font-size:9px;background:var(--accent-soft);border-radius:999px;padding:1px 6px;margin-left:4px;}
   /* 체크박스와 같은 네모 모양·크기·간격으로 통일(할일/습관은 체크박스로 토글, 일정은 늘 범주색으로 차 있는 네모). */
   .agenda-event-dot-wrap{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -246,7 +258,7 @@
   /* ── 집 : 언젠가 할일 ── */
   .someday-add-row{display:flex;gap:6px;margin-bottom:8px;}
   .someday-add-row input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:12px;font-size:13px;}
-  .someday-add-row button{padding:0 14px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;cursor:pointer;}
+  .someday-add-row button{padding:0 14px;border:none;border-radius:12px;background:var(--accent);color:var(--accent-on);font-size:13px;cursor:pointer;}
   .someday-row{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--line);font-size:13px;}
   .someday-row:last-child{border-bottom:none;}
   .someday-row input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
@@ -254,13 +266,22 @@
   .someday-row .tag-dot-sm{flex:0 0 auto;}
   /* 언젠가 정렬/그룹필터 툴바(집 카드+할일 탭 공용) */
   .tag-dot-sm{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-  .someday-toolbar{display:flex;justify-content:flex-end;margin-bottom:6px;}
-  .someday-sort-select{font-size:11px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--sub);cursor:pointer;}
-  .someday-tag-chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;}
-  .someday-tag-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--sub);cursor:pointer;}
+  /* 2026-09-26 — 정렬 메뉴·그룹 칩 가독성 정리(집·할일 탭 공용): 흰색 하드코딩(#fff)을 테마 변수로 바꿔 검정 테마에서
+     밝은 칸이 남지 않게 하고, 글씨를 키우고 클릭 영역을 넓힘. 선택 칩은 테두리·배경·굵기 세 가지로 구분. */
+  .someday-toolbar{display:flex;justify-content:flex-end;margin-bottom:8px;}
+  .someday-sort-select{font-size:13px;min-height:32px;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;}
+  [data-theme="black"] .someday-sort-select{color-scheme:dark;}
+  .someday-tag-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .someday-tag-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;line-height:1.3;min-height:30px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;}
+  .someday-tag-chip:hover{border-color:color-mix(in srgb, var(--accent) 45%, var(--line));}
   .someday-tag-chip.archived{border-style:dashed;}
-  .someday-tag-chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700;}
-  .someday-more-row{text-align:center;font-size:12px;color:var(--accent);cursor:pointer;padding:6px 0;}
+  .someday-tag-chip.active{background:color-mix(in srgb, var(--accent) 16%, var(--card));border-color:color-mix(in srgb, var(--accent) 70%, var(--text));color:var(--text);font-weight:700;}
+  .someday-tag-chip[hidden], .someday-chip-more[hidden]{display:none;}
+  .someday-chip-more{display:inline-flex;align-items:center;min-height:30px;padding:4px 10px;border:none;border-radius:999px;background:transparent;color:var(--sub);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .someday-chip-more:hover{color:var(--text);background:color-mix(in srgb, var(--text) 6%, var(--card));}
+  /* 펼쳤을 때 칩이 아주 많아도 아래 목록이 카드 밖으로 밀려나지 않게 칩 영역 자체에 높이 제한 + 내부 스크롤 */
+  .someday-tag-chips.is-expanded{max-height:176px;overflow-y:auto;}
+  .someday-more-row{text-align:center;font-size:12px;color:var(--accent-text);cursor:pointer;padding:6px 0;}
   .someday-more-row:hover{text-decoration:underline;}
   .someday-row.done span{color:var(--sub);text-decoration:line-through;}
 
@@ -270,8 +291,8 @@
   .inline-add-row input[type=text]{flex:1;min-width:120px;}
   .inline-add-row input[type=date],.inline-add-row input[type=time]{flex:0 0 auto;}
   .inline-add-row input[type=number]{width:64px;flex:0 0 auto;}
-  .inline-add-row button{padding:0 14px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;cursor:pointer;flex-shrink:0;}
-  .inline-add-input{width:100%;padding:5px 7px;border:1px solid var(--accent);border-radius:6px;font-size:13px;font-family:inherit;background:#fff;min-width:0;}
+  .inline-add-row button{padding:0 14px;border:none;border-radius:12px;background:var(--accent);color:var(--accent-on);font-size:13px;cursor:pointer;flex-shrink:0;}
+  .inline-add-input{width:100%;padding:5px 7px;border:1px solid var(--accent);border-radius:6px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);min-width:0;}
   .tl-inline-add{padding:0 4px;}
   .tl-inline-add .inline-add-input{padding:2px 6px;font-size:12px;}
   .inline-add-wrap{display:flex;align-items:center;gap:4px;}
@@ -279,12 +300,12 @@
 
   /* ── 클릭=수정, 오른쪽클릭=삭제 메뉴 ── */
   .todo-row .name, .event-row .title, .someday-title, .plan-row.todo .plan-todo-title{cursor:pointer;}
-  .todo-row .name:hover, .event-row .title:hover, .someday-title:hover, .plan-row.todo .plan-todo-title:hover{color:var(--accent);}
-  .ctx-menu{position:fixed;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.14);padding:4px;z-index:30;max-height:60vh;overflow-y:auto;}
+  .todo-row .name:hover, .event-row .title:hover, .someday-title:hover, .plan-row.todo .plan-todo-title:hover{color:var(--accent-text);}
+  .ctx-menu{position:fixed;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.14);padding:4px;z-index:30;max-height:60vh;overflow-y:auto;}
   .ctx-menu button{display:block;width:100%;padding:8px 16px;border:none;background:none;color:var(--danger);font-size:13px;text-align:left;cursor:pointer;border-radius:6px;white-space:nowrap;}
   .ctx-menu button:hover{background:var(--bg);}
   .ctx-menu button.default{color:var(--text);}
-  .ctx-menu button.selected{background:var(--accent-soft);font-weight:700;color:var(--accent);}
+  .ctx-menu button.selected{background:var(--accent-soft);font-weight:700;color:var(--accent-text);}
   .ctx-menu button .ctx-tag-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle;}
 
   /* ── 집 : 2열 레이아웃 (1열 오늘, 2열 언젠가+다가오는 계획을 세로로 쌓음) ── */
@@ -297,25 +318,29 @@
 
   /* ── 집 : 2열 탭 구조 재설계(2026-09-20, 1단계) — 1열 오늘/다가오는/언젠가, 2열 타임라인/포커스.
      목업(Claude 아티팩트 "오늘한칸 — 홈 재설계") 기준 파스텔 탭 색상·둥근 카드 톤 적용. ── */
-  .home2-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  .home2-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start;}
   /* 09-24: 모바일 상단 "목록"/"타임라인·다가오는" 세그먼트 토글 제거(결님 요청 — 눌러도 탭이 안 바뀌고
      불필요하다고 판단). 원인: 이 media query 안의 .home2-col{display:none}이 아래(라인 근처)의
      비-media-query .home2-col{display:flex}보다 소스 순서상 먼저 나와서 항상 뒤 규칙에 덮여
      두 열이 늘 같이 보였음 — 즉 토글이 원래도 실질적으로 아무 효과가 없었음. 대신 모바일에서는
      그냥 2열을 세로로 자연스럽게 쌓기만 함. */
   @media (max-width:900px){
-    .home2-grid{grid-template-columns:1fr;}
+    .home2-grid{grid-template-columns:minmax(0,1fr);gap:16px;}
   }
-  .home2-col{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 6px 20px rgba(150,130,200,.08);display:flex;flex-direction:column;gap:14px;}
+  /* 2026-09-26 — 카드 구분은 얇은 테두리 중심, 그림자는 거의 안 보이게. 내부 여백 20px(모바일 14px), 모서리 20px. */
+  .home2-col{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.03);display:flex;flex-direction:column;gap:14px;}
+  @media (max-width:760px){
+    .home2-col{padding:14px;border-radius:18px;gap:12px;}
+  }
   /* 결님 요청(2026-09-20) — 1열/2열 각각의 역할을 이름표로 구분: 1열="할일 보관함"(모아두는 곳),
      2열="실행 공간"(오늘 실제로 하는 곳). 탭 바로 위에 작은 라벨만 추가, 레이아웃/기능은 그대로. */
-  .home2-col-label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:var(--text);margin-bottom:-2px;}
-  .home2-tabs{display:flex;gap:8px;}
-  .home2-tab{flex:1;padding:9px 0;border:none;border-radius:14px;font-size:13px;font-weight:700;color:var(--sub);background:transparent;cursor:pointer;font-family:inherit;}
-  .home2-tab.active.tab-block{background:var(--tab-block-bg);color:var(--tab-block-text);}
-  .home2-tab.active.tab-upcoming{background:var(--tab-upcoming-bg);color:var(--tab-upcoming-text);}
-  .home2-tab.active.tab-someday{background:var(--tab-someday-bg);color:var(--tab-someday-text);}
-  .home2-tab.active.tab-timeline{background:var(--tab-timeline-bg);color:var(--tab-timeline-text);}
+  /* 2026-09-26 — 영역 이름 "담아두기 / 지금, 한칸"(17px/700), 탭은 옅은 바탕 세그먼트 + 선택 탭만 카드색·선명한 글씨·얇은 테두리.
+     색은 전부 테마 변수(--text/--card/--accent/--line)에서 섞어서 5개 테마(검정 포함)에 그대로 맞음. */
+  .home2-col-label{display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;line-height:1.4;color:var(--text);}
+  .home2-tabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:color-mix(in srgb, var(--text) 5%, var(--card));border:1px solid color-mix(in srgb, var(--line) 70%, transparent);}
+  .home2-tab{flex:1;min-height:38px;padding:0 8px;border:1px solid transparent;border-radius:11px;font-size:14px;font-weight:600;color:var(--sub);background:transparent;cursor:pointer;font-family:inherit;transition:background .15s,color .15s;}
+  .home2-tab:hover{color:var(--text);}
+  .home2-tab.active{background:var(--card);color:var(--text);border-color:color-mix(in srgb, var(--accent) 40%, var(--line));font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.04);}
   .home2-tabpanel{min-width:0;}
   /* 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간/타임라인) 높이에 맞추고, 언젠가·다가오는은
      그 높이만큼 기본으로 펼쳐진 뒤 넘치는 분량만 내부 스크롤. #homeCol1의 실제 height는 JS(syncHomeCol1Height)가
@@ -332,15 +357,15 @@
   .home2-placeholder{border:1.5px dashed var(--line);border-radius:14px;padding:28px 14px;text-align:center;color:var(--sub);font-size:13px;line-height:1.6;}
   /* ── 시간블럭 탭(2026-09-20, 2단계; 09-24 목록형 서브뷰 삭제로 진행률 배지만 남음) — 목업(파스텔 톤) 색상 그대로 적용. ── */
   .home2-today-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
-  .home2-progress-badge{display:inline-flex;align-items:center;background:#FFF1E8;color:#B75B3D;font-size:13px;font-weight:700;padding:6px 12px;border-radius:12px;white-space:nowrap;}
+  .home2-progress-badge{display:inline-flex;align-items:center;background:color-mix(in srgb, #B75B3D 14%, var(--card));color:color-mix(in srgb, #B75B3D 75%, var(--text));font-size:13px;font-weight:700;padding:6px 12px;border-radius:12px;white-space:nowrap;}
   /* ── 4단계(2026-09-20) — 1열 3탭(오늘/다가오는/언젠가) 행 앞 드래그 손잡이 아이콘(장식용, 목업 참고). ── */
-  .drag-handle-dots{color:#D9D2EC;flex-shrink:0;}
+  .drag-handle-dots{color:color-mix(in srgb, var(--sub) 45%, transparent);flex-shrink:0;}
   .agenda-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .agenda-date-wrap{display:flex;align-items:center;gap:6px;}
   .agenda-date-emoji{font-size:13px;}
   /* 09-24: 타임라인 탭 날짜(#agendaDateLabel)에만 있던 굵게·13px 규칙 삭제 — "다가오는"·"시간블럭" 탭 날짜와 같은 글꼴로 통일(결님 요청). */
-  .agenda-nav{background:none;border:none;color:var(--sub);cursor:pointer;font-size:16px;line-height:1;padding:2px 8px;border-radius:8px;}
-  .agenda-nav:hover{color:var(--accent);background:var(--accent-soft);}
+  .agenda-nav{background:none;border:none;color:var(--sub);cursor:pointer;font-size:20px;line-height:1;width:36px;height:36px;padding:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;}
+  .agenda-nav:hover{color:var(--accent-text);background:var(--accent-soft);}
   .agenda-row{display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:13px;}
   .agenda-row:last-child{border-bottom:none;}
   .agenda-row.done{opacity:.5;text-decoration:line-through;}
@@ -374,14 +399,19 @@
   .agenda-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   /* ── 집 : 오늘 열의 타임블럭/타임라인(습관+일정 통합, 드래그로 이동/조절 가능) ── */
-  .ag-tl-grid{display:grid;grid-template-columns:34px 1fr;grid-auto-rows:9px;position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 0;overflow:hidden;}
+  .ag-tl-grid{display:grid;grid-template-columns:46px 1fr;grid-auto-rows:9px;position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 0 6px;overflow:hidden;}
+  /* 2026-09-26 — 시간 라벨 12px(열 34→46px), 정시 선은 보이게·30분 선은 더 연하게. 슬롯 높이(AG_TL_ROW_PX=9)와
+     항목 위치 계산은 그대로라 표시 시간·드래그 저장 시간은 바뀌지 않음(라벨·선 모양만 바뀜). */
+  .ag-tl-grid .tl-row-label{font-size:12px;line-height:16px;transform:translateY(-8px);padding-right:8px;font-variant-numeric:tabular-nums;}
+  .ag-tl-grid .tl-row-line{border-top-color:color-mix(in srgb, var(--line) 45%, transparent);}
+  .ag-tl-grid .tl-row-line.hour{border-top-color:var(--line);}
   /* 같은 시간대에 겹치는 항목을 나란히 배치하려고 grid-row 대신 이 안에서 절대좌표(top/left/width)로 배치함 */
   .ag-tl-content{grid-column:2;grid-row:1 / -1;position:relative;}
-  .ag-tl-task{display:flex;align-items:flex-start;gap:6px;background:var(--accent-soft);border:1px solid #dfe3fb;border-radius:8px;padding:2px 6px;font-size:12px;line-height:1.3;position:absolute;box-sizing:border-box;overflow:hidden;z-index:1;touch-action:pan-y;cursor:pointer;}
+  .ag-tl-task{display:flex;align-items:flex-start;gap:6px;background:var(--accent-soft);border:1px solid var(--line);border-radius:8px;padding:2px 6px;font-size:12px;line-height:1.3;position:absolute;box-sizing:border-box;overflow:hidden;z-index:1;touch-action:pan-y;cursor:pointer;}
   .ag-tl-now-line{position:absolute;left:0;right:0;height:2px;background:var(--danger);z-index:3;pointer-events:none;}
   .ag-tl-now-line::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--danger);}
   .ag-tl-task.done{opacity:.55;text-decoration:line-through;}
-  .ag-tl-task.event{background:#fff;border-style:dashed;}
+  .ag-tl-task.event{background:var(--card);border-style:dashed;}
   .ag-tl-task.dragging{opacity:.85;box-shadow:0 3px 10px rgba(60,50,100,.18);z-index:5;cursor:grabbing;touch-action:none;}
   /* 09-24 버그 수정: 카드 높이가 고정이라 제목이 여러 줄로 접히면 마지막 줄이 반쯤 잘려 보였고, 띄어쓰기 없는 긴 제목은
      카드 밖으로 삐져나갔음(flex 자식 기본 min-width:auto) — 카드 높이에 들어가는 줄 수까지만 보이고 끝은 말줄임
@@ -398,7 +428,7 @@
   /* ── 집 : 다가오는 계획 (7일 보드, 습관 탭의 #planBoard와는 별도 인스턴스) ── */
   .planup-day{padding:8px 4px;border-bottom:1px solid var(--line);touch-action:pan-y;}
   .planup-day:last-child{border-bottom:none;}
-  .plan-time{font-size:11px;color:var(--accent);font-weight:700;flex-shrink:0;}
+  .plan-time{font-size:11px;color:var(--accent-text);font-weight:700;flex-shrink:0;}
   .planup-day:last-child{border-bottom:none;}
   .planup-day.drag-hi{background:var(--accent-soft);border-radius:8px;}
   .planup-day-label{font-size:12px;color:var(--text);font-weight:700;margin-bottom:4px;}
@@ -418,7 +448,7 @@
   .plan-row.home1-flat-row, .task-row.home1-flat-row{border-radius:7px;padding:2px 6px;margin:0 -6px;}
   .plan-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
   .plan-row.done .plan-todo-title{color:var(--sub);text-decoration:line-through;}
-  .plan-row.habit{color:var(--accent);}
+  .plan-row.habit{color:var(--accent-text);}
   .planup-drag-row{touch-action:pan-y;cursor:grab;}
   .planup-drag-row.dragging{opacity:.5;cursor:grabbing;touch-action:none;}
   .plan-todo-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -450,7 +480,7 @@
   .cal-cell.other-month .cal-cell-num{color:var(--sub);opacity:.55;}
   .cal-cell-num{font-size:11px;color:var(--sub);flex-shrink:0;align-self:flex-start;min-width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
   /* 오늘 = 날짜 숫자 원형. 글자색은 --card라서 검정 테마(accent 흰색)에서도 흰 원 위 어두운 숫자로 보임. */
-  .cal-cell.today .cal-cell-num{color:var(--card);background:var(--accent);border-radius:50%;width:17px;font-weight:700;opacity:1;}
+  .cal-cell.today .cal-cell-num{color:var(--accent-on);background:var(--accent);border-radius:50%;width:17px;font-weight:700;opacity:1;}
   /* 선택한 날(모바일) = 옅은 배경 + 안쪽 테두리. 오늘을 선택하면 원형 숫자와 함께 보임. */
   .cal-cell.selected{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent);}
   .cal-chip{display:flex;align-items:center;gap:3px;min-width:0;max-width:100%;flex-shrink:0;font-size:10px;line-height:14px;padding:1px 4px;border-radius:5px;background:var(--accent-soft);overflow:hidden;cursor:pointer;}
@@ -458,7 +488,7 @@
   .cal-chip:focus-visible{outline:2px solid var(--accent);outline-offset:-1px;}
   .cal-chip .dot{width:6px;height:6px;flex:0 0 6px;border-radius:50%;}
   .cal-chip-title{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .cal-more{font-size:10px;line-height:12px;color:var(--accent);cursor:pointer;padding:0 2px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cal-more{font-size:10px;line-height:12px;color:var(--accent-text);cursor:pointer;padding:0 2px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .cal-more:hover{text-decoration:underline;}
   .cal-add-input{width:100%;min-width:0;font-size:11px;padding:2px 4px;border:1px solid var(--accent);border-radius:5px;font-family:inherit;}
   /* 보기 전환 [목록][캘린더] — 한 줄 고정, "캘린더" 글자 꺾임 방지 */
@@ -478,28 +508,28 @@
   .smp-months{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
   .smp-months button{min-height:40px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;font-family:inherit;font-size:13px;cursor:pointer;}
   .smp-months button.this-month{border-color:var(--accent);}
-  .smp-months button[aria-current="true"]{background:var(--accent);color:var(--card);border-color:var(--accent);font-weight:700;}
+  .smp-months button[aria-current="true"]{background:var(--accent);color:var(--accent-on);border-color:var(--accent);font-weight:700;}
   .smp-year button:hover, .smp-months button:hover{background:var(--accent-soft);}
   .smp-months button[aria-current="true"]:hover{background:var(--accent);}
   .smp-year button:focus-visible, .smp-months button:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
   /* 목록 상단(월 건수 + 일정 추가) · 오늘 이후로 이동 */
   .sched-list-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 2px 8px;}
   .sched-count{font-size:12.5px;color:var(--sub);min-width:0;}
-  .sched-add-btn{flex:none;border:none;background:var(--accent);color:var(--card);border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;padding:0 16px;min-height:38px;cursor:pointer;white-space:nowrap;}
+  .sched-add-btn{flex:none;border:none;background:var(--accent);color:var(--accent-on);border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;padding:0 16px;min-height:38px;cursor:pointer;white-space:nowrap;}
   .sched-add-btn:focus-visible, .sched-jump-btn:focus-visible, .day-add:focus-visible, .sched-open:focus-visible, .sched-more:focus-visible, .sched-empty button:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
   .sched-jump-row{margin:0 2px 12px;}
   .sched-jump-row:empty{display:none;}
   .sched-jump-btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;font-family:inherit;font-size:12.5px;padding:0 14px;min-height:36px;cursor:pointer;white-space:nowrap;}
   .sched-jump-note{font-size:12.5px;color:var(--sub);}
-  .sched-empty button{margin-top:12px;border:none;background:var(--accent);color:var(--card);border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;padding:0 18px;min-height:40px;cursor:pointer;}
+  .sched-empty button{margin-top:12px;border:none;background:var(--accent);color:var(--accent-on);border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;padding:0 18px;min-height:40px;cursor:pointer;}
   /* 날짜 그룹 — 같은 날 일정은 카드 하나에. 스크롤 시 고정 상단바에 제목이 가리지 않게 scroll-margin */
   .day-group{scroll-margin-top:calc(var(--header-h) + 12px);}
   .day-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 2px 4px;}
   .day-head .day-label{margin:0;font-size:13px;color:var(--text);font-weight:700;display:flex;align-items:center;gap:6px;min-width:0;}
   .day-head .day-label:focus{outline:none;}
-  .today-badge{font-size:10.5px;font-weight:700;color:var(--card);background:var(--accent);border-radius:999px;padding:2px 7px;line-height:1.3;}
+  .today-badge{font-size:11px;font-weight:700;color:var(--accent-on);background:var(--accent);border-radius:999px;padding:2px 7px;line-height:1.3;}
   .day-add{flex:none;width:36px;height:36px;border:none;background:none;color:var(--sub);border-radius:10px;font-size:20px;line-height:1;cursor:pointer;}
-  .day-add:hover{background:var(--accent-soft);color:var(--accent);}
+  .day-add:hover{background:var(--accent-soft);color:var(--accent-text);}
   /* 지난 날짜: 제목만 옅은 색 + 카드 바탕을 살짝 눌러서 구분(일정 글자는 그대로 읽히게, 완료 표시 없음) */
   .day-group.past .day-label{color:var(--sub);}
   .day-group.past .card{background:color-mix(in srgb, var(--card) 94%, var(--sub));box-shadow:none;}
@@ -511,7 +541,7 @@
   .sched-open{flex:1;min-width:0;display:block;text-align:left;border:none;background:none;color:var(--text);font-family:inherit;padding:4px 0;cursor:pointer;border-radius:8px;}
   .sched-open .title{display:block;font-size:14px;line-height:1.45;overflow-wrap:anywhere;word-break:keep-all;}
   .sched-meta{display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;margin-top:3px;font-size:11.5px;color:var(--sub);}
-  .sched-phase{font-size:10.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:1px 7px;}
+  .sched-phase{font-size:10.5px;font-weight:700;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:1px 7px;}
   [data-theme="black"] .sched-phase{color:var(--text);}
   .sched-open .memo{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere;font-size:12px;color:var(--sub);margin-top:3px;}
   .sched-more{flex:none;min-width:40px;min-height:40px;border:none;background:none;color:var(--sub);font-size:18px;letter-spacing:-1px;border-radius:10px;cursor:pointer;}
@@ -611,22 +641,22 @@
   .todo-row .name{font-size:14px;}
   .todo-row .block-tag{font-size:11px;color:var(--sub);}
   .todo-row.inactive .name{color:var(--sub);}
-  .togglebtn{border:1px solid var(--line);background:#fff;border-radius:999px;font-size:11px;padding:4px 10px;cursor:pointer;color:var(--sub);flex-shrink:0;}
-  .togglebtn.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft);}
+  .togglebtn{border:1px solid var(--line);background:var(--card);border-radius:999px;font-size:11px;padding:4px 10px;cursor:pointer;color:var(--sub);flex-shrink:0;}
+  .togglebtn.on{background:var(--accent-soft);color:var(--accent-text);border-color:var(--accent-soft);}
   .del{border:none;background:none;color:var(--danger);font-size:12px;cursor:pointer;flex-shrink:0;}
-  .settingsbtn{border:1px solid var(--line);background:#fff;border-radius:999px;font-size:12px;width:26px;height:26px;line-height:1;cursor:pointer;color:var(--sub);flex-shrink:0;}
+  .settingsbtn{border:1px solid var(--line);background:var(--card);border-radius:999px;font-size:12px;width:26px;height:26px;line-height:1;cursor:pointer;color:var(--sub);flex-shrink:0;}
   /* 2026-09-23: 흰 글자+진한 배경(원색)에서 → 옅은 배경(색상 18%만 섞음)+진한 글자색으로 변경(결님 요청, 목록이 너무 쨍하지 않게) */
   .habit-cat-chip{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;}
   /* 습관 예정 상태 배지(2026-09-12, 앵커 기준 며칠 밀렸는지/다음 회차까지 며칠) — 빨강=밀림, 파랑=오늘·예정 */
   .habit-due-chip{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600;vertical-align:middle;}
-  .habit-due-chip.due-overdue{background:#fde2e2;color:#c0392b;}
+  .habit-due-chip.due-overdue{background:color-mix(in srgb, #c0392b 14%, var(--card));color:color-mix(in srgb, #c0392b 80%, var(--text));}
   .habit-due-chip.due-today{background:#dce9fb;color:#2f6fd1;}
   .habit-due-chip.due-upcoming{background:#e8ecf5;color:#4a5a7a;}
   /* 집 화면 미완료 알림 배너(2026-09-13, 6단계 → 7-4단계에서 할일/습관 각각 따로 물어보는 2개로 분리) — 하루 첫 접속 시 1번만, 닫으면(예/✕ 둘 다) 그날은 다시 안 뜸 */
-  .home-incomplete-banner{display:flex;align-items:center;gap:8px;background:#fde2e2;color:#c0392b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;}
+  .home-incomplete-banner{display:flex;align-items:center;gap:8px;background:color-mix(in srgb, #c0392b 12%, var(--card));color:color-mix(in srgb, #c0392b 80%, var(--text));border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;}
   .home-incomplete-banner .txt{flex:1;min-width:0;}
   .home-incomplete-banner .yes{border:none;background:#c0392b;color:#fff;font-size:12px;font-weight:600;border-radius:7px;padding:5px 12px;cursor:pointer;flex-shrink:0;}
-  .home-incomplete-banner .close{border:none;background:none;color:#c0392b;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px;flex-shrink:0;}
+  .home-incomplete-banner .close{border:none;background:none;color:inherit;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px;flex-shrink:0;}
   /* 할일/습관 목록 공용: 정렬/그룹화 그룹 섹션 제목, 할일 날짜 배지(2026-09-12) */
   .list-section-head{font-size:12px;font-weight:600;color:var(--sub);margin:14px 2px 6px;}
   .list-section-head:first-child{margin-top:2px;}
@@ -640,9 +670,9 @@
   .hs-cat-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .hs-cat-view-tabs{display:flex;gap:4px;margin-bottom:4px;}
   .hs-cat-view-tabs button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:999px;font-size:11.5px;padding:3px 10px;cursor:pointer;font-family:inherit;}
-  .hs-cat-view-tabs button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700;}
+  .hs-cat-view-tabs button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text);font-weight:700;}
   .hs-cat-archive,.hs-cat-unarchive,.hs-cat-purge{flex-shrink:0;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:8px;font-size:11.5px;padding:5px 8px;cursor:pointer;font-family:inherit;white-space:nowrap;}
-  .hs-cat-archive:hover,.hs-cat-unarchive:hover{border-color:var(--accent);color:var(--accent);}
+  .hs-cat-archive:hover,.hs-cat-unarchive:hover{border-color:var(--accent);color:var(--accent-text);}
   .hs-cat-purge{border-color:transparent;background:none;}
   .hs-cat-purge:hover{color:var(--danger);background:var(--accent-soft);}
   .hs-cat-archived-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;margin:0 7px 0 21px;}
@@ -667,7 +697,7 @@
   .color-preset-popover{position:fixed;display:none;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.16);padding:12px;width:230px;max-height:70vh;overflow-y:auto;z-index:500;}
   .color-preset-popover.open{display:block;}
   .color-preset-custom-btn{display:block;width:100%;margin-top:8px;padding:7px 0;border:1px dashed var(--line);border-radius:8px;background:none;font-size:12px;color:var(--sub);cursor:pointer;font-family:inherit;}
-  .color-preset-custom-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .color-preset-custom-btn:hover{border-color:var(--accent);color:var(--accent-text);}
   .color-preset-set{margin-top:8px;}
   .color-preset-set-label{display:block;font-size:10.5px;color:var(--sub);margin-bottom:4px;}
   .color-preset-row{display:flex;gap:6px;flex-wrap:wrap;width:100%;}
@@ -679,7 +709,7 @@
   .hs-block-row{display:flex;align-items:center;gap:6px;}
   .hs-block-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .hs-block-row input[type="time"]{flex:none;width:96px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
-  .historybtn{border:1px solid var(--line);background:#fff;border-radius:999px;font-size:12px;width:26px;height:26px;line-height:1;cursor:pointer;color:var(--sub);flex-shrink:0;}
+  .historybtn{border:1px solid var(--line);background:var(--card);border-radius:999px;font-size:12px;width:26px;height:26px;line-height:1;cursor:pointer;color:var(--sub);flex-shrink:0;}
 
   /* ── 습관 기록(히스토리) 캘린더 ── */
   /* 2026-09-13(7단계): 이번 달 완료 횟수 1개짜리 요약 → 시작일부터 지금까지 누적 통계(달성률/완료/평균 지연)
@@ -691,7 +721,7 @@
   .habit-history-next{font-size:11px;color:var(--sub);margin-bottom:10px;}
   .habit-history-nav{display:grid;grid-template-columns:32px 1fr 32px;align-items:center;margin-bottom:8px;}
   .habit-history-nav button{border:none;background:none;font-size:18px;color:var(--sub);cursor:pointer;height:32px;border-radius:8px;}
-  .habit-history-nav button:hover{background:var(--accent-soft);color:var(--accent);}
+  .habit-history-nav button:hover{background:var(--accent-soft);color:var(--accent-text);}
   .habit-history-nav strong{text-align:center;font-size:13px;}
   .hh-month-block{margin-bottom:16px;}
   .hh-month-block:last-child{margin-bottom:0;}
@@ -709,12 +739,12 @@
   .habit-history-check{position:absolute;bottom:0;right:2px;font-size:8px;}
   .habit-history-note{font-size:11px;color:var(--sub);margin-top:12px;line-height:1.5;}
 
-  .fab{position:fixed;right:20px;bottom:24px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:26px;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 45%,transparent);cursor:pointer;z-index:8;}
+  .fab{position:fixed;right:20px;bottom:24px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:var(--accent-on);border:none;font-size:26px;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 45%,transparent);cursor:pointer;z-index:8;}
   @media (max-width:760px){ .fab{bottom:calc(78px + env(safe-area-inset-bottom));} }
 
   .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;justify-content:center;z-index:20;}
   .sheet-bg.open{display:flex;}
-  .sheet{background:#fff;width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:18px 16px 24px;max-height:88vh;overflow-y:auto;}
+  .sheet{background:var(--card);width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:18px 16px 24px;max-height:88vh;overflow-y:auto;}
   .sheet h2{font-size:15px;margin:0 0 12px;}
   .field{margin-bottom:10px;}
   .field label{font-size:12px;color:var(--sub);display:block;margin-bottom:4px;}
@@ -727,7 +757,7 @@
   .weekday-picker input[type="checkbox"]{width:auto;margin:0;}
   .sheet-actions{display:flex;gap:8px;margin-top:14px;}
   .sheet-actions button{flex:1;padding:11px;border-radius:12px;border:none;font-size:14px;cursor:pointer;}
-  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary{background:var(--accent);color:var(--accent-on);}
   .btn-ghost{background:var(--bg);color:var(--sub);}
   /* 09-24: 설정 > 글꼴 — 내 컴퓨터 설치 글꼴 목록에서 고르기. 모바일에서도 버튼이 줄바꿈되고 목록은 내부 스크롤. */
   .font-picker{display:flex;flex-direction:column;gap:10px;}
@@ -746,14 +776,14 @@
   .font-list{max-height:240px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:4px;background:var(--bg);}
   .font-option{display:block;width:100%;text-align:left;border:none;background:none;border-radius:8px;padding:8px 10px;font-size:14px;color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .font-option:hover{background:var(--accent-soft);}
-  .font-option[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:700;}
+  .font-option[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-text);font-weight:700;}
   .font-list-note{font-size:11px;color:var(--sub);}
   .font-list-empty{font-size:12px;color:var(--sub);padding:10px;text-align:center;}
   .font-preview-label{font-size:12px;color:var(--sub);overflow-wrap:anywhere;}
   .font-preview{border:1px dashed var(--line);border-radius:12px;padding:14px;font-size:17px;line-height:1.5;color:var(--text);background:var(--bg);overflow-wrap:anywhere;}
   .font-actions{display:flex;flex-wrap:wrap;gap:6px;}
   .font-actions .font-btn{flex:1 1 120px;}
-  .font-apply-btn{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;}
+  .font-apply-btn{background:var(--accent);color:var(--accent-on);border-color:var(--accent);font-weight:700;}
   .font-manual summary{font-size:12px;color:var(--sub);cursor:pointer;}
   .font-manual-row{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end;margin-top:8px;}
   .font-manual-row > div{flex:1 1 180px;min-width:0;}
@@ -762,6 +792,210 @@
   /* 09-24: 저장 완료 등을 잠깐 알려주는 작은 팝업(토스트) — 화면 아래 가운데, 모바일 하단 메뉴에 안 가리게 살짝 위로. */
   .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,8px);background:var(--text);color:var(--card);font-size:13px;font-weight:600;padding:9px 16px;border-radius:999px;box-shadow:0 6px 16px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:1000;white-space:nowrap;}
   .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  /* ── 2026-09-26 앱 전체 통일("차분하고 부드러운 다이어리") ──
+     같은 역할 = 같은 모양. 글씨: 페이지 제목 21px / 영역 제목 16px / 본문 14~15px / 보조 12~13px.
+     모서리: 카드 --r-card(18px), 버튼 --r-btn(12px), 태그·칩 둥근 알약. 그림자는 거의 없이 얇은 테두리로 구분.
+     색은 전부 테마 변수(--accent-text: 옅은 바탕 위 강조 글자, --accent-on: 강조 버튼 위 글자)라 5개 테마 공통. */
+  .page-title{font-size:21px;font-weight:700;line-height:1.35;color:var(--text);margin:0 2px 16px;letter-spacing:-.01em;}
+  .section-label{font-size:16px;font-weight:700;color:var(--text);margin:24px 2px 8px;}
+  .section-label:first-child, .page-title + .section-label{margin-top:0;}
+  .card{border-radius:var(--r-card);box-shadow:0 1px 2px rgba(0,0,0,.03);padding:16px;margin-bottom:12px;}
+  .sidebar{box-shadow:none;}
+  .navitem{min-height:40px;font-size:14px;}
+  .navitem.active{background:var(--accent-soft);color:var(--accent-text);font-weight:600;box-shadow:none;}
+  .topbar-settings{background:transparent;border:1px solid var(--line);color:var(--sub);}
+  .topbar-settings:hover{background:var(--accent-soft);}
+  /* 주 버튼(추가·저장·적용): 강조색 바탕, 40px(모바일 44px), 모서리 12px */
+  :is(.sched-add-btn, .someday-add-row button, .inline-add-row button, .sched-empty button, .btn-primary, .font-apply-btn, #authBox button:not(.alt), .sidebar-quickadd button){
+    min-height:40px;border-radius:var(--r-btn);border:1px solid var(--accent);background:var(--accent);color:var(--accent-on);font-size:14px;font-weight:600;padding:0 16px;cursor:pointer;white-space:nowrap;}
+  :is(.sched-add-btn, .someday-add-row button, .inline-add-row button, .sched-empty button, .btn-primary, .font-apply-btn, #authBox button:not(.alt), .sidebar-quickadd button):hover{background:color-mix(in srgb, var(--accent) 88%, var(--text));}
+  /* 보조 버튼(이번 달·오늘 이후로·취소·글꼴 불러오기 등): 카드색 바탕 + 얇은 테두리 */
+  :is(.cal-today-btn, .sched-jump-btn, .btn-ghost, .font-btn:not(.font-apply-btn), .cal-day-add, .today-btn){
+    min-height:40px;height:auto;border-radius:var(--r-btn);border:1px solid var(--line);background:var(--card);color:var(--text);font-size:13.5px;font-weight:600;padding:0 14px;cursor:pointer;white-space:nowrap;}
+  :is(.cal-today-btn, .sched-jump-btn, .btn-ghost, .font-btn:not(.font-apply-btn), .cal-day-add, .today-btn):hover{background:color-mix(in srgb, var(--text) 5%, var(--card));}
+  .sheet-actions button{min-height:44px;border-radius:var(--r-btn);font-size:14px;font-weight:600;}
+  .sheet-actions .btn-ghost{border:1px solid var(--line);}
+  /* 작은 줄 안 버튼(보관하기·재개하기·그룹 보관 등) = 알약형 보조 버튼, 아이콘 버튼 = 32px 둥근 네모 */
+  :is(.togglebtn, .hs-cat-archive, .hs-cat-unarchive){min-height:32px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:var(--r-pill);font-size:12.5px;font-weight:600;padding:0 12px;}
+  .togglebtn.on{background:var(--accent-soft);border-color:color-mix(in srgb, var(--accent) 50%, var(--line));color:var(--accent-text);}
+  .icon-btn{width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:10px;cursor:pointer;flex-shrink:0;}
+  .icon-btn:hover{color:var(--text);background:color-mix(in srgb, var(--text) 5%, var(--card));}
+  .del{font-size:13px;min-height:32px;padding:0 6px;border-radius:8px;}
+  .del:hover{background:color-mix(in srgb, var(--danger) 12%, var(--card));}
+  /* 세그먼트 탭(할일 모두/예정된/언젠가, 습관 진행중/보관/종료, 일정 캘린더/목록) = 집 화면 탭과 같은 모양 */
+  .view-toggle, .view-toggle-row .view-toggle{display:flex;gap:4px;padding:4px;border-radius:14px;background:color-mix(in srgb, var(--text) 5%, var(--card));border:1px solid color-mix(in srgb, var(--line) 70%, transparent);}
+  .view-toggle button, .view-toggle-row .view-toggle button{flex:1;min-height:36px;padding:0 14px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--sub);font-size:14px;font-weight:600;cursor:pointer;box-shadow:none;}
+  .view-toggle button:hover{color:var(--text);}
+  .view-toggle button.active, .view-toggle-row .view-toggle button.active{background:var(--card);color:var(--text);border-color:color-mix(in srgb, var(--accent) 40%, var(--line));font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.04);}
+  /* 할일·언젠가 목록 줄(할일 탭): 집 화면 목록과 같은 글씨·점·높이 */
+  .someday-row{min-height:48px;gap:10px;padding:8px 4px;font-size:15px;line-height:1.5;border-bottom-color:color-mix(in srgb, var(--line) 75%, transparent);}
+  .someday-row input[type=checkbox]{width:20px;height:20px;}
+  .someday-row .someday-title{flex:1;min-width:0;color:var(--text);overflow-wrap:anywhere;}
+  .someday-row.done .someday-title{color:var(--sub);text-decoration:line-through;}
+  .someday-row .title-dot{flex:0 0 8px;margin:0 -4px 0 0;}
+  .someday-row .todo-date-badge{flex:none;}
+  .section-label > span{font-size:13px;}
+  .someday-row.done .title-dot{opacity:.4;}
+  .todo-date-badge{flex:none;font-size:12px;padding:2px 9px;margin-right:0;background:color-mix(in srgb, var(--text) 5%, var(--card));}
+  .list-section-head{font-size:13px;font-weight:700;color:var(--sub);margin:16px 2px 8px;}
+  /* 습관 목록 줄 */
+  .todo-row{min-height:60px;gap:8px;padding:12px 4px;border-bottom-color:color-mix(in srgb, var(--line) 75%, transparent);}
+  .todo-row .name{font-size:15px;font-weight:600;line-height:1.45;}
+  .todo-row .block-tag{font-size:12.5px;color:var(--sub);margin-top:2px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 0;}
+  .habit-cat-chip{display:inline-flex;align-items:center;gap:5px;margin-left:8px;padding:1px 9px;border-radius:var(--r-pill);font-size:12px;font-weight:600;color:var(--text);background:color-mix(in srgb, var(--text) 5%, var(--card));}
+  .habit-due-chip{font-size:11.5px;}
+  .habit-due-chip.due-today{background:color-mix(in srgb, #2f6fd1 12%, var(--card));color:color-mix(in srgb, #2f6fd1 75%, var(--text));}
+  .habit-due-chip.due-upcoming{background:color-mix(in srgb, var(--text) 6%, var(--card));color:var(--sub);}
+  /* 설정 */
+  .theme-card{border-width:1px;border-radius:16px;padding:14px;}
+  .theme-card.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);}
+  .theme-card .name{font-size:14px;}
+  .theme-card .desc{font-size:12px;}
+  .hs-cat-row input[type="text"], .hs-block-row input{min-height:36px;border-radius:10px;font-size:14px;}
+  .hs-cat-view-tabs button{min-height:30px;font-size:12.5px;padding:0 12px;}
+  .hs-cat-view-tabs button.active{background:var(--accent-soft);border-color:color-mix(in srgb, var(--accent) 60%, var(--line));color:var(--accent-text);}
+  .sheet{background:var(--card);color:var(--text);}
+  .sheet h2{font-size:17px;}
+  .field label{font-size:12.5px;}
+  .field input, .field textarea, .field select{min-height:44px;border-radius:var(--r-btn);}
+  .ctx-menu{border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.12);}
+  .ctx-menu button{min-height:38px;font-size:14px;border-radius:8px;}
+  .ctx-menu button:hover{background:color-mix(in srgb, var(--text) 5%, var(--card));}
+  .empty{font-size:14px;}
+  @media (max-width:760px){
+    .page-title{font-size:20px;margin-bottom:12px;}
+    :is(.sched-add-btn, .someday-add-row button, .inline-add-row button, .sched-empty button, .cal-today-btn, .sched-jump-btn, .cal-day-add){min-height:44px;}
+    .view-toggle button, .view-toggle-row .view-toggle button{min-height:40px;}
+    .todo-row{flex-wrap:wrap;}
+    .todo-row .info{flex-basis:100%;}
+  }
+
+  /* ── 2026-09-26 집 화면 목록 가독성 정리 ──
+     언젠가·다가오는·시간블럭 목록 줄(.home1-flat-row / .ag-block-row)만 대상(할일 탭 등 다른 화면의 같은 클래스는 안 건드림).
+     - 줄 최소 44px, 손잡이·체크박스·그룹 점·제목을 "첫 줄 가운데"에 맞춰 정렬(제목이 2줄이 돼도 체크박스가 위에 붙어 있음).
+     - 제목 15px/1.5, var(--text)로 통일, 최대 2줄 말줄임(전체 제목은 클릭 → 기존 이름 수정 입력창에서 확인).
+     - 그룹 색은 제목 앞 8px 점(.title-dot, titleDotHtml). 완료는 취소선+보조 글자색, 점도 흐리게.
+     - 타임라인 칸(.ag-tl-task)은 시간 길이로 높이가 정해지므로 여기 규칙이 전혀 적용되지 않음. */
+  .home2-grid :is(.home1-flat-row, .ag-block-row){display:flex;align-items:flex-start;gap:10px;min-height:44px;margin:0;padding:11px 6px;border-radius:10px;border-bottom:1px solid color-mix(in srgb, var(--line) 75%, transparent);font-size:15px;line-height:1.5;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row):hover{background:color-mix(in srgb, var(--text) 3%, var(--card));}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) > .drag-handle-dots{margin-top:4px;cursor:grab;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) > input[type=checkbox]{width:20px;height:20px;margin:1px 0 0;flex-shrink:0;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) > .agenda-event-dot-wrap{margin-top:1px;}
+  [data-theme="black"] .home2-grid input[type=checkbox]{color-scheme:dark;} /* 검정 테마: 빈 체크박스가 흰 네모로 튀지 않게 */
+  .title-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;margin:7px -4px 0 0;}
+  .title-dot.is-empty{background:transparent;}
+  .home2-grid .done > .title-dot{opacity:.4;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) :is(.agenda-title, .plan-todo-title){flex:1;min-width:0;font-size:15px;line-height:1.5;color:var(--text);white-space:normal;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row).done :is(.agenda-title, .plan-todo-title){color:var(--sub);text-decoration:line-through;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) .inline-add-wrap{align-self:center;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) .inline-add-input{font-size:15px;padding:4px 8px;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) :is(.plan-time, .plan-range-tag){font-size:12px;line-height:1.5;margin-top:3px;color:var(--sub);font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) .habit-due-chip{font-size:11px;margin:3px 0 0;flex-shrink:0;}
+  /* 목록 보조 정보(날짜 제목·건수·빈칸 안내·더보기) 12~13px */
+  .home2-grid .ag-section-head .label{font-size:13px;font-weight:700;}
+  .home2-grid .ag-section-head .count{font-size:12px;color:var(--sub);background:color-mix(in srgb, var(--text) 6%, var(--card));}
+  .home2-grid .block-add-row{font-size:13px;min-height:40px;display:flex;align-items:center;justify-content:center;}
+  .home2-grid .agenda-empty-block{font-size:13px;line-height:1.5;}
+  .home2-grid .someday-more-row{font-size:13px;color:var(--sub);font-weight:600;min-height:40px;display:flex;align-items:center;justify-content:center;}
+  .home2-grid .someday-more-row:hover{color:var(--text);}
+  #homeSomedayPanel > .someday-toolbar, #homeSomedayPanel > .someday-tag-chips{flex-shrink:0;}
+  /* 날짜 이동 줄: 날짜 가운데, 이전·다음 버튼 36px 정사각 클릭 영역 */
+  .home2-grid .agenda-head{min-height:40px;}
+  .home2-grid .agenda-date-wrap{font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
+  /* 타임라인 위 "하루종일": 제목 12px, 항목은 타임라인과 같은 배경색 구분을 유지하되 글씨만 13px로 */
+  .home2-grid .ag-section-head.tl-style .label{font-size:12px;}
+  .home2-grid .ag-allday-row.tl-style{padding:5px 8px;margin-bottom:4px;border-radius:10px;gap:8px;}
+  .home2-grid .ag-allday-row.tl-style .agenda-title{font-size:13px;line-height:1.5;color:var(--text);}
+  .home2-grid .ag-allday-row.tl-style.done .agenda-title{color:var(--sub);}
+  .home2-grid .ag-allday-row.tl-style input[type=checkbox]{width:16px;height:16px;margin:0;}
+
+  /* ── 2026-09-26 일정: 캘린더 기본 화면 디자인 ──
+     상단: [‹ 2026년 9월 ▾ ›][이번 달] ··· [캘린더|목록][+ 일정 추가] (모바일은 두 줄).
+     달력: 7열 같은 너비(minmax(0,1fr)), 얇고 은은한 선. 오늘 = 날짜 숫자 원형, 선택한 날 = 옅은 칸 배경 + 안쪽 테두리
+     (둘이 겹치면 원형 숫자 + 테두리가 같이 보임). 일정 칩 = 범주색 점 + 범주색을 옅게 섞은 배경 + 본문색 제목. */
+  .sched-top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;margin-bottom:16px;}
+  .sched-top .sched-month-bar{margin:0;gap:4px;min-width:0;}
+  .sched-top .sched-month-title-wrap{flex:none;}
+  .sched-top .sched-month-title{font-size:20px;font-weight:700;min-height:40px;padding:0 8px;letter-spacing:-.01em;}
+  .sched-top .agenda-nav{width:40px;height:40px;font-size:22px;}
+  .sched-top .cal-today-btn{margin-left:8px;}
+  .sched-top-actions{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:0;}
+  .sched-top-actions .view-toggle{flex:none;}
+  .sched-top-actions .view-toggle button{flex:none;min-width:72px;}
+  .sched-list-bar{margin:0 2px 12px;}
+  .sched-list-bar:has(.sched-count:empty){display:none;}
+  .sched-count{font-size:13px;}
+
+  .cal-layout{display:block;}
+  .cal-main{min-width:0;}
+  .cal-weekday-row{font-size:12.5px;font-weight:600;padding:0 0 8px;}
+  .cal-grid{gap:1px;background:color-mix(in srgb, var(--line) 75%, transparent);border:1px solid var(--line);border-radius:16px;}
+  .cal-cell{min-height:108px;padding:6px 6px 8px;gap:3px;transition:background .12s;}
+  .cal-cell:hover{background:color-mix(in srgb, var(--text) 3%, var(--card));}
+  .cal-cell.other-month{background:color-mix(in srgb, var(--text) 2.5%, var(--card));}
+  .cal-cell-num{font-size:14px;min-width:26px;height:26px;border-radius:50%;color:var(--text);margin-bottom:1px;font-variant-numeric:tabular-nums;}
+  .cal-cell.other-month .cal-cell-num{color:var(--sub);opacity:.6;}
+  .cal-cell.today .cal-cell-num{width:26px;background:var(--accent);color:var(--accent-on);font-weight:700;}
+  .cal-cell.selected, .cal-cell.selected:hover{background:var(--accent-soft);box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--accent) 75%, var(--text));}
+  .cal-chip{font-size:12px;line-height:18px;padding:1px 6px;gap:5px;border-radius:6px;color:var(--text);background:color-mix(in srgb, var(--chip-c, var(--accent)) 15%, var(--card));}
+  .cal-cell.selected .cal-chip{background:color-mix(in srgb, var(--chip-c, var(--accent)) 18%, var(--card));}
+  .cal-chip .dot{width:6px;height:6px;flex:0 0 6px;background:var(--chip-c, var(--accent));}
+  .cal-more{font-size:12px;line-height:16px;color:var(--sub);font-weight:600;padding:0 4px;}
+
+  /* 날짜별 일정 영역(패널) — 날짜 + 개수 + 목록 + [이 날짜에 일정 추가] */
+  .cal-day-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:16px;}
+  .cal-day-head{display:flex;align-items:center;gap:8px;margin-bottom:4px;min-height:32px;}
+  .cal-day-title{font-size:16px;font-weight:700;margin:0;color:var(--text);min-width:0;}
+  .cal-day-count{font-size:12px;font-weight:700;color:var(--accent-text);background:var(--accent-soft);border-radius:var(--r-pill);padding:1px 9px;}
+  .cal-day-count:empty{display:none;}
+  .cal-day-close{display:none;margin-left:auto;width:36px;height:36px;border:none;background:none;color:var(--sub);font-size:16px;border-radius:10px;cursor:pointer;}
+  .cal-day-close:hover{background:color-mix(in srgb, var(--text) 6%, var(--card));color:var(--text);}
+  .cal-day-item{border-bottom-color:color-mix(in srgb, var(--line) 75%, transparent);}
+  .cal-day-item-title{font-size:15px;}
+  .cal-day-time{font-size:12.5px;}
+  .cal-day-meta{font-size:12.5px;}
+  .cal-day-empty{padding:20px 0 8px;}
+  .cal-day-add{width:100%;margin-top:12px;border-style:dashed;border-color:color-mix(in srgb, var(--accent) 55%, var(--line));}
+  .cal-day-backdrop{display:none;}
+  /* 넓은 PC: 달력 + 오른쪽 패널(스크롤해도 패널이 따라옴) */
+  @media (min-width:1180px){
+    .cal-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start;}
+    .cal-day-panel{display:block;margin-top:29px;position:sticky;top:calc(var(--header-h) + 16px);max-height:calc(100vh - var(--header-h) - 32px);overflow-y:auto;}
+  }
+  /* 중간 폭: 패널은 숨겨 두었다가 날짜를 누르면 가운데 팝업으로(상단바 아래, 추가·수정 창보다 아래 층) */
+  @media (min-width:761px) and (max-width:1179px){
+    .cal-day-panel{display:none;}
+    #scheduleCalendarMode.pop-open .cal-day-panel{display:block;position:fixed;left:50%;top:calc(50% + 32px);transform:translate(-50%,-50%);width:min(440px, calc(100vw - 48px));max-height:calc(100vh - 140px);overflow-y:auto;z-index:19;box-shadow:0 16px 40px rgba(0,0,0,.18);}
+    #scheduleCalendarMode.pop-open .cal-day-close{display:inline-flex;align-items:center;justify-content:center;}
+    #scheduleCalendarMode.pop-open .cal-day-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:18;}
+  }
+  /* PC 패널·팝업은 폭이 좁아서 제목이 잘게 꺾이지 않게 수정·⋯·삭제를 제목 아래 줄로 내림 */
+  @media (min-width:761px){
+    .cal-day-item{flex-wrap:wrap;row-gap:0;}
+    .cal-day-actions{flex-basis:100%;padding-left:50px;margin:-2px 0 -6px -6px;}
+    .cal-day-actions button{min-width:0;min-height:36px;padding:0 8px;}
+  }
+  .ctx-menu{z-index:60;}
+  @media (max-width:760px){
+    .sched-top{gap:8px;margin-bottom:12px;}
+    .sched-top .sched-month-bar{flex:1 1 100%;}
+    .sched-top .sched-month-title-wrap{flex:1;}
+    .sched-top .sched-month-title{font-size:18px;}
+    .sched-top .agenda-nav{width:44px;height:44px;}
+    .sched-top .cal-today-btn{margin-left:0;}
+    .sched-top-actions{flex:1 1 100%;margin-left:0;}
+    .sched-top-actions .view-toggle{flex:1;}
+    .sched-top-actions .view-toggle button{flex:1;min-width:0;}
+    .cal-grid{grid-auto-rows:76px;border-radius:14px;}
+    .cal-cell{min-height:0;height:76px;padding:3px 2px;gap:2px;}
+    .cal-cell-num{font-size:13px;min-width:22px;height:22px;align-self:center;}
+    .cal-cell.today .cal-cell-num{width:22px;}
+    .cal-chip{font-size:11px;line-height:15px;padding:0 3px;gap:2px;border-radius:4px;}
+    .cal-chip .dot{width:5px;height:5px;flex-basis:5px;}
+    .cal-more{font-size:11px;line-height:14px;text-align:center;padding:0;}
+    .cal-day-panel{display:block;margin-top:16px;padding:14px;}
+  }
 </style>
 </head>
 <body>
@@ -846,7 +1080,7 @@
              homeList*/homeTodayBlock*/homeUpcoming* 그대로 재사용(코드 여러 곳에서 참조하는 식별자). -->
         <div class="home2-grid">
           <div class="home2-col" id="homeCol1">
-            <div class="home2-col-label">📥 할일 보관함</div>
+            <div class="home2-col-label" role="heading" aria-level="2">담아두기</div>
             <div class="home2-tabs" id="homeCol1Tabs">
               <button type="button" class="home2-tab tab-someday active" data-col1tab="someday">언젠가</button>
               <button type="button" class="home2-tab tab-upcoming" data-col1tab="upcoming">다가오는</button>
@@ -866,16 +1100,16 @@
               <!-- 2026-09-20 — 결님 요청으로 "다가오는"도 날짜 이동 가능해짐. 다른 탭들과 같은 homeAgendaDate를
                    공유하되(연동), 이 탭의 이전/다음 버튼은 7일(한 주) 단위로 이동. -->
               <div class="agenda-head">
-                <button id="homeUpcomingPrevBtn" class="agenda-nav">‹</button>
+                <button id="homeUpcomingPrevBtn" class="agenda-nav" aria-label="이전 7일">‹</button>
                 <span class="agenda-date-wrap"><span id="homeUpcomingDateLabel" style="cursor:pointer;">다가오는 7일</span></span>
-                <button id="homeUpcomingNextBtn" class="agenda-nav">›</button>
+                <button id="homeUpcomingNextBtn" class="agenda-nav" aria-label="다음 7일">›</button>
               </div>
               <div id="homeUpcomingList"></div>
             </div>
           </div>
 
           <div class="home2-col" id="homeCol2">
-            <div class="home2-col-label">🚀 실행 공간</div>
+            <div class="home2-col-label" role="heading" aria-level="2">지금, 한칸</div>
             <div class="home2-tabs" id="homeCol2Tabs">
               <button type="button" class="home2-tab tab-timeline active" data-col2tab="timeline">타임라인</button>
               <button type="button" class="home2-tab tab-block" data-col2tab="block">시간블럭</button>
@@ -886,9 +1120,9 @@
                    되살림(1/3/7일 다중일 토글은 부활 안 시킴 — agendaDayCount는 1로 고정 유지).
                    버튼들의 클릭 핸들러는 1단계 때 지우지 않고 옵셔널 체이닝으로 남겨뒀던 걸 그대로 씀. -->
               <div class="agenda-head">
-                <button id="agendaPrevBtn" class="agenda-nav">‹</button>
+                <button id="agendaPrevBtn" class="agenda-nav" aria-label="이전 날">‹</button>
                 <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
-                <button id="agendaNextBtn" class="agenda-nav">›</button>
+                <button id="agendaNextBtn" class="agenda-nav" aria-label="다음 날">›</button>
               </div>
 
               <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
@@ -906,9 +1140,9 @@
               <!-- 09-24 — 1열 옛 "목록" 탭의 시간블럭형 서브뷰를 그대로 승격(같은 homeAgendaDate를
                    "타임라인"과 공유). 목록형(flat list) 서브뷰는 결님 요청으로 완전히 삭제. -->
               <div class="agenda-head">
-                <button id="homeListPrevBtn" class="agenda-nav">‹</button>
+                <button id="homeListPrevBtn" class="agenda-nav" aria-label="이전 날">‹</button>
                 <span class="agenda-date-wrap"><span id="homeListDateLabel" style="cursor:pointer;">오늘</span></span>
-                <button id="homeListNextBtn" class="agenda-nav">›</button>
+                <button id="homeListNextBtn" class="agenda-nav" aria-label="다음 날">›</button>
               </div>
               <div id="homeTodayBlockWrap">
                 <div id="homeTodayBlockAllDay"></div>
@@ -921,14 +1155,11 @@
 
       <!-- 일정 (2026-09-12: 메모 기능 전체 제거 — 일정만 남음) -->
       <div class="page" data-page="schedule" style="display:none;">
-        <div class="view-toggle-row" style="margin-bottom:12px;">
-          <div class="view-toggle" id="scheduleModeToggle" role="group" aria-label="일정 보기 방식">
-            <button type="button" id="scheduleModeListBtn" class="active" aria-pressed="true">목록</button>
-            <button type="button" id="scheduleModeCalendarBtn" aria-pressed="false">캘린더</button>
-          </div>
-        </div>
-
-        <!-- 2026-09-27 목록·캘린더 공통 조회 월 조작부(이전 달 / 연·월 선택 / 다음 달 / 이번 달) -->
+        <h1 class="sr-only">일정</h1>
+        <!-- 2026-09-26 상단 조작부 재배치: [‹ 연·월 ›][이번 달] ····· [캘린더|목록][+ 일정 추가].
+             연·월 제목이 가장 크고 선명, 보기 전환은 세그먼트, 추가는 주 버튼. 모바일은 두 줄(월 이동 / 보기·추가).
+             첫 화면은 캘린더(scheduleMode 기본값 "calendar"와 초기 active·aria-pressed·표시 상태를 여기서 미리 맞춰 둠). -->
+        <div class="sched-top">
         <div class="cal-head sched-month-bar" role="group" aria-label="조회 월">
           <button type="button" id="calPrevBtn" class="agenda-nav" aria-label="이전 달">‹</button>
           <div class="sched-month-title-wrap">
@@ -945,12 +1176,19 @@
           <button type="button" id="calNextBtn" class="agenda-nav" aria-label="다음 달">›</button>
           <button type="button" id="schedThisMonthBtn" class="cal-today-btn">이번 달</button>
         </div>
+        <div class="sched-top-actions">
+          <div class="view-toggle" id="scheduleModeToggle" role="group" aria-label="일정 보기 방식">
+            <button type="button" id="scheduleModeCalendarBtn" class="active" aria-pressed="true">캘린더</button>
+            <button type="button" id="scheduleModeListBtn" aria-pressed="false">목록</button>
+          </div>
+          <button type="button" class="sched-add-btn" id="schedAddBtn">+ 일정 추가</button>
+        </div>
+        </div>
 
-        <div id="scheduleListMode">
+        <div id="scheduleListMode" style="display:none;">
           <div id="scheduleEventsView">
             <div class="sched-list-bar">
               <span class="sched-count" id="schedMonthCount"></span>
-              <button type="button" class="sched-add-btn" id="schedAddBtn">+ 일정</button>
             </div>
             <div class="sched-jump-row" id="schedJumpRow"></div>
             <div id="scheduleList"></div>
@@ -958,21 +1196,32 @@
           </div>
         </div>
 
-        <div id="scheduleCalendarMode" style="display:none;">
-          <div class="cal-weekday-row" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-          <div class="cal-grid" id="calGrid" aria-label="월간 달력"></div>
-          <!-- 2026-09-26 모바일: 선택한 날짜의 전체 일정 목록 + 추가 버튼(칸 안에서 입력하지 않음) -->
-          <section class="cal-day-panel" id="calDayPanel" aria-labelledby="calDayTitle">
-            <h3 class="cal-day-title" id="calDayTitle" aria-live="polite"></h3>
-            <div class="cal-day-list" id="calDayList"></div>
-            <button type="button" class="cal-day-add" id="calDayAddBtn">이 날짜에 일정 추가</button>
-          </section>
+        <div id="scheduleCalendarMode">
+          <!-- 2026-09-26 날짜별 일정 영역: 넓은 PC(≥1180px)=달력 오른쪽 패널, 중간 폭(761~1179px)=날짜를 누르면 팝업,
+               모바일(≤760px)=달력 아래. 날짜를 눌러도 입력창은 열지 않고, [이 날짜에 일정 추가]로 공용 추가 창을 엶. -->
+          <div class="cal-layout">
+            <div class="cal-main">
+              <div class="cal-weekday-row" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+              <div class="cal-grid" id="calGrid" aria-label="월간 달력"></div>
+            </div>
+            <section class="cal-day-panel" id="calDayPanel" aria-labelledby="calDayTitle">
+              <div class="cal-day-head">
+                <h3 class="cal-day-title" id="calDayTitle" aria-live="polite"></h3>
+                <span class="cal-day-count" id="calDayCount"></span>
+                <button type="button" class="cal-day-close" id="calDayCloseBtn" aria-label="닫기">✕</button>
+              </div>
+              <div class="cal-day-list" id="calDayList"></div>
+              <button type="button" class="cal-day-add" id="calDayAddBtn">+ 이 날짜에 일정 추가</button>
+            </section>
+          </div>
+          <div class="cal-day-backdrop" id="calDayBackdrop"></div>
         </div>
       </div>
 
       <!-- 할일 (2026-09-12: 사이드바에서 습관과 별도 탭으로 분리) -->
       <div class="page" data-page="todos" style="display:none;">
 
+        <h1 class="page-title">할일</h1>
         <div id="todosTodosView">
           <div class="view-toggle" id="todoTopTabs" style="margin-bottom:10px;">
             <button type="button" data-tab="all" class="active">모두</button>
@@ -1012,7 +1261,7 @@
 
         <div id="todosHabitsView">
           <div class="tab-add-bar">
-            <div class="section-label" style="margin:0;">습관 관리</div>
+            <h1 class="page-title" style="margin:0;">습관</h1>
             <button type="button" class="sched-add-btn" id="habitAddBtn">+ 습관</button>
           </div>
           <div class="view-toggle" id="habitsTabRow" style="margin-bottom:10px;">
@@ -1031,6 +1280,7 @@
 
       <!-- 설정 -->
       <div class="page" data-page="settings" style="display:none;">
+        <h1 class="page-title">설정</h1>
 
         <div class="section-label">계정</div>
         <div class="card" id="settingsAccountCard" style="font-size:13px;color:var(--sub);"></div>
@@ -1718,7 +1968,7 @@
   let todoListSettings = loadTabSettings("tok_todoListSettings", ["all", "scheduled"]); // 할일 탭별 정렬/그룹화 기억(언젠가는 기존 정렬 그대로 유지)
   let currentPage = "home";
   // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가). 메모 기능은 2026-09-12에 완전히 제거함(scheduleSubView도 함께 삭제).
-  let scheduleMode = "list"; // "list" | "calendar"
+  let scheduleMode = "calendar"; // "calendar" | "list" — 2026-09-26: 첫 화면은 캘린더(앱 사용 중 바꾼 보기는 탭을 오가도 유지, 새로고침하면 다시 캘린더)
   let calCursor = todayStr().slice(0, 7) + "-01"; // 캘린더가 보여주는 달의 1일
   let calExpanded = new Set(); // "+N개 더"를 눌러서 다 펼친 날짜(dateStr) — 달 이동/모드 전환 시 초기화(PC 전용)
   let calSelected = todayStr(); // 2026-09-26 모바일 캘린더에서 선택한 날짜(첫 진입 = 오늘). 추가·수정·삭제 후에도 유지
@@ -2406,6 +2656,12 @@
   function eventDotHtml(catId, size = 10, boxSize = 20) {
     return `<span class="agenda-event-dot-wrap" style="width:${boxSize}px;height:${boxSize}px;"><span class="agenda-event-dot" style="width:${size}px;height:${size}px;background:${itemTagColor("event", catId) || "#c9457a"};"></span></span>`;
   }
+  // 2026-09-26 — 집 화면 목록(언젠가·다가오는·시간블럭): 그룹 색은 제목 글자색 대신 제목 앞 작은 점으로 표시
+  // (제목은 var(--text)로 통일해서 연한 그룹색 글자가 안 읽히던 문제 해결). 색이 없으면(그룹 없음+기본색 미지정,
+  // 또는 앞에 이미 범주색 동그라미가 있는 일정 줄) 빈 자리만 차지해서 제목 시작 위치를 다른 줄과 맞춤.
+  function titleDotHtml(color) {
+    return color ? `<span class="title-dot" style="background:${color};"></span>` : `<span class="title-dot is-empty"></span>`;
+  }
   // 그룹/범주 색을 카드 배경으로 옅게 깔아줌(원색 그대로면 글자가 안 보여서 흰색과 섞어 파스텔톤으로), 그룹 없으면 흰 배경 고정
   function itemTagBgStyle(kind, catId) {
     const color = itemTagColor(kind, catId);
@@ -2809,6 +3065,9 @@
   // 오늘 열 타임블럭(카드형) 항목: 짧게 클릭하면 이름 수정, 드래그하면 다른 블럭으로 이동.
   // 드래그 가능한 행 앞에 붙는 장식용 손잡이 아이콘(목업 참고) — 실제 드래그는 행 전체를 잡아도 동작하고,
   // 이 아이콘은 "끌 수 있는 행"이라는 시각 신호용. 4단계(2026-09-20)에서 1열 3탭 행에 공용으로 붙임.
+  // 2026-09-26 — 줄 안 아이콘 버튼(이모지 🗓/⚙ 대신): 사이드바 아이콘과 같은 선 굵기(2)·16px 선 아이콘
+  const ICON_HISTORY_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="9 15 11 17 15 13"></polyline></svg>`;
+  const ICON_SLIDERS_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>`;
   const DRAG_HANDLE_SVG = `<svg class="drag-handle-dots" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="6" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>`;
 
   function agendaItemRowHtml(it, dateStr) {
@@ -2817,14 +3076,15 @@
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id); // 일정은 체크박스 자리에 범주색 동그라미로 대신 표시
-    // 타임블럭은 배경색 대신 "글자색"으로 그룹/범주를 구분(2026-09-07, 배경색을 넣으면 카드형이라 답답하다는 결님 의견 —
-    // 타임라인은 반대로 배경색을 계속 씀). 완료된 항목은 색을 빼서 기존 회색 줄긋기(.done)가 그대로 보이게 둠.
-    const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
+    // 타임블럭은 배경색 대신 그룹/범주 색으로 구분(타임라인은 반대로 배경색을 계속 씀). 2026-09-26: 글자색 대신
+    // 제목 앞 점(titleDotHtml)으로 바꿈 — 일정은 앞 동그라미(eventDotHtml)가 이미 범주색이라 점 자리는 비워둠.
+    const dotColor = it.kind === "event" ? null : itemTagColor(it.kind, it.cat_id);
     // 항목마다 카드처럼 보여서 공간을 너무 차지한다고 해서, 다가오는 계획 목록과 똑같이 카드 없는 플랫한 한 줄로 변경.
     return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
       ${DRAG_HANDLE_SVG}
       ${lead}
-      <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
+      ${titleDotHtml(dotColor)}
+      <span class="agenda-title">${escapeHtml(it.name)}</span>
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
     </div>`;
@@ -3052,11 +3312,12 @@
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id);
-    const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
+    const dotColor = it.kind === "event" ? null : itemTagColor(it.kind, it.cat_id);
     return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
       ${DRAG_HANDLE_SVG}
       ${lead}
-      <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
+      ${titleDotHtml(dotColor)}
+      <span class="agenda-title">${escapeHtml(it.name)}</span>
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${it.start_minute != null && it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
     </div>`;
@@ -3203,7 +3464,7 @@
     for (let i = 0; i < slotCount; i++) {
       const m = minM + i * AG_TL_SLOT_MIN;
       if (m % 30 === 0) {
-        rowsHtml += `<div class="tl-row-line" style="grid-row:${i+1}"></div>`;
+        rowsHtml += `<div class="tl-row-line${m % 60 === 0 ? " hour" : ""}" style="grid-row:${i+1}"></div>`; // 정시 선은 진하게, 30분 선은 연하게(CSS)
         if (m % 60 === 0) rowsHtml += `<div class="tl-row-label" style="grid-row:${i+1}">${minutesToHHMM(m)}</div>`;
       }
     }
@@ -3943,31 +4204,31 @@
       // 계속 추가할 수 있게 함(하루종일 영역과 동일 규칙).
 
       const habitHtml = dayHabits.map(t => {
-        const tagColor = itemTagColor("habit", t.category_id);
         return `
-        <div class="plan-row habit home1-flat-row" data-id="${t.id}" data-kind="habit">
+        <div class="plan-row habit home1-flat-row${doneSet.has(t.id) ? " done" : ""}" data-id="${t.id}" data-kind="habit">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="upcoming-habit-check" />
-          <span class="plan-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(t.name)}</span>
+          ${titleDotHtml(itemTagColor("habit", t.category_id))}
+          <span class="plan-todo-title">${escapeHtml(t.name)}</span>
         </div>`;
       }).join("");
       const eventHtml = dayEvents.map(e => {
         const isRange = e.end_date && e.end_date !== e.event_date;
-        const tagColor = itemTagColor("event", e.category_id);
         return `<div class="plan-row home1-flat-row" data-id="${e.id}" data-kind="event">
           ${DRAG_HANDLE_SVG}
-          ${eventDotHtml(e.category_id, 8, 16)}
-          <span class="plan-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(e.title)}</span>
+          ${eventDotHtml(e.category_id, 10, 20)}
+          ${titleDotHtml(null)}
+          <span class="plan-todo-title">${escapeHtml(e.title)}</span>
           ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : e.event_time ? `<span class="plan-time">${e.event_time.slice(0, 5)}</span>` : ""}
         </div>`;
       }).join("");
       const todoHtml = dayTodos.map(td => {
-        const tagColor = td.is_done ? null : itemTagColor("todo", td.tag_id);
         return `
         <div class="plan-row todo home1-flat-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
-          <span class="plan-todo-title planup-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
+          ${titleDotHtml(itemTagColor("todo", td.tag_id))}
+          <span class="plan-todo-title planup-todo-title">${escapeHtml(td.title)}</span>
           ${td.todo_time ? `<span class="plan-time">${td.todo_time.slice(0, 5)}</span>` : ""}
         </div>`;
       }).join("");
@@ -4085,17 +4346,65 @@
   // "기본" 칩은 색상 인풋의 "기본" 색(daySettings.default_tag_color, 설정 페이지에서 지정 가능)을 점 색으로 씀.
   // 2026-09-24 보관: 보관된 그룹 칩은 숨기되, 지금 목록(shownItems)에 그 그룹을 쓰는 항목이 있거나 이미 그 칩으로
   // 거르는 중이면 “이름 · 보관됨” 칩으로 남겨서 해당 항목의 분류를 계속 확인·필터할 수 있게 함.
-  function renderSomedayTagChips(hostEl, activeTagId, onPick, shownItems = []) {
+  // 2026-09-26 — collapsible: true면(집 화면) 칩을 기본 2줄까지만 보이고 넘치면 "더 보기/접기" 버튼을 붙임(layoutCollapsibleChips).
+  function renderSomedayTagChips(hostEl, activeTagId, onPick, shownItems = [], collapsible = false) {
     const usedIds = new Set(shownItems.map(s => s.tag_id).filter(Boolean));
     const chipPool = habitCategories.filter(c => !c.is_archived || usedIds.has(c.id) || c.id === activeTagId);
     const chips = [
       `<button type="button" class="someday-tag-chip${activeTagId ? "" : " active"}" data-tag="">전체</button>`,
       `<button type="button" class="someday-tag-chip${activeTagId === SOMEDAY_NO_GROUP ? " active" : ""}" data-tag="${SOMEDAY_NO_GROUP}"><span class="tag-dot-sm" style="background:${daySettings.default_tag_color || "var(--sub)"};"></span>기본</button>`,
     ].concat(chipPool.map(c => `<button type="button" class="someday-tag-chip${activeTagId === c.id ? " active" : ""}${c.is_archived ? " archived" : ""}" data-tag="${c.id}"><span class="tag-dot-sm" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(tagPickLabel(c))}</button>`));
-    hostEl.innerHTML = chips.join("");
+    hostEl.innerHTML = chips.join("") + (collapsible ? `<button type="button" class="someday-chip-more" aria-expanded="false" hidden></button>` : "");
     hostEl.querySelectorAll("button[data-tag]").forEach(btn => {
       btn.onclick = () => onPick(btn.dataset.tag || null);
     });
+    if (collapsible) {
+      const moreBtn = hostEl.querySelector(".someday-chip-more");
+      moreBtn.onclick = () => { hostEl._chipsExpanded = !hostEl._chipsExpanded; layoutCollapsibleChips(hostEl); };
+      layoutCollapsibleChips(hostEl);
+      // 탭이 숨겨졌다 보이거나(폭 0→실제 폭) 창 폭이 바뀌면 줄 계산을 다시 함
+      if (!hostEl._chipsRO && typeof ResizeObserver !== "undefined") {
+        let lastW = -1;
+        hostEl._chipsRO = new ResizeObserver(() => {
+          const w = hostEl.clientWidth;
+          if (w === lastW) return;
+          lastW = w;
+          layoutCollapsibleChips(hostEl);
+        });
+        hostEl._chipsRO.observe(hostEl);
+      }
+    }
+  }
+  // 그룹 필터 칩 접기: 접힌 상태면 2줄 안에 들어가는 칩까지만 보여주고 나머지는 숨김. 선택된 칩(.active)은 줄 밖이어도
+  // 항상 보이게 남기고, 그 대신 앞쪽 칩을 하나씩 더 숨겨서 선택 칩·"더 보기" 버튼까지 2줄 안에 들어가게 맞춤.
+  // 펼친 상태면 전부 보여주고 버튼은 "접기". 넘칠 게 없으면 버튼 자체를 숨김. (실제 렌더 위치로 줄을 재므로
+  // 사용자 글꼴·화면 폭이 달라도 그대로 맞음.)
+  function layoutCollapsibleChips(hostEl) {
+    const moreBtn = hostEl.querySelector(".someday-chip-more");
+    if (!moreBtn) return;
+    const chips = [...hostEl.querySelectorAll("button[data-tag]")];
+    chips.forEach(c => { c.hidden = false; });
+    moreBtn.hidden = true;
+    hostEl.classList.remove("is-expanded");
+    if (!hostEl.clientWidth || !chips.length) return; // 숨겨진 탭 — 보일 때 ResizeObserver가 다시 부름
+    const rowTops = [...new Set(chips.map(c => c.offsetTop))].sort((a, b) => a - b);
+    if (rowTops.length <= 2) return; // 2줄 안에 다 들어감 → 버튼 불필요
+    moreBtn.hidden = false;
+    moreBtn.setAttribute("aria-expanded", hostEl._chipsExpanded ? "true" : "false");
+    if (hostEl._chipsExpanded) { moreBtn.textContent = "접기"; hostEl.classList.add("is-expanded"); return; }
+    const hiddenCount = () => chips.filter(c => c.hidden).length;
+    const secondRowTop = rowTops[1];
+    const setLabel = () => { moreBtn.textContent = `더 보기 +${hiddenCount()}`; };
+    chips.forEach(c => { if (c.offsetTop > secondRowTop && !c.classList.contains("active")) c.hidden = true; });
+    setLabel();
+    // 선택 칩 또는 버튼이 아직 3번째 줄로 밀려나 있으면, 뒤에서부터(선택 칩·"전체" 제외) 하나씩 더 숨김
+    const overflowing = () => moreBtn.offsetTop > secondRowTop || chips.some(c => !c.hidden && c.offsetTop > secondRowTop);
+    for (let i = chips.length - 1; i > 0 && overflowing(); i--) {
+      const c = chips[i];
+      if (c.hidden || c.classList.contains("active")) continue;
+      c.hidden = true;
+      setLabel();
+    }
   }
 
   // "언젠가" 열: 정렬/그룹필터 적용 후 일정 개수(somedayHomeVisible, 09-24부터 기본 15)까지만 보여주고
@@ -4106,18 +4415,19 @@
     const sortSel = $("somedayHomeSortSelect");
     if (sortSel) renderSomedaySortSelect(sortSel, somedayHomeSort, (v) => { somedayHomeSort = v; somedayHomeVisible = 15; renderSomedaySummary(); });
     const chipsHost = $("somedayHomeTagChips");
-    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; somedayHomeVisible = 15; renderSomedaySummary(); }, somedayItems.filter(s => !s.is_done));
+    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; somedayHomeVisible = 15; renderSomedaySummary(); }, somedayItems.filter(s => !s.is_done), true);
 
     const undone = somedayItems.filter(s => !s.is_done);
     const all = filterSomedayList(sortSomedayList(undone, somedayHomeSort), somedayHomeFilterTag);
     const items = all.slice(0, somedayHomeVisible);
     const rowsHtml = items.map(item => {
-      const tagColor = itemTagColor("someday", item.tag_id); // 그룹 없는 항목도 "기본" 색을 그대로 받아옴(itemTagColor 내부에서 처리)
+      const dotColor = itemTagColor("someday", item.tag_id); // 그룹 없는 항목도 "기본" 색을 그대로 받아옴(itemTagColor 내부에서 처리)
       return `
       <div class="task-row ag-someday-row home1-flat-row" data-someday-id="${item.id}">
         ${DRAG_HANDLE_SVG}
         <input type="checkbox" data-id="${item.id}" class="somedaysum-check" />
-        <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
+        ${titleDotHtml(dotColor)}
+        <span class="agenda-title">${escapeHtml(item.title)}</span>
       </div>`;
     }).join("");
     const moreHtml = all.length > items.length ? `<div class="someday-more-row" data-somedaymore="1">+ 더보기 (${all.length - items.length}개 더)</div>` : "";
@@ -4299,15 +4609,16 @@
 
   function renderTodoUnifiedRow(item) {
     const isTodo = item._kind === "todo";
-    const tagColor = !item.is_done ? itemTagColor(isTodo ? "todo" : "someday", item.tag_id) : null;
+    const dotColor = itemTagColor(isTodo ? "todo" : "someday", item.tag_id); // 2026-09-26: 그룹색은 제목 앞 점으로
     const dateBadge = isTodo && item.start_date ? `<span class="todo-date-badge">${formatDateShort(item.start_date)}</span>` : "";
     // 반복 할일만 기록(달력+통계) 보기 버튼 노출(2026-09-13, 7-2단계) — 습관 탭 🗓와 같은 모달 재사용.
-    const historyBtn = isTodo && item.repeat_unit ? `<button class="historybtn tu-history" title="기록 보기">🗓</button>` : "";
+    const historyBtn = isTodo && item.repeat_unit ? `<button class="historybtn icon-btn tu-history" title="기록 보기" aria-label="기록 보기">${ICON_HISTORY_SVG}</button>` : "";
     return `
     <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}" data-kind="${item._kind}">
       <input type="checkbox" ${item.is_done?"checked":""} class="tu-check" />
       ${dateBadge}
-      <span class="someday-title tu-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
+      ${titleDotHtml(dotColor)}
+      <span class="someday-title tu-title">${escapeHtml(item.title)}</span>
       ${historyBtn}
       <button class="del tu-del">삭제</button>
     </div>`;
@@ -4679,11 +4990,12 @@
     const done = sortSomedayList(filtered.filter(s => s.is_done), somedayTabSort);
     const sorted = [...undone, ...done]; // 완료 항목은 항상 뒤로(기존 규칙 유지), 각 그룹 안에서 선택한 정렬 기준 적용
     $("somedayList").innerHTML = sorted.length ? sorted.map(item => {
-      const tagColor = !item.is_done ? itemTagColor("someday", item.tag_id) : null; // 완료 항목만 무색, 그룹 없는 항목은 "기본" 색을 받음
+      const dotColor = itemTagColor("someday", item.tag_id); // 2026-09-26: 그룹색은 제목 앞 점으로(그룹 없는 항목은 "기본" 색)
       return `
       <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}">
         <input type="checkbox" ${item.is_done?"checked":""} data-id="${item.id}" class="someday-check" />
-        <span class="someday-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
+        ${titleDotHtml(dotColor)}
+        <span class="someday-title">${escapeHtml(item.title)}</span>
         <button class="del" data-id="${item.id}">삭제</button>
       </div>
     `;
@@ -4866,7 +5178,8 @@
       };
     });
   }
-  $("schedAddBtn").onclick = (e) => openEventEditor({ mode: "add", date: schedDefaultAddDate(), opener: e.currentTarget });
+  // 상단 [+ 일정 추가]: 캘린더에선 선택한 날짜, 목록에선 조회 월 기준(이번 달이면 오늘, 아니면 그 달 1일)
+  $("schedAddBtn").onclick = (e) => openEventEditor({ mode: "add", date: scheduleMode === "calendar" ? calSelected : schedDefaultAddDate(), opener: e.currentTarget });
 
   // 날짜 그룹으로 스크롤(scroll-margin-top 덕분에 고정 상단바 아래에 제목이 옴)
   function schedScrollToDate(dateStr, { focus = false, onlyIfHidden = false } = {}) {
@@ -4958,19 +5271,44 @@
     $("scheduleModeCalendarBtn").setAttribute("aria-pressed", String(mode === "calendar"));
     $("scheduleListMode").style.display = mode === "list" ? "block" : "none";
     $("scheduleCalendarMode").style.display = mode === "calendar" ? "block" : "none";
+    if (mode !== "calendar") closeCalDayPopup(false);
     // 조회 월(calCursor)은 두 보기가 공유 — 전환해도 그대로
     if (mode === "calendar") renderScheduleCalendar(); else renderSchedule();
   }
   $("scheduleModeListBtn").onclick = () => showScheduleMode("list");
   $("scheduleModeCalendarBtn").onclick = () => showScheduleMode("calendar");
 
-  // 2026-09-26 — 모바일(≤760px, 하단 메뉴 쓰는 폭) 캘린더: 날짜 칸을 누르면 "선택"만 하고 달력 아래 목록을 갱신.
-  // 좁은 칸 안에 입력창을 넣지 않고, 목록의 [이 날짜에 일정 추가] → 시트(저장/취소 버튼)로 추가.
-  // PC 쪽 클릭 동작(칸 안 바로 입력, 칩 메뉴, "+N개 더" 펼치기)은 그대로 둠(추후 오른쪽 패널로 바꿀 예정).
+  // 2026-09-26 — 캘린더 날짜 칸을 누르면 모든 폭에서 "선택"만 함(칸 안 입력창 없음). 선택한 날짜의 일정은
+  //   · 모바일(≤760px): 달력 아래 목록  · 넓은 PC(≥1180px): 달력 오른쪽 패널  · 그 사이 폭: 팝업(같은 패널을 띄움)
+  // 추가는 패널의 [이 날짜에 일정 추가] 또는 상단 [+ 일정 추가] → 공용 추가 창(선택한 날짜가 들어간 상태).
   const calMobileMq = window.matchMedia("(max-width:760px)");
+  const calSideMq = window.matchMedia("(min-width:1180px)");
   const isCalMobile = () => calMobileMq.matches;
-  const onCalMqChange = () => { if (scheduleMode === "calendar") renderScheduleCalendar(); };
-  if (calMobileMq.addEventListener) calMobileMq.addEventListener("change", onCalMqChange); else calMobileMq.addListener(onCalMqChange);
+  const isCalPopup = () => !calMobileMq.matches && !calSideMq.matches;
+  const onCalMqChange = () => { if (!isCalPopup()) closeCalDayPopup(false); if (scheduleMode === "calendar") renderScheduleCalendar(); };
+  [calMobileMq, calSideMq].forEach(mq => { if (mq.addEventListener) mq.addEventListener("change", onCalMqChange); else mq.addListener(onCalMqChange); });
+  // 중간 폭 팝업 열기/닫기 — 닫으면 선택한 날짜 칸으로 포커스를 돌려줌
+  let calPopupOpener = null;
+  function openCalDayPopup(opener) {
+    if (!isCalPopup()) return;
+    calPopupOpener = opener || null;
+    $("scheduleCalendarMode").classList.add("pop-open");
+    $("calDayPanel").setAttribute("role", "dialog");
+    $("calDayPanel").setAttribute("aria-modal", "true");
+    $("calDayCloseBtn").focus({ preventScroll: true });
+  }
+  function closeCalDayPopup(restoreFocus = true) {
+    const wrap = $("scheduleCalendarMode");
+    if (!wrap || !wrap.classList.contains("pop-open")) return;
+    wrap.classList.remove("pop-open");
+    $("calDayPanel").removeAttribute("role");
+    $("calDayPanel").removeAttribute("aria-modal");
+    if (restoreFocus) ($("calGrid").querySelector(`.cal-cell[data-date="${calSelected}"]`) || calPopupOpener)?.focus({ preventScroll: true });
+    calPopupOpener = null;
+  }
+  $("calDayCloseBtn").onclick = () => closeCalDayPopup();
+  $("calDayBackdrop").onclick = () => closeCalDayPopup();
+  $("calDayPanel").addEventListener("keydown", (e) => { if (e.key === "Escape" && $("scheduleCalendarMode").classList.contains("pop-open")) { e.preventDefault(); closeCalDayPopup(); } });
   const CAL_WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
   const calMonthOf = (dateStr) => dateStr.slice(0, 7) + "-01";
   // "9월 7일 월요일" (withWeekday=false면 "9월 7일")
@@ -5084,8 +5422,8 @@
       const d = new Date(y, m - 1, offset - startWeekday + 1);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     };
-    // 키보드 포커스는 칸 하나만 Tab으로 들어가고(나머지는 방향키) — 모바일은 선택한 날, PC는 오늘(없으면 1일)
-    const focusDate = mobile ? calSelected : (calMonthOf(t) === calMonthOf(calCursor) ? t : calMonthOf(calCursor));
+    // 키보드 포커스는 칸 하나만 Tab으로 들어가고(나머지는 방향키) — 선택한 날짜 칸
+    const focusDate = calSelected;
     const hadFocus = $("calGrid").contains(document.activeElement) && document.activeElement.classList.contains("cal-cell");
 
     let html = "";
@@ -5095,21 +5433,20 @@
       const dayNum = parseInt(dateStr.slice(8, 10), 10);
       const dayItems = calEventsOn(dateStr)
         .map(e => ({ id: e.id, kind: "event", title: e.title, color: itemTagColor("event", e.category_id) }));
-      const expanded = !mobile && calExpanded.has(dateStr);
-      const visibleItems = expanded ? dayItems : dayItems.slice(0, 2);
+      // 칸 안에는 일부만(모바일 2개, PC 3개) — 나머지는 "+N개"로 개수만 알리고 전체는 날짜별 일정 영역에서 확인
+      const visibleItems = dayItems.slice(0, mobile ? 2 : 3);
       const hiddenCount = dayItems.length - visibleItems.length;
-      const chipAttrs = mobile ? "" : ` tabindex="0" role="button"`;
       const chipsHtml = visibleItems.map(it => `
-        <div class="cal-chip ${it.kind}" data-id="${it.id}" data-kind="${it.kind}"${chipAttrs} title="${escapeHtml(it.title)}">
-          <span class="dot" style="background:${it.color || "#c9457a"};"></span><span class="cal-chip-title">${escapeHtml(it.title)}</span>
+        <div class="cal-chip ${it.kind}" data-id="${it.id}" data-kind="${it.kind}" title="${escapeHtml(it.title)}" style="--chip-c:${it.color || "var(--accent)"};">
+          <span class="dot"></span><span class="cal-chip-title">${escapeHtml(it.title)}</span>
         </div>`).join("");
       const moreHtml = hiddenCount > 0
-        ? `<div class="cal-more" data-date="${dateStr}"${chipAttrs}>+${hiddenCount}개${mobile ? "" : " 더"}</div>` : "";
+        ? `<div class="cal-more" data-date="${dateStr}">+${hiddenCount}개</div>` : "";
       const isToday = dateStr === t;
-      const isSelected = mobile && dateStr === calSelected;
+      const isSelected = dateStr === calSelected;
       const label = `${calDateLabel(dateStr)}${isToday ? ", 오늘" : ""}, 일정 ${dayItems.length}개`;
       html += `<div class="cal-cell ${inMonth ? "" : "other-month"} ${isToday ? "today" : ""} ${isSelected ? "selected" : ""}" data-date="${dateStr}"
-        role="button" tabindex="${dateStr === focusDate ? 0 : -1}" aria-label="${label}"${mobile ? ` aria-pressed="${isSelected}"` : ""}${isToday ? ` aria-current="date"` : ""}>
+        role="button" tabindex="${dateStr === focusDate ? 0 : -1}" aria-label="${label}" aria-pressed="${isSelected}"${isToday ? ` aria-current="date"` : ""}>
         <span class="cal-cell-num" aria-hidden="true">${dayNum}</span>
         ${chipsHtml}
         ${moreHtml}
@@ -5122,40 +5459,16 @@
     if (hadFocus) $("calGrid").querySelector(`.cal-cell[data-date="${focusDate}"]`)?.focus({ preventScroll: true });
   }
 
+  // 2026-09-26: 칸·일정 칩·"+N개" 어디를 눌러도 그 날짜를 선택(칸 안 입력창·칸 안 펼치기 없음). 칩이나 "+N개"를
+  // 누르면 모바일은 아래 목록 시작으로 스크롤, 중간 폭은 팝업을 엶. 일정별 수정·메뉴·삭제는 날짜별 일정 영역에서.
   function wireScheduleCalendar() {
     const mobile = isCalMobile();
     const grid = $("calGrid");
-    grid.querySelectorAll(".cal-more").forEach(el => {
-      el.onclick = (e) => {
-        e.stopPropagation();
-        if (mobile) { calSelectDate(el.dataset.date, "top"); return; } // 모바일: 칸 안에서 펼치지 않고 아래 목록으로
-        calExpanded.add(el.dataset.date);
-        renderScheduleCalendar();
-      };
-    });
-    grid.querySelectorAll(".cal-chip").forEach(chip => {
-      chip.onclick = (e) => {
-        e.stopPropagation();
-        if (mobile) { calSelectDate(chip.closest(".cal-cell").dataset.date, "top"); return; }
-        showAgendaItemMenu(e.clientX, e.clientY, chip.dataset.kind, chip.dataset.id);
-      };
-    });
-    if (!mobile) {
-      grid.querySelectorAll(".cal-chip, .cal-more").forEach(el => {
-        el.onkeydown = (e) => {
-          if (e.key !== "Enter" && e.key !== " ") return;
-          e.preventDefault(); e.stopPropagation();
-          if (el.classList.contains("cal-more")) { el.click(); return; }
-          const r = el.getBoundingClientRect();
-          showAgendaItemMenu(r.left, r.bottom, el.dataset.kind, el.dataset.id);
-        };
-      });
-    }
     grid.querySelectorAll(".cal-cell[data-date]").forEach(cell => {
       cell.onclick = (e) => {
-        if (e.target.closest(".cal-chip, .cal-more, .cal-add-input")) return;
-        if (mobile) { calSelectDate(cell.dataset.date, "auto"); return; }
-        openCalendarInlineAdd(cell, cell.dataset.date);
+        const onItem = !!e.target.closest(".cal-chip, .cal-more");
+        calSelectDate(cell.dataset.date, mobile ? (onItem ? "top" : "auto") : null);
+        if (isCalPopup()) openCalDayPopup();
       };
       cell.onkeydown = (e) => {
         if (e.target !== cell) return;
@@ -5163,10 +5476,7 @@
         const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
         if (!step) return;
         e.preventDefault();
-        const next = addDaysStr(cell.dataset.date, step);
-        if (mobile) { calSelectDate(next); return; }
-        const target = grid.querySelector(`.cal-cell[data-date="${next}"]`);
-        if (target) { cell.tabIndex = -1; target.tabIndex = 0; target.focus(); }
+        calSelectDate(addDaysStr(cell.dataset.date, step)); // 방향키 = 선택 이동(팝업은 Enter로 엶)
       };
     });
   }
@@ -5175,9 +5485,10 @@
   function renderCalDayPanel() {
     const d = calSelected;
     const list = calEventsOn(d);
-    $("calDayTitle").textContent = list.length ? `${calDateLabel(d)} · 일정 ${list.length}개` : calDateLabel(d);
+    $("calDayTitle").textContent = calDateLabel(d) + (d === todayStr() ? " (오늘)" : "");
+    $("calDayCount").textContent = list.length ? `${list.length}개` : "";
     if (!list.length) {
-      $("calDayList").innerHTML = `<div class="cal-day-empty">이날은 등록된 일정이 없어요</div>`;
+      $("calDayList").innerHTML = `<div class="cal-day-empty">이날은 일정이 없어요</div>`;
     } else {
       $("calDayList").innerHTML = list.map(e => {
         const cat = e.category_id ? eventCategories.find(c => c.id === e.category_id) : null;
@@ -5454,7 +5765,8 @@
     const todayS = todayStr();
     const cat = habitCategories.find(c => c.id === t.category_id);
     const repeatText = repeatSummaryText(t.repeat_unit, t.repeat_interval, t.repeat_days);
-    const catChip = cat ? `<span class="habit-cat-chip" style="background:${cat.color ? `color-mix(in srgb, ${cat.color} 18%, white)` : "var(--accent-soft)"};color:${cat.color || "var(--accent)"};">${escapeHtml(cat.name)}</span>` : "";
+    // 2026-09-26: 그룹 표시 = 그룹색 점 + 이름(글자는 읽기 쉬운 본문색), 배경은 옅은 회색 태그
+    const catChip = cat ? `<span class="habit-cat-chip"><span class="tag-dot-sm" style="background:${cat.color || "var(--accent)"};"></span>${escapeHtml(cat.name)}</span>` : "";
     // 시작일이 아직 안 왔거나 종료일이 있을 때만 기간을 같이 보여줌(평범하게 계속 진행 중인 습관은 굳이 안 보여줘서 안 복잡하게).
     const windowText = t.end_date ? ` · ~${formatDateShort(t.end_date)}까지`
       : (t.start_date && t.start_date > todayS) ? ` · ${formatDateShort(t.start_date)}부터 시작` : "";
@@ -5484,8 +5796,8 @@
         <div class="name">${escapeHtml(t.name)}${dueChip}</div>
         <div class="block-tag">${t.start_minute != null ? minutesToHHMM(t.start_minute) : "시간 없음"} · ${t.duration_minutes || 30}분 · ${repeatText}${windowText}${catChip}</div>
       </div>
-      <button class="historybtn" data-id="${t.id}" title="기록 보기">🗓</button>
-      <button class="settingsbtn" data-id="${t.id}" title="반복·그룹 설정">⚙</button>
+      <button class="historybtn icon-btn" data-id="${t.id}" title="기록 보기" aria-label="${escapeHtml(t.name)} 기록 보기">${ICON_HISTORY_SVG}</button>
+      <button class="settingsbtn icon-btn" data-id="${t.id}" title="반복·그룹 설정" aria-label="${escapeHtml(t.name)} 반복·그룹 설정">${ICON_SLIDERS_SVG}</button>
       ${actionBtn}
       <button class="del" data-id="${t.id}">삭제</button>
     </div>
