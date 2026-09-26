@@ -96,7 +96,7 @@
   .topbar-quickadd{flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 14px;max-width:480px;}
   .topbar-quickadd input{flex:1;border:none;background:transparent;outline:none;font-size:13px;color:var(--text);font-family:inherit;min-width:0;}
   .topbar-quickadd input::placeholder{color:var(--sub);}
-  .topbar-quickadd button{flex-shrink:0;border:none;border-radius:999px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;}
+  .topbar-quickadd button{flex-shrink:0;border:none;border-radius:999px;background:var(--accent);color:var(--card);font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;}
   .topbar-quickadd button:active{transform:scale(.97);}
   /* 사이드바용 퀵 인풋 — 사이드바 가로 폭(180px, 안쪽 패딩 12px씩 뺀 만큼)에 맞춰 인풋/버튼 모두 width:100%로
      세로로 쌓음(가로로 나란히 놓기엔 폭이 좁아서). 사이드바 자체가 ≤760px에서 display:none이라 그때는
@@ -108,7 +108,7 @@
   body.qa-on .sidebar-quickadd{display:block;}
   .sidebar-quickadd input{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:8px 10px;font-size:12.5px;color:var(--text);font-family:inherit;outline:none;margin-bottom:6px;}
   .sidebar-quickadd input::placeholder{color:var(--sub);}
-  .sidebar-quickadd button{width:100%;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;padding:8px 0;cursor:pointer;font-family:inherit;}
+  .sidebar-quickadd button{width:100%;border:none;border-radius:12px;background:var(--accent);color:var(--card);font-size:12.5px;font-weight:700;padding:8px 0;cursor:pointer;font-family:inherit;}
   .sidebar-quickadd button:active{transform:scale(.97);}
   @media (max-width:760px){
     .topbar{gap:8px;padding:0 14px;}
@@ -254,12 +254,21 @@
   .someday-row .tag-dot-sm{flex:0 0 auto;}
   /* 언젠가 정렬/그룹필터 툴바(집 카드+할일 탭 공용) */
   .tag-dot-sm{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-  .someday-toolbar{display:flex;justify-content:flex-end;margin-bottom:6px;}
-  .someday-sort-select{font-size:11px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--sub);cursor:pointer;}
-  .someday-tag-chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;}
-  .someday-tag-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--sub);cursor:pointer;}
+  /* 2026-09-26 — 정렬 메뉴·그룹 칩 가독성 정리(집·할일 탭 공용): 흰색 하드코딩(#fff)을 테마 변수로 바꿔 검정 테마에서
+     밝은 칸이 남지 않게 하고, 글씨를 키우고 클릭 영역을 넓힘. 선택 칩은 테두리·배경·굵기 세 가지로 구분. */
+  .someday-toolbar{display:flex;justify-content:flex-end;margin-bottom:8px;}
+  .someday-sort-select{font-size:13px;min-height:32px;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;}
+  [data-theme="black"] .someday-sort-select{color-scheme:dark;}
+  .someday-tag-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .someday-tag-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;line-height:1.3;min-height:30px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;}
+  .someday-tag-chip:hover{border-color:color-mix(in srgb, var(--accent) 45%, var(--line));}
   .someday-tag-chip.archived{border-style:dashed;}
-  .someday-tag-chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700;}
+  .someday-tag-chip.active{background:color-mix(in srgb, var(--accent) 16%, var(--card));border-color:color-mix(in srgb, var(--accent) 70%, var(--text));color:var(--text);font-weight:700;}
+  .someday-tag-chip[hidden], .someday-chip-more[hidden]{display:none;}
+  .someday-chip-more{display:inline-flex;align-items:center;min-height:30px;padding:4px 10px;border:none;border-radius:999px;background:transparent;color:var(--sub);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .someday-chip-more:hover{color:var(--text);background:color-mix(in srgb, var(--text) 6%, var(--card));}
+  /* 펼쳤을 때 칩이 아주 많아도 아래 목록이 카드 밖으로 밀려나지 않게 칩 영역 자체에 높이 제한 + 내부 스크롤 */
+  .someday-tag-chips.is-expanded{max-height:176px;overflow-y:auto;}
   .someday-more-row{text-align:center;font-size:12px;color:var(--accent);cursor:pointer;padding:6px 0;}
   .someday-more-row:hover{text-decoration:underline;}
   .someday-row.done span{color:var(--sub);text-decoration:line-through;}
@@ -271,7 +280,7 @@
   .inline-add-row input[type=date],.inline-add-row input[type=time]{flex:0 0 auto;}
   .inline-add-row input[type=number]{width:64px;flex:0 0 auto;}
   .inline-add-row button{padding:0 14px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;cursor:pointer;flex-shrink:0;}
-  .inline-add-input{width:100%;padding:5px 7px;border:1px solid var(--accent);border-radius:6px;font-size:13px;font-family:inherit;background:#fff;min-width:0;}
+  .inline-add-input{width:100%;padding:5px 7px;border:1px solid var(--accent);border-radius:6px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);min-width:0;}
   .tl-inline-add{padding:0 4px;}
   .tl-inline-add .inline-add-input{padding:2px 6px;font-size:12px;}
   .inline-add-wrap{display:flex;align-items:center;gap:4px;}
@@ -280,7 +289,7 @@
   /* ── 클릭=수정, 오른쪽클릭=삭제 메뉴 ── */
   .todo-row .name, .event-row .title, .someday-title, .plan-row.todo .plan-todo-title{cursor:pointer;}
   .todo-row .name:hover, .event-row .title:hover, .someday-title:hover, .plan-row.todo .plan-todo-title:hover{color:var(--accent);}
-  .ctx-menu{position:fixed;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.14);padding:4px;z-index:30;max-height:60vh;overflow-y:auto;}
+  .ctx-menu{position:fixed;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.14);padding:4px;z-index:30;max-height:60vh;overflow-y:auto;}
   .ctx-menu button{display:block;width:100%;padding:8px 16px;border:none;background:none;color:var(--danger);font-size:13px;text-align:left;cursor:pointer;border-radius:6px;white-space:nowrap;}
   .ctx-menu button:hover{background:var(--bg);}
   .ctx-menu button.default{color:var(--text);}
@@ -297,25 +306,29 @@
 
   /* ── 집 : 2열 탭 구조 재설계(2026-09-20, 1단계) — 1열 오늘/다가오는/언젠가, 2열 타임라인/포커스.
      목업(Claude 아티팩트 "오늘한칸 — 홈 재설계") 기준 파스텔 탭 색상·둥근 카드 톤 적용. ── */
-  .home2-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  .home2-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start;}
   /* 09-24: 모바일 상단 "목록"/"타임라인·다가오는" 세그먼트 토글 제거(결님 요청 — 눌러도 탭이 안 바뀌고
      불필요하다고 판단). 원인: 이 media query 안의 .home2-col{display:none}이 아래(라인 근처)의
      비-media-query .home2-col{display:flex}보다 소스 순서상 먼저 나와서 항상 뒤 규칙에 덮여
      두 열이 늘 같이 보였음 — 즉 토글이 원래도 실질적으로 아무 효과가 없었음. 대신 모바일에서는
      그냥 2열을 세로로 자연스럽게 쌓기만 함. */
   @media (max-width:900px){
-    .home2-grid{grid-template-columns:1fr;}
+    .home2-grid{grid-template-columns:minmax(0,1fr);gap:16px;}
   }
-  .home2-col{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 6px 20px rgba(150,130,200,.08);display:flex;flex-direction:column;gap:14px;}
+  /* 2026-09-26 — 카드 구분은 얇은 테두리 중심, 그림자는 거의 안 보이게. 내부 여백 20px(모바일 14px), 모서리 20px. */
+  .home2-col{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.03);display:flex;flex-direction:column;gap:14px;}
+  @media (max-width:760px){
+    .home2-col{padding:14px;border-radius:18px;gap:12px;}
+  }
   /* 결님 요청(2026-09-20) — 1열/2열 각각의 역할을 이름표로 구분: 1열="할일 보관함"(모아두는 곳),
      2열="실행 공간"(오늘 실제로 하는 곳). 탭 바로 위에 작은 라벨만 추가, 레이아웃/기능은 그대로. */
-  .home2-col-label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:var(--text);margin-bottom:-2px;}
-  .home2-tabs{display:flex;gap:8px;}
-  .home2-tab{flex:1;padding:9px 0;border:none;border-radius:14px;font-size:13px;font-weight:700;color:var(--sub);background:transparent;cursor:pointer;font-family:inherit;}
-  .home2-tab.active.tab-block{background:var(--tab-block-bg);color:var(--tab-block-text);}
-  .home2-tab.active.tab-upcoming{background:var(--tab-upcoming-bg);color:var(--tab-upcoming-text);}
-  .home2-tab.active.tab-someday{background:var(--tab-someday-bg);color:var(--tab-someday-text);}
-  .home2-tab.active.tab-timeline{background:var(--tab-timeline-bg);color:var(--tab-timeline-text);}
+  /* 2026-09-26 — 영역 이름 "담아두기 / 지금, 한칸"(17px/700), 탭은 옅은 바탕 세그먼트 + 선택 탭만 카드색·선명한 글씨·얇은 테두리.
+     색은 전부 테마 변수(--text/--card/--accent/--line)에서 섞어서 5개 테마(검정 포함)에 그대로 맞음. */
+  .home2-col-label{display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;line-height:1.4;color:var(--text);}
+  .home2-tabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:color-mix(in srgb, var(--text) 5%, var(--card));border:1px solid color-mix(in srgb, var(--line) 70%, transparent);}
+  .home2-tab{flex:1;min-height:38px;padding:0 8px;border:1px solid transparent;border-radius:11px;font-size:14px;font-weight:600;color:var(--sub);background:transparent;cursor:pointer;font-family:inherit;transition:background .15s,color .15s;}
+  .home2-tab:hover{color:var(--text);}
+  .home2-tab.active{background:var(--card);color:var(--text);border-color:color-mix(in srgb, var(--accent) 40%, var(--line));font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.04);}
   .home2-tabpanel{min-width:0;}
   /* 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간/타임라인) 높이에 맞추고, 언젠가·다가오는은
      그 높이만큼 기본으로 펼쳐진 뒤 넘치는 분량만 내부 스크롤. #homeCol1의 실제 height는 JS(syncHomeCol1Height)가
@@ -332,14 +345,14 @@
   .home2-placeholder{border:1.5px dashed var(--line);border-radius:14px;padding:28px 14px;text-align:center;color:var(--sub);font-size:13px;line-height:1.6;}
   /* ── 시간블럭 탭(2026-09-20, 2단계; 09-24 목록형 서브뷰 삭제로 진행률 배지만 남음) — 목업(파스텔 톤) 색상 그대로 적용. ── */
   .home2-today-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
-  .home2-progress-badge{display:inline-flex;align-items:center;background:#FFF1E8;color:#B75B3D;font-size:13px;font-weight:700;padding:6px 12px;border-radius:12px;white-space:nowrap;}
+  .home2-progress-badge{display:inline-flex;align-items:center;background:color-mix(in srgb, #B75B3D 14%, var(--card));color:color-mix(in srgb, #B75B3D 75%, var(--text));font-size:13px;font-weight:700;padding:6px 12px;border-radius:12px;white-space:nowrap;}
   /* ── 4단계(2026-09-20) — 1열 3탭(오늘/다가오는/언젠가) 행 앞 드래그 손잡이 아이콘(장식용, 목업 참고). ── */
-  .drag-handle-dots{color:#D9D2EC;flex-shrink:0;}
+  .drag-handle-dots{color:color-mix(in srgb, var(--sub) 45%, transparent);flex-shrink:0;}
   .agenda-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .agenda-date-wrap{display:flex;align-items:center;gap:6px;}
   .agenda-date-emoji{font-size:13px;}
   /* 09-24: 타임라인 탭 날짜(#agendaDateLabel)에만 있던 굵게·13px 규칙 삭제 — "다가오는"·"시간블럭" 탭 날짜와 같은 글꼴로 통일(결님 요청). */
-  .agenda-nav{background:none;border:none;color:var(--sub);cursor:pointer;font-size:16px;line-height:1;padding:2px 8px;border-radius:8px;}
+  .agenda-nav{background:none;border:none;color:var(--sub);cursor:pointer;font-size:20px;line-height:1;width:36px;height:36px;padding:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;}
   .agenda-nav:hover{color:var(--accent);background:var(--accent-soft);}
   .agenda-row{display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:13px;}
   .agenda-row:last-child{border-bottom:none;}
@@ -374,14 +387,19 @@
   .agenda-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   /* ── 집 : 오늘 열의 타임블럭/타임라인(습관+일정 통합, 드래그로 이동/조절 가능) ── */
-  .ag-tl-grid{display:grid;grid-template-columns:34px 1fr;grid-auto-rows:9px;position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 0;overflow:hidden;}
+  .ag-tl-grid{display:grid;grid-template-columns:46px 1fr;grid-auto-rows:9px;position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 0 6px;overflow:hidden;}
+  /* 2026-09-26 — 시간 라벨 12px(열 34→46px), 정시 선은 보이게·30분 선은 더 연하게. 슬롯 높이(AG_TL_ROW_PX=9)와
+     항목 위치 계산은 그대로라 표시 시간·드래그 저장 시간은 바뀌지 않음(라벨·선 모양만 바뀜). */
+  .ag-tl-grid .tl-row-label{font-size:12px;line-height:16px;transform:translateY(-8px);padding-right:8px;font-variant-numeric:tabular-nums;}
+  .ag-tl-grid .tl-row-line{border-top-color:color-mix(in srgb, var(--line) 45%, transparent);}
+  .ag-tl-grid .tl-row-line.hour{border-top-color:var(--line);}
   /* 같은 시간대에 겹치는 항목을 나란히 배치하려고 grid-row 대신 이 안에서 절대좌표(top/left/width)로 배치함 */
   .ag-tl-content{grid-column:2;grid-row:1 / -1;position:relative;}
-  .ag-tl-task{display:flex;align-items:flex-start;gap:6px;background:var(--accent-soft);border:1px solid #dfe3fb;border-radius:8px;padding:2px 6px;font-size:12px;line-height:1.3;position:absolute;box-sizing:border-box;overflow:hidden;z-index:1;touch-action:pan-y;cursor:pointer;}
+  .ag-tl-task{display:flex;align-items:flex-start;gap:6px;background:var(--accent-soft);border:1px solid var(--line);border-radius:8px;padding:2px 6px;font-size:12px;line-height:1.3;position:absolute;box-sizing:border-box;overflow:hidden;z-index:1;touch-action:pan-y;cursor:pointer;}
   .ag-tl-now-line{position:absolute;left:0;right:0;height:2px;background:var(--danger);z-index:3;pointer-events:none;}
   .ag-tl-now-line::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--danger);}
   .ag-tl-task.done{opacity:.55;text-decoration:line-through;}
-  .ag-tl-task.event{background:#fff;border-style:dashed;}
+  .ag-tl-task.event{background:var(--card);border-style:dashed;}
   .ag-tl-task.dragging{opacity:.85;box-shadow:0 3px 10px rgba(60,50,100,.18);z-index:5;cursor:grabbing;touch-action:none;}
   /* 09-24 버그 수정: 카드 높이가 고정이라 제목이 여러 줄로 접히면 마지막 줄이 반쯤 잘려 보였고, 띄어쓰기 없는 긴 제목은
      카드 밖으로 삐져나갔음(flex 자식 기본 min-width:auto) — 카드 높이에 들어가는 줄 수까지만 보이고 끝은 말줄임
@@ -619,14 +637,14 @@
   .habit-cat-chip{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;}
   /* 습관 예정 상태 배지(2026-09-12, 앵커 기준 며칠 밀렸는지/다음 회차까지 며칠) — 빨강=밀림, 파랑=오늘·예정 */
   .habit-due-chip{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600;vertical-align:middle;}
-  .habit-due-chip.due-overdue{background:#fde2e2;color:#c0392b;}
+  .habit-due-chip.due-overdue{background:color-mix(in srgb, #c0392b 14%, var(--card));color:color-mix(in srgb, #c0392b 80%, var(--text));}
   .habit-due-chip.due-today{background:#dce9fb;color:#2f6fd1;}
   .habit-due-chip.due-upcoming{background:#e8ecf5;color:#4a5a7a;}
   /* 집 화면 미완료 알림 배너(2026-09-13, 6단계 → 7-4단계에서 할일/습관 각각 따로 물어보는 2개로 분리) — 하루 첫 접속 시 1번만, 닫으면(예/✕ 둘 다) 그날은 다시 안 뜸 */
-  .home-incomplete-banner{display:flex;align-items:center;gap:8px;background:#fde2e2;color:#c0392b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;}
+  .home-incomplete-banner{display:flex;align-items:center;gap:8px;background:color-mix(in srgb, #c0392b 12%, var(--card));color:color-mix(in srgb, #c0392b 80%, var(--text));border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;}
   .home-incomplete-banner .txt{flex:1;min-width:0;}
   .home-incomplete-banner .yes{border:none;background:#c0392b;color:#fff;font-size:12px;font-weight:600;border-radius:7px;padding:5px 12px;cursor:pointer;flex-shrink:0;}
-  .home-incomplete-banner .close{border:none;background:none;color:#c0392b;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px;flex-shrink:0;}
+  .home-incomplete-banner .close{border:none;background:none;color:inherit;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px;flex-shrink:0;}
   /* 할일/습관 목록 공용: 정렬/그룹화 그룹 섹션 제목, 할일 날짜 배지(2026-09-12) */
   .list-section-head{font-size:12px;font-weight:600;color:var(--sub);margin:14px 2px 6px;}
   .list-section-head:first-child{margin-top:2px;}
@@ -762,6 +780,45 @@
   /* 09-24: 저장 완료 등을 잠깐 알려주는 작은 팝업(토스트) — 화면 아래 가운데, 모바일 하단 메뉴에 안 가리게 살짝 위로. */
   .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,8px);background:var(--text);color:var(--card);font-size:13px;font-weight:600;padding:9px 16px;border-radius:999px;box-shadow:0 6px 16px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:1000;white-space:nowrap;}
   .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  /* ── 2026-09-26 집 화면 목록 가독성 정리 ──
+     언젠가·다가오는·시간블럭 목록 줄(.home1-flat-row / .ag-block-row)만 대상(할일 탭 등 다른 화면의 같은 클래스는 안 건드림).
+     - 줄 최소 44px, 손잡이·체크박스·그룹 점·제목을 "첫 줄 가운데"에 맞춰 정렬(제목이 2줄이 돼도 체크박스가 위에 붙어 있음).
+     - 제목 15px/1.5, var(--text)로 통일, 최대 2줄 말줄임(전체 제목은 클릭 → 기존 이름 수정 입력창에서 확인).
+     - 그룹 색은 제목 앞 8px 점(.title-dot, titleDotHtml). 완료는 취소선+보조 글자색, 점도 흐리게.
+     - 타임라인 칸(.ag-tl-task)은 시간 길이로 높이가 정해지므로 여기 규칙이 전혀 적용되지 않음. */
+  .home2-grid :is(.home1-flat-row, .ag-block-row){display:flex;align-items:flex-start;gap:10px;min-height:44px;margin:0;padding:11px 6px;border-radius:10px;border-bottom:1px solid color-mix(in srgb, var(--line) 75%, transparent);font-size:15px;line-height:1.5;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row):hover{background:color-mix(in srgb, var(--text) 3%, var(--card));}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) > .drag-handle-dots{margin-top:4px;cursor:grab;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) > input[type=checkbox]{width:20px;height:20px;margin:1px 0 0;flex-shrink:0;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) > .agenda-event-dot-wrap{margin-top:1px;}
+  [data-theme="black"] .home2-grid input[type=checkbox]{color-scheme:dark;} /* 검정 테마: 빈 체크박스가 흰 네모로 튀지 않게 */
+  .title-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;margin:7px -4px 0 0;}
+  .title-dot.is-empty{background:transparent;}
+  .home2-grid .done > .title-dot{opacity:.4;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) :is(.agenda-title, .plan-todo-title){flex:1;min-width:0;font-size:15px;line-height:1.5;color:var(--text);white-space:normal;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row).done :is(.agenda-title, .plan-todo-title){color:var(--sub);text-decoration:line-through;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) .inline-add-wrap{align-self:center;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) .inline-add-input{font-size:15px;padding:4px 8px;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) :is(.plan-time, .plan-range-tag){font-size:12px;line-height:1.5;margin-top:3px;color:var(--sub);font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
+  .home2-grid :is(.home1-flat-row, .ag-block-row) .habit-due-chip{font-size:11px;margin:3px 0 0;flex-shrink:0;}
+  /* 목록 보조 정보(날짜 제목·건수·빈칸 안내·더보기) 12~13px */
+  .home2-grid .ag-section-head .label{font-size:13px;font-weight:700;}
+  .home2-grid .ag-section-head .count{font-size:12px;color:var(--sub);background:color-mix(in srgb, var(--text) 6%, var(--card));}
+  .home2-grid .block-add-row{font-size:13px;min-height:40px;display:flex;align-items:center;justify-content:center;}
+  .home2-grid .agenda-empty-block{font-size:13px;line-height:1.5;}
+  .home2-grid .someday-more-row{font-size:13px;color:var(--sub);font-weight:600;min-height:40px;display:flex;align-items:center;justify-content:center;}
+  .home2-grid .someday-more-row:hover{color:var(--text);}
+  #homeSomedayPanel > .someday-toolbar, #homeSomedayPanel > .someday-tag-chips{flex-shrink:0;}
+  /* 날짜 이동 줄: 날짜 가운데, 이전·다음 버튼 36px 정사각 클릭 영역 */
+  .home2-grid .agenda-head{min-height:40px;}
+  .home2-grid .agenda-date-wrap{font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
+  /* 타임라인 위 "하루종일": 제목 12px, 항목은 타임라인과 같은 배경색 구분을 유지하되 글씨만 13px로 */
+  .home2-grid .ag-section-head.tl-style .label{font-size:12px;}
+  .home2-grid .ag-allday-row.tl-style{padding:5px 8px;margin-bottom:4px;border-radius:10px;gap:8px;}
+  .home2-grid .ag-allday-row.tl-style .agenda-title{font-size:13px;line-height:1.5;color:var(--text);}
+  .home2-grid .ag-allday-row.tl-style.done .agenda-title{color:var(--sub);}
+  .home2-grid .ag-allday-row.tl-style input[type=checkbox]{width:16px;height:16px;margin:0;}
 </style>
 </head>
 <body>
@@ -846,7 +903,7 @@
              homeList*/homeTodayBlock*/homeUpcoming* 그대로 재사용(코드 여러 곳에서 참조하는 식별자). -->
         <div class="home2-grid">
           <div class="home2-col" id="homeCol1">
-            <div class="home2-col-label">📥 할일 보관함</div>
+            <div class="home2-col-label" role="heading" aria-level="2">담아두기</div>
             <div class="home2-tabs" id="homeCol1Tabs">
               <button type="button" class="home2-tab tab-someday active" data-col1tab="someday">언젠가</button>
               <button type="button" class="home2-tab tab-upcoming" data-col1tab="upcoming">다가오는</button>
@@ -866,16 +923,16 @@
               <!-- 2026-09-20 — 결님 요청으로 "다가오는"도 날짜 이동 가능해짐. 다른 탭들과 같은 homeAgendaDate를
                    공유하되(연동), 이 탭의 이전/다음 버튼은 7일(한 주) 단위로 이동. -->
               <div class="agenda-head">
-                <button id="homeUpcomingPrevBtn" class="agenda-nav">‹</button>
+                <button id="homeUpcomingPrevBtn" class="agenda-nav" aria-label="이전 7일">‹</button>
                 <span class="agenda-date-wrap"><span id="homeUpcomingDateLabel" style="cursor:pointer;">다가오는 7일</span></span>
-                <button id="homeUpcomingNextBtn" class="agenda-nav">›</button>
+                <button id="homeUpcomingNextBtn" class="agenda-nav" aria-label="다음 7일">›</button>
               </div>
               <div id="homeUpcomingList"></div>
             </div>
           </div>
 
           <div class="home2-col" id="homeCol2">
-            <div class="home2-col-label">🚀 실행 공간</div>
+            <div class="home2-col-label" role="heading" aria-level="2">지금, 한칸</div>
             <div class="home2-tabs" id="homeCol2Tabs">
               <button type="button" class="home2-tab tab-timeline active" data-col2tab="timeline">타임라인</button>
               <button type="button" class="home2-tab tab-block" data-col2tab="block">시간블럭</button>
@@ -886,9 +943,9 @@
                    되살림(1/3/7일 다중일 토글은 부활 안 시킴 — agendaDayCount는 1로 고정 유지).
                    버튼들의 클릭 핸들러는 1단계 때 지우지 않고 옵셔널 체이닝으로 남겨뒀던 걸 그대로 씀. -->
               <div class="agenda-head">
-                <button id="agendaPrevBtn" class="agenda-nav">‹</button>
+                <button id="agendaPrevBtn" class="agenda-nav" aria-label="이전 날">‹</button>
                 <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
-                <button id="agendaNextBtn" class="agenda-nav">›</button>
+                <button id="agendaNextBtn" class="agenda-nav" aria-label="다음 날">›</button>
               </div>
 
               <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
@@ -906,9 +963,9 @@
               <!-- 09-24 — 1열 옛 "목록" 탭의 시간블럭형 서브뷰를 그대로 승격(같은 homeAgendaDate를
                    "타임라인"과 공유). 목록형(flat list) 서브뷰는 결님 요청으로 완전히 삭제. -->
               <div class="agenda-head">
-                <button id="homeListPrevBtn" class="agenda-nav">‹</button>
+                <button id="homeListPrevBtn" class="agenda-nav" aria-label="이전 날">‹</button>
                 <span class="agenda-date-wrap"><span id="homeListDateLabel" style="cursor:pointer;">오늘</span></span>
-                <button id="homeListNextBtn" class="agenda-nav">›</button>
+                <button id="homeListNextBtn" class="agenda-nav" aria-label="다음 날">›</button>
               </div>
               <div id="homeTodayBlockWrap">
                 <div id="homeTodayBlockAllDay"></div>
@@ -2406,6 +2463,12 @@
   function eventDotHtml(catId, size = 10, boxSize = 20) {
     return `<span class="agenda-event-dot-wrap" style="width:${boxSize}px;height:${boxSize}px;"><span class="agenda-event-dot" style="width:${size}px;height:${size}px;background:${itemTagColor("event", catId) || "#c9457a"};"></span></span>`;
   }
+  // 2026-09-26 — 집 화면 목록(언젠가·다가오는·시간블럭): 그룹 색은 제목 글자색 대신 제목 앞 작은 점으로 표시
+  // (제목은 var(--text)로 통일해서 연한 그룹색 글자가 안 읽히던 문제 해결). 색이 없으면(그룹 없음+기본색 미지정,
+  // 또는 앞에 이미 범주색 동그라미가 있는 일정 줄) 빈 자리만 차지해서 제목 시작 위치를 다른 줄과 맞춤.
+  function titleDotHtml(color) {
+    return color ? `<span class="title-dot" style="background:${color};"></span>` : `<span class="title-dot is-empty"></span>`;
+  }
   // 그룹/범주 색을 카드 배경으로 옅게 깔아줌(원색 그대로면 글자가 안 보여서 흰색과 섞어 파스텔톤으로), 그룹 없으면 흰 배경 고정
   function itemTagBgStyle(kind, catId) {
     const color = itemTagColor(kind, catId);
@@ -2817,14 +2880,15 @@
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id); // 일정은 체크박스 자리에 범주색 동그라미로 대신 표시
-    // 타임블럭은 배경색 대신 "글자색"으로 그룹/범주를 구분(2026-09-07, 배경색을 넣으면 카드형이라 답답하다는 결님 의견 —
-    // 타임라인은 반대로 배경색을 계속 씀). 완료된 항목은 색을 빼서 기존 회색 줄긋기(.done)가 그대로 보이게 둠.
-    const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
+    // 타임블럭은 배경색 대신 그룹/범주 색으로 구분(타임라인은 반대로 배경색을 계속 씀). 2026-09-26: 글자색 대신
+    // 제목 앞 점(titleDotHtml)으로 바꿈 — 일정은 앞 동그라미(eventDotHtml)가 이미 범주색이라 점 자리는 비워둠.
+    const dotColor = it.kind === "event" ? null : itemTagColor(it.kind, it.cat_id);
     // 항목마다 카드처럼 보여서 공간을 너무 차지한다고 해서, 다가오는 계획 목록과 똑같이 카드 없는 플랫한 한 줄로 변경.
     return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
       ${DRAG_HANDLE_SVG}
       ${lead}
-      <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
+      ${titleDotHtml(dotColor)}
+      <span class="agenda-title">${escapeHtml(it.name)}</span>
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
     </div>`;
@@ -3052,11 +3116,12 @@
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id);
-    const tagColor = it.done ? null : itemTagColor(it.kind, it.cat_id);
+    const dotColor = it.kind === "event" ? null : itemTagColor(it.kind, it.cat_id);
     return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
       ${DRAG_HANDLE_SVG}
       ${lead}
-      <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(it.name)}</span>
+      ${titleDotHtml(dotColor)}
+      <span class="agenda-title">${escapeHtml(it.name)}</span>
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${it.start_minute != null && it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
     </div>`;
@@ -3203,7 +3268,7 @@
     for (let i = 0; i < slotCount; i++) {
       const m = minM + i * AG_TL_SLOT_MIN;
       if (m % 30 === 0) {
-        rowsHtml += `<div class="tl-row-line" style="grid-row:${i+1}"></div>`;
+        rowsHtml += `<div class="tl-row-line${m % 60 === 0 ? " hour" : ""}" style="grid-row:${i+1}"></div>`; // 정시 선은 진하게, 30분 선은 연하게(CSS)
         if (m % 60 === 0) rowsHtml += `<div class="tl-row-label" style="grid-row:${i+1}">${minutesToHHMM(m)}</div>`;
       }
     }
@@ -3943,31 +4008,31 @@
       // 계속 추가할 수 있게 함(하루종일 영역과 동일 규칙).
 
       const habitHtml = dayHabits.map(t => {
-        const tagColor = itemTagColor("habit", t.category_id);
         return `
-        <div class="plan-row habit home1-flat-row" data-id="${t.id}" data-kind="habit">
+        <div class="plan-row habit home1-flat-row${doneSet.has(t.id) ? " done" : ""}" data-id="${t.id}" data-kind="habit">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="upcoming-habit-check" />
-          <span class="plan-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(t.name)}</span>
+          ${titleDotHtml(itemTagColor("habit", t.category_id))}
+          <span class="plan-todo-title">${escapeHtml(t.name)}</span>
         </div>`;
       }).join("");
       const eventHtml = dayEvents.map(e => {
         const isRange = e.end_date && e.end_date !== e.event_date;
-        const tagColor = itemTagColor("event", e.category_id);
         return `<div class="plan-row home1-flat-row" data-id="${e.id}" data-kind="event">
           ${DRAG_HANDLE_SVG}
-          ${eventDotHtml(e.category_id, 8, 16)}
-          <span class="plan-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(e.title)}</span>
+          ${eventDotHtml(e.category_id, 10, 20)}
+          ${titleDotHtml(null)}
+          <span class="plan-todo-title">${escapeHtml(e.title)}</span>
           ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : e.event_time ? `<span class="plan-time">${e.event_time.slice(0, 5)}</span>` : ""}
         </div>`;
       }).join("");
       const todoHtml = dayTodos.map(td => {
-        const tagColor = td.is_done ? null : itemTagColor("todo", td.tag_id);
         return `
         <div class="plan-row todo home1-flat-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
-          <span class="plan-todo-title planup-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
+          ${titleDotHtml(itemTagColor("todo", td.tag_id))}
+          <span class="plan-todo-title planup-todo-title">${escapeHtml(td.title)}</span>
           ${td.todo_time ? `<span class="plan-time">${td.todo_time.slice(0, 5)}</span>` : ""}
         </div>`;
       }).join("");
@@ -4085,17 +4150,65 @@
   // "기본" 칩은 색상 인풋의 "기본" 색(daySettings.default_tag_color, 설정 페이지에서 지정 가능)을 점 색으로 씀.
   // 2026-09-24 보관: 보관된 그룹 칩은 숨기되, 지금 목록(shownItems)에 그 그룹을 쓰는 항목이 있거나 이미 그 칩으로
   // 거르는 중이면 “이름 · 보관됨” 칩으로 남겨서 해당 항목의 분류를 계속 확인·필터할 수 있게 함.
-  function renderSomedayTagChips(hostEl, activeTagId, onPick, shownItems = []) {
+  // 2026-09-26 — collapsible: true면(집 화면) 칩을 기본 2줄까지만 보이고 넘치면 "더 보기/접기" 버튼을 붙임(layoutCollapsibleChips).
+  function renderSomedayTagChips(hostEl, activeTagId, onPick, shownItems = [], collapsible = false) {
     const usedIds = new Set(shownItems.map(s => s.tag_id).filter(Boolean));
     const chipPool = habitCategories.filter(c => !c.is_archived || usedIds.has(c.id) || c.id === activeTagId);
     const chips = [
       `<button type="button" class="someday-tag-chip${activeTagId ? "" : " active"}" data-tag="">전체</button>`,
       `<button type="button" class="someday-tag-chip${activeTagId === SOMEDAY_NO_GROUP ? " active" : ""}" data-tag="${SOMEDAY_NO_GROUP}"><span class="tag-dot-sm" style="background:${daySettings.default_tag_color || "var(--sub)"};"></span>기본</button>`,
     ].concat(chipPool.map(c => `<button type="button" class="someday-tag-chip${activeTagId === c.id ? " active" : ""}${c.is_archived ? " archived" : ""}" data-tag="${c.id}"><span class="tag-dot-sm" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(tagPickLabel(c))}</button>`));
-    hostEl.innerHTML = chips.join("");
+    hostEl.innerHTML = chips.join("") + (collapsible ? `<button type="button" class="someday-chip-more" aria-expanded="false" hidden></button>` : "");
     hostEl.querySelectorAll("button[data-tag]").forEach(btn => {
       btn.onclick = () => onPick(btn.dataset.tag || null);
     });
+    if (collapsible) {
+      const moreBtn = hostEl.querySelector(".someday-chip-more");
+      moreBtn.onclick = () => { hostEl._chipsExpanded = !hostEl._chipsExpanded; layoutCollapsibleChips(hostEl); };
+      layoutCollapsibleChips(hostEl);
+      // 탭이 숨겨졌다 보이거나(폭 0→실제 폭) 창 폭이 바뀌면 줄 계산을 다시 함
+      if (!hostEl._chipsRO && typeof ResizeObserver !== "undefined") {
+        let lastW = -1;
+        hostEl._chipsRO = new ResizeObserver(() => {
+          const w = hostEl.clientWidth;
+          if (w === lastW) return;
+          lastW = w;
+          layoutCollapsibleChips(hostEl);
+        });
+        hostEl._chipsRO.observe(hostEl);
+      }
+    }
+  }
+  // 그룹 필터 칩 접기: 접힌 상태면 2줄 안에 들어가는 칩까지만 보여주고 나머지는 숨김. 선택된 칩(.active)은 줄 밖이어도
+  // 항상 보이게 남기고, 그 대신 앞쪽 칩을 하나씩 더 숨겨서 선택 칩·"더 보기" 버튼까지 2줄 안에 들어가게 맞춤.
+  // 펼친 상태면 전부 보여주고 버튼은 "접기". 넘칠 게 없으면 버튼 자체를 숨김. (실제 렌더 위치로 줄을 재므로
+  // 사용자 글꼴·화면 폭이 달라도 그대로 맞음.)
+  function layoutCollapsibleChips(hostEl) {
+    const moreBtn = hostEl.querySelector(".someday-chip-more");
+    if (!moreBtn) return;
+    const chips = [...hostEl.querySelectorAll("button[data-tag]")];
+    chips.forEach(c => { c.hidden = false; });
+    moreBtn.hidden = true;
+    hostEl.classList.remove("is-expanded");
+    if (!hostEl.clientWidth || !chips.length) return; // 숨겨진 탭 — 보일 때 ResizeObserver가 다시 부름
+    const rowTops = [...new Set(chips.map(c => c.offsetTop))].sort((a, b) => a - b);
+    if (rowTops.length <= 2) return; // 2줄 안에 다 들어감 → 버튼 불필요
+    moreBtn.hidden = false;
+    moreBtn.setAttribute("aria-expanded", hostEl._chipsExpanded ? "true" : "false");
+    if (hostEl._chipsExpanded) { moreBtn.textContent = "접기"; hostEl.classList.add("is-expanded"); return; }
+    const hiddenCount = () => chips.filter(c => c.hidden).length;
+    const secondRowTop = rowTops[1];
+    const setLabel = () => { moreBtn.textContent = `더 보기 +${hiddenCount()}`; };
+    chips.forEach(c => { if (c.offsetTop > secondRowTop && !c.classList.contains("active")) c.hidden = true; });
+    setLabel();
+    // 선택 칩 또는 버튼이 아직 3번째 줄로 밀려나 있으면, 뒤에서부터(선택 칩·"전체" 제외) 하나씩 더 숨김
+    const overflowing = () => moreBtn.offsetTop > secondRowTop || chips.some(c => !c.hidden && c.offsetTop > secondRowTop);
+    for (let i = chips.length - 1; i > 0 && overflowing(); i--) {
+      const c = chips[i];
+      if (c.hidden || c.classList.contains("active")) continue;
+      c.hidden = true;
+      setLabel();
+    }
   }
 
   // "언젠가" 열: 정렬/그룹필터 적용 후 일정 개수(somedayHomeVisible, 09-24부터 기본 15)까지만 보여주고
@@ -4106,18 +4219,19 @@
     const sortSel = $("somedayHomeSortSelect");
     if (sortSel) renderSomedaySortSelect(sortSel, somedayHomeSort, (v) => { somedayHomeSort = v; somedayHomeVisible = 15; renderSomedaySummary(); });
     const chipsHost = $("somedayHomeTagChips");
-    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; somedayHomeVisible = 15; renderSomedaySummary(); }, somedayItems.filter(s => !s.is_done));
+    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; somedayHomeVisible = 15; renderSomedaySummary(); }, somedayItems.filter(s => !s.is_done), true);
 
     const undone = somedayItems.filter(s => !s.is_done);
     const all = filterSomedayList(sortSomedayList(undone, somedayHomeSort), somedayHomeFilterTag);
     const items = all.slice(0, somedayHomeVisible);
     const rowsHtml = items.map(item => {
-      const tagColor = itemTagColor("someday", item.tag_id); // 그룹 없는 항목도 "기본" 색을 그대로 받아옴(itemTagColor 내부에서 처리)
+      const dotColor = itemTagColor("someday", item.tag_id); // 그룹 없는 항목도 "기본" 색을 그대로 받아옴(itemTagColor 내부에서 처리)
       return `
       <div class="task-row ag-someday-row home1-flat-row" data-someday-id="${item.id}">
         ${DRAG_HANDLE_SVG}
         <input type="checkbox" data-id="${item.id}" class="somedaysum-check" />
-        <span class="agenda-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(item.title)}</span>
+        ${titleDotHtml(dotColor)}
+        <span class="agenda-title">${escapeHtml(item.title)}</span>
       </div>`;
     }).join("");
     const moreHtml = all.length > items.length ? `<div class="someday-more-row" data-somedaymore="1">+ 더보기 (${all.length - items.length}개 더)</div>` : "";
