@@ -812,10 +812,8 @@
   .someday-row input[type=checkbox]{width:20px;height:20px;}
   .someday-row .someday-title{flex:1;min-width:0;color:var(--text);overflow-wrap:anywhere;}
   .someday-row.done .someday-title{color:var(--sub);text-decoration:line-through;}
-  .someday-row .title-dot{flex:0 0 8px;margin:0 -4px 0 0;}
   .someday-row .todo-date-badge{flex:none;}
   .section-label > span{font-size:13px;}
-  .someday-row.done .title-dot{opacity:.4;}
   .todo-date-badge{flex:none;font-size:12px;padding:2px 9px;margin-right:0;background:color-mix(in srgb, var(--text) 5%, var(--card));}
   .list-section-head{font-size:13px;font-weight:700;color:var(--sub);margin:16px 2px 8px;}
   /* 습관 목록 줄 */
@@ -854,7 +852,7 @@
      언젠가·다가오는·시간블럭 목록 줄(.home1-flat-row / .ag-block-row)만 대상(할일 탭 등 다른 화면의 같은 클래스는 안 건드림).
      - 줄 최소 44px, 손잡이·체크박스·그룹 점·제목을 "첫 줄 가운데"에 맞춰 정렬(제목이 2줄이 돼도 체크박스가 위에 붙어 있음).
      - 제목 15px/1.5, var(--text)로 통일, 최대 2줄 말줄임(전체 제목은 클릭 → 기존 이름 수정 입력창에서 확인).
-     - 그룹 색은 제목 앞 8px 점(.title-dot, titleDotHtml). 완료는 취소선+보조 글자색, 점도 흐리게.
+     - 그룹 색은 제목 글자색(.gc-title, groupTitleHtml — 2026-09-28 점 → 글자색). 완료는 취소선+보조 글자색 우선.
      - 타임라인 칸(.ag-tl-task)은 시간 길이로 높이가 정해지므로 여기 규칙이 전혀 적용되지 않음. */
   .home2-grid :is(.home1-flat-row, .ag-block-row){display:flex;align-items:flex-start;gap:10px;min-height:44px;margin:0;padding:11px 6px;border-radius:10px;border-bottom:1px solid color-mix(in srgb, var(--line) 75%, transparent);font-size:15px;line-height:1.5;}
   .home2-grid :is(.home1-flat-row, .ag-block-row):hover{background:color-mix(in srgb, var(--text) 3%, var(--card));}
@@ -862,9 +860,6 @@
   .home2-grid :is(.home1-flat-row, .ag-block-row) > input[type=checkbox]{width:20px;height:20px;margin:1px 0 0;flex-shrink:0;}
   .home2-grid :is(.home1-flat-row, .ag-block-row) > .agenda-event-dot-wrap{margin-top:1px;}
   [data-theme="black"] .home2-grid input[type=checkbox]{color-scheme:dark;} /* 검정 테마: 빈 체크박스가 흰 네모로 튀지 않게 */
-  .title-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;margin:7px -4px 0 0;}
-  .title-dot.is-empty{background:transparent;}
-  .home2-grid .done > .title-dot{opacity:.4;}
   .home2-grid :is(.home1-flat-row, .ag-block-row) :is(.agenda-title, .plan-todo-title){flex:1;min-width:0;font-size:15px;line-height:1.5;color:var(--text);white-space:normal;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}
   .home2-grid :is(.home1-flat-row, .ag-block-row).done :is(.agenda-title, .plan-todo-title){color:var(--sub);text-decoration:line-through;}
   .home2-grid :is(.home1-flat-row, .ag-block-row) .inline-add-wrap{align-self:center;}
@@ -1057,6 +1052,15 @@
   [data-theme="cheese"] .brand-logo{color:var(--text);}
   [data-theme="cheese"] :focus-visible{outline-color:var(--accent-text) !important;}
   [data-theme="cheese"] .card{box-shadow:none;}
+  /* 2026-09-28 할일·습관 제목 그룹색(.gc-title, --gc = 저장된 그룹색 그대로). 화면 표시만 테마 바탕에서 읽히게
+     진하기를 조정: 밝은 테마는 OKLCH 밝기를 0.55 이하로(흰 바탕 대비 약 4.5:1 이상), 검정 테마는 0.75 이상으로.
+     OKLCH 상대색을 모르는 옛 브라우저는 본문색과 섞은 값으로 대신함. 완료 항목은 흐린 글자·취소선이 우선. */
+  #app .gc-title{color:color-mix(in srgb, var(--gc) 55%, var(--text));}
+  @supports (color: oklch(from red l c h)){
+    #app .gc-title{color:oklch(from var(--gc) min(l, 0.55) c h);}
+    [data-theme="black"] #app .gc-title{color:oklch(from var(--gc) max(l, 0.75) c h);}
+  }
+  #app .done .gc-title, [data-theme="black"] #app .done .gc-title{color:var(--sub);text-decoration:line-through;}
 </style>
 </head>
 <body>
@@ -2777,8 +2781,15 @@
   // 2026-09-26 — 집 화면 목록(언젠가·다가오는·시간블럭): 그룹 색은 제목 글자색 대신 제목 앞 작은 점으로 표시
   // (제목은 var(--text)로 통일해서 연한 그룹색 글자가 안 읽히던 문제 해결). 색이 없으면(그룹 없음+기본색 미지정,
   // 또는 앞에 이미 범주색 동그라미가 있는 일정 줄) 빈 자리만 차지해서 제목 시작 위치를 다른 줄과 맞춤.
-  function titleDotHtml(color) {
-    return color ? `<span class="title-dot" style="background:${color};"></span>` : `<span class="title-dot is-empty"></span>`;
+  // 2026-09-28 — 할일·습관(언젠가 포함) 목록: 제목 앞 점 대신 "제목 글자"를 그룹색으로(체크박스는 그대로).
+  // 그룹이 없으면 기본 글자색(기본 그룹색 설정은 글자에 쓰지 않음). 저장된 색은 그대로 두고, 화면에서만
+  // 테마 바탕에 읽히도록 진하기를 조정(CSS .gc-title). 완료 항목은 흐린 글자·취소선이 그룹색보다 우선.
+  // 일정 줄은 기존대로 앞의 범주색 동그라미(eventDotHtml)만 쓰고 제목은 기본 글자색.
+  function groupTitleHtml(cls, kind, catId, text) {
+    const color = catId ? itemTagColor(kind, catId) : null;
+    return color
+      ? `<span class="${cls} gc-title" style="--gc:${color};">${escapeHtml(text)}</span>`
+      : `<span class="${cls}">${escapeHtml(text)}</span>`;
   }
   // 그룹/범주 색을 카드 배경으로 옅게 깔아줌(원색 그대로면 글자가 안 보여서 흰색과 섞어 파스텔톤으로), 그룹 없으면 흰 배경 고정
   function itemTagBgStyle(kind, catId) {
@@ -3194,15 +3205,13 @@
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id); // 일정은 체크박스 자리에 범주색 동그라미로 대신 표시
-    // 타임블럭은 배경색 대신 그룹/범주 색으로 구분(타임라인은 반대로 배경색을 계속 씀). 2026-09-26: 글자색 대신
-    // 제목 앞 점(titleDotHtml)으로 바꿈 — 일정은 앞 동그라미(eventDotHtml)가 이미 범주색이라 점 자리는 비워둠.
-    const dotColor = it.kind === "event" ? null : itemTagColor(it.kind, it.cat_id);
+    // 타임블럭은 배경색 대신 그룹/범주 색으로 구분(타임라인은 반대로 배경색을 계속 씀). 2026-09-28: 할일·습관은
+    // 제목 글자를 그룹색으로(groupTitleHtml), 일정은 앞 동그라미(eventDotHtml)가 범주색이라 제목은 기본색.
     // 항목마다 카드처럼 보여서 공간을 너무 차지한다고 해서, 다가오는 계획 목록과 똑같이 카드 없는 플랫한 한 줄로 변경.
     return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
       ${DRAG_HANDLE_SVG}
       ${lead}
-      ${titleDotHtml(dotColor)}
-      <span class="agenda-title">${escapeHtml(it.name)}</span>
+      ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name)}
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
     </div>`;
@@ -3430,12 +3439,10 @@
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id);
-    const dotColor = it.kind === "event" ? null : itemTagColor(it.kind, it.cat_id);
     return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
       ${DRAG_HANDLE_SVG}
       ${lead}
-      ${titleDotHtml(dotColor)}
-      <span class="agenda-title">${escapeHtml(it.name)}</span>
+      ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name)}
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${it.start_minute != null && it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
     </div>`;
@@ -4326,8 +4333,7 @@
         <div class="plan-row habit home1-flat-row${doneSet.has(t.id) ? " done" : ""}" data-id="${t.id}" data-kind="habit">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="upcoming-habit-check" />
-          ${titleDotHtml(itemTagColor("habit", t.category_id))}
-          <span class="plan-todo-title">${escapeHtml(t.name)}</span>
+          ${groupTitleHtml("plan-todo-title", "habit", t.category_id, t.name)}
         </div>`;
       }).join("");
       const eventHtml = dayEvents.map(e => {
@@ -4335,7 +4341,6 @@
         return `<div class="plan-row home1-flat-row" data-id="${e.id}" data-kind="event">
           ${DRAG_HANDLE_SVG}
           ${eventDotHtml(e.category_id, 10, 20)}
-          ${titleDotHtml(null)}
           <span class="plan-todo-title">${escapeHtml(e.title)}</span>
           ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : e.event_time ? `<span class="plan-time">${e.event_time.slice(0, 5)}</span>` : ""}
         </div>`;
@@ -4345,8 +4350,7 @@
         <div class="plan-row todo home1-flat-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
-          ${titleDotHtml(itemTagColor("todo", td.tag_id))}
-          <span class="plan-todo-title planup-todo-title">${escapeHtml(td.title)}</span>
+          ${groupTitleHtml("plan-todo-title planup-todo-title", "todo", td.tag_id, td.title)}
           ${td.todo_time ? `<span class="plan-time">${td.todo_time.slice(0, 5)}</span>` : ""}
         </div>`;
       }).join("");
@@ -4539,13 +4543,11 @@
     const all = filterSomedayList(sortSomedayList(undone, somedayHomeSort), somedayHomeFilterTag);
     const items = all.slice(0, somedayHomeVisible);
     const rowsHtml = items.map(item => {
-      const dotColor = itemTagColor("someday", item.tag_id); // 그룹 없는 항목도 "기본" 색을 그대로 받아옴(itemTagColor 내부에서 처리)
       return `
       <div class="task-row ag-someday-row home1-flat-row" data-someday-id="${item.id}">
         ${DRAG_HANDLE_SVG}
         <input type="checkbox" data-id="${item.id}" class="somedaysum-check" />
-        ${titleDotHtml(dotColor)}
-        <span class="agenda-title">${escapeHtml(item.title)}</span>
+        ${groupTitleHtml("agenda-title", "someday", item.tag_id, item.title)}
       </div>`;
     }).join("");
     const moreHtml = all.length > items.length ? `<div class="someday-more-row" data-somedaymore="1">+ 더보기 (${all.length - items.length}개 더)</div>` : "";
@@ -4727,7 +4729,6 @@
 
   function renderTodoUnifiedRow(item) {
     const isTodo = item._kind === "todo";
-    const dotColor = itemTagColor(isTodo ? "todo" : "someday", item.tag_id); // 2026-09-26: 그룹색은 제목 앞 점으로
     const dateBadge = isTodo && item.start_date ? `<span class="todo-date-badge">${formatDateShort(item.start_date)}</span>` : "";
     // 반복 할일만 기록(달력+통계) 보기 버튼 노출(2026-09-13, 7-2단계) — 습관 탭 🗓와 같은 모달 재사용.
     const historyBtn = isTodo && item.repeat_unit ? `<button class="historybtn icon-btn tu-history" title="기록 보기" aria-label="기록 보기">${ICON_HISTORY_SVG}</button>` : "";
@@ -4735,8 +4736,7 @@
     <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}" data-kind="${item._kind}">
       <input type="checkbox" ${item.is_done?"checked":""} class="tu-check" />
       ${dateBadge}
-      ${titleDotHtml(dotColor)}
-      <span class="someday-title tu-title">${escapeHtml(item.title)}</span>
+      ${groupTitleHtml("someday-title tu-title", isTodo ? "todo" : "someday", item.tag_id, item.title)}
       ${historyBtn}
       <button class="del tu-del">삭제</button>
     </div>`;
@@ -5108,12 +5108,10 @@
     const done = sortSomedayList(filtered.filter(s => s.is_done), somedayTabSort);
     const sorted = [...undone, ...done]; // 완료 항목은 항상 뒤로(기존 규칙 유지), 각 그룹 안에서 선택한 정렬 기준 적용
     $("somedayList").innerHTML = sorted.length ? sorted.map(item => {
-      const dotColor = itemTagColor("someday", item.tag_id); // 2026-09-26: 그룹색은 제목 앞 점으로(그룹 없는 항목은 "기본" 색)
       return `
       <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}">
         <input type="checkbox" ${item.is_done?"checked":""} data-id="${item.id}" class="someday-check" />
-        ${titleDotHtml(dotColor)}
-        <span class="someday-title">${escapeHtml(item.title)}</span>
+        ${groupTitleHtml("someday-title", "someday", item.tag_id, item.title)}
         <button class="del" data-id="${item.id}">삭제</button>
       </div>
     `;
@@ -6014,8 +6012,8 @@
     const todayS = todayStr();
     const cat = habitCategories.find(c => c.id === t.category_id);
     const repeatText = repeatSummaryText(t.repeat_unit, t.repeat_interval, t.repeat_days);
-    // 2026-09-26: 그룹 표시 = 그룹색 점 + 이름(글자는 읽기 쉬운 본문색), 배경은 옅은 회색 태그
-    const catChip = cat ? `<span class="habit-cat-chip"><span class="tag-dot-sm" style="background:${cat.color || "var(--accent)"};"></span>${escapeHtml(cat.name)}</span>` : "";
+    // 2026-09-28: 그룹색은 습관 이름 글자에(아래 .name), 그룹 이름은 옅은 회색 태그로 유지(색 점은 없앰)
+    const catChip = cat ? `<span class="habit-cat-chip">${escapeHtml(cat.name)}</span>` : "";
     // 시작일이 아직 안 왔거나 종료일이 있을 때만 기간을 같이 보여줌(평범하게 계속 진행 중인 습관은 굳이 안 보여줘서 안 복잡하게).
     const windowText = t.end_date ? ` · ~${formatDateShort(t.end_date)}까지`
       : (t.start_date && t.start_date > todayS) ? ` · ${formatDateShort(t.start_date)}부터 시작` : "";
@@ -6042,7 +6040,7 @@
     return `
     <div class="todo-row ${habitsTabView === "active" ? "" : "inactive"}" data-id="${t.id}">
       <div class="info">
-        <div class="name">${escapeHtml(t.name)}${dueChip}</div>
+        <div class="name">${groupTitleHtml("habit-name", "habit", t.category_id, t.name)}${dueChip}</div>
         <div class="block-tag">${t.start_minute != null ? minutesToHHMM(t.start_minute) : "시간 없음"} · ${t.duration_minutes || 30}분 · ${repeatText}${windowText}${catChip}</div>
       </div>
       <button class="historybtn icon-btn" data-id="${t.id}" title="기록 보기" aria-label="${escapeHtml(t.name)} 기록 보기">${ICON_HISTORY_SVG}</button>
