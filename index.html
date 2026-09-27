@@ -887,6 +887,33 @@
   .home2-grid .ag-allday-row.tl-style .agenda-title{font-size:13px;line-height:1.5;color:var(--text);}
   .home2-grid .ag-allday-row.tl-style.done .agenda-title{color:var(--sub);}
   .home2-grid .ag-allday-row.tl-style input[type=checkbox]{width:16px;height:16px;margin:0;}
+  /* 2026-09-27 남아 있는 할일 — 경고색 없이 기본 글자색 + 옅은 구분선. 줄: 체크박스 → 제목(최대 2줄) → 오늘로 → ⋯,
+     원래 날짜는 제목 아래 보조 정보. 좁은 화면(≤480px)에선 날짜와 버튼을 제목 아래 한 줄로 내림. */
+  .leftover-wrap[hidden]{display:none;}
+  .leftover-wrap{border-top:1px solid color-mix(in srgb, var(--line) 75%, transparent);border-bottom:1px solid color-mix(in srgb, var(--line) 75%, transparent);}
+  .leftover-toggle{display:flex;align-items:center;gap:6px;width:100%;min-height:44px;padding:8px 4px;border:none;background:none;color:var(--text);font:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer;}
+  .leftover-toggle:hover{background:color-mix(in srgb, var(--text) 3%, var(--card));}
+  .leftover-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:8px;}
+  .leftover-chev{flex:none;color:var(--sub);transition:transform .15s;}
+  .leftover-wrap.open .leftover-chev{transform:rotate(90deg);}
+  .leftover-list[hidden]{display:none;}
+  .leftover-row{display:grid;grid-template-columns:20px minmax(0,1fr) auto;grid-template-areas:"check title actions" ". date actions";column-gap:10px;row-gap:2px;align-items:start;padding:10px 4px;border-top:1px solid color-mix(in srgb, var(--line) 60%, transparent);}
+  .leftover-row.is-busy{opacity:.55;}
+  .leftover-row .leftover-check{grid-area:check;width:20px;height:20px;margin:1px 0 0;accent-color:var(--accent);cursor:pointer;}
+  .leftover-row .leftover-title{grid-area:title;min-width:0;font-size:15px;line-height:1.5;color:var(--text);overflow:hidden;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}
+  .leftover-row .leftover-date{grid-area:date;font-size:12px;line-height:1.5;color:var(--sub);font-variant-numeric:tabular-nums;}
+  .leftover-row .leftover-actions{grid-area:actions;display:flex;align-items:center;gap:4px;align-self:center;}
+  .leftover-today{min-height:34px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .leftover-today:hover{border-color:color-mix(in srgb, var(--accent) 45%, var(--line));}
+  .leftover-more{min-width:34px;min-height:34px;padding:0;border:none;border-radius:10px;background:none;color:var(--sub);font-size:18px;line-height:1;cursor:pointer;}
+  .leftover-more:hover{background:color-mix(in srgb, var(--text) 5%, var(--card));color:var(--text);}
+  .leftover-row button:disabled, .leftover-row input:disabled{cursor:default;}
+  @media (max-width:480px){
+    .leftover-row{grid-template-columns:20px minmax(0,1fr) auto;grid-template-areas:"check title title" ". date actions";row-gap:4px;}
+    .leftover-row .leftover-date{align-self:center;}
+  }
+  .ctx-menu button.is-unavailable{color:var(--sub);}
+  .ctx-menu button .ctx-note{margin-left:6px;font-size:11px;color:var(--sub);}
 
   /* ── 2026-09-28 일정: 달력·목록 화면 + 치즈 테마 ──
      상단: 1줄 [일정 ··· 달력|목록], 2줄 [‹ 2026년 9월 › 오늘]. 달력 7열 같은 너비·주마다 같은 높이(5·6주 모두 잘리지 않음).
@@ -1125,8 +1152,8 @@
 
         <!-- 09-13 7-4단계: 할일/습관 각각 따로 물어보는 배너로 분리(전엔 개수만 합쳐서 보여주는 배너 1개였음) -->
         <div class="home-incomplete-banner" id="homeTodoBanner" style="display:none;">
-          <span class="txt" id="homeTodoBannerText">아직 완료하지 않은 할일이 있어요. 오늘로 옮길까요?</span>
-          <button type="button" class="yes" id="homeTodoBannerYes">예</button>
+          <span class="txt" id="homeTodoBannerText">지난 반복 할일이 오늘 목록에 함께 있어요.</span>
+          <button type="button" class="yes" id="homeTodoBannerYes">확인</button>
           <button type="button" class="close" id="homeTodoBannerClose">✕</button>
         </div>
         <div class="home-incomplete-banner" id="homeHabitBanner" style="display:none;">
@@ -1182,6 +1209,17 @@
             <div class="home2-tabs" id="homeCol2Tabs">
               <button type="button" class="home2-tab tab-timeline active" data-col2tab="timeline">타임라인</button>
               <button type="button" class="home2-tab tab-block" data-col2tab="block">시간블럭</button>
+            </div>
+
+            <!-- 2026-09-27 남아 있는 할일: 시작일이 오늘보다 이전인 미완료·반복 없는 일반 할일만 모음.
+                 오늘 목록(하루종일·시간블럭·타임라인)에는 자동으로 섞지 않고, "오늘로"를 눌러야 오늘 종일로 이동.
+                 타임라인/시간블럭 두 탭이 같은 날짜를 공유하므로 탭 밖에 한 번만 둠. 오늘을 보고 있을 때만 표시. -->
+            <div class="leftover-wrap" id="homeLeftover" hidden>
+              <button type="button" class="leftover-toggle" id="homeLeftoverToggle" aria-expanded="false" aria-controls="homeLeftoverList">
+                <svg class="leftover-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg>
+                <span>남아 있는 할일 · <span id="homeLeftoverCount">0</span>개</span>
+              </button>
+              <div class="leftover-list" id="homeLeftoverList" hidden></div>
             </div>
 
             <div class="home2-tabpanel" data-col2panel="timeline" id="homeTimelinePanel">
@@ -2375,10 +2413,12 @@
     const todoBanner = $("homeTodoBanner"), habitBanner = $("homeHabitBanner");
     if (!todoBanner || !habitBanner) return;
     const todayS = todayStr();
-    // 할일 배너: 원래 날짜가 지난(오늘보다 이전) 미완료 할일 — 오늘 자체 할일은 "옮길" 대상이 아니라서 제외.
-    const todoCount = todos.filter(t => !t.is_done && t.start_date && t.start_date < todayS).length;
+    // 할일 배너(2026-09-27 축소): 지난 미완료 "일반" 할일은 "남아 있는 할일" 영역(renderLeftoverTodos)이 대신 안내하고,
+    // 이 배너는 지난 미완료 "반복" 할일만 알림 — 반복 할일은 예전처럼 오늘 목록에 "N일 지남"으로 함께 보이므로
+    // 옮기라고 묻지 않고, 오늘 목록에 있다는 것만 알려줌(닫기/확인 = 오늘 하루 숨김, 기존 규칙 그대로).
+    const todoCount = todos.filter(t => !t.is_done && t.repeat_unit && t.start_date && t.start_date < todayS).length;
     if (!bannerDismissedToday("tok_todoBannerDismissed", todoBanner) && todoCount > 0) {
-      $("homeTodoBannerText").textContent = `아직 완료하지 않은 할일이 ${todoCount}개 있어요. 오늘로 옮길까요?`;
+      $("homeTodoBannerText").textContent = `지난 반복 할일 ${todoCount}개가 오늘 목록에 함께 있어요.`;
       todoBanner.style.display = "flex";
     } else {
       todoBanner.style.display = "none";
@@ -2806,14 +2846,152 @@
 
   // 지난 날짜에 남아있는 미완료 할일 — "오늘" 화면을 볼 때만, 원래 start_date는 안 건드리고 오늘 화면에도
   // 같이 보여줌(7-4단계, 결 확인대로 실제 날짜는 이동 안 시킴). 다른 날짜(어제/내일 등)를 넘겨서 볼 땐 안 섞임.
+  // 2026-09-27: 반복 할일만 여기서 섞음. 반복 없는 일반 할일은 "남아 있는 할일" 영역(leftoverTodos)에만 보이고,
+  // "오늘로"를 눌러 시작일이 오늘로 바뀐 뒤에야 오늘 목록에 나옴(중복 표시 방지).
+  function isLeftoverTodo(td, todayS) {
+    return !td.is_done && !td.repeat_unit && td.start_date && td.start_date < todayS;
+  }
   function overdueTodosForToday(dateStr) {
     if (dateStr !== todayStr()) return [];
-    return todos.filter(td => !td.is_done && td.start_date && td.start_date < dateStr);
+    return todos.filter(td => !td.is_done && td.repeat_unit && td.start_date && td.start_date < dateStr);
+  }
+
+  // ── 남아 있는 할일(2026-09-27) — 집 화면 오늘 목록 바로 위 접힌 영역 ──
+  // 펼침 상태는 이 변수(화면 이동·loadAll 재렌더 후에도 유지) + sessionStorage(같은 탭 새로고침 후에도 유지).
+  // 저장 중인 항목 id는 leftoverBusy에 넣어 두고 버튼을 막음(중복 동작 방지). 목록·개수는 저장 성공 후에만 다시 그림.
+  let leftoverOpen = (() => { try { return sessionStorage.getItem("tok_leftoverOpen") === "1"; } catch (e) { return false; } })();
+  const leftoverBusy = new Map(); // id → 진행 중 동작("done" | "today" | "delete")
+  function leftoverDateLabel(dateStr) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const sameYear = y === Number(todayStr().slice(0, 4));
+    return `${sameYear ? "" : `${y}년 `}${m}월 ${d}일`;
+  }
+  function renderLeftoverTodos() {
+    const wrap = $("homeLeftover");
+    if (!wrap) return;
+    const todayS = todayStr();
+    const items = agendaWindowDates().includes(todayS)
+      ? todos.filter(td => isLeftoverTodo(td, todayS))
+          .sort((a, b) => a.start_date.localeCompare(b.start_date) || String(a.created_at || "").localeCompare(String(b.created_at || "")))
+      : [];
+    wrap.hidden = !items.length;
+    if (!items.length) { $("homeLeftoverList").innerHTML = ""; return; }
+    $("homeLeftoverCount").textContent = items.length;
+    const toggle = $("homeLeftoverToggle");
+    toggle.setAttribute("aria-expanded", String(leftoverOpen));
+    wrap.classList.toggle("open", leftoverOpen);
+    const list = $("homeLeftoverList");
+    list.hidden = !leftoverOpen;
+    list.innerHTML = items.map(td => {
+      const busy = leftoverBusy.has(td.id);
+      const dis = busy ? " disabled" : "";
+      const checked = leftoverBusy.get(td.id) === "done" ? " checked" : ""; // 완료 저장 중엔 체크된 채로
+      return `<div class="leftover-row${busy ? " is-busy" : ""}" data-id="${td.id}">
+        <input type="checkbox" class="leftover-check" data-id="${td.id}" aria-label="${escapeHtml(td.title)} 완료"${checked}${dis} />
+        ${groupTitleHtml("leftover-title", "todo", td.tag_id, td.title)}
+        <span class="leftover-date">원래 날짜 ${leftoverDateLabel(td.start_date)}</span>
+        <span class="leftover-actions">
+          <button type="button" class="leftover-today" data-id="${td.id}"${dis}>오늘로</button>
+          <button type="button" class="leftover-more" data-id="${td.id}" aria-label="${escapeHtml(td.title)} 더보기"${dis}>⋯</button>
+        </span>
+      </div>`;
+    }).join("");
+    list.querySelectorAll(".leftover-check").forEach(cb => {
+      cb.onchange = () => { if (cb.checked) completeLeftoverTodo(cb.dataset.id); else cb.checked = false; };
+    });
+    list.querySelectorAll(".leftover-today").forEach(btn => {
+      btn.onclick = () => moveLeftoverTodoToToday(btn.dataset.id);
+    });
+    list.querySelectorAll(".leftover-more").forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const r = btn.getBoundingClientRect();
+        showLeftoverMenu(r.right, r.bottom + 4, btn.dataset.id);
+      };
+    });
+  }
+  $("homeLeftoverToggle").onclick = () => {
+    leftoverOpen = !leftoverOpen;
+    try { sessionStorage.setItem("tok_leftoverOpen", leftoverOpen ? "1" : "0"); } catch (e) {}
+    renderLeftoverTodos();
+  };
+  // 저장 공용 틀: 이미 저장 중이면 무시 → 버튼 잠금 → 저장 → 성공이면 onSuccess(목록 갱신), 실패면 잠금만 풀어 원래 항목 유지.
+  async function runLeftoverAction(id, kind, action) {
+    if (leftoverBusy.has(id)) return false;
+    leftoverBusy.set(id, kind);
+    renderLeftoverTodos();
+    let ok = false;
+    try { ok = await action(); }
+    catch (err) { alert("저장 실패: " + (err?.message || err)); }
+    leftoverBusy.delete(id);
+    renderLeftoverTodos(); // 실패면 원래 항목 그대로(잠금만 풀림) → 다시 시도 가능
+    return ok;
+  }
+  // 체크박스 = 오늘로 옮기지 않고 바로 완료(setTodoDone — completed_date·효과음 등 기존 완료 규칙 그대로).
+  function completeLeftoverTodo(id) {
+    return runLeftoverAction(id, "done", async () => {
+      await setTodoDone(id, true); // 실패 시 setTodoDone이 직접 알림을 띄움
+      if (todos.find(x => x.id === id)?.is_done !== true) return false; // 실패 → 재렌더 때 체크 해제된 원래 모습
+      renderHome();
+      renderTodosPage();
+      return true;
+    });
+  }
+  // 오늘로 = 같은 행의 시작일만 오늘로, 시간은 비워서 종일로. 나머지(제목·그룹·소요 시간·연결 등)는 건드리지 않음.
+  function moveLeftoverTodoToToday(id) {
+    return runLeftoverAction(id, "today", async () => {
+      const { error } = await sb.from("tok_todos").update({ start_date: todayStr(), todo_time: null }).eq("id", id);
+      if (error) { alert("오늘로 옮기지 못했어요: " + error.message + "\n다시 시도해 주세요."); return false; }
+      await loadAll();
+      return true;
+    });
+  }
+  function deleteLeftoverTodo(id) {
+    const td = todos.find(x => x.id === id);
+    if (!td || leftoverBusy.has(id)) return;
+    if (!confirm(`"${td.title}"을(를) 삭제할까요?`)) return;
+    return runLeftoverAction(id, "delete", async () => {
+      const { error } = await sb.from("tok_todos").delete().eq("id", id);
+      if (error) { alert("삭제하지 못했어요: " + error.message + "\n다시 시도해 주세요."); return false; }
+      await loadAll();
+      return true;
+    });
+  }
+  // ⋯ 메뉴: 날짜 바꾸기(기존 날짜/시간 변경 시트 재사용 — 저장된 시간은 그대로 채워져서 날짜만 바꾸면 시간 유지) /
+  // 언젠가로 / 삭제(확인 후).
+  // 언젠가로: 기존 할일→언젠가 이동(moveItemToZone)은 tok_someday에 제목·완료·그룹만 복사한 뒤 원본을 지움 →
+  // 소요 시간·시간·종료일·하위 행동(tok_todo_subtasks, 원본 삭제 시 함께 삭제)·집중 기록 연결(tok_focus_sessions.todo_id)이
+  // 사라짐. tok_someday엔 이 정보를 담을 칸이 없어서 안전하게 옮길 방법이 없으므로, 여기선 원본을 옮기거나 지우지 않고 안내만 함.
+  function showLeftoverMenu(x, y, id) {
+    document.querySelector(".ctx-menu")?.remove();
+    const menu = document.createElement("div");
+    menu.className = "ctx-menu";
+    menu.innerHTML = `
+      <button type="button" class="default" data-act="date">날짜 바꾸기</button>
+      <button type="button" class="default is-unavailable" data-act="someday" aria-disabled="true">언젠가로 <span class="ctx-note">준비 중</span></button>
+      <button type="button" data-act="delete">삭제</button>
+    `;
+    document.body.appendChild(menu);
+    positionCtxMenu(menu, x - menu.offsetWidth, y);
+    menu.querySelector('[data-act="date"]').onclick = (e) => {
+      e.stopPropagation(); menu.remove();
+      openItemDateSheet("todo", id);
+    };
+    menu.querySelector('[data-act="someday"]').onclick = (e) => {
+      e.stopPropagation(); menu.remove();
+      alert("아직 언젠가로 옮길 수 없어요.\n언젠가 목록에는 날짜·시간·소요 시간·하위 행동·집중 기록 연결을 담을 칸이 없어서, 지금 옮기면 이 정보가 사라져요.\n할일은 그대로 두었어요.");
+    };
+    menu.querySelector('[data-act="delete"]').onclick = (e) => {
+      e.stopPropagation(); menu.remove();
+      deleteLeftoverTodo(id);
+    };
+    attachCtxMenuOutsideClose(menu);
   }
 
   // "하루종일": 그 날짜에 걸친 할일(시간 없음) + 시간 없는 일정 + 시간 없는 습관
   // 8-3단계: homeAgendaDate 하루가 아니라 agendaWindowDates()가 계산한 N일(1/3/7)을 나란히(열) 그림.
   async function renderAgendaAllDay() {
+    renderLeftoverTodos(); // 날짜 이동·데이터 갱신 때마다 같이 갱신(오늘을 볼 때만 표시)
     const dates = agendaWindowDates();
     const dateLabelText = dates.length > 1
       ? `${formatDate(dates[0])} ~ ${formatDateShort(dates[dates.length - 1])}`
