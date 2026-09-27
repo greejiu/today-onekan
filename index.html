@@ -4894,10 +4894,11 @@
     if (rowTops.length <= 2) return; // 2줄 안에 다 들어감 → 버튼 불필요
     moreBtn.hidden = false;
     moreBtn.setAttribute("aria-expanded", hostEl._chipsExpanded ? "true" : "false");
-    if (hostEl._chipsExpanded) { moreBtn.textContent = "접기"; hostEl.classList.add("is-expanded"); return; }
+    if (hostEl._chipsExpanded) { moreBtn.textContent = "접기"; moreBtn.removeAttribute("aria-label"); hostEl.classList.add("is-expanded"); return; }
     const hiddenCount = () => chips.filter(c => c.hidden).length;
     const secondRowTop = rowTops[1];
-    const setLabel = () => { moreBtn.textContent = `더 보기 +${hiddenCount()}`; };
+    // 2026-09-28 버튼 글자는 "더 보기"만(숨은 개수 "+N" 표시 삭제). 개수는 읽기 도구용 aria-label에만 남김.
+    const setLabel = () => { moreBtn.textContent = "더 보기"; moreBtn.setAttribute("aria-label", `더 보기, 숨은 그룹 ${hiddenCount()}개`); };
     chips.forEach(c => { if (c.offsetTop > secondRowTop && !c.classList.contains("active")) c.hidden = true; });
     setLabel();
     // 선택 칩 또는 버튼이 아직 3번째 줄로 밀려나 있으면, 뒤에서부터(선택 칩·"전체" 제외) 하나씩 더 숨김
