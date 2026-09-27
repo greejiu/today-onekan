@@ -81,7 +81,8 @@
   /* 2026-09-20 — 결님 요청: 기본은 시스템 글꼴, 설정에서 고른(09-24부터 설치 글꼴 목록에서 선택 가능,
      이름 직접 입력도 유지) 글꼴이 있으면 JS(applyUserFont)가 이 변수만 바꿔 끼움(--font-family). 글꼴을
      안 골랐을 때 쓰는 기본값은 위 :root 블록의 --font-family 하나로 모든 테마가 공유(테마 바뀌어도 폰트는
-     안 바뀜). 로고(.brand-logo)는 Gaegu를 따로 지정해 두어서 이 설정의 영향을 받지 않음. */
+     안 바뀜). 로고(.brand-logo)는 기본이 Gaegu — 2026-09-28 결님 요청으로 설정에서 글꼴을 고르면 로고도 그 글꼴을
+     따름(html.has-user-font). 기본 글꼴로 복원하면 로고도 다시 Gaegu. */
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-family);font-size:14px;line-height:1.5;}
   /* 2026-09-26 — 입력칸 기본색을 테마 변수로(검정 테마에서 흰 입력칸이 튀지 않게). 개별 클래스 규칙이 뒤에서 덮어씀. */
@@ -109,6 +110,7 @@
   /* 2026-09-23 — 로고/상단바가 파스텔 시절 보라색(#7B4FA0 등)에 고정돼있어서 테마를 바꿔도 안 바뀌던 것을
      수정: 전부 테마 변수(--accent/--sub/--line/--accent-soft)로 교체해서 5개 테마 전부 따라가게 함. */
   .brand-logo{font-family:'Gaegu',cursive;font-size:23px;font-weight:700;color:var(--accent);white-space:nowrap;}
+  html.has-user-font .brand-logo{font-family:var(--font-family);}
   .brand-date{font-size:13px;color:var(--sub);white-space:nowrap;}
   /* 2026-09-20 — 결님 요청: 퀵 인풋(빠른 추가)은 모바일(사이드바 대신 하단바 쓰는 폭)에서만 상단바 아래
      이 가로줄로 보여주고, 데스크톱(사이드바 있는 폭)에서는 사이드바 맨 위(.sidebar-quickadd)로 옮김.
@@ -1994,9 +1996,11 @@
     const trimmed = sanitizeFontName(name);
     if (trimmed) {
       document.documentElement.style.setProperty("--font-family", fontStackFor(trimmed));
+      document.documentElement.classList.add("has-user-font"); // 로고도 고른 글꼴로
       try { localStorage.setItem("tok_font_name", trimmed); } catch (_) {}
     } else {
       document.documentElement.style.removeProperty("--font-family");
+      document.documentElement.classList.remove("has-user-font"); // 로고는 기본 Gaegu로
       try { localStorage.removeItem("tok_font_name"); } catch (_) {}
     }
     const input = $("settingsFontName");
