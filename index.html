@@ -650,6 +650,8 @@
   .cal-day-meta{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:3px;font-size:11.5px;color:var(--sub);}
   .cal-day-cat{display:inline-flex;align-items:center;gap:4px;min-width:0;}
   .cal-day-cat .dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;}
+  /* 2026-09-28 일정 목록: 범주 이름은 숨기고 색 점만 제목 앞에(달력 옆 목록과 같은 모양) */
+  .sched-open .title .cal-day-cat{margin-right:7px;vertical-align:middle;}
   .cal-day-memo{font-size:12px;color:var(--sub);margin-top:3px;overflow-wrap:anywhere;}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   /* 터치 기기에서 누른 뒤 hover 배경이 남아 선택된 것처럼 보이지 않게 */
@@ -5823,12 +5825,13 @@
     return calMonthOf(t) === calMonthOf(calCursor) ? t : calMonthOf(calCursor);
   }
   function eventCategoryOf(e) { return e.category_id ? eventCategories.find(c => c.id === e.category_id) || null : null; }
+  // 범주 표시(점 + 이름) — 일정 상세 전용. 범주가 없으면(“기본”) 상세에서도 아무것도 표시하지 않음.
   function eventCategoryHtml(cat) {
     return `<span class="cal-day-cat"><span class="dot" style="background:${cat.color || "var(--accent)"};"></span>${escapeHtml(tagPickLabel(cat))}</span>`;
   }
-  // 범주가 없는 일정 = 범주 "기본"(실제 행 없음, category_id null). 색은 설정의 범주 "기본" 색, 없으면 보조색.
-  function eventDefaultCategoryHtml() {
-    return `<span class="cal-day-cat"><span class="dot" style="background:${daySettings.default_event_color || "var(--sub)"};"></span>기본</span>`;
+  // 2026-09-28 목록·달력용: 범주 이름은 화면에서 숨기고 색 점만(이름은 읽기 도구용으로만 남김). 범주 자체·연결은 그대로.
+  function eventCategoryDotHtml(cat) {
+    return `<span class="cal-day-cat" title="${escapeHtml(tagPickLabel(cat))}"><span class="dot" style="background:${cat.color || "var(--accent)"};"></span><span class="sr-only">범주 ${escapeHtml(tagPickLabel(cat))}</span></span>`;
   }
   function renderSchedule() {
     renderSchedMonthBar();
@@ -5872,8 +5875,8 @@
             <div class="event-row sched-row" data-id="${e.id}"${menuAttrs("event", e.id, d)}>
               <div class="t">${e.event_time ? e.event_time.slice(0, 5) : "종일"}</div>
               <button type="button" class="sched-open" data-id="${e.id}">
-                <span class="title">${escapeHtml(e.title)}</span>
-                ${(cat || isRange) ? `<span class="sched-meta">${isRange ? `<span class="sched-phase">${phase}</span><span>${calRangeLabel(e)}</span>` : ""}${cat ? eventCategoryHtml(cat) : ""}</span>` : ""}
+                <span class="title">${cat ? eventCategoryDotHtml(cat) : ""}${escapeHtml(e.title)}</span>
+                ${isRange ? `<span class="sched-meta"><span class="sched-phase">${phase}</span><span>${calRangeLabel(e)}</span></span>` : ""}
                 ${e.memo ? `<span class="memo">${escapeHtml(e.memo)}</span>` : ""}
               </button>
               <button type="button" class="sched-more item-more" data-id="${e.id}" aria-haspopup="menu" aria-expanded="false" aria-label="${escapeHtml(e.title)} 메뉴">⋯</button>
@@ -6008,8 +6011,8 @@
     if (!e) return;
     evDetail = { id, opener: opener || null, busy: false };
     const cat = eventCategoryOf(e);
-    $("evd_cat").innerHTML = cat ? eventCategoryHtml(cat) : eventDefaultCategoryHtml();
-    $("evd_cat").hidden = false;
+    $("evd_cat").innerHTML = cat ? eventCategoryHtml(cat) : ""; // 범주 미지정이면 “기본” 글자도 표시 안 함
+    $("evd_cat").hidden = !cat;
     $("evd_title").textContent = e.title;
     $("evd_when").textContent = eventWhenLabel(e);
     const rep = eventRepeatLabel(e);
@@ -6358,7 +6361,7 @@
           <span class="dot"${color ? ` style="--chip-c:${color};"` : ""} aria-hidden="true"></span>
           <span class="cal-day-body">
             <span class="cal-day-item-title">${escapeHtml(e.title)}</span>
-            ${(cat || isRange) ? `<span class="cal-day-meta">${isRange ? `<span>${calRangeLabel({ ...e, end_date: evEndDate(e) })}</span>` : ""}${cat ? `<span>${escapeHtml(tagPickLabel(cat))}</span>` : ""}</span>` : ""}
+            ${isRange ? `<span class="cal-day-meta"><span>${calRangeLabel({ ...e, end_date: evEndDate(e) })}</span></span>` : ""}${cat ? `<span class="sr-only">범주 ${escapeHtml(tagPickLabel(cat))}</span>` : ""}
           </span>
         </button>${moreBtnHtml(e.title)}</div>`;
     }).join("");
