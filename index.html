@@ -112,6 +112,7 @@
   .brand-date{font-size:13px;color:var(--sub);white-space:nowrap;}
   .topbar-settings{width:36px;height:36px;border-radius:18px;border:none;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
   .topbar-settings:hover{background:color-mix(in srgb, var(--accent) 15%, var(--accent-soft));}
+  .topbar-settings.active{box-shadow:inset 0 0 0 2px var(--accent);}
   /* 2026-09-20 — 결님 요청: 퀵 인풋(빠른 추가)은 모바일(사이드바 대신 하단바 쓰는 폭)에서만 상단바 아래
      이 가로줄로 보여주고, 데스크톱(사이드바 있는 폭)에서는 사이드바 맨 위(.sidebar-quickadd)로 옮김.
      그래서 기본은 숨기고 ≤760px에서만 보이게 뒤집음(예전엔 항상 보였음). */
@@ -124,11 +125,12 @@
   /* 사이드바용 퀵 인풋 — 사이드바 가로 폭(180px, 안쪽 패딩 12px씩 뺀 만큼)에 맞춰 인풋/버튼 모두 width:100%로
      세로로 쌓음(가로로 나란히 놓기엔 폭이 좁아서). 사이드바 자체가 ≤760px에서 display:none이라 그때는
      자동으로 같이 숨겨짐 — 따로 미디어쿼리 안 써도 됨. */
-  /* 2026-09-27 — 빠른 입력(모바일 상단 줄·PC 사이드바)은 '집' 탭에서만 보임: showPage가 body.qa-on을 켜고 끔.
-     다른 탭에선 숨기고 자리도 비우지 않음. --header-h = 고정 상단 영역 높이(스크롤 여백 계산에 씀). */
+  /* 2026-09-28 — 빠른 입력(한칸 추가)은 모든 탭에서 항상 보임(예전 '집' 전용 body.qa-on 조건 제거).
+     PC = 사이드바 맨 위, 모바일 = 상단바 바로 아래 고정 줄. 어느 탭에서 입력해도 '오늘 할일'로 저장.
+     --header-h = 고정 상단 영역 높이(스크롤 여백 계산에 씀) — 모바일은 상단바 64 + 입력줄 56 = 120px. */
   :root{--header-h:64px;}
-  .sidebar-quickadd{display:none;margin-bottom:14px;flex-shrink:0;}
-  body.qa-on .sidebar-quickadd{display:block;}
+  .sidebar-quickadd{display:block;margin-bottom:14px;flex-shrink:0;}
+  .sidebar-quickadd .qa-caption{display:block;font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.03em;padding:0 2px 6px;}
   .sidebar-quickadd input{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:8px 10px;font-size:12.5px;color:var(--text);font-family:inherit;outline:none;margin-bottom:6px;}
   .sidebar-quickadd input::placeholder{color:var(--sub);}
   .sidebar-quickadd button{width:100%;border:none;border-radius:12px;background:var(--accent);color:var(--accent-on);font-size:12.5px;font-weight:700;padding:8px 0;cursor:pointer;font-family:inherit;}
@@ -136,11 +138,13 @@
   @media (max-width:760px){
     .topbar{gap:8px;padding:0 14px;}
     .brand-logo{font-size:20px;}
-    body.qa-on{--header-h:120px;}
-    body.qa-on .topbar-quickadd-row{display:flex;padding:0 14px;}
-    .topbar-quickadd button span.lbl{display:none;}
-    body.qa-on .layout{padding-top:120px !important;}
-    body.qa-on .sidebar{top:120px !important;height:calc(100vh - 120px) !important;}
+    :root{--header-h:120px;}
+    .topbar-quickadd-row{display:flex;padding:0 14px;}
+    .topbar-quickadd{max-width:none;}
+    /* 버튼은 '+'만 남기지 않고 '+ 한칸 추가' 그대로(무슨 버튼인지 알아볼 수 있게) — 좌우 여백만 조금 줄임 */
+    .topbar-quickadd button{padding:8px 12px;}
+    .layout{padding-top:120px !important;}
+    .sidebar{top:120px !important;height:calc(100vh - 120px) !important;}
   }
   .layout{display:flex;min-height:100vh;padding-top:64px;}
   .sidebar{width:180px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);padding:20px 12px;position:sticky;top:64px;height:calc(100vh - 64px);box-shadow:2px 0 16px rgba(150,130,200,.06);display:flex;flex-direction:column;}
@@ -716,9 +720,12 @@
   .hs-cat-row.dragging{opacity:.5;background:var(--accent-soft);border-radius:8px;}
   .hs-cat-row.hs-cat-drop-before{box-shadow:0 -2px 0 var(--accent);}
   .hs-cat-row.hs-cat-drop-after{box-shadow:0 2px 0 var(--accent);}
-  /* "기본"(그룹 없음) 줄 — 순서 고정이라 손잡이 자리를 빈 여백으로만 맞춰서 색상칩 위치를 다른 줄과 정렬 */
+  /* "기본"(분류 없음) 줄 — 순서 고정이라 손잡이 자리를 빈 여백으로만 맞춰서 색상칩 위치를 다른 줄과 정렬.
+     이름 변경·보관·삭제 버튼 없음(색상만). 2026-09-28 그룹·범주 둘 다 이 줄을 씀. */
   .hs-cat-drag-handle-spacer{display:inline-block;width:14px;height:14px;flex-shrink:0;}
   .hs-cat-name-fixed{flex:1;min-width:0;font-size:13px;color:var(--sub);padding:6px 8px;}
+  .hs-cat-row-default .hs-cat-name-fixed{flex:none;color:var(--text);font-weight:600;}
+  .hs-cat-default-note{flex:1;min-width:0;font-size:11.5px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   /* 그룹/범주 색상 선택(2026-09-23, 팝오버 방식) — "새로 추가" 입력칸 + 이미 만든 그룹/범주 수정 목록(renderCategoryManageList)
      양쪽 다 적용. 네이티브 <input type="color">는 화면에서만 숨기고(기능은 그대로 살아있음: "직접 선택하기"에서 이걸 트리거),
      똑같은 자리에 스와치 버튼을 둬서 누르면 프리셋 팝오버가 뜸.
@@ -773,7 +780,8 @@
   .fab{position:fixed;right:20px;bottom:24px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:var(--accent-on);border:none;font-size:26px;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 45%,transparent);cursor:pointer;z-index:8;}
   @media (max-width:760px){ .fab{bottom:calc(78px + env(safe-area-inset-bottom));} }
 
-  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;justify-content:center;z-index:20;}
+  /* 2026-09-28 z-index 20 → 35: 고정 상단바(30)·빠른 입력줄(29)이 모든 탭에 보이게 되면서 팝업 윗부분을 가리지 않도록 그 위로. 추가 창(40)·확인 창(50)보다는 아래 그대로 */
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;justify-content:center;z-index:35;}
   .sheet-bg.open{display:flex;}
   .sheet{background:var(--card);width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:18px 16px 24px;max-height:88vh;overflow-y:auto;}
   .sheet h2{font-size:15px;margin:0 0 12px;}
@@ -995,6 +1003,11 @@
   .cal-chip.band, .cal-cell.selected .cal-chip.band{background:color-mix(in srgb, var(--chip-c, var(--sub)) 22%, var(--card));}
   .cal-chip.cont-l{margin-left:-6px;padding-left:11px;border-top-left-radius:0;border-bottom-left-radius:0;}
   .cal-chip.cont-r{margin-right:-6px;border-top-right-radius:0;border-bottom-right-radius:0;}
+  /* 2026-09-28 PC 달력 드래그 기간 선택 — 끄는 동안·추가 창이 열려 있는 동안 선택한 날짜들을 강조(양끝은 진하게) */
+  #calGrid{-webkit-user-select:none;user-select:none;}
+  #calGrid.range-selecting{cursor:cell;}
+  #calGrid .cal-cell.range-sel, #calGrid .cal-cell.range-sel:hover{background:color-mix(in srgb, var(--accent) 22%, var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, var(--line));}
+  #calGrid .cal-cell.range-start, #calGrid .cal-cell.range-end{box-shadow:inset 0 0 0 2px var(--accent);}
   .cal-more{font-size:11.5px;line-height:16px;color:var(--sub);font-weight:600;padding:0 5px;flex:none;cursor:pointer;}
   .today-badge{background:var(--cal-today-bg, var(--accent));color:var(--cal-today-fg, var(--accent-on));}
 
@@ -1077,7 +1090,7 @@
   .cev-cat-field .cev-cat-opt{position:relative;display:inline-flex;align-items:center;gap:6px;max-width:100%;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);color:var(--text);font-size:13.5px;line-height:1.2;cursor:pointer;margin:0;}
   .cev-cat-opt input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;}
   .cev-cat-opt .dot{flex:none;width:8px;height:8px;border-radius:50%;background:color-mix(in srgb, var(--sub) 45%, transparent);}
-  .cev-cat-opt.is-none .dot{display:none;}
+  /* 2026-09-28 "기본"(범주 없음)도 설정의 범주 "기본" 색 점을 보여줌 — 색 미지정이면 위 회색 점 그대로 */
   .cev-cat-opt .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .cev-cat-opt:has(input:checked){background:var(--accent-soft);border-color:color-mix(in srgb, var(--accent) 70%, var(--line));font-weight:700;}
   .cev-cat-opt:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px;}
@@ -1167,15 +1180,16 @@
   </div>
   <div class="topbar-quickadd-row">
     <div class="topbar-quickadd">
-      <input id="quickTaskInput" type="text" placeholder="부담없이 딱 한 가지만 적어보세요..." />
-      <button type="button" id="quickAddBtn">+ <span class="lbl">한칸 추가</span></button>
+      <input id="quickTaskInput" type="text" placeholder="오늘 할일에 한 가지만 적어요" aria-label="한칸 추가 — 어느 탭에서든 오늘 할일로 저장돼요" enterkeyhint="done" autocomplete="off" />
+      <button type="button" id="quickAddBtn" title="오늘 할일로 저장">+ <span class="lbl">한칸 추가</span></button>
     </div>
   </div>
   <div class="layout">
     <div class="sidebar">
       <div class="sidebar-quickadd">
-        <input id="quickTaskInputSide" type="text" placeholder="부담없이 딱 한 가지만 적어보세요..." />
-        <button type="button" id="quickAddBtnSide">+ 한칸 추가</button>
+        <label class="qa-caption" for="quickTaskInputSide">오늘 할일에 바로 추가</label>
+        <input id="quickTaskInputSide" type="text" placeholder="딱 한 가지만 적기" aria-label="한칸 추가 — 어느 탭에서든 오늘 할일로 저장돼요" autocomplete="off" />
+        <button type="button" id="quickAddBtnSide" title="오늘 할일로 저장">+ 한칸 추가</button>
       </div>
       <div class="sidebar-label">카테고리</div>
       <!-- 2026-09-20: 이모지 아이콘 → 상단바 설정 아이콘과 같은 계열의 선 아이콘(SVG, currentColor)으로 교체.
@@ -1186,7 +1200,7 @@
       <div class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> 할일</div>
       <div class="navitem" data-page="habits"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> 습관</div>
       <div class="sidebar-footer">
-        <div class="navitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> 설정</div>
+        <!-- 2026-09-28 PC 사이드바 '설정' 메뉴 제거 — 설정은 상단바 오른쪽 톱니 아이콘(#topbarSettingsBtn)으로만 들어감 -->
         <div class="sidebar-user" id="sidebarUserEmail"></div>
         <button id="logoutBtn">로그아웃</button>
       </div>
@@ -1534,7 +1548,7 @@
       </div>
       <div class="cev-hint" id="td_date_hint">제목만 적고 저장해도 돼요. 시작일을 비우면 오늘로 저장돼요.</div>
       <div class="field split">
-        <div><label for="td_time">시간 <span class="cev-opt">(선택)</span></label><input id="td_time" type="time" /></div>
+        <div><label for="td_time">시간 <span class="cev-opt">(선택)</span></label><select id="td_time"></select></div>
         <div><label for="td_tag">그룹</label><select id="td_tag"></select></div>
       </div>
       <div class="cal-ev-error" id="td_error" role="alert"></div>
@@ -2105,7 +2119,7 @@
   let somedayTabSort = "recent";
   let somedayTabFilterTag = null;
   let timeBlocks = []; // tok_time_blocks: 타임블럭 탭의 이름표 그룹핑용(시작/종료 분 포함 — 설정 페이지에서 목록으로 추가/수정/삭제)
-  let daySettings = { day_start_minute: 360, day_end_minute: 1440, default_tag_color: null }; // tok_settings: 타임라인/타임블럭에서 보여줄 하루 시작~종료 시간(분) + "기본"(그룹 없음) 색상. 행이 없으면 이 기본값 사용.
+  let daySettings = { day_start_minute: 360, day_end_minute: 1440, default_tag_color: null, default_event_color: null }; // tok_settings: 타임라인/타임블럭에서 보여줄 하루 시작~종료 시간(분) + 그룹 "기본"·범주 "기본"(분류 없음) 색상. 행이 없으면 이 기본값 사용.
   let lastLoadAllAt = 0; // 2026-09-23: 다른 기기/탭에서 바뀐 내용을 돌아왔을 때 자동으로 다시 불러오기 위한 마지막 로드 시각(아래 loadAll/자동새로고침 참고)
   let todos = []; // tok_todos: 다가오는 계획 보드용 (날짜 있는 1회성 할일)
   let habitCategories = []; // tok_habit_categories: 습관·할일 공용 "그룹"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
@@ -2290,8 +2304,9 @@
     const prevPage = currentPage;
     if (prevPage === "schedule" && page !== "schedule") scheduleScrollY = window.scrollY;
     currentPage = page;
-    // 빠른 입력은 '집'에서만(모바일 상단 줄 + PC 사이드바). 입력 중이던 제목은 그대로 두고, 탭 이동만으로는 저장하지 않음.
-    document.body.classList.toggle("qa-on", page === "home");
+    // 빠른 입력(한칸 추가)은 모든 탭에서 항상 보임(2026-09-28). 입력 중이던 제목은 탭을 옮겨도 그대로, 탭 이동만으로는 저장하지 않음.
+    $("topbarSettingsBtn")?.classList.toggle("active", page === "settings");
+    if (page === "settings") $("topbarSettingsBtn")?.setAttribute("aria-current", "page"); else $("topbarSettingsBtn")?.removeAttribute("aria-current");
     document.querySelectorAll(".navitem").forEach(el => el.classList.toggle("active", el.dataset.page === page));
     document.querySelectorAll(".page").forEach(el => el.style.display = el.dataset.page === page ? "block" : "none");
     // 숨겨진 입력창에 포커스가 남으면(모바일 키보드가 열린 채) 해제
@@ -2308,7 +2323,7 @@
     });
     return bottom;
   }
-  // 상단바 설정 아이콘 — 사이드바의 "⚙ 설정" 탭과 동일한 showPage("settings") 재사용.
+  // 상단바 설정 아이콘 — PC에선 유일한 설정 진입점(2026-09-28 사이드바 '설정' 제거). 모바일 하단 메뉴 '설정'도 같은 showPage("settings").
   $("topbarSettingsBtn")?.addEventListener("click", () => showPage("settings"));
   // 상단바 오늘 날짜(원본 목업 그대로 "9월 20일 일요일" 형식, 연도 없음).
   (function updateTopbarDate() {
@@ -2363,7 +2378,7 @@
     todos = todoData || [];
     habitCategories = habitCatData || [];
     eventCategories = eventCatData || [];
-    if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute, default_tag_color: settingsData.default_tag_color || null }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00, 기본색 없음) 유지
+    if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute, default_tag_color: settingsData.default_tag_color || null, default_event_color: settingsData.default_event_color || null }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00, 기본색 없음) 유지
     await advancePastRepeatingEvents(events); // 반복 설정된 일정 중 날짜 지난 것은 다음 회차로 자동 이동
     renderHome();
     renderSchedule();
@@ -2922,21 +2937,36 @@
   // "새로 지정하는" 선택 UI에서만 이 함수로 보관된 것을 거름. keepId: 지금 항목에 이미 연결된 값이
   // 보관 상태라면 그 하나만 예외로 남겨서(“구직 · 보관됨”) 그대로 유지할 수 있게 함.
   function assignableTagPool(pool, keepId = null) { return pool.filter(c => !c.is_archived || (keepId && c.id === keepId)); }
+  // "기본" = 분류 없음(연결값 null) 전용 이름 — 같은 이름의 그룹·범주를 새로 만들거나 이름을 바꿔 겹치지 않게 막음(기존 행은 건드리지 않음)
+  const isReservedCategoryName = (name) => name.trim() === "기본";
+  const RESERVED_CATEGORY_NAME_MSG = (noun) => `‘기본’은 ${noun}을 정하지 않은 항목에 쓰는 이름이라 새 ${noun} 이름으로 쓸 수 없어요.`.replace("범주을", "범주를");
   function tagPickLabel(c) { return c.is_archived ? `${c.name} · 보관됨` : c.name; }
   // 새 그룹/범주·보관 해제 항목을 사용 중 목록 맨 아래에 두기 위한 다음 sort_order(보관된 행 포함 전체 최댓값 + 1)
   function nextCategorySortOrder(pool) { return pool.reduce((m, c) => Math.max(m, Number.isFinite(c.sort_order) ? c.sort_order : -1), -1) + 1; }
+  // 2026-09-28: 분류가 없는 항목(tag_id/category_id = null) = "기본". 그룹 "기본" 색(default_tag_color)은 할일·습관·언젠가,
+  // 범주 "기본" 색(default_event_color)은 일정에 씀. 둘 다 tok_settings에 저장, 미지정이면 null.
+  function defaultCategoryColor(kind) {
+    return (kind === "event" ? daySettings.default_event_color : daySettings.default_tag_color) || null;
+  }
   function itemTagColor(kind, catId) {
-    if (!catId) return kind === "event" ? null : (daySettings.default_tag_color || null); // 2026-09-20: 습관/할일/언젠가는 "그룹 없음"도 "기본" 색을 가질 수 있음(일정 범주는 그대로 무색)
+    if (!catId) return defaultCategoryColor(kind);
     const cat = itemTagPool(kind).find(c => c.id === catId);
     return cat ? (cat.color || null) : null;
   }
-  // "기본"(그룹 없음) 색상 저장(습관/할일 공용 tok_settings 행에 함께 보관) — 실제 그룹 색 변경과 같은 UX로
-  // 바로 반영되게, 색상 인풋 onchange에서 즉시 호출.
-  async function saveDefaultTagColor(color) {
-    const { error } = await sb.from("tok_settings").upsert({ user_id: (await sb.auth.getUser()).data.user.id, ...daySettings, default_tag_color: color }).select().single();
-    if (error) { alert("색상 변경 실패: " + error.message); return false; }
-    daySettings = { ...daySettings, default_tag_color: color };
-    return true;
+  // "기본" 색상 저장(field = "default_tag_color" | "default_event_color") — 실제 그룹 색 변경과 같은 UX로 색상 인풋 onchange에서 즉시 호출.
+  // 2026-09-28 수정: 예전엔 tok_settings에 default_tag_color 컬럼이 없어 upsert가 항상 실패했음(42703) → 마이그레이션
+  // 20260928000000에서 컬럼 추가. 이제 바꿀 칸 하나만 보냄(다른 설정값을 화면 값으로 덮어쓰지 않게). 저장된 행을 다시 받아
+  // 실제 DB 값으로 daySettings를 갱신 → 새로고침 후와 같은 값. 실패하면 { ok:false }(호출부가 색상 선택 UI를 이전 값으로 되돌림).
+  async function saveDefaultCategoryColor(field, color) {
+    let data, error;
+    try {
+      const { data: u } = await sb.auth.getUser();
+      if (!u?.user) throw new Error("로그인 정보가 없어요. 다시 로그인해 주세요.");
+      ({ data, error } = await sb.from("tok_settings").upsert({ user_id: u.user.id, [field]: color }, { onConflict: "user_id" }).select().single());
+    } catch (err) { error = err; }
+    if (error || !data || data[field] !== color) return { ok: false, error: error || new Error("저장된 값을 확인하지 못했어요.") };
+    daySettings = { ...daySettings, [field]: data[field] || null };
+    return { ok: true };
   }
   // 일정 항목 옆에 붙이는 범주색 동그라미("일정"이라는 글자 배지 대신) — 항상 색이 찬 상태로 구분(할일/습관은 체크 전엔 빈 체크박스, 체크하면 체크표시+줄긋기).
   // 동그라미 자체는 작게(size) 그리되, 옆 체크박스와 같은 너비(boxSize)의 자리 한가운데 놓아서 뒤따르는 글자 시작 위치가 체크박스가 있는 목록과 정확히 맞도록 함.
@@ -2948,11 +2978,12 @@
   // (제목은 var(--text)로 통일해서 연한 그룹색 글자가 안 읽히던 문제 해결). 색이 없으면(그룹 없음+기본색 미지정,
   // 또는 앞에 이미 범주색 동그라미가 있는 일정 줄) 빈 자리만 차지해서 제목 시작 위치를 다른 줄과 맞춤.
   // 2026-09-28 — 할일·습관(언젠가 포함) 목록: 제목 앞 점 대신 "제목 글자"를 그룹색으로(체크박스는 그대로).
-  // 그룹이 없으면 기본 글자색(기본 그룹색 설정은 글자에 쓰지 않음). 저장된 색은 그대로 두고, 화면에서만
+  // 그룹이 없으면 그룹 "기본" 색(설정에서 지정한 경우), 그것도 없으면 기본 글자색. 저장된 색은 그대로 두고, 화면에서만
   // 테마 바탕에 읽히도록 진하기를 조정(CSS .gc-title). 완료 항목은 흐린 글자·취소선이 그룹색보다 우선.
   // 일정 줄은 기존대로 앞의 범주색 동그라미(eventDotHtml)만 쓰고 제목은 기본 글자색.
+  // 2026-09-28: 그룹이 없는 할일·습관·언젠가도 그룹 "기본" 색(설정)이 있으면 그 색으로 — 일정 줄은 제목색을 쓰지 않음(동그라미 규칙).
   function groupTitleHtml(cls, kind, catId, text) {
-    const color = catId ? itemTagColor(kind, catId) : null;
+    const color = kind === "event" ? null : itemTagColor(kind, catId);
     return color
       ? `<span class="${cls} gc-title" style="--gc:${color};">${escapeHtml(text)}</span>`
       : `<span class="${cls}">${escapeHtml(text)}</span>`;
@@ -3841,6 +3872,9 @@
   }
 
   const AG_TL_SLOT_MIN = 15, AG_TL_ROW_PX = 9, AG_TL_MIN_ITEM_PX = 20; // 2026-09-20: 사용자 요청으로 시간당 높이 약 30% 축소(13→9px, 1시간=36px)
+  // 2026-09-28 새 항목 추가 단위 — 화면 칸(AG_TL_SLOT_MIN=15분, 높이·기존 항목 위치 계산에 씀)은 그대로 두고,
+  // 빈 곳 클릭·드래그로 "새로 추가"할 때만 시작·끝을 30분 경계에 맞춤. 기존 항목의 이동·길이 조절은 15분 그대로.
+  const AG_TL_ADD_STEP_MIN = 30;
   const TL_LONG_PRESS_MS = 300;
   const TL_EDGE_ZONE_PX = 8;
   // 8-3단계: dateStr/containerEl로 일반화 — 여러 날짜 열이 나란히 렌더되므로 각 열은 자기 min/max를
@@ -4164,6 +4198,20 @@
       return Math.max(0, Math.min(slotCount - 1, slot));
     };
 
+    // 칸 번호(15분) → 새 항목용 30분 경계. 하루 범위 시작(minM)이 30분 경계가 아니면(예: 05:15) 그 앞으로는 넘어가지 않음.
+    const snapDown = (m) => Math.max(minM, Math.floor(m / AG_TL_ADD_STEP_MIN) * AG_TL_ADD_STEP_MIN);
+    const snapUp = (m) => Math.ceil(m / AG_TL_ADD_STEP_MIN) * AG_TL_ADD_STEP_MIN;
+    // 드래그한 칸 범위(lo~hi) → { startMinute, durationMinutes } (최소 30분). 클릭(안 움직임)은 그 칸이 속한 30분 한 칸.
+    const rangeOf = (loSlot, hiSlot) => {
+      const start = snapDown(minM + loSlot * AG_TL_SLOT_MIN);
+      const end = Math.max(start + AG_TL_ADD_STEP_MIN, snapUp(minM + (hiSlot + 1) * AG_TL_SLOT_MIN));
+      return { startMinute: start, durationMinutes: Math.min(end, 1440) - start };
+    };
+    const placePreview = (el, startMinute, durationMinutes) => {
+      el.style.top = `${(startMinute - minM) / AG_TL_SLOT_MIN * AG_TL_ROW_PX}px`;
+      el.style.height = `${durationMinutes / AG_TL_SLOT_MIN * AG_TL_ROW_PX}px`;
+    };
+
     content.onpointerdown = (e) => {
       if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(일정/할일/습관 선택 메뉴)가 따로 처리
       if (e.target.closest(".ag-tl-task")) return;
@@ -4172,8 +4220,8 @@
       const preview = document.createElement("div");
       preview.className = "ag-tl-add-preview";
       preview.id = "agTlAddPreview";
-      preview.style.top = `${startSlot * AG_TL_ROW_PX}px`;
-      preview.style.height = `${AG_TL_ROW_PX}px`;
+      const r = rangeOf(startSlot, startSlot);
+      placePreview(preview, r.startMinute, r.durationMinutes);
       content.appendChild(preview);
       content.setPointerCapture?.(e.pointerId);
     };
@@ -4184,22 +4232,19 @@
       agAddState.currentSlot = slot;
       const preview = $("agTlAddPreview");
       if (preview) {
-        const lo = Math.min(agAddState.startSlot, slot), hi = Math.max(agAddState.startSlot, slot);
-        preview.style.top = `${lo * AG_TL_ROW_PX}px`;
-        preview.style.height = `${(hi - lo + 1) * AG_TL_ROW_PX}px`;
+        const r = rangeOf(Math.min(agAddState.startSlot, slot), Math.max(agAddState.startSlot, slot));
+        placePreview(preview, r.startMinute, r.durationMinutes);
       }
     };
     // 빈칸 왼쪽 클릭·터치(또는 드래그로 범위 지정) → 메뉴 없이 그 시간(범위)에 할일 입력창을 바로 엶.
-    // 다른 종류(일정/습관)는 오른쪽 클릭 메뉴(아래 oncontextmenu)에서 고름.
+    // 다른 종류(일정/습관)는 오른쪽 클릭 메뉴(아래 oncontextmenu)에서 고름. 시작·끝은 30분 경계, 클릭은 30분.
     const finish = (e) => {
       if (!agAddState) return;
-      const { startSlot, currentSlot, moved } = agAddState;
-      const lo = Math.min(startSlot, currentSlot), hi = Math.max(startSlot, currentSlot);
-      const startMinute = minM + lo * AG_TL_SLOT_MIN;
-      const durationMinutes = moved ? (hi - lo + 1) * AG_TL_SLOT_MIN : 30;
+      const { startSlot, currentSlot } = agAddState;
+      const { startMinute, durationMinutes } = rangeOf(Math.min(startSlot, currentSlot), Math.max(startSlot, currentSlot));
       $("agTlAddPreview")?.remove();
       agAddState = null;
-      showAgendaTimelineInlineAdd(content, lo, hi, startMinute, durationMinutes, "todo", dateStr);
+      showAgendaTimelineInlineAdd(content, startMinute, durationMinutes, "todo", dateStr);
     };
     content.onpointerup = finish;
     content.onpointercancel = () => { $("agTlAddPreview")?.remove(); agAddState = null; };
@@ -4209,19 +4254,21 @@
       if (e.target.closest(".ag-tl-task")) return; // 항목 위는 항목 공통 메뉴(문서 위임)가 처리
       e.preventDefault();
       const slot = slotFromEvent(e);
-      const startMinute = minM + slot * AG_TL_SLOT_MIN;
-      showAddKindMenu(e.clientX, e.clientY, (kind) => showAgendaTimelineInlineAdd(content, slot, slot, startMinute, 30, kind, dateStr));
+      const { startMinute, durationMinutes } = rangeOf(slot, slot);
+      showAddKindMenu(e.clientX, e.clientY, (kind) => showAgendaTimelineInlineAdd(content, startMinute, durationMinutes, kind, dateStr));
     };
   }
 
   // 팝업 없이 타임라인 그 자리에 바로 입력창을 띄워 할일/일정(kind)을 추가함(Enter/바깥 클릭 시 저장, Esc면 취소).
   // Enter로 저장하면 같은 자리에 바로 다음 입력창이 다시 열려 연달아 입력할 수 있음(언젠가 목록과 동일한 패턴).
   // dateStr: 8-3단계 — 이 열이 어느 날짜인지(여러 날짜 열이 있으므로 homeAgendaDate 대신 이걸 씀).
-  function showAgendaTimelineInlineAdd(content, loSlot, hiSlot, startMinute, durationMinutes, kind, dateStr) {
+  // 위치는 시작 시각·길이(분)로 계산(2026-09-28 — 30분 단위 추가로 칸 번호 대신 분을 넘김).
+  function showAgendaTimelineInlineAdd(content, startMinute, durationMinutes, kind, dateStr) {
+    const minM = parseInt(content.dataset.minM, 10) || 0;
     const el = document.createElement("div");
     el.className = "ag-tl-task tl-inline-add inline-add-wrap";
-    el.style.top = `${loSlot * AG_TL_ROW_PX}px`;
-    el.style.height = `${(hiSlot - loSlot + 1) * AG_TL_ROW_PX}px`;
+    el.style.top = `${(startMinute - minM) / AG_TL_SLOT_MIN * AG_TL_ROW_PX}px`;
+    el.style.height = `${Math.max(AG_TL_ROW_PX, durationMinutes / AG_TL_SLOT_MIN * AG_TL_ROW_PX)}px`;
     el.style.left = "0"; el.style.width = "calc(100% - 4px)";
     const placeholder = kind === "event" ? "일정 이름" : kind === "habit" ? "습관 이름" : "할일 이름";
     el.innerHTML = `<input type="text" class="inline-add-input" placeholder="${placeholder}" />`;
@@ -4255,7 +4302,7 @@
       // 8-3단계: 여러 날짜 열 중 이 dateStr에 해당하는 열을 정확히 찾음.
       if (reopen && agendaView === "timeline") {
         const freshContent = document.querySelector(`#agendaTimeWrap .ag-tl-content[data-date="${dateStr}"]`);
-        if (freshContent) showAgendaTimelineInlineAdd(freshContent, loSlot, hiSlot, startMinute, durationMinutes, kind, dateStr);
+        if (freshContent) showAgendaTimelineInlineAdd(freshContent, startMinute, durationMinutes, kind, dateStr);
       }
     };
     input.addEventListener("keydown", (e) => {
@@ -5007,28 +5054,36 @@
   // 2026-09-20 추가: 결님 요청으로 데스크톱(사이드바)엔 이 인풋을 사이드바 맨 위(quickTaskInputSide)로
   // 옮기고, 모바일(하단바 폭)엔 기존 상단바 아래 줄(quickTaskInput)을 그대로 둠 — 두 인풋이 같은 저장
   // 로직을 쓰도록 inputId 파라미터로 일반화(버튼 id는 "Btn"→"BtnSide" 대응 규칙으로 유추).
+  // 2026-09-28: 모든 탭에서 보이므로 어느 탭에서 저장해도 '오늘 할일'로 저장되고, 지금 보는 탭은 그대로(이동 없음) —
+  // 대신 짧은 알림으로 어디에 저장됐는지 알려줌. 저장 중 Enter 반복(한글 입력 확정 Enter 포함)으로 두 번 저장되지 않게 막음.
+  let quickAddBusy = false;
   async function quickAddTodoToday(inputId) {
     const input = $(inputId);
-    if (!input) return;
+    if (!input || quickAddBusy) return;
     const title = input.value.trim();
-    if (!title) return;
-    const btn = $(inputId === "quickTaskInput" ? "quickAddBtn" : "quickAddBtnSide");
-    if (btn) btn.disabled = true;
-    const { error } = await sb.from("tok_todos").insert({ title, start_date: todayStr(), end_date: null, todo_time: null });
-    if (btn) btn.disabled = false;
-    if (error) { alert("저장 실패: " + error.message); return; }
-    input.value = "";
+    if (!title) { input.focus(); return; }
+    quickAddBusy = true;
+    const btns = ["quickAddBtn", "quickAddBtnSide"].map(id => $(id)).filter(Boolean);
+    btns.forEach(b => { b.disabled = true; });
+    let error;
+    try {
+      ({ error } = await sb.from("tok_todos").insert({ title, start_date: todayStr(), end_date: null, todo_time: null }));
+    } catch (err) { error = err; }
+    quickAddBusy = false;
+    btns.forEach(b => { b.disabled = false; });
+    if (error) { alert("저장하지 못했어요. 적은 내용은 그대로 있어요. (" + (error.message || error) + ")"); return; }
     ["quickTaskInput", "quickTaskInputSide"].forEach(id => { if ($(id)) $(id).value = ""; });
     await loadAll();
+    showToast("오늘 할일에 추가했어요");
   }
   // 모바일 상단 줄과 PC 사이드바 입력칸 내용을 맞춰서, 화면 폭이 바뀌어도 쓰던 제목이 유지되게
   ["quickTaskInput", "quickTaskInputSide"].forEach((id, i, ids) => {
     $(id)?.addEventListener("input", () => { const other = $(ids[1 - i]); if (other) other.value = $(id).value; });
   });
   $("quickAddBtn")?.addEventListener("click", () => quickAddTodoToday("quickTaskInput"));
-  $("quickTaskInput")?.addEventListener("keydown", (e) => { if (e.key === "Enter") quickAddTodoToday("quickTaskInput"); });
+  $("quickTaskInput")?.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) quickAddTodoToday("quickTaskInput"); });
   $("quickAddBtnSide")?.addEventListener("click", () => quickAddTodoToday("quickTaskInputSide"));
-  $("quickTaskInputSide")?.addEventListener("keydown", (e) => { if (e.key === "Enter") quickAddTodoToday("quickTaskInputSide"); });
+  $("quickTaskInputSide")?.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) quickAddTodoToday("quickTaskInputSide"); });
 
   function renderTodosPage() {
     document.querySelectorAll("#todoTopTabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === todoTabView));
@@ -5191,6 +5246,18 @@
   // 2026-09-27: 일정·습관 추가 창과 같은 저장 규칙 — [저장]/[취소]로만, 제목만 있으면 저장(시작일 비우면 오늘),
   // 빈 제목·중복 저장 방지, 실패하면 입력값 유지. prefill(날짜·시간·그룹)이 있으면 기본값으로 넣고 창 제목에 날짜 표시.
   let todoSheetState = { saving: false, opener: null };
+  // 2026-09-28 할일 시간 입력은 30분 단위(09:00, 09:30 …) 선택. 기존에 저장된 30분 단위가 아닌 시간(예: 09:15)은
+  // 반올림하지 않고 그 값 그대로 목록에 한 줄 더 넣어서(“09:15 · 저장된 시간”) 선택된 채로 보여줌 → 저장해도 안 바뀜.
+  const TIME_INPUT_STEP_MIN = 30, TODO_DEFAULT_DURATION_MIN = 30;
+  function fillHalfHourTimeSelect(sel, current) {
+    const cur = current ? current.slice(0, 5) : "";
+    const times = [];
+    for (let m = 0; m < 1440; m += TIME_INPUT_STEP_MIN) times.push(minutesToHHMM(m));
+    const offGrid = cur && !times.includes(cur);
+    if (offGrid) { times.push(cur); times.sort(); }
+    sel.innerHTML = `<option value="">시간 미지정</option>` + times.map(t => `<option value="${t}">${t}${offGrid && t === cur ? " · 저장된 시간" : ""}</option>`).join("");
+    sel.value = cur;
+  }
   function todoSheetTitleFor(dateStr) {
     if (!dateStr) return "할일 추가";
     return (dateStr.slice(0, 4) !== todayStr().slice(0, 4) ? `${dateStr.slice(0, 4)}년 ` : "") + `${calDateLabel(dateStr, false)}에 할일 추가`;
@@ -5208,7 +5275,7 @@
     $("td_title").value = existing ? existing.title : "";
     $("td_start").value = start || "";
     $("td_end").value = existing ? (existing.end_date || "") : (prefill?.endDate || "");
-    $("td_time").value = existing ? (existing.todo_time ? existing.todo_time.slice(0, 5) : "") : (prefill?.time || "");
+    fillHalfHourTimeSelect($("td_time"), existing ? (existing.todo_time ? existing.todo_time.slice(0, 5) : "") : (prefill?.time || ""));
     populateTodoTagSelect(existing ? (existing.tag_id || null) : (prefill?.tagId || null));
     $("td_error").textContent = "";
     $("todoSaveBtn").disabled = false;
@@ -5236,6 +5303,7 @@
     const start_date = $("td_start").value || todayStr();
     const end_date = $("td_end").value || null;
     const todo_time = $("td_time").value ? $("td_time").value + ":00" : null;
+    const existingTodo = $("todoSheetBg").dataset.editId ? todos.find(x => x.id === $("todoSheetBg").dataset.editId) : null;
     const tag_id = $("td_tag").value || null;
     const showErr = (msg, el) => { $("td_error").textContent = msg; el?.focus(); };
     if (!title) { showErr("할일 제목을 입력해주세요.", $("td_title")); return; }
@@ -5247,9 +5315,14 @@
     $("todoSaveBtn").textContent = "저장 중…";
     let error;
     try {
+      // 새 할일: 시간을 정하면 소요시간 30분(시간 미지정이면 null). 수정: 소요시간은 사용자가 정한 값 그대로 두고,
+      // 시간 없던 할일에 처음 시간을 넣었는데 소요시간이 비어 있을 때만 30분을 채움(기존 값은 바꾸지 않음).
+      const patch = { title, start_date, end_date, todo_time, tag_id };
+      if (!editId) patch.duration_minutes = todo_time ? TODO_DEFAULT_DURATION_MIN : null;
+      else if (todo_time && existingTodo && existingTodo.duration_minutes == null) patch.duration_minutes = TODO_DEFAULT_DURATION_MIN;
       ({ error } = editId
-        ? await sb.from("tok_todos").update({ title, start_date, end_date, todo_time, tag_id }).eq("id", editId)
-        : await sb.from("tok_todos").insert({ title, start_date, end_date, todo_time, tag_id }));
+        ? await sb.from("tok_todos").update(patch).eq("id", editId)
+        : await sb.from("tok_todos").insert(patch));
     } catch (err) { error = err; }
     todoSheetState.saving = false;
     $("todoSaveBtn").disabled = false;
@@ -5373,6 +5446,7 @@
   $("hs_newcat_btn").onclick = async () => {
     const name = $("hs_newcat_name").value.trim();
     if (!name) { alert("그룹 이름을 입력해주세요."); return; }
+    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("그룹")); return; }
     const color = $("hs_newcat_color").value;
     const { data, error } = await sb.from("tok_habit_categories")
       .insert({ name, color, sort_order: nextCategorySortOrder(habitCategories) })
@@ -5389,7 +5463,7 @@
   function renderHabitCategoryList() {
     renderCategoryManageList("hs_cat_list", habitCategories, "tok_habit_categories", () => {
       populateHabitCategorySelect($("hs_category").value);
-      renderTodo();
+      rerenderCategoryViews();
     }, true);
   }
   $("habitSheetSaveBtn").onclick = async () => {
@@ -5679,6 +5753,10 @@
   function eventCategoryHtml(cat) {
     return `<span class="cal-day-cat"><span class="dot" style="background:${cat.color || "var(--accent)"};"></span>${escapeHtml(tagPickLabel(cat))}</span>`;
   }
+  // 범주가 없는 일정 = 범주 "기본"(실제 행 없음, category_id null). 색은 설정의 범주 "기본" 색, 없으면 보조색.
+  function eventDefaultCategoryHtml() {
+    return `<span class="cal-day-cat"><span class="dot" style="background:${daySettings.default_event_color || "var(--sub)"};"></span>기본</span>`;
+  }
   function renderSchedule() {
     renderSchedMonthBar();
     const { ms, me, label } = schedMonthInfo();
@@ -5857,8 +5935,8 @@
     if (!e) return;
     evDetail = { id, opener: opener || null, busy: false };
     const cat = eventCategoryOf(e);
-    $("evd_cat").innerHTML = cat ? eventCategoryHtml(cat) : "";
-    $("evd_cat").hidden = !cat;
+    $("evd_cat").innerHTML = cat ? eventCategoryHtml(cat) : eventDefaultCategoryHtml();
+    $("evd_cat").hidden = false;
     $("evd_title").textContent = e.title;
     $("evd_when").textContent = eventWhenLabel(e);
     const rep = eventRepeatLabel(e);
@@ -6126,6 +6204,69 @@
     });
   }
 
+  // ── PC 월간 달력: 빈 날짜 영역을 누른 채 다른 날짜까지 끌면 기간 선택 → 손을 놓으면 일정 추가 창(시작일·종료일 자동 입력) (2026-09-28) ──
+  // · 한 칸 안에서 누르고 떼면(움직임 없음) 기존 클릭 = 날짜 선택 그대로. 일정 막대에서 시작하면 드래그하지 않음(막대 클릭 = 상세).
+  // · 역방향(뒤 날짜 → 앞 날짜)·주 경계·화면에 보이는 이전/다음 달 칸도 그대로 선택(양끝 날짜 포함, 작은 날짜가 시작일).
+  // · 드래그를 끝낸 직후 브라우저가 보내는 click은 한 번 무시(날짜 선택·다시 그리기가 겹쳐 실행되지 않게).
+  // · 선택 표시는 추가 창이 열려 있는 동안 유지 → 저장하면 새로 그려지며 사라지고, 취소·Esc로 닫으면 해제.
+  // · 다른 칸까지 끌었다가 처음 칸으로 돌아와 놓으면 취소로 봄. 저장 후에도 보던 달을 유지(이전·다음 달 칸만 골랐어도).
+  // · 모바일(좁은 폭)·터치 입력은 스크롤과 겹치지 않게 드래그를 쓰지 않음 → 날짜 선택 → [+ 일정 추가] → "여러 날" 종료일 지정.
+  let calDrag = null;
+  let calSuppressClickUntil = 0;
+  function paintCalRange(a, b) {
+    const lo = a <= b ? a : b, hi = a <= b ? b : a;
+    $("calGrid").querySelectorAll(".cal-cell[data-date]").forEach(c => {
+      const d = c.dataset.date, on = d >= lo && d <= hi;
+      c.classList.toggle("range-sel", on);
+      c.classList.toggle("range-start", on && d === lo);
+      c.classList.toggle("range-end", on && d === hi);
+    });
+  }
+  function clearCalRange() {
+    $("calGrid").classList.remove("range-selecting");
+    $("calGrid").querySelectorAll(".range-sel").forEach(c => c.classList.remove("range-sel", "range-start", "range-end"));
+  }
+  $("calGrid").addEventListener("pointerdown", (e) => {
+    if (isCalMobile() || e.pointerType === "touch" || e.button !== 0) return;
+    const cell = e.target.closest(".cal-cell[data-date]");
+    if (!cell || e.target.closest(".cal-chip[data-id]")) return;
+    calDrag = { pointerId: e.pointerId, startDate: cell.dataset.date, curDate: cell.dataset.date, x: e.clientX, y: e.clientY, moved: false };
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (!calDrag || e.pointerId !== calDrag.pointerId) return;
+    if (!calDrag.moved && Math.hypot(e.clientX - calDrag.x, e.clientY - calDrag.y) < 6) return;
+    const cell = document.elementFromPoint(e.clientX, e.clientY)?.closest("#calGrid .cal-cell[data-date]");
+    if (!cell) return; // 달력 밖으로 나가면 마지막으로 지나간 날짜를 유지
+    if (!calDrag.moved && cell.dataset.date === calDrag.startDate) return; // 같은 칸 안의 흔들림은 클릭으로 봄
+    calDrag.moved = true;
+    calDrag.curDate = cell.dataset.date;
+    $("calGrid").classList.add("range-selecting");
+    paintCalRange(calDrag.startDate, calDrag.curDate);
+  });
+  document.addEventListener("pointerup", (e) => {
+    if (!calDrag || e.pointerId !== calDrag.pointerId) return;
+    const d = calDrag;
+    calDrag = null;
+    if (!d.moved) return; // 움직이지 않았으면 기존 클릭(날짜 선택)이 처리
+    calSuppressClickUntil = performance.now() + 400;
+    $("calGrid").classList.remove("range-selecting");
+    const lo = d.startDate <= d.curDate ? d.startDate : d.curDate;
+    const hi = d.startDate <= d.curDate ? d.curDate : d.startDate;
+    if (lo === hi) { clearCalRange(); return; } // 다른 칸까지 갔다가 처음 칸으로 돌아와 놓음 = 선택 취소(창·날짜 선택 없음)
+    paintCalRange(lo, hi);
+    const opener = $("calGrid").querySelector(`.cal-cell[data-date="${lo}"]`);
+    openEventEditor({ mode: "add", date: lo, endDate: hi, opener, keepMonth: true });
+  });
+  document.addEventListener("pointercancel", (e) => {
+    if (!calDrag || e.pointerId !== calDrag.pointerId) return;
+    calDrag = null;
+    clearCalRange();
+  });
+  // 드래그 끝에 따라오는 click 한 번은 날짜 선택으로 처리하지 않음(캡처 단계에서 먼저 막음)
+  $("calGrid").addEventListener("click", (e) => {
+    if (performance.now() < calSuppressClickUntil) { e.stopPropagation(); e.preventDefault(); calSuppressClickUntil = 0; }
+  }, true);
+
   // 선택한 날짜의 일정(PC 오른쪽 패널 / 좁은 화면 달력 아래) — 날짜·요일·개수·[+ 일정 추가], 종일 먼저 그다음 시간순.
   // 일정을 누르면 상세 창. 일정이 없으면 안내 문구(+ 치즈 테마면 그림, CSS가 표시 여부를 정함).
   function renderCalDayPanel() {
@@ -6138,7 +6279,7 @@
     $("calDayList").innerHTML = !list.length ? `<p class="cal-day-empty">등록된 일정이 없어요</p>` : list.map(e => {
       const cat = eventCategoryOf(e);
       const isRange = isMultiDayEvent(e);
-      const color = cat ? (cat.color || null) : null;
+      const color = itemTagColor("event", e.category_id); // 범주 없음 = 범주 "기본" 색(설정), 달력 막대와 같은 값
       return `<div class="cal-day-row"${menuAttrs("event", e.id, d)}><button type="button" class="cal-day-item" data-id="${e.id}">
           <span class="cal-day-time">${e.event_time ? e.event_time.slice(0, 5) : "종일"}</span>
           <span class="dot"${color ? ` style="--chip-c:${color};"` : ""} aria-hidden="true"></span>
@@ -6157,7 +6298,7 @@
   // ── 일정 추가/수정 창(달력·목록 공용, 2026-09-28 재구성) ──
   // 제목 → 날짜 → [여러 날] → [종일] → 범주 → 메모 쓰기 → 취소/저장. 저장은 [저장] 버튼으로만(Enter·포커스 이탈로 저장 안 함).
   // 수정할 때는 바뀐 칸만 보내서, 창에 없는 값(반복 단위·주기, 소요 시간 등)은 그대로 남음.
-  let calEvSheet = { mode: "add", id: null, saving: false, opener: null, snapshot: "" };
+  let calEvSheet = { mode: "add", id: null, saving: false, opener: null, snapshot: "", keepMonth: false };
   const cevCategoryValue = () => $("cev_category").querySelector("input:checked")?.value || "";
   // 변경 여부 비교용 — 꺼진 스위치 뒤에 숨은 칸(종료일·시간)은 비교에서 뺌
   function cevFormState() {
@@ -6180,22 +6321,26 @@
   }
   function renderCevCategories(keepId) {
     const pool = assignableTagPool(eventCategories, keepId);
-    const opts = [{ id: "", name: "없음", color: null }, ...pool.map(c => ({ id: c.id, name: tagPickLabel(c), color: c.color || null }))];
+    const opts = [{ id: "", name: "기본", color: daySettings.default_event_color || null }, ...pool.map(c => ({ id: c.id, name: tagPickLabel(c), color: c.color || null }))];
     if (keepId && !pool.some(c => c.id === keepId)) opts.push({ id: keepId, name: "기존 범주", color: null }); // 목록에 없는 범주도 저장값은 유지
     $("cev_category").innerHTML = opts.map(c => `
       <label class="cev-cat-opt${c.id ? "" : " is-none"}"><input type="radio" name="cev_cat" value="${escapeHtml(c.id)}"${c.id === (keepId || "") ? " checked" : ""} />
         <span class="dot"${c.color ? ` style="background:${c.color};"` : ""}></span><span class="nm">${escapeHtml(c.name)}</span></label>`).join("");
   }
-  function openEventEditor({ mode = "add", id = null, date = null, opener = null } = {}) {
+  // endDate(새 일정만): 달력 드래그로 고른 기간의 마지막 날 — 시작일보다 뒤면 "여러 날"을 켜고 종료일을 채움.
+  // keepMonth: 저장 후 보던 달을 유지(드래그로 화면에 보이는 이전·다음 달 칸을 골랐을 때 달이 넘어가지 않게).
+  function openEventEditor({ mode = "add", id = null, date = null, endDate = null, opener = null, keepMonth = false } = {}) {
     const ev = mode === "edit" ? events.find(x => x.id === id) : null;
     if (mode === "edit" && !ev) return;
-    calEvSheet = { mode, id: ev ? ev.id : null, saving: false, opener: opener || null, snapshot: "" };
+    calEvSheet = { mode, id: ev ? ev.id : null, saving: false, opener: opener || null, snapshot: "", keepMonth: !ev && keepMonth };
     renderCevCategories(ev ? (ev.category_id || null) : null);
-    const multi = !!ev && isMultiDayEvent(ev);
+    const startVal = ev ? ev.event_date : (date || todayStr());
+    const rangeEnd = !ev && endDate && endDate > startVal ? endDate : "";
+    const multi = ev ? isMultiDayEvent(ev) : !!rangeEnd;
     $("cev_title").value = ev ? ev.title : "";
-    $("cev_date").value = ev ? ev.event_date : (date || todayStr());
+    $("cev_date").value = startVal;
     $("cev_multi").checked = multi;
-    $("cev_end").value = multi ? evEndDate(ev) : "";
+    $("cev_end").value = ev ? (multi ? evEndDate(ev) : "") : rangeEnd;
     $("cev_allday").checked = ev ? !ev.event_time : true; // 새 일정은 종일이 기본
     $("cev_time").value = ev && ev.event_time ? ev.event_time.slice(0, 5) : "";
     $("cev_memo").value = ev ? (ev.memo || "") : "";
@@ -6214,6 +6359,7 @@
   function hideCalEventSheet() {
     $("calEventSheetBg").classList.remove("open");
     fitCalEventSheetToViewport();
+    clearCalRange(); // 달력 드래그로 연 경우 기간 선택 표시 해제(저장·취소·Esc 공통)
   }
   // 취소·닫기·배경 클릭·Esc — 바뀐 내용이 있으면 한 번 물어봄, 없으면 바로 닫음
   async function requestCloseCalEventSheet() {
@@ -6281,9 +6427,14 @@
     const opener = calEvSheet.opener, savedId = isAdd ? (data && data.id) : calEvSheet.id;
     hideCalEventSheet();
     // 새 일정은 저장한 날짜가 보이게(달력은 그 날짜 선택, 다른 달이면 그 달로). 수정은 보던 달·날짜 그대로.
-    const movedMonth = isAdd && calMonthOf(event_date) !== calMonthOf(calCursor);
+    // 달력 드래그로 연 창(keepMonth): 화면에 보이던 칸에서 고른 기간이라 달을 옮기지 않음. 기간이 이번 달과 겹치면
+    // 이번 달 안의 첫 날짜를 선택하고, 이전·다음 달 칸만 골랐으면 선택 날짜는 그대로 둠(선택은 늘 이번 달 안이어야 함).
+    const { ms: curMs, me: curMe } = schedMonthInfo();
+    const keepCur = isAdd && calEvSheet.keepMonth && scheduleMode === "calendar";
+    const movedMonth = isAdd && !keepCur && calMonthOf(event_date) !== calMonthOf(calCursor);
     if (movedMonth) { calCursor = calMonthOf(event_date); calExpanded.clear(); }
-    if (isAdd) calSelected = event_date;
+    if (isAdd && !keepCur) calSelected = event_date;
+    else if (keepCur && (end_date || event_date) >= curMs && event_date <= curMe) calSelected = event_date < curMs ? curMs : event_date;
     await loadAll();
     if (isAdd && scheduleMode === "list" && currentPage === "schedule") {
       if (movedMonth) window.scrollTo(0, 0);
@@ -6733,7 +6884,7 @@
     const item = agendaItemById(kind, id);
     const field = (kind === "todo" || kind === "someday") ? "tag_id" : "category_id";
     const current = item ? (item[field] || null) : null;
-    const opts = [{ id: null, label: kind === "event" ? "범주 없음" : "기본", color: kind === "event" ? "transparent" : (daySettings.default_tag_color || "var(--sub)") },
+    const opts = [{ id: null, label: "기본", color: defaultCategoryColor(kind) || "var(--sub)" },
       ...assignableTagPool(itemTagPool(kind), current).map(c => ({ id: c.id, label: tagPickLabel(c), color: c.color || "var(--accent)" }))];
     return opts.map(o => ({ label: o.label, dot: o.color, radio: true, current: o.id === current, run: () => setItemTag(kind, id, field, o.id, current) }));
   }
@@ -7201,8 +7352,9 @@
   };
 
   // ── 설정 페이지: 그룹(습관·할일 공용) / 범주(일정 전용) 관리 ──
-  // withDefaultRow: true면 목록 맨 위에 "기본"(그룹 없음) 줄을 하나 더 붙임 — 이 행은 순서 고정(드래그 불가),
-  // 이름 수정·삭제 불가, 색상만 daySettings.default_tag_color에 저장(2026-09-20, 결님 요청).
+  // withDefaultRow: true면 목록 맨 위에 "기본"(분류 없음) 줄을 하나 더 붙임 — 이 행은 순서 고정(드래그 불가),
+  // 이름 수정·보관·삭제 불가, 색상만 저장(2026-09-20, 결님 요청). 2026-09-28: 범주에도 "기본" 줄 추가 —
+  // 그룹은 daySettings.default_tag_color, 범주는 daySettings.default_event_color(둘 다 tok_settings).
   // 2026-09-24 보관 — 목록 위에 "사용 중 / 보관됨" 전환 탭. 사용 중 줄은 이름·색상·순서 변경 + "보관",
   // 보관됨 줄은 이름·색상 표시 + "다시 사용" + "완전 삭제"(일반 화면에선 삭제 대신 보관이 기본 동작).
   // 보관해도 행은 그대로라 기존 항목 연결·이름·색 표시는 유지됨. 탭 상태는 목록(hostId)별로 기억.
@@ -7212,7 +7364,10 @@
     if (!host) return;
     const isEvent = table === "tok_event_categories";
     const noun = isEvent ? "범주" : "그룹";
-    const noneLabel = isEvent ? "범주 없음" : "기본";
+    const nounObj = isEvent ? "범주를" : "그룹을", nounSubj = isEvent ? "범주가" : "그룹이", nounTopic = isEvent ? "범주는" : "그룹은"; // 받침에 맞춘 조사
+    const noneLabel = "기본";
+    const defaultField = isEvent ? "default_event_color" : "default_tag_color";
+    const defaultColor = daySettings[defaultField] || "#c7c2d6";
     const view = categoryManageView[hostId] === "archived" ? "archived" : "active";
     const activeList = pool.filter(c => !c.is_archived);
     const archivedList = pool.filter(c => c.is_archived);
@@ -7223,9 +7378,10 @@
     const defaultRowHtml = withDefaultRow && view === "active"
       ? `<div class="hs-cat-row hs-cat-row-default" data-default="1">
            <span class="hs-cat-drag-handle-spacer"></span>
-           <input type="color" class="hs-cat-color-input hs-cat-default-color-input color-native-input" value="${daySettings.default_tag_color || "#c7c2d6"}" />
-           <button type="button" class="color-swatch-btn hs-cat-default-color-swatch" title="색상 선택" style="background:${daySettings.default_tag_color || "#c7c2d6"};"></button>
+           <input type="color" class="hs-cat-color-input hs-cat-default-color-input color-native-input" value="${defaultColor}" aria-label="${noun} 기본 색상" />
+           <button type="button" class="color-swatch-btn hs-cat-default-color-swatch" title="색상 선택" style="background:${defaultColor};"></button>
            <span class="hs-cat-name-fixed">기본</span>
+           <span class="hs-cat-default-note">${nounObj} 정하지 않은 ${isEvent ? "일정" : "항목"}</span>
          </div>`
       : "";
     let bodyHtml;
@@ -7236,7 +7392,7 @@
         <input type="color" class="hs-cat-color-input color-native-input" data-id="${c.id}" value="${c.color || "#9a8cf0"}" />
         <button type="button" class="color-swatch-btn hs-cat-color-swatch" data-id="${c.id}" title="색상 선택" style="background:${c.color || "#9a8cf0"};"></button>
         <input type="text" class="hs-cat-name-input" data-id="${c.id}" value="${escapeHtml(c.name)}" />
-        <button type="button" class="hs-cat-archive" data-id="${c.id}" title="보관하면 새로 고르는 목록에서만 숨겨지고, 기존 항목의 ${noun}은 그대로 유지돼요">보관</button>
+        <button type="button" class="hs-cat-archive" data-id="${c.id}" title="보관하면 새로 고르는 목록에서만 숨겨지고, 기존 항목의 ${nounTopic} 그대로 유지돼요">보관</button>
       </div>
     `).join("");
       bodyHtml = defaultRowHtml + (activeList.length ? rowsHtml : (withDefaultRow ? "" : `<div class="empty" style="font-size:12px;padding:4px 0;">아직 없어요. 아래에서 추가해보세요.</div>`));
@@ -7249,7 +7405,7 @@
         <button type="button" class="hs-cat-purge" data-id="${c.id}">완전 삭제</button>
       </div>
     `).join("");
-      bodyHtml = archivedList.length ? rowsHtml : `<div class="empty" style="font-size:12px;padding:4px 0;">보관된 ${noun}이 없어요.</div>`;
+      bodyHtml = archivedList.length ? rowsHtml : `<div class="empty" style="font-size:12px;padding:4px 0;">보관된 ${nounSubj} 없어요.</div>`;
     }
     host.innerHTML = tabsHtml + bodyHtml;
     const rerender = () => renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow);
@@ -7284,47 +7440,81 @@
         onSaved?.();
       };
     });
+    // loadAll은 설정 페이지 목록만 새 배열로 다시 그림 → 습관 설정 시트 안의 목록은 여기서 새 데이터로 다시 그림
+    const refreshAfterReload = () => {
+      if (hostId === "hs_cat_list" && $("habitSheetBg").classList.contains("open")) { populateHabitCategorySelect($("hs_category").value); renderHabitCategoryList(); }
+    };
+    // 완전 삭제(2026-09-28 수정): DB 함수(tok_purge_habit_category / tok_purge_event_category) 한 번으로
+    // 연결 해제(→ "기본") + 그룹·범주 행 삭제를 한 트랜잭션에서 처리 → 둘 중 하나만 반영되는 일이 없음.
+    // 예전 코드는 "DB가 ON DELETE로 참조를 풀어준다"고 가정했지만 tok_someday.tag_id에는 그 규칙이 없어서
+    // 언젠가 항목이 연결된 그룹은 409(외래키 위반)로 삭제되지 않았음. 할일·습관·언젠가·일정과 완료 기록은 지우지 않음.
+    // 성공 응답을 받은 뒤 서버에서 다시 불러와(loadAll) 화면에서 빠진 것을 확인. 실패하면 줄을 그대로 두고 "다시 시도".
     host.querySelectorAll(".hs-cat-purge").forEach(btn => {
       btn.onclick = async () => {
+        if (btn.disabled) return;
         const id = btn.dataset.id;
         const cat = pool.find(c => c.id === id);
-        if (!confirm(`"${cat ? cat.name : "항목"}" ${noun}을 완전히 삭제할까요?\n\n이 ${noun}을 쓰던 기존 항목의 연결은 "${noneLabel}"(으)로 바뀌어요. 되돌릴 수 없어요.`)) return;
-        const { error } = await sb.from(table).delete().eq("id", id);
-        if (error) { alert("삭제 실패: " + error.message); return; }
-        const idx = pool.findIndex(c => c.id === id);
-        if (idx >= 0) pool.splice(idx, 1);
-        // DB에는 ON DELETE로 참조가 알아서 풀리지만(다음 loadAll에 반영), 지금 화면에 바로 "기본"으로
-        // 보이도록 메모리상 참조도 같이 정리함(습관 시트에 있던 기존 최적화 업데이트를 공용 함수로 옮기며 일반화).
-        if (table === "tok_habit_categories") {
-          tasks.forEach(t => { if (t.category_id === id) t.category_id = null; });
-          todos.forEach(td => { if (td.tag_id === id) td.tag_id = null; });
-          somedayItems.forEach(s => { if (s.tag_id === id) s.tag_id = null; });
-        } else if (table === "tok_event_categories") {
-          events.forEach(e => { if (e.category_id === id) e.category_id = null; });
+        const ok = await askConfirm({
+          title: `‘${cat ? cat.name : "이 " + noun}’ ${nounObj} 완전히 삭제할까요?`,
+          message: `이 ${nounObj} 쓰던 ${isEvent ? "일정은" : "할일·습관·언젠가는"} 지워지지 않고 "${noneLabel}"으로 바뀌어요.${isEvent ? "" : " 완료 기록도 그대로 남아요."} 삭제한 ${nounTopic} 되돌릴 수 없어요.`,
+          okText: "완전 삭제", cancelText: "취소", danger: true,
+        });
+        if (!ok) return;
+        btn.disabled = true;
+        btn.textContent = "삭제 중…";
+        let error;
+        try {
+          ({ error } = await sb.rpc(isEvent ? "tok_purge_event_category" : "tok_purge_habit_category", { p_id: id }));
+        } catch (err) { error = err; }
+        if (error) {
+          const msg = /category_not_found/.test(error.message || "") ? `이미 삭제됐거나 찾을 수 없는 ${noun}${isEvent ? "예요" : "이에요"}. 목록을 새로 불러올게요.`
+            : /category_not_archived/.test(error.message || "") ? `보관한 ${noun}만 완전 삭제할 수 있어요. 목록을 새로 불러올게요.`
+            : `삭제하지 못했어요. 다시 시도해 주세요. (${error.message || error})`;
+          alert(msg);
+          if (/category_not_(found|archived)/.test(error.message || "")) { await loadAll(); refreshAfterReload(); return; }
+          btn.disabled = false;
+          btn.textContent = "다시 시도";
+          return;
         }
-        rerender();
-        onSaved?.();
+        await loadAll(); // 서버 기준으로 다시 그림(그룹·범주 목록과 연결 항목의 "기본" 표시가 새로고침 후와 같아짐)
+        refreshAfterReload();
+        if (itemTagPool(isEvent ? "event" : "habit").some(c => c.id === id)) alert(`삭제 요청은 끝났지만 ${nounSubj} 아직 목록에 있어요. 새로고침 후 다시 확인해 주세요.`);
+        else showToast(`${nounObj} 삭제했어요`);
       };
     });
+    // 색상 저장 실패 시 색상 인풋·스와치를 저장 전 값으로 되돌림(화면에 저장 안 된 색이 남지 않게)
+    const revertColor = (inp, swatch, prev) => { inp.value = prev; if (swatch) swatch.style.background = prev; };
     const defaultColorInp = host.querySelector(".hs-cat-default-color-input");
     if (defaultColorInp) {
+      const swatch = host.querySelector(".hs-cat-default-color-swatch");
+      let saved = defaultColorInp.value;
       defaultColorInp.onchange = async () => {
-        const ok = await saveDefaultTagColor(defaultColorInp.value);
-        if (!ok) return;
+        const color = defaultColorInp.value;
+        if (color === saved) return;
+        const prev = saved;
+        const { ok, error } = await saveDefaultCategoryColor(defaultField, color);
+        if (!ok) {
+          revertColor(defaultColorInp, swatch, prev);
+          alert("색상을 저장하지 못했어요. 이전 색으로 되돌렸어요. (" + (error?.message || error) + ")");
+          return;
+        }
+        saved = color;
         onSaved?.();
       };
-      wireColorSwatchButton(host.querySelector(".hs-cat-default-color-swatch"), defaultColorInp);
+      wireColorSwatchButton(swatch, defaultColorInp);
     }
     host.querySelectorAll(".hs-cat-color-input[data-id]").forEach(inp => {
+      const swatchBtn = host.querySelector(`.hs-cat-color-swatch[data-id="${inp.dataset.id}"]`);
       inp.onchange = async () => {
         const id = inp.dataset.id, color = inp.value;
-        const { error } = await sb.from(table).update({ color }).eq("id", id);
-        if (error) { alert("색상 변경 실패: " + error.message); return; }
         const cat = pool.find(c => c.id === id);
+        const prev = cat ? (cat.color || "#9a8cf0") : color;
+        if (color === prev) return;
+        const { error } = await sb.from(table).update({ color }).eq("id", id);
+        if (error) { revertColor(inp, swatchBtn, prev); alert("색상을 저장하지 못했어요. 이전 색으로 되돌렸어요. (" + error.message + ")"); return; }
         if (cat) cat.color = color;
         onSaved?.();
       };
-      const swatchBtn = host.querySelector(`.hs-cat-color-swatch[data-id="${inp.dataset.id}"]`);
       wireColorSwatchButton(swatchBtn, inp);
     });
     host.querySelectorAll(".hs-cat-name-input").forEach(inp => {
@@ -7333,6 +7523,7 @@
         const cat = pool.find(c => c.id === id);
         if (!name) { inp.value = cat ? cat.name : ""; return; }
         if (cat && cat.name === name) return;
+        if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG(noun)); inp.value = cat ? cat.name : ""; return; }
         const { error } = await sb.from(table).update({ name }).eq("id", id);
         if (error) { alert("이름 변경 실패: " + error.message); return; }
         if (cat) cat.name = name;
@@ -7411,13 +7602,22 @@
       });
     });
   }
+  // 그룹·범주 이름/색이 바뀌면 그 색을 쓰는 모든 화면(집·일정·할일·습관)을 다시 그림 — 설정 목록 자체는 다시 그리지 않음(입력 중 포커스 유지)
+  function rerenderCategoryViews() {
+    renderHome();
+    renderSchedule();
+    if (scheduleMode === "calendar") renderScheduleCalendar();
+    renderTodosPage();
+    renderTodo();
+  }
   function renderSettingsTagLists() {
-    renderCategoryManageList("settingsTagList", habitCategories, "tok_habit_categories", () => { renderTodo(); renderAgendaTimed(); }, true);
-    renderCategoryManageList("settingsEventCatList", eventCategories, "tok_event_categories", () => { renderSchedule(); renderAgendaTimed(); if (scheduleMode === "calendar") renderScheduleCalendar(); });
+    renderCategoryManageList("settingsTagList", habitCategories, "tok_habit_categories", rerenderCategoryViews, true);
+    renderCategoryManageList("settingsEventCatList", eventCategories, "tok_event_categories", rerenderCategoryViews, true);
   }
   $("settingsTagAddBtn").onclick = async () => {
     const name = $("settingsTagName").value.trim();
     if (!name) { alert("그룹 이름을 입력해주세요."); return; }
+    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("그룹")); return; }
     const color = $("settingsTagColor").value;
     const { data, error } = await sb.from("tok_habit_categories").insert({ name, color, sort_order: nextCategorySortOrder(habitCategories) }).select().single();
     if (error) { alert("그룹 추가 실패: " + error.message); return; }
@@ -7428,6 +7628,7 @@
   $("settingsEventCatAddBtn").onclick = async () => {
     const name = $("settingsEventCatName").value.trim();
     if (!name) { alert("범주 이름을 입력해주세요."); return; }
+    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("범주")); return; }
     const color = $("settingsEventCatColor").value;
     const { data, error } = await sb.from("tok_event_categories").insert({ name, color, sort_order: nextCategorySortOrder(eventCategories) }).select().single();
     if (error) { alert("범주 추가 실패: " + error.message); return; }
