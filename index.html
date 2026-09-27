@@ -1197,18 +1197,6 @@
     .content:has(.page[data-page="home"]:not([style*="display: none"])){padding-bottom:calc(90px + env(safe-area-inset-bottom));}
   }
 
-  /* 전체 맞춤 실험: 목록을 전부 펼친 뒤 화면 높이에 맞춰 같은 비율로 축소한다. */
-  .home-fit-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
-  .home-fit-toolbar button{font:inherit;font-size:13px;padding:8px 10px;min-height:36px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);cursor:pointer;}
-  .home-fit-toolbar button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
-  #homeFitScale{font-size:12px;color:var(--sub);}
-  .content:has(.page[data-page="home"] .home-fit-all){padding-bottom:0;}
-  .home2-grid.home-fit-all{height:auto;align-items:start;}
-  .home-fit-all :is(.home2-col,.home2-tabpanel,.home-list-scroll,#somedayZone,#homeUpcomingList,#homeTodayBlockWrap,#homeLeftover,#somedayHomeTagChips){overflow:visible;max-height:none;}
-  .home-fit-all .home2-col{gap:10px;padding:14px;}
-  .home-fit-all :is(.home1-flat-row,.ag-block-row){padding-top:6px;padding-bottom:6px;}
-  .home-fit-all .ag-section-head{margin-top:8px;margin-bottom:4px;}
-  .home-fit-all .block-add-row{min-height:30px;}
   .appearance-settings{min-width:0;}
   .symbol-picker{min-inline-size:0;margin:0;padding:16px;border:1px solid var(--line);border-radius:var(--r-card);background:var(--card);}
   .symbol-picker legend{padding:0 6px;font-weight:700;}
@@ -1296,11 +1284,6 @@
         </div>
 
         <!-- 집: 지금, 한칸 / 다가오는 / 언젠가. 기존 렌더 대상 ID를 보존한다. -->
-        <div class="home-fit-toolbar" role="group" aria-label="집 표시 방식">
-          <button type="button" id="homeFitAllBtn" aria-pressed="true">한 화면에 모두 보기</button>
-          <button type="button" id="homeOriginalBtn" aria-pressed="false">기존 보기</button>
-          <span id="homeFitScale" aria-live="polite"></span>
-        </div>
         <div class="home2-grid">
           <div class="home2-col" id="homeCol2">
             <div class="home2-col-label" role="heading" aria-level="2">지금, 한칸</div>
@@ -2669,55 +2652,9 @@
     }
   }
 
-  let homeFitAll = true;
-  try { homeFitAll = localStorage.getItem('tok_home_fit_all') !== '0'; } catch (_) {}
-  let homeFitFrame = 0;
-  function scheduleHomeFit() {
-    cancelAnimationFrame(homeFitFrame);
-    homeFitFrame = requestAnimationFrame(syncHomeViewportHeight);
-  }
-  function homeDisplayScale() {
-    return Number(document.querySelector('.home2-grid')?.style.zoom) || 1;
-  }
-  function setHomeFitAll(enabled) {
-    homeFitAll = enabled;
-    try { localStorage.setItem('tok_home_fit_all', enabled ? '1' : '0'); } catch (_) {}
-    renderSomedaySummary();
-    renderLeftoverTodos();
-    window.scrollTo(0, 0);
-    scheduleHomeFit();
-  }
-  $('homeFitAllBtn').onclick = () => setHomeFitAll(true);
-  $('homeOriginalBtn').onclick = () => setHomeFitAll(false);
-  new MutationObserver(scheduleHomeFit).observe(document.querySelector('.home2-grid'), { childList: true, subtree: true, characterData: true });
   function syncHomeViewportHeight() {
     const grid = document.querySelector('.home2-grid');
     if (!grid || !grid.getClientRects().length) return;
-    grid.style.zoom = '';
-    grid.classList.toggle('home-fit-all', homeFitAll);
-    $('homeFitAllBtn').setAttribute('aria-pressed', String(homeFitAll));
-    $('homeOriginalBtn').setAttribute('aria-pressed', String(!homeFitAll));
-    if (homeFitAll) {
-      grid.classList.remove('home-bounded');
-      const footer = document.querySelector('.bottombar');
-      const bottom = footer?.getClientRects().length ? footer.getBoundingClientRect().top : window.innerHeight;
-      const available = Math.max(40, bottom - grid.getBoundingClientRect().top - window.scrollY - 12);
-      // CSS zoom also affects layout width, so measure rather than infer from the unscaled height.
-      let low = 0.01, high = 1;
-      if (grid.getBoundingClientRect().height > available) {
-        for (let i = 0; i < 12; i++) {
-          const scale = (low + high) / 2;
-          grid.style.zoom = String(scale);
-          if (grid.getBoundingClientRect().height <= available) low = scale;
-          else high = scale;
-        }
-        grid.style.zoom = String(low);
-      }
-      const percent = Math.round(homeDisplayScale() * 100);
-      $('homeFitScale').textContent = percent < 100 ? '전체 맞춤 ' + percent + '% · 작으면 기존 보기' : '전체 맞춤 100%';
-      return;
-    }
-    $('homeFitScale').textContent = '';
     const top = grid.getBoundingClientRect().top + window.scrollY;
     const height = window.innerHeight - top - 20;
     const bounded = !homeSingleColMq.matches && height >= 440;
@@ -3262,12 +3199,10 @@
     if (!items.length) { $("homeLeftoverList").innerHTML = ""; return; }
     $("homeLeftoverCount").textContent = items.length;
     const toggle = $("homeLeftoverToggle");
-    const expanded = homeFitAll || leftoverOpen;
-    toggle.disabled = homeFitAll;
-    toggle.setAttribute("aria-expanded", String(expanded));
-    wrap.classList.toggle("open", expanded);
+    toggle.setAttribute("aria-expanded", String(leftoverOpen));
+    wrap.classList.toggle("open", leftoverOpen);
     const list = $("homeLeftoverList");
-    list.hidden = !expanded;
+    list.hidden = !leftoverOpen;
     list.innerHTML = items.map(td => {
       const busy = leftoverBusy.has(td.id);
       const dis = busy ? " disabled" : "";
@@ -3573,7 +3508,7 @@
     const tlContent = el.closest(".ag-tl-content[data-date]");
     if (tlContent) {
       const rect = tlContent.getBoundingClientRect();
-      const slot = Math.max(0, Math.floor((y - rect.top) / homeDisplayScale() / AG_TL_ROW_PX));
+      const slot = Math.max(0, Math.floor((y - rect.top) / AG_TL_ROW_PX));
       // ⚠️ "|| agendaTimelineMinM"이면 그 열이 자정(0분)부터 시작할 때 0이 거짓값 취급돼 엉뚱한 값으로 빠지므로 NaN 체크로 처리.
       const parsedMinM = parseInt(tlContent.dataset.minM, 10);
       const minM = Number.isNaN(parsedMinM) ? agendaTimelineMinM : parsedMinM;
@@ -4409,7 +4344,7 @@
           task.style.cursor = zone ? "ns-resize" : "";
           return;
         }
-        const dy = (e.clientY - startY) / homeDisplayScale() + (timelineScroller?.scrollTop || 0) - startScrollTop;
+        const dy = e.clientY - startY + (timelineScroller?.scrollTop || 0) - startScrollTop;
         if (dragKind === null) {
           if (cancelled) return;
           const moveThreshold = isMouse ? 3 : 6;
@@ -4731,7 +4666,6 @@
     document.querySelectorAll('#homeCol2 > .home2-tabpanel').forEach(p => { p.style.display = p.dataset.col2panel === tab ? '' : 'none'; });
     try { localStorage.setItem('tok_home_view', tab); } catch (_) {}
     requestAnimationFrame(restoreHomeViewScroll);
-    scheduleHomeFit();
   }
   for (const tab of ['timeline', 'block']) {
     homeScroller(tab).addEventListener('scroll', () => {
@@ -5211,11 +5145,11 @@
     const sortSel = $("somedayHomeSortSelect");
     if (sortSel) renderSomedaySortSelect(sortSel, somedayHomeSort, (v) => { somedayHomeSort = v; resetSomedayHomeList(); });
     const chipsHost = $("somedayHomeTagChips");
-    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; resetSomedayHomeList(); }, somedayItems.filter(s => !s.is_done), !homeFitAll);
+    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; resetSomedayHomeList(); }, somedayItems.filter(s => !s.is_done), true);
 
     const undone = somedayItems.filter(s => !s.is_done);
     const all = filterSomedayList(sortSomedayList(undone, somedayHomeSort), somedayHomeFilterTag);
-    const items = homeFitAll ? all : all.slice(0, somedayHomeVisible);
+    const items = all.slice(0, somedayHomeVisible);
     const rowsHtml = items.map(item => {
       return `
       <div class="task-row ag-someday-row home1-flat-row" data-someday-id="${item.id}"${menuAttrs("someday", item.id)}>
