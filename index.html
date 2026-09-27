@@ -470,6 +470,8 @@
   #somedayZone.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;border-radius:14px;}
   .planup-day.drop-target{background:var(--accent-soft);border-radius:8px;}
   /* 2026-09-20 — 결님 요청: 목록/다가오는 탭도 드래그 대상(drop zone)이 됨에 따라 같은 시각 피드백 추가. */
+  /* 2026-09-28 '하루종일'이 늘 맨 위에 있으므로 첫 시간블럭 제목도 블럭 사이 간격과 같게(첫 자식 margin-top:0 규칙 무효화) */
+  #homeTodayBlockBody > .ag-section-head:first-child{margin-top:14px;}
   #homeTodayBlockAllDay.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;border-radius:14px;}
   .upcoming-day.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft);border-radius:8px;}
   /* .ag-section-head를 날짜별 .upcoming-day로 감싸면서 각 헤더가 자기 wrapper의 첫 자식이 돼 기존
@@ -1534,7 +1536,7 @@
           <button class="btn-ghost" id="settingsDaySaveBtn" type="button" style="flex:none;padding:0 12px;height:38px;">저장</button>
         </div>
 
-        <div class="section-label" style="margin-top:20px;">시간블럭 구간 <span style="color:var(--sub);font-weight:400;">(시간블럭 탭의 시간 구간 · 손잡이로 순서 변경)</span></div>
+        <div class="section-label" style="margin-top:20px;">시간블럭 구간 <span style="color:var(--sub);font-weight:400;">(시간블럭 탭의 시간 구간 · 손잡이로 순서 변경 · 종료 00:00 = 자정 24:00)</span></div>
         <div class="hs-block-list" id="settingsBlockList"></div>
         <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
           <div style="flex:1;"><label>이름</label><input id="settingsBlockName" type="text" placeholder="예: 오전" /></div>
@@ -1884,6 +1886,10 @@
   };
   const pad2 = (n) => String(n).padStart(2, "0");
   const minutesToHHMM = (m) => `${pad2(Math.floor(m/60) % 24)}:${pad2(m%60)}`;
+  // 2026-09-28 종료 시각 전용: 1440(자정)은 "24:00"으로 표시. 시간 입력칸(type=time)은 24:00을 못 담아서 "00:00"으로
+  // 보여주고, 종료 칸에서 "00:00"을 받으면 1440(자정)으로 저장함(endInputToMinutes).
+  const endMinuteLabel = (m) => m >= 1440 ? "24:00" : minutesToHHMM(m);
+  const endInputToMinutes = (hhmm) => hhmm === "00:00" ? 1440 : hhmmToMinutes(hhmm);
 
   // 완료 효과음 — 파일 없이 Web Audio로 직접 합성. 공용 재생 헬퍼(음 목록만 다르게 넘겨서 재사용).
   let _checkAudioCtx = null;
@@ -3575,7 +3581,7 @@
         inBlock.forEach(it => covered.add(it));
         const bs = agBlockStyle(block.title);
         html += `<div class="ag-section-head">
-          <span class="label"><span class="ag-dot" style="background:${bs.dot};"></span>${escapeHtml(block.title)} <span style="color:var(--sub);font-weight:400;">(${minutesToHHMM(block.start_minute)}~${minutesToHHMM(block.end_minute)})</span></span>
+          <span class="label"><span class="ag-dot" style="background:${bs.dot};"></span>${escapeHtml(block.title)} <span style="color:var(--sub);font-weight:400;">(${minutesToHHMM(block.start_minute)}~${endMinuteLabel(block.end_minute)})</span></span>
         </div>`;
         // 비어있을 땐 "일정 없음" 안내문구 자체가 곧 클릭해서 추가하는 빈칸(하루종일·언젠가와 동일 규칙),
         // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙임.
@@ -3881,15 +3887,17 @@
   async function renderHomeTodayBlock() {
     const dateStr = homeAgendaDate; // 2026-09-20: "목록" 탭이 타임라인과 날짜를 공유하게 됨(예전엔 항상 todayStr())
 
+    // 2026-09-28 '하루종일'은 시간블럭 맨 위 고정 영역 — 항목이 없어도 늘 표시(예전엔 비면 통째로 숨김).
+    // 시간 미지정 항목(할일·일정·습관)을 모으는 곳이라 tok_time_blocks 행을 만들지 않음. 제목·여백·목록·빈칸은
+    // 일반 시간블럭과 같은 모양(시간 범위 표시만 없음). 빈칸(addSlotHtml) → 시간 없는 할일 추가.
     const allDayEl = $("homeTodayBlockAllDay");
     if (allDayEl) {
       const allDayItems = await todayAllDayItems(dateStr);
-      allDayEl.innerHTML = allDayItems.length
-        ? `<div class="ag-section-head"><span class="label"><span class="ag-dot" style="background:${agBlockStyle("하루종일").dot};"></span>하루종일</span></div>
-           <div class="agenda-flat">${allDayItems.map(it => homeTodayRowHtml(it, dateStr)).join("")}</div>`
-        : "";
+      allDayEl.innerHTML = `<div class="ag-section-head"><span class="label"><span class="ag-dot" style="background:${agBlockStyle("하루종일").dot};"></span>하루종일</span></div>
+           <div class="agenda-flat">${allDayItems.map(it => homeTodayRowHtml(it, dateStr)).join("")}${addSlotHtml(`data-blockallday="${dateStr}"`, !allDayItems.length)}</div>`;
       wireHomeTodayChecks(allDayEl);
       attachHomeRowDrag(allDayEl, ".home-today-row[data-id]", renderHomeTodayBlock);
+      attachHomeBlockAllDayAddClick(dateStr);
     }
 
     const containerEl = $("homeTodayBlockBody");
@@ -3899,6 +3907,35 @@
     // renderAgendaBlocks 내부가 wireAgendaHabitChecks로 옛 재렌더 대상(#agendaTimeWrap)에 먼저 연결해두므로,
     // 여기서 이 탭을 아는 핸들러로 덮어씀(onchange 직접 대입이라 뒤에 건 게 이김 — 중복 리스너 걱정 없음).
     wireHomeTodayChecks(containerEl);
+  }
+
+  // 시간블럭 탭 '하루종일' 빈칸 → 왼쪽 클릭·탭·Enter = 시간 없는 할일 입력창, 오른쪽 클릭 = 종류 메뉴(일정/할일/습관).
+  // 타임라인 탭의 하루종일(attachAgendaAllDayAddClick)과 같은 저장 규칙, 다시 그리는 대상만 이 탭.
+  function attachHomeBlockAllDayAddClick(dateStr, autoOpenKind) {
+    const row = document.querySelector(`#homeTodayBlockAllDay .block-add-row[data-blockallday="${dateStr}"]`);
+    if (!row) return;
+    const openInput = (kind) => openAddInput(row, {
+      kind,
+      onCancel: () => renderHomeTodayBlock(),
+      onCommit: async (kind, name) => {
+        let error;
+        if (kind === "habit") {
+          ({ error } = await sb.from("tok_habits").insert({ name, start_date: dateStr, repeat_unit: "day", repeat_interval: 1 }));
+        } else if (kind === "event") {
+          ({ error } = await sb.from("tok_events").insert({ title: name, event_date: dateStr }));
+        } else {
+          ({ error } = await sb.from("tok_todos").insert({ title: name, start_date: dateStr, todo_time: null }));
+        }
+        if (error) { alert("저장 실패: " + error.message); return false; }
+        await loadAll();
+        await renderHomeTodayBlock(); // loadAll 안의 재렌더가 끝나기 전에 입력창을 다시 붙이지 않게(연속 입력 레이스 방지)
+        return true;
+      },
+      onReopen: (kind) => attachHomeBlockAllDayAddClick(dateStr, kind),
+    });
+    row.onclick = () => openInput("todo");
+    row.oncontextmenu = (e) => { e.preventDefault(); showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind)); };
+    if (autoOpenKind) openInput(autoOpenKind);
   }
 
   // 09-24: 목록형/시간블럭형 하위 토글 삭제(결님 요청) — 이제 시간블럭형 하나만 남아서 분기 필요 없음.
@@ -7741,8 +7778,14 @@
       const id = inp.dataset.id;
       const b = timeBlocks.find(x => x.id === id);
       if (!inp.value) { if (b) inp.value = minutesToHHMM(b[field]); return; }
-      const minutes = hhmmToMinutes(inp.value);
+      const minutes = field === "end_minute" ? endInputToMinutes(inp.value) : hhmmToMinutes(inp.value);
       if (b && b[field] === minutes) return;
+      const other = b ? (field === "end_minute" ? b.start_minute : b.end_minute) : null;
+      if (b && (field === "end_minute" ? minutes <= other : minutes >= other)) {
+        alert("종료 시간이 시작 시간보다 늦어야 해요. (종료 00:00 = 자정 24:00)");
+        inp.value = minutesToHHMM(b[field]);
+        return;
+      }
       const { error } = await sb.from("tok_time_blocks").update({ [field]: minutes }).eq("id", id);
       if (error) { alert("시간 변경 실패: " + error.message); if (b) inp.value = minutesToHHMM(b[field]); return; }
       if (b) b[field] = minutes;
@@ -7771,8 +7814,8 @@
     const startVal = $("settingsBlockStart").value, endVal = $("settingsBlockEnd").value;
     if (!title) { alert("구간 이름을 입력해주세요."); return; }
     if (!startVal || !endVal) { alert("시작·종료 시간을 모두 입력해주세요."); return; }
-    const start_minute = hhmmToMinutes(startVal), end_minute = hhmmToMinutes(endVal);
-    if (end_minute <= start_minute) { alert("종료 시간이 시작 시간보다 늦어야 해요."); return; }
+    const start_minute = hhmmToMinutes(startVal), end_minute = endInputToMinutes(endVal); // 종료 00:00 = 자정(1440)
+    if (end_minute <= start_minute) { alert("종료 시간이 시작 시간보다 늦어야 해요. (종료 00:00 = 자정 24:00)"); return; }
     const { data, error } = await sb.from("tok_time_blocks").insert({ title, start_minute, end_minute, sort_order: timeBlocks.reduce((m, b) => Math.max(m, (b.sort_order ?? 0) + 1), 0) }).select().single();
     if (error) { alert("추가 실패: " + error.message); return; }
     timeBlocks.push(data); // 새 구간은 맨 뒤에 추가(순서는 손잡이로 변경)
