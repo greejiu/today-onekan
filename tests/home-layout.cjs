@@ -47,7 +47,8 @@ if (require.main === module) (async()=>{
     const metrics=await page.evaluate(()=>({w:document.documentElement.scrollWidth,inner:innerWidth,bounded:document.querySelector('.home2-grid').classList.contains('home-bounded'),cards:[...document.querySelectorAll('.home2-col')].map(e=>({id:e.id,x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,bottom:e.getBoundingClientRect().bottom}))}));
     assert(metrics.w<=width,JSON.stringify(metrics));
     if(width>1100 && height>=768){assert(metrics.bounded);assert(metrics.cards.every(c=>c.bottom<=height));assert(metrics.cards[0].x<metrics.cards[1].x&&metrics.cards[1].x<metrics.cards[2].x);}
-    if(width<=1100)assert(metrics.cards[1].y<metrics.cards[0].y);
+    assert.deepEqual(metrics.cards.map(c=>c.id),['homeCol2','homeCol3','homeCol1']);
+    if(width<=1100)assert(metrics.cards[0].y<metrics.cards[1].y && metrics.cards[1].y<metrics.cards[2].y);
     fs.mkdirSync('test-results',{recursive:true});await page.screenshot({path:`test-results/home-${width}x${height}.png`});
     console.log('layout',width,height,'PASS');
   }

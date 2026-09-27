@@ -116,8 +116,7 @@
   /* 2026-09-27 — 로고 C안 심볼(귀 달린 칸+체크). 칸은 로고 글자색(currentColor), 체크는 카드 배경색이라 모든 테마를 따라감 */
   .brand-logo{display:inline-flex;align-items:center;gap:6px;}
   .brand-mark{width:26px;height:26px;flex-shrink:0;}
-  .brand-mark .bm-body{fill:currentColor;stroke:currentColor;}
-  .brand-mark .bm-check{stroke:var(--card);}
+  .app-symbol{color:var(--accent-text);flex-shrink:0;}
   .brand-date{font-size:13px;color:var(--sub);white-space:nowrap;}
   /* 2026-09-20 — 결님 요청: 퀵 인풋(빠른 추가)은 모바일(사이드바 대신 하단바 쓰는 폭)에서만 상단바 아래
      이 가로줄로 보여주고, 데스크톱(사이드바 있는 폭)에서는 사이드바 맨 위(.sidebar-quickadd)로 옮김.
@@ -1180,7 +1179,7 @@
 
   /* 집 1단계: 화면 가용 높이 안의 독립된 세 목록. 낮거나 좁으면 자연스러운 세로 배치. */
   .content:has(.page[data-page="home"]:not([style*="display: none"])){max-width:none;padding-bottom:20px;}
-  .home2-grid{grid-template-columns:minmax(0,3fr) minmax(0,4fr) minmax(0,3fr);gap:16px;align-items:stretch;}
+  .home2-grid{grid-template-columns:minmax(0,4fr) minmax(0,3fr) minmax(0,3fr);gap:16px;align-items:stretch;}
   .home2-grid.home-bounded{height:var(--home-height);}
   .home2-grid .home2-col{min-height:0;}
   .home2-grid .home2-tabpanel{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
@@ -1210,9 +1209,25 @@
   .home-fit-all :is(.home1-flat-row,.ag-block-row){padding-top:6px;padding-bottom:6px;}
   .home-fit-all .ag-section-head{margin-top:8px;margin-bottom:4px;}
   .home-fit-all .block-add-row{min-height:30px;}
+  .appearance-settings{min-width:0;}
+  .symbol-picker{min-inline-size:0;margin:0;padding:16px;border:1px solid var(--line);border-radius:var(--r-card);background:var(--card);}
+  .symbol-picker legend{padding:0 6px;font-weight:700;}
+  .symbol-help,.symbol-status{font-size:12px;color:var(--sub);margin:0 0 12px;overflow-wrap:anywhere;}
+  .symbol-status{min-height:18px;margin:10px 0 0;}
+  .symbol-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,110px),1fr));gap:10px;}
+  .symbol-option{position:relative;min-width:0;cursor:pointer;}
+  .symbol-option input{position:absolute;width:1px;height:1px;opacity:0;}
+  .symbol-option-body{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;border:2px solid var(--line);border-radius:12px;color:var(--text);font-weight:600;}
+  .symbol-option .app-symbol{width:36px;height:36px;}
+  .symbol-option input:checked + .symbol-option-body{border-color:var(--accent-text);background:var(--accent-soft);}
+  .symbol-option input:focus-visible + .symbol-option-body{outline:3px solid var(--accent-text);outline-offset:3px;}
+  .symbol-option input:disabled + .symbol-option-body{cursor:default;}
+  .symbol-selected{position:absolute;right:8px;top:4px;color:var(--accent-text);visibility:hidden;}
+  .symbol-option input:checked + .symbol-option-body .symbol-selected{visibility:visible;}
 </style>
 </head>
 <body>
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false"><defs><symbol id="symbol-hankan" viewBox="0 0 32 32"><path d="M18.5 4H10a6 6 0 0 0-6 6v12a6 6 0 0 0 6 6h12a6 6 0 0 0 6-6v-7.5" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><rect x="22" y="2.25" width="7.75" height="7.75" rx="2" fill="currentColor"/></symbol><symbol id="symbol-cheese" viewBox="0 0 32 32"><path fill="currentColor" fill-rule="evenodd" d="M4.8 7.6C5.5 1.1 7.6.6 11.9 6h8.2c4.3-5.4 6.4-4.9 7.1 1.6 1.4 1.6 1.8 3 1.8 4.6v11.3a5.5 5.5 0 0 1-5.5 5.5h-15A5.5 5.5 0 0 1 3 23.5V12.2c0-1.6.4-3 1.8-4.6Zm16.4 12.6a1.2 1.2 0 0 0-1.2 1.2v3.2a1.2 1.2 0 0 0 1.2 1.2h3.2a1.2 1.2 0 0 0 1.2-1.2v-3.2a1.2 1.2 0 0 0-1.2-1.2h-3.2Z"/></symbol><symbol id="symbol-step" viewBox="0 0 32 32"><g fill="currentColor"><rect x="2.5" y="20.5" width="8.5" height="8.5" rx="2"/><rect x="11.75" y="11.75" width="8.5" height="8.5" rx="2"/><rect x="21" y="3" width="8.5" height="8.5" rx="2"/></g></symbol><symbol id="symbol-check" viewBox="0 0 32 32"><path fill="currentColor" d="M11 3h11c3.6 0 6.4 1 6.4 3.6 0 1.2-.9 2.1-2.6 2.5-2.2.5-3.5 1.2-5.3 3L15 17.6c-.9.9-1.7.8-2.6-.1l-2.2-2.2c-1.5-1.5-3.4-1.6-4.7-.2-1.4 1.5-1.2 3.5.2 4.9l4.4 4.3c2.4 2.4 5.7 2.4 8.3-.2l8-8c1.8-1.8 3.1-1.7 3.1 1.5V22c0 5-2.5 7.5-7.5 7.5H10c-5 0-7.5-2.5-7.5-7.5V11C2.5 5.5 5 3 11 3Z"/></symbol></defs></svg>
 
 <div id="authBox">
   <h1>오늘한칸</h1>
@@ -1230,7 +1245,7 @@
        이번에 원한 기능이라 그 아래 얇은 줄로 유지(기능은 그대로, 위치만 조정). -->
   <div class="topbar">
     <div class="topbar-brand">
-      <span class="brand-logo"><svg class="brand-mark" viewBox="0 0 100 100" fill="none" aria-hidden="true"><path class="bm-body" d="M14 44 L18 10 L42 28 L58 28 L82 10 L86 44 L86 76 Q86 92 70 92 L30 92 Q14 92 14 76 Z" stroke-width="6" stroke-linejoin="round"></path><path class="bm-check" d="M34 60 L46 72 L67 50" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path></svg>오늘한칸</span>
+      <span class="brand-logo"><svg class="brand-mark app-symbol" id="appBrandSymbol" data-symbol="hankan" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="#symbol-hankan"></use></svg>오늘한칸</span>
       <span class="brand-date" id="topbarDateLabel"></span>
     </div>
   </div>
@@ -1280,30 +1295,13 @@
           <button type="button" class="close" id="homeHabitBannerClose">✕</button>
         </div>
 
-        <!-- 집 1단계: 언젠가 / 지금, 한칸 / 다가오는. 기존 렌더 대상 ID를 보존한다. -->
+        <!-- 집: 지금, 한칸 / 다가오는 / 언젠가. 기존 렌더 대상 ID를 보존한다. -->
         <div class="home-fit-toolbar" role="group" aria-label="집 표시 방식">
           <button type="button" id="homeFitAllBtn" aria-pressed="true">한 화면에 모두 보기</button>
           <button type="button" id="homeOriginalBtn" aria-pressed="false">기존 보기</button>
           <span id="homeFitScale" aria-live="polite"></span>
         </div>
         <div class="home2-grid">
-          <div class="home2-col" id="homeCol1">
-            <div class="home2-col-label" role="heading" aria-level="2">언젠가</div>
-
-
-            <div class="home2-tabpanel" data-col1panel="someday" id="homeSomedayPanel">
-              <div class="someday-toolbar">
-                <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
-              </div>
-              <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
-              <div id="somedayZone">
-                <div id="somedaySummaryList"></div>
-              </div>
-            </div>
-
-
-          </div>
-
           <div class="home2-col" id="homeCol2">
             <div class="home2-col-label" role="heading" aria-level="2">지금, 한칸</div>
             <div class="home2-tabs" id="homeCol2Tabs">
@@ -1370,6 +1368,22 @@
               </div>
               <div id="homeUpcomingList"></div>
             </div>
+          </div>
+          <div class="home2-col" id="homeCol1">
+            <div class="home2-col-label" role="heading" aria-level="2">언젠가</div>
+
+
+            <div class="home2-tabpanel" data-col1panel="someday" id="homeSomedayPanel">
+              <div class="someday-toolbar">
+                <select id="somedayHomeSortSelect" class="someday-sort-select"></select>
+              </div>
+              <div id="somedayHomeTagChips" class="someday-tag-chips"></div>
+              <div id="somedayZone">
+                <div id="somedaySummaryList"></div>
+              </div>
+            </div>
+
+
           </div>
         </div>
       </div>
@@ -1511,6 +1525,15 @@
         <div class="section-label">계정</div>
         <div class="card" id="settingsAccountCard" style="font-size:13px;color:var(--sub);"></div>
 
+        <section class="appearance-settings" aria-labelledby="appearanceHeading">
+        <h2 class="section-label" id="appearanceHeading">꾸미기</h2>
+        <fieldset class="symbol-picker">
+          <legend>앱 심볼</legend>
+          <p class="symbol-help" id="appSymbolHelp">앱 안에서 사용할 심볼을 골라 주세요. 색상은 현재 테마를 따라요.</p>
+          <div class="symbol-grid" id="appSymbolGrid" aria-describedby="appSymbolHelp"></div>
+          <p class="symbol-status" id="appSymbolStatus" role="status" aria-live="polite"></p>
+          <button class="btn-ghost" type="button" id="appSymbolRetry" hidden>다시 불러오기</button>
+        </fieldset>
         <div class="section-label" style="margin-top:20px;">테마</div>
         <div class="theme-grid" id="themeGrid"></div>
 
@@ -1538,6 +1561,8 @@
             </div>
           </details>
         </div>
+
+        </section>
 
         <div class="section-label" style="margin-top:20px;">그룹 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
         <div class="hs-cat-list" id="settingsTagList"></div>
@@ -2004,6 +2029,109 @@
   }
   document.documentElement.setAttribute("data-theme", currentThemeId());
 
+  // Account-scoped app symbol: use the existing tok_settings partial-upsert pattern.
+  // No shared localStorage key: a different signed-in user must never inherit this preference.
+  const APP_SYMBOLS = [
+    { id: 'hankan', name: '한칸' },
+    { id: 'cheese', name: '치즈' }, // User confirmed reference 03 (rounded ears and a square cutout).
+    { id: 'step', name: '한걸음' },
+    { id: 'check', name: '체크' },
+  ];
+  const normalizeAppSymbol = value => APP_SYMBOLS.some(s => s.id === value) ? value : 'hankan';
+  let appSymbolUserId = null, appSymbolEpoch = 0, appSymbolRevision = 0, appSymbolLoadVersion = 0;
+  let appSymbolValue = 'hankan', appSymbolSaved = 'hankan', appSymbolReady = false, appSymbolBusy = false;
+  function appSymbolSvg(id) {
+    return '<svg class="app-symbol" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="#symbol-' + normalizeAppSymbol(id) + '"></use></svg>';
+  }
+  function renderAppSymbol() {
+    const mark = $('appBrandSymbol');
+    mark.dataset.symbol = appSymbolValue;
+    mark.querySelector('use').setAttribute('href', '#symbol-' + appSymbolValue);
+    document.querySelectorAll('input[name="app-symbol"]').forEach(input => {
+      input.checked = input.value === appSymbolValue;
+      input.disabled = !appSymbolReady;
+    });
+    $('appSymbolGrid').setAttribute('aria-busy', String(appSymbolBusy));
+  }
+  function bindAppSymbolUser(userId) {
+    if (appSymbolUserId === userId) return;
+    appSymbolUserId = userId;
+    appSymbolEpoch++;
+    appSymbolRevision++;
+    appSymbolValue = appSymbolSaved = 'hankan';
+    appSymbolReady = false;
+    appSymbolBusy = false;
+    $('appSymbolStatus').textContent = '';
+    $('appSymbolRetry').hidden = true;
+    renderAppSymbol();
+  }
+  async function loadAppSymbolPreference() {
+    const userId = appSymbolUserId, epoch = appSymbolEpoch, revision = appSymbolRevision;
+    if (!userId || appSymbolBusy) return;
+    const loadVersion = ++appSymbolLoadVersion;
+    try {
+      const { data, error } = await sb.from('tok_settings').select('user_id, app_symbol').eq('user_id', userId).maybeSingle();
+      if (epoch !== appSymbolEpoch || revision !== appSymbolRevision || loadVersion !== appSymbolLoadVersion || appSymbolBusy) return;
+      if (error || (data && data.user_id !== userId)) throw error || new Error('사용자가 일치하지 않아요.');
+      appSymbolValue = appSymbolSaved = normalizeAppSymbol(data?.app_symbol);
+      appSymbolReady = true;
+      $('appSymbolStatus').textContent = '';
+      $('appSymbolRetry').hidden = true;
+    } catch (_) {
+      if (epoch !== appSymbolEpoch || revision !== appSymbolRevision || loadVersion !== appSymbolLoadVersion) return;
+      $('appSymbolStatus').textContent = '심볼 설정을 불러오지 못했어요. 다시 시도해 주세요.';
+      $('appSymbolRetry').hidden = false;
+    }
+    renderAppSymbol();
+  }
+  async function selectAppSymbol(value) {
+    if (!appSymbolReady || appSymbolBusy || !appSymbolUserId) { renderAppSymbol(); return; }
+    const next = normalizeAppSymbol(value);
+    if (next === appSymbolValue) return;
+    const userId = appSymbolUserId, epoch = appSymbolEpoch;
+    appSymbolRevision++;
+    appSymbolBusy = true;
+    appSymbolValue = next;
+    $('appSymbolStatus').textContent = '저장 중…';
+    renderAppSymbol(); // Optimistic preview; restore the confirmed value if saving fails.
+    try {
+      const { data: auth, error: authError } = await sb.auth.getUser();
+      if (epoch !== appSymbolEpoch) return;
+      if (authError || auth?.user?.id !== userId) throw authError || new Error('로그인이 바뀌었어요.');
+      const { data, error } = await sb.from('tok_settings')
+        .upsert({ user_id: userId, app_symbol: next }, { onConflict: 'user_id' })
+        .select('user_id, app_symbol').single();
+      if (epoch !== appSymbolEpoch) return;
+      if (error || data?.user_id !== userId || data?.app_symbol !== next) throw error || new Error('저장 결과를 확인하지 못했어요.');
+      appSymbolSaved = next;
+      $('appSymbolStatus').textContent = '저장했어요.';
+    } catch (_) {
+      if (epoch !== appSymbolEpoch) return;
+      appSymbolValue = appSymbolSaved;
+      $('appSymbolStatus').textContent = '저장하지 못했어요. 이전 심볼로 돌아왔어요. 다시 선택해 주세요.';
+    } finally {
+      if (epoch === appSymbolEpoch) { appSymbolBusy = false; renderAppSymbol(); }
+    }
+  }
+  $('appSymbolGrid').innerHTML = APP_SYMBOLS.map(symbol =>
+    '<label class="symbol-option"><input type="radio" name="app-symbol" value="' + symbol.id + '" aria-label="' + symbol.name + '" disabled>' +
+    '<span class="symbol-option-body">' + appSymbolSvg(symbol.id) +
+    '<span>' + symbol.name + '</span>' +
+    '<span class="symbol-selected" aria-hidden="true">✓</span></span></label>'
+  ).join('');
+  $('appSymbolGrid').addEventListener('change', event => {
+    if (event.target.matches('input[name="app-symbol"]')) selectAppSymbol(event.target.value);
+  });
+  $('appSymbolRetry').onclick = loadAppSymbolPreference;
+  renderAppSymbol();
+  sb.auth.onAuthStateChange?.((_event, session) => {
+    const userId = session?.user?.id || null;
+    if (userId === appSymbolUserId) return;
+    bindAppSymbolUser(userId); // Synchronous reset before any new account's asynchronous response.
+    if (!userId) { $('app').style.display = 'none'; $('authBox').style.display = ''; }
+    else setTimeout(loadAppSymbolPreference, 0); // Do not await another Supabase call inside auth callbacks.
+  });
+
   // ── 글꼴(설정 화면) ── 2026-09-20: 기본값은 시스템 글꼴(위 :root --font-family). 고른 글꼴 이름을
   // 최우선으로 놓고 시스템 폰트를 뒤에 폴백으로 붙여서 CSS 변수만 갈아끼움 — 브라우저가 그 이름의 폰트를
   // 로컬에서 찾아 쓰고, 없거나 그 글꼴에 없는 글자(한글 등)는 뒤의 시스템 글꼴로 자동 대체됨.
@@ -2329,7 +2457,10 @@
 
   async function boot() {
     const { data: { session } } = await sb.auth.getSession();
+    bindAppSymbolUser(session?.user?.id || null);
     if (!session) return;
+    await loadAppSymbolPreference();
+    if (appSymbolUserId !== session.user.id) return;
     $("authBox").style.display = "none";
     $("app").style.display = "block";
     $("sidebarUserEmail").textContent = session.user.email;
@@ -2348,7 +2479,9 @@
     if (document.visibilityState === "hidden") return;
     if (Date.now() - lastLoadAllAt < 3000) return;
     const { data: { session } } = await sb.auth.getSession();
+    bindAppSymbolUser(session?.user?.id || null);
     if (!session) return;
+    await loadAppSymbolPreference();
     await loadAll();
   }
   document.addEventListener("visibilitychange", autoRefreshIfStale);
