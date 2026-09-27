@@ -40,7 +40,6 @@ module.exports = { fixture };
 if (require.main === module) (async()=>{
   const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
   const page=await browser.newPage({viewport:{width:1440,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.addInitScript(()=>localStorage.setItem('tok_home_fit_all','0'));
   await fixture(page);
   for(const [width,height] of [[1440,900],[1366,768],[900,650],[720,450],[390,844],[1440,500]]){
     await page.setViewportSize({width,height});await page.waitForTimeout(100);
@@ -58,9 +57,9 @@ if (require.main === module) (async()=>{
   const right=await page.locator('#homeUpcomingDateLabel').textContent();await page.click('#agendaNextBtn');await page.waitForTimeout(50);assert.equal(await page.locator('#homeUpcomingDateLabel').textContent(),right);
   await page.click('#agendaDateLabel');await page.click('#homeUpcomingDateLabel');
   await page.locator('#homeTimelineScroll').evaluate(e=>e.scrollTop=240);await page.waitForTimeout(50);
-  await page.click('[data-col2tab="block"]');await page.locator('#homeTodayBlockWrap').evaluate(e=>e.scrollTop=120);await page.waitForTimeout(50);
-  await page.click('[data-col2tab="timeline"]');assert.equal(await page.locator('#homeTimelineScroll').evaluate(e=>e.scrollTop),240);
-  await page.click('[data-col2tab="block"]');assert.equal(await page.locator('#homeTodayBlockWrap').evaluate(e=>e.scrollTop),120);
+  await page.click('[data-col2tab="block"]');await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await page.locator('#homeTodayBlockWrap').evaluate(e=>e.scrollTop=120);await page.waitForTimeout(50);
+  await page.click('[data-col2tab="timeline"]');await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));assert.equal(await page.locator('#homeTimelineScroll').evaluate(e=>e.scrollTop),240);
+  await page.click('[data-col2tab="block"]');await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));assert.equal(await page.locator('#homeTodayBlockWrap').evaluate(e=>e.scrollTop),120);
   await page.reload();await page.waitForSelector('.upcoming-day');await page.waitForTimeout(100);assert(await page.locator('#homeBlockPanel').isVisible());assert.equal(await page.locator('#homeTodayBlockWrap').evaluate(e=>e.scrollTop),120);
   await page.evaluate(()=>renderHome());await page.waitForTimeout(100);assert.equal(await page.locator('#homeTodayBlockWrap').evaluate(e=>e.scrollTop),120);
   console.log('independent dates / view and scroll restore PASS');
@@ -113,7 +112,7 @@ if (require.main === module) (async()=>{
   await page.evaluate(()=>{showPage('home');document.querySelector('#homeTodoBanner').style.display='flex';document.querySelector('#homeHabitBanner').style.display='flex';});await page.waitForTimeout(100);
   assert((await page.locator('#homeCol2').boundingBox()).y+(await page.locator('#homeCol2').boundingBox()).height<=768);
   await page.screenshot({path:'test-results/home-banners-empty.png'});
-  const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await mobile.addInitScript(()=>localStorage.setItem('tok_home_fit_all','0'));await fixture(mobile);
+  const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await fixture(mobile);
   await mobile.locator('[data-col2tab="block"]').tap();assert(await mobile.locator('#homeBlockPanel').isVisible());
   await mobile.locator('#somedaySummaryList .item-more').first().tap();assert(await mobile.locator('.item-menu.is-sheet').isVisible());await mobile.keyboard.press('Escape');
   await mobile.locator('[data-somedaymore]').tap();assert.equal(await mobile.locator('.ag-someday-row').count(),20);
