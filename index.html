@@ -19,6 +19,8 @@
     /* 2026-09-26 — --accent-text: 옅은 바탕 위 강조 글자(파스텔 accent를 그대로 글자에 쓰면 흐려서 테마별 진한 톤),
        --accent-on: accent 바탕 버튼 위 글자색. 간격·모서리 기준값(4·8·12·16·24·32 / 카드 18·버튼 12·태그 999). */
     --accent-text:#2A2A2A; --accent-on:#FFFFFF;
+    /* 2026-09-27 — --danger-text: 흰 카드 위에서도 읽히는 붉은 글자(삭제 글자·아이콘 전용). --danger는 연한 톤이라 글자로 쓰면 흐림 */
+    --danger-text:#C0392B;
     --r-card:18px; --r-btn:12px; --r-pill:999px;
     --font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;
     /* 2026-09-23 — 집 화면 4탭(시간블럭/언젠가/타임라인/다가오는) 활성 색상 기본값. 하늘/보라/분홍은
@@ -34,6 +36,7 @@
     --bg:#171717; --card:#222222; --line:#383838; --text:#F5F5F5; --sub:#AAAAAA;
     --accent:#F5F5F5; --accent-soft:#333333; --danger:#f28b82; --ok:#8fd6b7;
     --accent-text:#FFFFFF; --accent-on:#1A1A1A;
+    --danger-text:#FF8A80;
   }
   [data-theme="sky"]{
     /* 하늘 — 맑고 가벼운 느낌 */
@@ -58,7 +61,7 @@
        살구색(--accent)은 선택한 날짜·선택된 메뉴·주요 버튼에만 쓰고, 나머지는 먹색·회색 선으로 정돈. */
     --bg:#F6F6F5; --card:#FFFFFF; --line:#E8E7E4; --text:#2B2926; --sub:#6B6762;
     --accent:#F4AE86; --accent-soft:#FDEEE5; --danger:#C8433D; --ok:#8fd6b7;
-    --accent-text:#A04E24; --accent-on:#3A2215;
+    --accent-text:#A04E24; --accent-on:#3A2215; --danger-text:#B3342E;
     --cal-today-bg:#2B2926; --cal-today-fg:#FFFFFF;
   }
   /* 2026-09-23 — 하양/검정은 배경이 무채색이라 파스텔 탭이 알록달록하게 튀어서, 대신
@@ -313,12 +316,54 @@
   /* ── 클릭=수정, 오른쪽클릭=삭제 메뉴 ── */
   .todo-row .name, .event-row .title, .someday-title, .plan-row.todo .plan-todo-title{cursor:pointer;}
   .todo-row .name:hover, .event-row .title:hover, .someday-title:hover, .plan-row.todo .plan-todo-title:hover{color:var(--accent-text);}
-  .ctx-menu{position:fixed;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.14);padding:4px;z-index:30;max-height:60vh;overflow-y:auto;}
-  .ctx-menu button{display:block;width:100%;padding:8px 16px;border:none;background:none;color:var(--danger);font-size:13px;text-align:left;cursor:pointer;border-radius:6px;white-space:nowrap;}
-  .ctx-menu button:hover{background:var(--bg);}
-  .ctx-menu button.default{color:var(--text);}
-  .ctx-menu button.selected{background:var(--accent-soft);font-weight:700;color:var(--accent-text);}
-  .ctx-menu button .ctx-tag-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle;}
+  /* ── 항목 공통 메뉴(2026-09-27) — 할일·습관·일정·언젠가를 어느 화면에서 열어도 같은 메뉴. PC=작은 팝업, 모바일=하단 시트 ── */
+  .item-menu{position:fixed;z-index:60;width:220px;max-width:calc(100vw - 16px);max-height:min(70vh,480px);overflow-y:auto;overscroll-behavior:contain;
+    background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.16);padding:4px;}
+  .item-menu-head{padding:8px 12px 6px;min-width:0;}
+  .item-menu-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .item-menu-sub{font-size:12px;color:var(--sub);margin-top:2px;}
+  .item-menu-item{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:0 12px;border:none;background:none;color:var(--text);
+    font:inherit;font-size:14px;text-align:left;border-radius:8px;cursor:pointer;}
+  .item-menu-item > svg{flex:none;width:16px;height:16px;color:var(--sub);}
+  .item-menu-item .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .item-menu-item .dot{flex:none;width:10px;height:10px;border-radius:50%;margin:0 3px;}
+  .item-menu-item .chk{flex:none;margin-left:auto;color:var(--accent-text);font-weight:700;}
+  .item-menu-item:hover, .item-menu-item:focus-visible{background:var(--accent-soft);outline:none;}
+  .item-menu-item:focus-visible{box-shadow:inset 0 0 0 2px var(--accent);}
+  .item-menu-item.is-current{font-weight:700;}
+  .item-menu-item.is-danger, .item-menu-item.is-danger > svg{color:var(--danger-text);}
+  .item-menu-item[aria-disabled="true"]{color:var(--sub);cursor:default;}
+  .item-menu-item[aria-disabled="true"]:hover{background:none;}
+  .item-menu-note{font-size:12px;color:var(--sub);padding:6px 12px 8px;line-height:1.45;}
+  .item-menu-sep{height:1px;background:var(--line);margin:4px 8px;}
+  .item-menu-backdrop{position:fixed;inset:0;z-index:59;background:rgba(0,0,0,.32);touch-action:none;}
+  .item-menu.is-sheet{left:0;right:0;top:auto;bottom:0;width:auto;max-width:none;max-height:min(80vh, calc(100dvh - 40px));
+    border-radius:18px 18px 0 0;border-bottom:none;padding:6px 8px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -8px 28px rgba(0,0,0,.2);}
+  .item-menu.is-sheet::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 6px;}
+  .item-menu.is-sheet .item-menu-item{min-height:48px;font-size:15px;}
+  .item-menu.is-sheet .item-menu-title{font-size:14px;}
+  /* 항목 줄의 ⋯ 버튼 — PC(마우스)는 줄에 올리거나 키보드로 들어오면 보이고, 모바일(터치)은 항상 보임 */
+  .item-more{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:2px;padding:0;border:none;border-radius:8px;
+    background:none;color:var(--sub);font-size:17px;line-height:1;letter-spacing:0;cursor:pointer;touch-action:manipulation;}
+  .item-more:hover, .item-more[aria-expanded="true"]{background:var(--accent-soft);color:var(--text);}
+  .item-more:focus-visible{outline:none;background:var(--accent-soft);color:var(--text);box-shadow:0 0 0 2px var(--accent);}
+  @media (hover:hover) and (pointer:fine){
+    [data-menu-kind] .item-more{opacity:0;}
+    [data-menu-kind]:hover .item-more, [data-menu-kind]:focus-within .item-more, .item-more[aria-expanded="true"], .item-more:focus-visible{opacity:1;}
+  }
+  @media (max-width:760px){ .item-more{width:36px;height:36px;} }
+  /* 타임라인 칸은 좁아서 ⋯를 오른쪽 위 모서리에 겹쳐 둠 */
+  .ag-tl-task .item-more{position:absolute;top:1px;right:1px;width:22px;height:18px;font-size:14px;border-radius:6px;background:color-mix(in srgb, var(--card) 70%, transparent);}
+  .ag-tl-task .ag-tl-title{padding-right:18px;}
+  @media (max-width:760px){ .ag-tl-task .item-more{width:26px;height:20px;} }
+  /* 건너뛴 습관: 체크박스 대신 ×(눌러도 상태가 바뀌지 않음, 복원은 메뉴의 "건너뛰기 취소") */
+  .habit-skip-mark{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;border:1.5px solid var(--sub);
+    color:var(--sub);font-size:12px;font-weight:700;line-height:1;cursor:default;user-select:none;}
+  .ag-tl-task .habit-skip-mark{width:13px;height:13px;font-size:10px;}
+  .skipped > .agenda-title, .skipped > .plan-todo-title, .skipped .ag-tl-title{color:var(--sub);}
+  .habit-due-chip.due-skip{background:var(--bg);color:var(--sub);border:1px solid var(--line);}
+  .habit-history-day.skipped{background:color-mix(in srgb, var(--sub) 12%, transparent);}
+  .habit-history-skip{font-size:10px;color:var(--sub);font-weight:700;}
 
   /* ── 집 : 2열 레이아웃 (1열 오늘, 2열 언젠가+다가오는 계획을 세로로 쌓음) ── */
   .home-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}
@@ -556,9 +601,6 @@
   .sched-open .memo{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere;font-size:12px;color:var(--sub);margin-top:3px;}
   .sched-more{flex:none;min-width:40px;min-height:40px;border:none;background:none;color:var(--sub);font-size:18px;letter-spacing:-1px;border-radius:10px;cursor:pointer;}
   .sched-more:hover{background:var(--accent-soft);}
-  .ctx-menu.sched-menu{background:var(--card);}
-  .ctx-menu.sched-menu button{min-height:40px;}
-  .ctx-menu.sched-menu button:hover, .ctx-menu.sched-menu button:focus-visible{background:var(--accent-soft);outline:none;}
   .cev-opt{color:var(--sub);font-weight:400;}
   .cev-hint{font-size:11.5px;color:var(--sub);margin:-4px 2px 10px;line-height:1.4;}
   .cal-ev-sheet-bg .field textarea{background:var(--card);color:var(--text);resize:vertical;}
@@ -840,9 +882,6 @@
   .sheet h2{font-size:17px;}
   .field label{font-size:12.5px;}
   .field input, .field textarea, .field select{min-height:44px;border-radius:var(--r-btn);}
-  .ctx-menu{border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.12);}
-  .ctx-menu button{min-height:38px;font-size:14px;border-radius:8px;}
-  .ctx-menu button:hover{background:color-mix(in srgb, var(--text) 5%, var(--card));}
   .empty{font-size:14px;}
   @media (max-width:760px){
     .page-title{font-size:20px;margin-bottom:12px;}
@@ -912,8 +951,6 @@
     .leftover-row{grid-template-columns:20px minmax(0,1fr) auto;grid-template-areas:"check title title" ". date actions";row-gap:4px;}
     .leftover-row .leftover-date{align-self:center;}
   }
-  .ctx-menu button.is-unavailable{color:var(--sub);}
-  .ctx-menu button .ctx-note{margin-left:6px;font-size:11px;color:var(--sub);}
 
   /* ── 2026-09-28 일정: 달력·목록 화면 + 치즈 테마 ──
      상단: 1줄 [일정 ··· 달력|목록], 2줄 [‹ 2026년 9월 › 오늘]. 달력 7열 같은 너비·주마다 같은 높이(5·6주 모두 잘리지 않음).
@@ -966,6 +1003,9 @@
   .cal-day-add:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
   .cal-day-list{display:flex;flex-direction:column;}
   .cal-day-item{display:flex;align-items:flex-start;gap:8px;width:100%;min-height:48px;margin:0;padding:11px 4px;border:none;border-bottom:1px solid color-mix(in srgb, var(--line) 80%, transparent);border-radius:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;}
+  .cal-day-row{display:flex;align-items:center;gap:2px;border-bottom:1px solid color-mix(in srgb, var(--line) 80%, transparent);}
+  .cal-day-row > .cal-day-item{flex:1;min-width:0;border-bottom:none;}
+  .cal-day-row:last-child{border-bottom:none;}
   .cal-day-item:last-child{border-bottom:none;}
   .cal-day-item:hover{background:color-mix(in srgb, var(--text) 3%, var(--card));}
   .cal-day-item:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:8px;}
@@ -1631,8 +1671,15 @@
 
 <!-- 습관 반복·그룹 설정 시트 -->
 <div class="sheet-bg" id="habitSheetBg">
-  <div class="sheet">
-    <h2>습관 설정</h2>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="hs_sheet_title">
+    <h2 id="hs_sheet_title">습관 수정</h2>
+    <!-- 2026-09-27: 항목 메뉴 "수정" = 전체 설정창 — 이름·시간·소요 시간도 여기서 바꿀 수 있게 함(반복·그룹·기간은 기존 그대로) -->
+    <div class="field"><label for="hs_name">이름</label><input id="hs_name" type="text" autocomplete="off" /></div>
+    <div class="field split">
+      <div><label for="hs_time">시간 <span class="cev-opt">(선택)</span></label><input id="hs_time" type="time" /></div>
+      <div><label for="hs_duration">소요 시간(분)</label><input id="hs_duration" type="number" min="5" step="5" inputmode="numeric" /></div>
+    </div>
+    <div class="cev-hint" style="margin:-4px 0 10px;">시간을 바꿔도 이미 완료한 기록의 시간은 그대로예요.</div>
     <div class="field split">
       <div>
         <label>반복</label>
@@ -1682,10 +1729,43 @@
   </div>
 </div>
 
+<!-- 언젠가 수정 창(2026-09-27, 항목 메뉴 "수정") — 언젠가에 있는 칸(제목·그룹)만. 할일 창과 같은 저장 규칙 -->
+<div class="sheet-bg cal-ev-sheet-bg add-sheet" id="somedaySheetBg">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sd_sheet_title">
+    <h2 id="sd_sheet_title">언젠가 수정</h2>
+    <form id="sdForm" class="cal-ev-fields" novalidate>
+      <div class="field"><label for="sd_title">제목</label><input id="sd_title" type="text" autocomplete="off" enterkeyhint="done" /></div>
+      <div class="field"><label for="sd_tag">그룹</label><select id="sd_tag"></select></div>
+      <div class="cal-ev-error" id="sd_error" role="alert"></div>
+    </form>
+    <div class="sheet-actions">
+      <button type="button" class="btn-ghost" id="sd_cancel">취소</button>
+      <button type="button" class="btn-primary" id="sd_save">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 언젠가 → 할일로 옮기기(2026-09-27) — 날짜만 고름(기본 오늘). 복제가 아니라 이동: 성공하면 언젠가에서 빠짐 -->
+<div class="sheet-bg cal-ev-sheet-bg add-sheet" id="somedayMoveSheetBg">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sm_sheet_title" aria-describedby="sm_desc">
+    <h2 id="sm_sheet_title">날짜 정해서 할일로 옮기기</h2>
+    <form id="smForm" class="cal-ev-fields" novalidate>
+      <p class="cev-hint" id="sm_desc" style="margin:0 0 10px;"></p>
+      <div class="field"><label for="sm_date">날짜</label><input id="sm_date" type="date" /></div>
+      <div class="cal-ev-error" id="sm_error" role="alert"></div>
+    </form>
+    <div class="sheet-actions">
+      <button type="button" class="btn-ghost" id="sm_cancel">취소</button>
+      <button type="button" class="btn-primary" id="sm_save">옮기기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 집 화면 오른쪽 클릭 → 날짜 변경 시트(습관/할일/일정 공용, 항목 종류에 따라 보이는 항목이 달라짐) -->
 <div class="sheet-bg" id="itemDateSheetBg">
-  <div class="sheet">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="idt_title">
     <h2 id="idt_title">날짜 변경</h2>
+    <div class="cev-hint" id="idt_hint" style="margin:-6px 2px 10px;" hidden></div>
     <div class="field split" id="idt_date_row" style="display:none;">
       <div><label id="idt_date_label">날짜</label><input id="idt_date" type="date" /></div>
       <div id="idt_end_wrap" style="display:none;"><label>종료 날짜(선택)</label><input id="idt_end" type="date" /></div>
@@ -1722,7 +1802,6 @@
   </div>
 </div>
 
-<!-- 집 화면 오른쪽 클릭 → 그룹/범주 변경(작은 선택 메뉴, ctx-menu 스타일 재사용) -->
 
 <!-- 습관/반복 할일 기록(히스토리) 보기 — 09-13 7-2단계부터 습관·반복 할일 공용으로 씀(hhKind로 분기) -->
 <div class="sheet-bg" id="habitHistoryBg">
@@ -2125,6 +2204,10 @@
     }
   }
   let habitLogs = []; // tok_habit_logs 전체({habit_id, done_date}) — 반복주기 "마지막 완료일" 계산용
+  // tok_habit_skips 전체({habit_id, skip_date}) — 습관을 "그 날짜 한 번만" 건너뛴 기록(2026-09-27). 완료(habitLogs)와 따로 보관.
+  // habitSkipsReady=false면 테이블을 못 불러온 상태 → 건너뛰기 메뉴를 숨김(나머지 기능은 그대로 동작).
+  let habitSkips = [];
+  let habitSkipsReady = false;
   let habitPauses = []; // tok_habit_pauses 전체({habit_id, paused_at, resumed_at, reason}) — 보관/재개 이력(2026-09-12, 여러 번 가능)
   let habitsTabView = "active"; // 습관 관리 목록 상단탭: "active"(진행중) | "archived"(보관) | "ended"(종료)
   let habitListSettings = loadTabSettings("tok_habitListSettings", ["active", "archived", "ended"]); // 습관 탭별 정렬/그룹화 기억
@@ -2250,6 +2333,12 @@
       sb.from("tok_settings").select("*").maybeSingle(),
       sb.from("tok_habit_pauses").select("habit_id, paused_at, resumed_at, reason"),
     ]);
+    // 건너뛰기 기록은 따로 불러옴 — 실패해도 앱 전체를 막지 않고 건너뛰기 기능만 끔
+    try {
+      const { data: skipData, error: e14 } = await sb.from("tok_habit_skips").select("habit_id, skip_date");
+      habitSkipsReady = !e14;
+      habitSkips = e14 ? [] : (skipData || []);
+    } catch (err) { habitSkipsReady = false; habitSkips = []; }
     const firstError = e1 || e2 || e3 || e5 || e6 || e7 || e8 || e10 || e12 || e13;
     if (firstError) { alert("불러오기 실패: " + firstError.message); return; }
     tasks = taskData || [];
@@ -2548,6 +2637,18 @@
   function habitDoneSinceOccurrence(habitId, occDate) {
     return habitLogs.some(r => r.habit_id === habitId && r.done_date >= occDate);
   }
+  // 2026-09-27 — 날짜별 상태: 완료(habitLogs)와 건너뜀(habitSkips)은 따로 저장되고 같은 날 둘이 겹칠 수 없음(DB 트리거).
+  function habitDoneOn(habitId, dateStr) { return habitLogs.some(r => r.habit_id === habitId && r.done_date === dateStr); }
+  function habitSkippedOn(habitId, dateStr) { return habitSkips.some(r => r.habit_id === habitId && r.skip_date === dateStr); }
+  function habitDayStatus(habitId, dateStr) { return habitDoneOn(habitId, dateStr) ? "done" : habitSkippedOn(habitId, dateStr) ? "skipped" : "open"; }
+  // 예정 회차가 "처리됐는지"(완료 또는 건너뜀) — 화면에 할 일로 띄울지 판단용. 건너뛴 회차는 다음 예정일 전까지
+  // 다시 할 일로 올리지 않음. 통계(달성률)는 완료만 세므로 habitDoneSinceOccurrence를 그대로 씀.
+  // 건너뛰기는 asOfDate(보고 있는 날짜)까지의 기록만 셈 — 9/26에 건너뛰어도 9/25 화면은 그대로(다른 날짜에 영향 없음).
+  // 완료 기록 쪽 기준(occDate 이후 전부)은 기존 규칙 그대로 둠.
+  function habitResolvedSinceOccurrence(habitId, occDate, asOfDate) {
+    return habitDoneSinceOccurrence(habitId, occDate)
+      || habitSkips.some(r => r.habit_id === habitId && r.skip_date >= occDate && (!asOfDate || r.skip_date <= asOfDate));
+  }
   // 이 날짜에 이 습관을 보여줘야 하는지 — 시작일 이전/종료일 이후면 항상 숨김,
   // 그 범위 안에서는: 반복 없음이면 항상 표시, 이미 이 날짜에 체크돼 있으면 항상 표시(해제 가능하게),
   // 그 외엔 "가장 최근 예정일"이 아직 완료 안 됐을 때만(늦어도 계속 보이되, 앵커 자체는 안 밀림)
@@ -2555,10 +2656,10 @@
     if (habit.start_date && dateStr < habit.start_date) return false;
     if (habit.end_date && dateStr > habit.end_date) return false;
     if (!habit.repeat_unit) return true;
-    if (doneOnThisDate) return true;
+    if (doneOnThisDate || habitSkippedOn(habit.id, dateStr)) return true; // 건너뛴 날도 ×로 보여줘야 취소할 수 있음
     const occ = habitOccurrenceOnOrBefore(habit, dateStr);
     if (!occ) return false;
-    return !habitDoneSinceOccurrence(habit.id, occ);
+    return !habitResolvedSinceOccurrence(habit.id, occ, dateStr);
   }
   // 이 습관이 dateStr 기준 며칠 밀렸는지(0=오늘이 예정일, 3=3일 지남) — 안 밀렸거나 이미 완료면 null.
   // 여러 날 밀려도 회차별로 줄을 쌓지 않고 이 숫자 하나로만 "N일 지남" 표시(2026-09-12 결님 확정 — 목록이
@@ -2566,7 +2667,7 @@
   function habitOverdueDays(habit, dateStr) {
     if (!habit.repeat_unit) return null;
     const occ = habitOccurrenceOnOrBefore(habit, dateStr);
-    if (!occ || habitDoneSinceOccurrence(habit.id, occ)) return null;
+    if (!occ || habitResolvedSinceOccurrence(habit.id, occ, dateStr)) return null;
     const n = daysBetween(occ, dateStr);
     return n > 0 ? n : 0;
   }
@@ -2578,7 +2679,7 @@
   function habitNextDueAfter(habit, dateStr) {
     const occ = habitOccurrenceOnOrBefore(habit, dateStr);
     if (occ) {
-      if (!habitDoneSinceOccurrence(habit.id, occ)) return occ;
+      if (!habitResolvedSinceOccurrence(habit.id, occ, dateStr)) return occ;
       return nextRepeatDateStr(occ, habit.repeat_unit, habit.repeat_interval, habit.repeat_days);
     }
     // 아직 시작 전(첫 회차 자체가 다음 차례)
@@ -2669,7 +2770,7 @@
     $("habitHistoryBg").classList.add("open");
   }
   function renderHistoryModal() { if (hhKind === "todo") renderTodoHistory(); else renderHabitHistory(); }
-  function renderHabitMonthGrid(year, month, doneDates, dueDates, today) {
+  function renderHabitMonthGrid(year, month, doneDates, dueDates, today, skipDates = new Set()) {
     const lastDay = new Date(year, month + 1, 0).getDate();
     const firstDow = new Date(year, month, 1).getDay();
     let html = `<div class="hh-month-label">${year}년 ${month + 1}월</div>
@@ -2684,7 +2785,8 @@
       if (done) classes.push("completed");
       else if (due) classes.push("due-missed");
       if (dateStr === today) classes.push("today");
-      html += `<div class="${classes.join(" ")}"><span>${d}</span>${done ? '<span class="habit-history-check">✓</span>' : ""}</div>`;
+      const skipped = !done && skipDates.has(dateStr); // 건너뛴 날: 색 규칙은 그대로, ×만 덧붙임
+      html += `<div class="${classes.join(" ")}"${skipped ? ' title="건너뜀"' : ""}><span>${d}</span>${done ? '<span class="habit-history-check">✓</span>' : skipped ? '<span class="habit-history-skip" aria-label="건너뜀">×</span>' : ""}</div>`;
     }
     html += `</div>`;
     return html;
@@ -2694,6 +2796,7 @@
     const baseYear = hhCursor.getFullYear(), baseMonth = hhCursor.getMonth();
     const today = todayStr();
     const doneDates = habitCompletionDates(hhTask.id);
+    const skipDates = new Set(habitSkips.filter(r => r.habit_id === hhTask.id).map(r => r.skip_date));
     const firstD = new Date(baseYear, baseMonth, 1);
     const lastD = new Date(baseYear, baseMonth + 2, 1);
     const rangeStart = `${firstD.getFullYear()}-${pad2(firstD.getMonth() + 1)}-01`;
@@ -2706,7 +2809,7 @@
     let monthsHtml = "";
     for (let i = 0; i < 3; i++) {
       const d = new Date(baseYear, baseMonth + i, 1);
-      monthsHtml += `<div class="hh-month-block">${renderHabitMonthGrid(d.getFullYear(), d.getMonth(), doneDates, dueDates, today)}</div>`;
+      monthsHtml += `<div class="hh-month-block">${renderHabitMonthGrid(d.getFullYear(), d.getMonth(), doneDates, dueDates, today, skipDates)}</div>`;
     }
     $("hh_title").textContent = hhTask.name || "습관 기록";
     $("hh_month").textContent = firstD.getFullYear() === lastD.getFullYear()
@@ -2768,12 +2871,18 @@
       const t = tasks.find(x => x.id === taskId);
       const snap = { start_minute: t?.start_minute ?? null, duration_minutes: t?.duration_minutes ?? null };
       const { error } = await sb.from("tok_habit_logs").insert({ habit_id: taskId, done_date: dateStr, ...snap });
-      if (error) { alert("체크 실패: " + error.message); return; }
+      if (error) {
+        if (/habit_skipped/.test(error.message || "")) {
+          alert("이 날은 건너뛴 날이에요. 완료로 바꾸려면 먼저 메뉴에서 '건너뛰기 취소'를 눌러 주세요.");
+          await loadAll(); // 다른 기기에서 건너뛴 경우 화면을 최신으로
+        } else alert("체크 실패: " + error.message);
+        return false;
+      }
       habitLogs.push({ habit_id: taskId, done_date: dateStr, ...snap });
       playCompleteSound(); // 습관도 할일(상위)과 동일하게 완료 효과음 — 습관은 하위 개념 없이 그 자체로 하나의 완료라 긴 쪽으로 통일
     } else {
       const { error } = await sb.from("tok_habit_logs").delete().eq("habit_id", taskId).eq("done_date", dateStr);
-      if (error) { alert("체크 해제 실패: " + error.message); return; }
+      if (error) { alert("체크 해제 실패: " + error.message); return false; }
       habitLogs = habitLogs.filter(r => !(r.habit_id === taskId && r.done_date === dateStr));
     }
     if (dateStr === todayStr()) {
@@ -2783,6 +2892,7 @@
     // 8-3단계: 지금 보이는 창이 하루가 아니라 여러 날(1/3/7일)일 수 있으므로, 그 창 안의 날짜인지로 확인.
     if (agendaWindowDates().includes(dateStr)) await renderAgendaTimed();
     await renderPlanUpcomingBoard();
+    return true;
   }
   // 타임블럭 이름표별 점 색상(사용자 스크린샷 시안 참고, 장식용 — tok_time_blocks에 실제 색상 컬럼은 없음). 이모지는 2026-09-06 결님 요청으로 제거.
   const AG_BLOCK_STYLE = {
@@ -2886,13 +2996,13 @@
       const busy = leftoverBusy.has(td.id);
       const dis = busy ? " disabled" : "";
       const checked = leftoverBusy.get(td.id) === "done" ? " checked" : ""; // 완료 저장 중엔 체크된 채로
-      return `<div class="leftover-row${busy ? " is-busy" : ""}" data-id="${td.id}">
+      return `<div class="leftover-row${busy ? " is-busy" : ""}" data-id="${td.id}"${menuAttrs("todo", td.id)}>
         <input type="checkbox" class="leftover-check" data-id="${td.id}" aria-label="${escapeHtml(td.title)} 완료"${checked}${dis} />
         ${groupTitleHtml("leftover-title", "todo", td.tag_id, td.title)}
         <span class="leftover-date">원래 날짜 ${leftoverDateLabel(td.start_date)}</span>
         <span class="leftover-actions">
           <button type="button" class="leftover-today" data-id="${td.id}"${dis}>오늘로</button>
-          <button type="button" class="leftover-more" data-id="${td.id}" aria-label="${escapeHtml(td.title)} 더보기"${dis}>⋯</button>
+          <button type="button" class="leftover-more item-more" data-id="${td.id}" aria-haspopup="menu" aria-expanded="false" aria-label="${escapeHtml(td.title)} 메뉴"${dis}>⋯</button>
         </span>
       </div>`;
     }).join("");
@@ -2902,13 +3012,7 @@
     list.querySelectorAll(".leftover-today").forEach(btn => {
       btn.onclick = () => moveLeftoverTodoToToday(btn.dataset.id);
     });
-    list.querySelectorAll(".leftover-more").forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const r = btn.getBoundingClientRect();
-        showLeftoverMenu(r.right, r.bottom + 4, btn.dataset.id);
-      };
-    });
+    // ⋯(.leftover-more.item-more) = 할일 공통 메뉴(수정·날짜 변경·그룹 변경·복제·삭제) — 문서 위임 리스너가 엶
   }
   $("homeLeftoverToggle").onclick = () => {
     leftoverOpen = !leftoverOpen;
@@ -2946,47 +3050,6 @@
       return true;
     });
   }
-  function deleteLeftoverTodo(id) {
-    const td = todos.find(x => x.id === id);
-    if (!td || leftoverBusy.has(id)) return;
-    if (!confirm(`"${td.title}"을(를) 삭제할까요?`)) return;
-    return runLeftoverAction(id, "delete", async () => {
-      const { error } = await sb.from("tok_todos").delete().eq("id", id);
-      if (error) { alert("삭제하지 못했어요: " + error.message + "\n다시 시도해 주세요."); return false; }
-      await loadAll();
-      return true;
-    });
-  }
-  // ⋯ 메뉴: 날짜 바꾸기(기존 날짜/시간 변경 시트 재사용 — 저장된 시간은 그대로 채워져서 날짜만 바꾸면 시간 유지) /
-  // 언젠가로 / 삭제(확인 후).
-  // 언젠가로: 기존 할일→언젠가 이동(moveItemToZone)은 tok_someday에 제목·완료·그룹만 복사한 뒤 원본을 지움 →
-  // 소요 시간·시간·종료일·하위 행동(tok_todo_subtasks, 원본 삭제 시 함께 삭제)·집중 기록 연결(tok_focus_sessions.todo_id)이
-  // 사라짐. tok_someday엔 이 정보를 담을 칸이 없어서 안전하게 옮길 방법이 없으므로, 여기선 원본을 옮기거나 지우지 않고 안내만 함.
-  function showLeftoverMenu(x, y, id) {
-    document.querySelector(".ctx-menu")?.remove();
-    const menu = document.createElement("div");
-    menu.className = "ctx-menu";
-    menu.innerHTML = `
-      <button type="button" class="default" data-act="date">날짜 바꾸기</button>
-      <button type="button" class="default is-unavailable" data-act="someday" aria-disabled="true">언젠가로 <span class="ctx-note">준비 중</span></button>
-      <button type="button" data-act="delete">삭제</button>
-    `;
-    document.body.appendChild(menu);
-    positionCtxMenu(menu, x - menu.offsetWidth, y);
-    menu.querySelector('[data-act="date"]').onclick = (e) => {
-      e.stopPropagation(); menu.remove();
-      openItemDateSheet("todo", id);
-    };
-    menu.querySelector('[data-act="someday"]').onclick = (e) => {
-      e.stopPropagation(); menu.remove();
-      alert("아직 언젠가로 옮길 수 없어요.\n언젠가 목록에는 날짜·시간·소요 시간·하위 행동·집중 기록 연결을 담을 칸이 없어서, 지금 옮기면 이 정보가 사라져요.\n할일은 그대로 두었어요.");
-    };
-    menu.querySelector('[data-act="delete"]').onclick = (e) => {
-      e.stopPropagation(); menu.remove();
-      deleteLeftoverTodo(id);
-    };
-    attachCtxMenuOutsideClose(menu);
-  }
 
   // "하루종일": 그 날짜에 걸친 할일(시간 없음) + 시간 없는 일정 + 시간 없는 습관
   // 8-3단계: homeAgendaDate 하루가 아니라 agendaWindowDates()가 계산한 N일(1/3/7)을 나란히(열) 그림.
@@ -3023,20 +3086,24 @@
 
       const rows = [
         ...dayUntimedEvents.map(e => `
-          <div class="${rowCls}" data-id="${e.id}" data-kind="event" data-date="${dateStr}"${tlStyle ? ` style="${itemTagBgStyle("event", e.category_id)}"` : ""}>
+          <div class="${rowCls}" data-id="${e.id}" data-kind="event" data-date="${dateStr}"${menuAttrs("event", e.id, dateStr)}${tlStyle ? ` style="${itemTagBgStyle("event", e.category_id)}"` : ""}>
             ${tlStyle ? leadBox : eventDotHtml(e.category_id)}
             <span class="agenda-title">${escapeHtml(e.title)}</span>
+            ${moreBtnHtml(e.title)}
           </div>`),
         ...untimedHabits.map(t => `
-          <div class="${rowCls} ${doneSet.has(t.id) ? "done" : ""}" data-id="${t.id}" data-kind="habit" data-date="${dateStr}"${tlStyle ? ` style="${itemTagBgStyle("habit", t.category_id)}"` : ""}>
-            <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="ag-habit-check" />
+          <div class="${rowCls} ${doneSet.has(t.id) ? "done" : ""}${skippedCls("habit", t.id, dateStr)}" data-id="${t.id}" data-kind="habit" data-date="${dateStr}"${menuAttrs("habit", t.id, dateStr)}${tlStyle ? ` style="${itemTagBgStyle("habit", t.category_id)}"` : ""}>
+            ${habitLeadHtml(t.id, dateStr, doneSet.has(t.id), "ag-habit-check")}
             <span class="agenda-title">${escapeHtml(t.name)}</span>
+            ${skipChipHtml("habit", t.id, dateStr)}
+            ${moreBtnHtml(t.name)}
           </div>`),
         ...dayTodos.map(td => `
-          <div class="${rowCls} ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo" data-date="${dateStr}"${tlStyle ? ` style="${itemTagBgStyle("todo", td.tag_id)}"` : ""}>
+          <div class="${rowCls} ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo" data-date="${dateStr}"${menuAttrs("todo", td.id, dateStr)}${tlStyle ? ` style="${itemTagBgStyle("todo", td.tag_id)}"` : ""}>
             <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="agenda-todo-check" />
             <span class="agenda-title">${escapeHtml(td.title)}</span>
             ${td.start_date !== dateStr ? `<span class="habit-due-chip due-overdue">${daysBetween(td.start_date, dateStr)}일 지남</span>` : ""}
+            ${moreBtnHtml(td.title)}
           </div>`),
       ];
       totalCount += rows.length;
@@ -3267,7 +3334,7 @@
 
     document.querySelectorAll(".ag-allday-row[data-id]").forEach(row => {
       row.addEventListener("pointerdown", (e) => {
-        if (e.target.closest("input")) return;
+        if (e.target.closest("input, .habit-skip-mark") || e.button > 0) return; // 체크 자리(×)·오른쪽 클릭은 드래그·이름 수정으로 치지 않음
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; dragDateAttr = row.dataset.date; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
@@ -3306,10 +3373,6 @@
         await moveItemToZone(kind, id, drop);
       };
       row.addEventListener("pointerup", finish);
-      row.oncontextmenu = (e) => {
-        e.preventDefault();
-        showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
-      };
       row.addEventListener("pointercancel", () => {
         dragEl?.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
@@ -3381,21 +3444,42 @@
   const ICON_SLIDERS_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>`;
   const DRAG_HANDLE_SVG = `<svg class="drag-handle-dots" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="6" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>`;
 
+  // ── 항목 공통 메뉴 연결용 줄 속성/⋯ 버튼(2026-09-27) ──
+  // 줄에 data-menu-kind/id/date를 달아 두면 오른쪽 클릭(PC)과 줄 안 ⋯ 버튼이 같은 메뉴(openItemMenu)를 엶.
+  // date는 날짜가 있는 화면에서 "그 줄이 속한 날짜"(습관 날짜별 상태에 씀). 날짜 없는 목록은 비움.
+  function menuAttrs(kind, id, dateStr) {
+    return ` data-menu-kind="${kind}" data-menu-id="${id}"${dateStr ? ` data-menu-date="${dateStr}"` : ""}`;
+  }
+  function moreBtnHtml(title) {
+    return `<button type="button" class="item-more" aria-haspopup="menu" aria-expanded="false" aria-label="${escapeHtml(title || "항목")} 메뉴">⋯</button>`;
+  }
+  // 습관 줄 앞자리: 건너뛴 날이면 체크박스 대신 ×(눌러도 상태가 바뀌지 않음 — 복원은 메뉴의 "건너뛰기 취소")
+  function habitLeadHtml(id, dateStr, done, cls) {
+    if (dateStr && habitSkippedOn(id, dateStr)) return `<span class="habit-skip-mark" role="img" aria-label="건너뜀" title="건너뜀 — ⋯ 메뉴에서 취소할 수 있어요">×</span>`;
+    return `<input type="checkbox" ${done ? "checked" : ""} data-id="${id}" data-date="${dateStr}" class="${cls}" />`;
+  }
+  function skipChipHtml(kind, id, dateStr) {
+    return kind === "habit" && dateStr && habitSkippedOn(id, dateStr) ? `<span class="habit-due-chip due-skip">건너뜀</span>` : "";
+  }
+  function skippedCls(kind, id, dateStr) { return kind === "habit" && dateStr && habitSkippedOn(id, dateStr) ? " skipped" : ""; }
+
   function agendaItemRowHtml(it, dateStr) {
     const lead = it.kind === "habit"
-      ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" data-date="${dateStr}" class="ag-habit-check" />`
+      ? habitLeadHtml(it.id, dateStr, it.done, "ag-habit-check")
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id); // 일정은 체크박스 자리에 범주색 동그라미로 대신 표시
     // 타임블럭은 배경색 대신 그룹/범주 색으로 구분(타임라인은 반대로 배경색을 계속 씀). 2026-09-28: 할일·습관은
     // 제목 글자를 그룹색으로(groupTitleHtml), 일정은 앞 동그라미(eventDotHtml)가 범주색이라 제목은 기본색.
     // 항목마다 카드처럼 보여서 공간을 너무 차지한다고 해서, 다가오는 계획 목록과 똑같이 카드 없는 플랫한 한 줄로 변경.
-    return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
+    return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, dateStr)}>
       ${DRAG_HANDLE_SVG}
       ${lead}
       ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name)}
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
+      ${skipChipHtml(it.kind, it.id, dateStr)}
       ${it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
+      ${moreBtnHtml(it.name)}
     </div>`;
   }
 
@@ -3535,7 +3619,7 @@
 
     containerEl.querySelectorAll(".ag-block-row[data-id]").forEach(row => {
       row.addEventListener("pointerdown", (e) => {
-        if (e.target.closest("input")) return;
+        if (e.target.closest("input, .habit-skip-mark") || e.button > 0) return; // 체크 자리(×)·오른쪽 클릭은 드래그·이름 수정으로 치지 않음
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
@@ -3578,10 +3662,6 @@
         curTarget?.classList.remove("drop-target");
         dragEl = null; dragId = null; dragKindAttr = null; moved = false; curTarget = null;
       });
-      row.oncontextmenu = (e) => {
-        e.preventDefault();
-        showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
-      };
     });
   }
 
@@ -3617,16 +3697,18 @@
   // 4단계에서 그대로 붙일 수 있음).
   function homeTodayRowHtml(it, dateStr) {
     const lead = it.kind === "habit"
-      ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" data-date="${dateStr}" class="ag-habit-check" />`
+      ? habitLeadHtml(it.id, dateStr, it.done, "ag-habit-check")
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id);
-    return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}">
+    return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, dateStr)}>
       ${DRAG_HANDLE_SVG}
       ${lead}
       ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name)}
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
+      ${skipChipHtml(it.kind, it.id, dateStr)}
       ${it.start_minute != null && it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
+      ${moreBtnHtml(it.name)}
     </div>`;
   }
 
@@ -3659,7 +3741,7 @@
     containerEl.querySelectorAll(rowSelector).forEach(row => {
       let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
       row.addEventListener("pointerdown", (e) => {
-        if (e.target.closest("input")) return;
+        if (e.target.closest("input, .habit-skip-mark") || e.button > 0) return; // 체크 자리(×)·오른쪽 클릭은 드래그·이름 수정으로 치지 않음
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
@@ -3727,12 +3809,6 @@
         ? `<div class="ag-section-head"><span class="label"><span class="ag-dot" style="background:${agBlockStyle("하루종일").dot};"></span>하루종일</span></div>
            <div class="agenda-flat">${allDayItems.map(it => homeTodayRowHtml(it, dateStr)).join("")}</div>`
         : "";
-      allDayEl.querySelectorAll(".home-today-row[data-id]").forEach(row => {
-        row.oncontextmenu = (e) => {
-          e.preventDefault();
-          showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
-        };
-      });
       wireHomeTodayChecks(allDayEl);
       attachHomeRowDrag(allDayEl, ".home-today-row[data-id]", renderHomeTodayBlock);
     }
@@ -3795,13 +3871,14 @@
       const titleLines = Math.max(1, Math.floor((height - 6 + 2) / (12 * 1.3)));
       const widthPct = 100 / colCount;
       const leftPct = widthPct * col;
-      itemsHtml += `<div class="ag-tl-task ${it.kind} ${it.done ? "done" : ""}" data-id="${it.id}" data-kind="${it.kind}" data-start="${it.start_minute}" data-duration="${it.duration_minutes}" style="top:${top}px;height:${height}px;left:${leftPct}%;width:calc(${widthPct}% - 4px);${itemTagBgStyle(it.kind, it.cat_id)}">
+      itemsHtml += `<div class="ag-tl-task ${it.kind} ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, dateStr)} data-start="${it.start_minute}" data-duration="${it.duration_minutes}" style="top:${top}px;height:${height}px;left:${leftPct}%;width:calc(${widthPct}% - 4px);${itemTagBgStyle(it.kind, it.cat_id)}">
         ${it.kind === "habit"
-          ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" data-date="${dateStr}" class="ag-habit-check" />`
+          ? habitLeadHtml(it.id, dateStr, it.done, "ag-habit-check")
           : it.kind === "todo"
           ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
           : eventDotHtml(it.cat_id, 8, 14)}
         <span class="ag-tl-title" style="-webkit-line-clamp:${titleLines}">${escapeHtml(it.name)}</span>
+        ${moreBtnHtml(it.name)}
       </div>`;
     });
     containerEl.innerHTML = `<div class="ag-tl-grid" style="grid-template-rows:repeat(${slotCount},${AG_TL_ROW_PX}px)">${rowsHtml}<div class="ag-tl-content" data-date="${dateStr}" data-min-m="${minM}" data-max-m="${maxM}">${itemsHtml}</div></div>`;
@@ -3930,7 +4007,7 @@
       };
 
       task.addEventListener("pointerdown", (e) => {
-        if (e.target.closest("input")) return;
+        if (e.target.closest("input, .habit-skip-mark") || e.button > 0) return; // 체크 자리(×)·오른쪽 클릭은 드래그·이름 수정으로 치지 않음
         pressed = true;
         moved = false; cancelled = false;
         pendingStart = origStart; pendingDuration = origDuration;
@@ -4012,6 +4089,7 @@
       });
       const finish = async (e) => {
         clearTimer();
+        if (!pressed) return; // 이 항목에서 누르기가 시작되지 않은 pointerup(오른쪽 클릭 등)은 무시
         pressed = false;
         const k = dragKind, dropZone = outsideZone;
         dragKind = null; outsideZone = null;
@@ -4056,10 +4134,6 @@
         clearHoverHint();
       });
       task.addEventListener("pointerleave", () => { if (!pressed) clearHoverHint(); });
-      task.oncontextmenu = (e) => {
-        e.preventDefault();
-        showAgendaItemMenu(e.clientX, e.clientY, kind, id);
-      };
     });
   }
 
@@ -4118,10 +4192,10 @@
     content.onpointerup = finish;
     content.onpointercancel = () => { $("agTlAddPreview")?.remove(); agAddState = null; };
     // 빈 곳 오른쪽 클릭 → "일정 추가/할일 추가" 중 고르는 작은 메뉴(2026-09-12 — 메모 기능 제거로 두번째 항목이 할일로 바뀜).
-    // 항목(.ag-tl-task) 위 오른쪽 클릭은 그 항목의 메뉴(showAgendaItemMenu, task.oncontextmenu)가 따로 처리하므로 여기선 건너뜀.
+    // 항목(.ag-tl-task) 위 오른쪽 클릭은 항목 공통 메뉴(openItemMenu, 문서 위임)가 처리하므로 여기선 기본 동작도 막지 않고 건너뜀.
     content.oncontextmenu = (e) => {
+      if (e.target.closest(".ag-tl-task")) return; // 항목 위는 항목 공통 메뉴(문서 위임)가 처리
       e.preventDefault();
-      if (e.target.closest(".ag-tl-task")) return;
       const slot = slotFromEvent(e);
       const startMinute = minM + slot * AG_TL_SLOT_MIN;
       showAddKindMenu(e.clientX, e.clientY, (kind) => showAgendaTimelineInlineAdd(content, slot, slot, startMinute, 30, kind, dateStr));
@@ -4332,13 +4406,6 @@
         openTodoSheet(todos.find(t => t.id === id));
       };
     });
-    // 오른쪽 클릭 메뉴(날짜 변경/그룹·범주 변경/삭제) — 오늘 열과 동일하게, 습관·할일·일정 전부 공용 적용.
-    document.querySelectorAll("#planUpcomingBoard .plan-row[data-id]").forEach(row => {
-      row.oncontextmenu = (e) => {
-        e.preventDefault();
-        showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
-      };
-    });
 
     attachPlanUpcomingDrag(days);
     attachPlanUpcomingItemDrag(days);
@@ -4353,7 +4420,7 @@
     document.querySelectorAll(".planup-drag-row[data-id]").forEach(row => {
       let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
       row.addEventListener("pointerdown", (e) => {
-        if (e.target.closest("input")) return;
+        if (e.target.closest("input, .habit-skip-mark") || e.button > 0) return; // 체크 자리(×)·오른쪽 클릭은 드래그·이름 수정으로 치지 않음
         e.stopPropagation();
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
@@ -4458,10 +4525,10 @@
     board.onpointerup = finish;
     board.onpointercancel = () => { clearHighlight(); planUpcomingAddState = null; };
     // 빈 날짜 칸 오른쪽 클릭 → "일정 추가/할일 추가" 중 고르는 작은 메뉴(2026-09-12 — 메모 기능 제거로 두번째 항목이 할일로 바뀜).
-    // 항목 위 오른쪽 클릭은 그 항목의 삭제/변경 메뉴(showAgendaItemMenu, .plan-row[data-id] 쪽에 이미 있음)가 처리하므로 건너뜀.
+    // 항목 위 오른쪽 클릭은 항목 공통 메뉴(openItemMenu, 문서 위임)가 처리하므로 건너뜀.
     board.oncontextmenu = (e) => {
+      if (e.target.closest(".plan-row")) return; // 항목 위는 항목 공통 메뉴(문서 위임)가 처리
       e.preventDefault();
-      if (e.target.closest(".plan-row")) return;
       const dayEl = e.target.closest(".planup-day");
       if (!dayEl) return;
       const idx = parseInt(dayEl.dataset.idx, 10);
@@ -4512,28 +4579,32 @@
 
       const habitHtml = dayHabits.map(t => {
         return `
-        <div class="plan-row habit home1-flat-row${doneSet.has(t.id) ? " done" : ""}" data-id="${t.id}" data-kind="habit">
+        <div class="plan-row habit home1-flat-row${doneSet.has(t.id) ? " done" : ""}${skippedCls("habit", t.id, dateStr)}" data-id="${t.id}" data-kind="habit"${menuAttrs("habit", t.id, dateStr)}>
           ${DRAG_HANDLE_SVG}
-          <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="upcoming-habit-check" />
+          ${habitLeadHtml(t.id, dateStr, doneSet.has(t.id), "upcoming-habit-check")}
           ${groupTitleHtml("plan-todo-title", "habit", t.category_id, t.name)}
+          ${skipChipHtml("habit", t.id, dateStr)}
+          ${moreBtnHtml(t.name)}
         </div>`;
       }).join("");
       const eventHtml = dayEvents.map(e => {
         const isRange = e.end_date && e.end_date !== e.event_date;
-        return `<div class="plan-row home1-flat-row" data-id="${e.id}" data-kind="event">
+        return `<div class="plan-row home1-flat-row" data-id="${e.id}" data-kind="event"${menuAttrs("event", e.id, dateStr)}>
           ${DRAG_HANDLE_SVG}
           ${eventDotHtml(e.category_id, 10, 20)}
           <span class="plan-todo-title">${escapeHtml(e.title)}</span>
           ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : e.event_time ? `<span class="plan-time">${e.event_time.slice(0, 5)}</span>` : ""}
+          ${moreBtnHtml(e.title)}
         </div>`;
       }).join("");
       const todoHtml = dayTodos.map(td => {
         return `
-        <div class="plan-row todo home1-flat-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
+        <div class="plan-row todo home1-flat-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo"${menuAttrs("todo", td.id, dateStr)}>
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
           ${groupTitleHtml("plan-todo-title planup-todo-title", "todo", td.tag_id, td.title)}
           ${td.todo_time ? `<span class="plan-time">${td.todo_time.slice(0, 5)}</span>` : ""}
+          ${moreBtnHtml(td.title)}
         </div>`;
       }).join("");
 
@@ -4568,12 +4639,6 @@
         e.stopPropagation();
         const id = titleEl.closest(".plan-row").dataset.id;
         openTodoSheet(todos.find(t => t.id === id));
-      };
-    });
-    containerEl.querySelectorAll(".plan-row[data-id]").forEach(row => {
-      row.oncontextmenu = (e) => {
-        e.preventDefault();
-        showAgendaItemMenu(e.clientX, e.clientY, row.dataset.kind, row.dataset.id);
       };
     });
     // 4단계: 2열 타임라인 등으로 드래그. 할일은 짧은 클릭이 이미 위 .planup-todo-title.onclick(전체 수정 시트)이
@@ -4726,10 +4791,11 @@
     const items = all.slice(0, somedayHomeVisible);
     const rowsHtml = items.map(item => {
       return `
-      <div class="task-row ag-someday-row home1-flat-row" data-someday-id="${item.id}">
+      <div class="task-row ag-someday-row home1-flat-row" data-someday-id="${item.id}"${menuAttrs("someday", item.id)}>
         ${DRAG_HANDLE_SVG}
         <input type="checkbox" data-id="${item.id}" class="somedaysum-check" />
         ${groupTitleHtml("agenda-title", "someday", item.tag_id, item.title)}
+        ${moreBtnHtml(item.title)}
       </div>`;
     }).join("");
     const moreHtml = all.length > items.length ? `<div class="someday-more-row" data-somedaymore="1">+ 더보기 (${all.length - items.length}개 더)</div>` : "";
@@ -4747,12 +4813,6 @@
     });
     const moreBtn = document.querySelector('#somedaySummaryList .someday-more-row[data-somedaymore]');
     if (moreBtn) moreBtn.onclick = () => { somedayHomeVisible += 5; renderSomedaySummary(); };
-    document.querySelectorAll(".ag-someday-row[data-someday-id]").forEach(row => {
-      row.oncontextmenu = (e) => {
-        e.preventDefault();
-        showSomedayItemMenu(e.clientX, e.clientY, row.dataset.somedayId);
-      };
-    });
     attachSomedayDrag();
     attachSomedayAddClick();
   }
@@ -4796,7 +4856,7 @@
     document.querySelectorAll(".ag-someday-row[data-someday-id]").forEach(row => {
       let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
       row.addEventListener("pointerdown", (e) => {
-        if (e.target.closest("input")) return;
+        if (e.target.closest("input, .habit-skip-mark") || e.button > 0) return; // 체크 자리(×)·오른쪽 클릭은 드래그·이름 수정으로 치지 않음
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
@@ -4915,12 +4975,13 @@
     // 반복 할일만 기록(달력+통계) 보기 버튼 노출(2026-09-13, 7-2단계) — 습관 탭 🗓와 같은 모달 재사용.
     const historyBtn = isTodo && item.repeat_unit ? `<button class="historybtn icon-btn tu-history" title="기록 보기" aria-label="기록 보기">${ICON_HISTORY_SVG}</button>` : "";
     return `
-    <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}" data-kind="${item._kind}">
+    <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}" data-kind="${item._kind}"${menuAttrs(item._kind, item.id)}>
       <input type="checkbox" ${item.is_done?"checked":""} class="tu-check" />
       ${dateBadge}
       ${groupTitleHtml("someday-title tu-title", isTodo ? "todo" : "someday", item.tag_id, item.title)}
       ${historyBtn}
       <button class="del tu-del">삭제</button>
+      ${moreBtnHtml(item.title)}
     </div>`;
   }
 
@@ -4953,9 +5014,8 @@
         const row = btn.closest("[data-id]");
         const id = row.dataset.id, kind = row.dataset.kind;
         if (kind === "todo") {
-          if (!confirm("이 할일을 삭제할까요?")) return;
-          const { error } = await sb.from("tok_todos").delete().eq("id", id);
-          if (error) { alert("삭제 실패: " + error.message); return; }
+          await deleteTodoWithConfirm(id); // 메뉴의 "삭제"와 같은 확인창(반복 할일 삭제 범위 안내)
+          return;
         } else {
           const { error } = await sb.from("tok_someday").delete().eq("id", id);
           if (error) { alert("삭제 실패: " + error.message); return; }
@@ -4995,14 +5055,6 @@
           else if (e.key === "Escape") { done = true; renderTodosPage(); }
         });
         input.addEventListener("blur", () => commit());
-      };
-    });
-    // 오른쪽 클릭 → 그룹 변경/삭제(전환·복제·날짜변경은 할일만, 기존 showAgendaItemMenu 재사용)
-    document.querySelectorAll("#todoUnifiedList [data-id]").forEach(row => {
-      row.oncontextmenu = (e) => {
-        e.preventDefault();
-        if (row.dataset.kind === "todo") showAgendaItemMenu(e.clientX, e.clientY, "todo", row.dataset.id);
-        else showSomedayItemMenu(e.clientX, e.clientY, row.dataset.id);
       };
     });
   }
@@ -5202,9 +5254,14 @@
     return true;
   }
 
+  let habitSheetOpener = null;
   function openHabitSheet(habit) {
     if (!habit) return;
+    habitSheetOpener = activeOpener();
     $("habitSheetBg").dataset.editId = habit.id;
+    $("hs_name").value = habit.name || "";
+    $("hs_time").value = habit.start_minute != null ? minutesToHHMM(habit.start_minute) : "";
+    $("hs_duration").value = habit.duration_minutes || 30;
     $("hs_repeat_unit").value = habit.repeat_unit || "";
     $("hs_repeat_interval").value = habit.repeat_interval || 1;
     setRepeatDaysChecked($("hs_repeat_days_row"), habit.repeat_days);
@@ -5215,8 +5272,19 @@
     renderHabitCategoryList();
     $("hs_newcat_name").value = "";
     $("habitSheetBg").classList.add("open");
+    $("hs_name").focus();
   }
-  $("habitSheetCancelBtn").onclick = () => $("habitSheetBg").classList.remove("open");
+  function closeHabitSheet() {
+    $("habitSheetBg").classList.remove("open");
+    const o = habitSheetOpener;
+    habitSheetOpener = null;
+    if (o && document.body.contains(o) && o.getClientRects().length) o.focus({ preventScroll: true });
+  }
+  $("habitSheetCancelBtn").onclick = closeHabitSheet;
+  $("habitSheetBg").addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !e.target.closest(".color-preset-popover")) { e.preventDefault(); closeHabitSheet(); return; }
+    trapFocusIn($("habitSheetBg").querySelector(".sheet"), e);
+  });
   $("hs_newcat_btn").onclick = async () => {
     const name = $("hs_newcat_name").value.trim();
     if (!name) { alert("그룹 이름을 입력해주세요."); return; }
@@ -5248,6 +5316,10 @@
     const repeat_days = hsDaysChecked.length ? hsDaysChecked : null;
     const repeat_interval = repeat_unit ? (repeat_days ? 1 : (parseInt($("hs_repeat_interval").value, 10) || 1)) : null;
     const category_id = $("hs_category").value || null;
+    const name = $("hs_name").value.trim();
+    if (!name) { alert("습관 이름을 입력해주세요."); $("hs_name").focus(); return; }
+    const start_minute = $("hs_time").value ? hhmmToMinutes($("hs_time").value) : null;
+    const duration_minutes = Math.max(5, parseInt($("hs_duration").value, 10) || 30);
     const start_date = $("hs_start").value;
     if (!start_date) { alert("시작일을 입력해주세요."); return; }
     const end_date = $("hs_end").value || null;
@@ -5259,7 +5331,7 @@
       { unit: habit.repeat_unit, interval: habit.repeat_interval, days: habit.repeat_days },
       { unit: repeat_unit, interval: repeat_interval, days: repeat_days }
     );
-    const patch = { repeat_unit, repeat_interval, repeat_days, category_id, start_date, end_date };
+    const patch = { name, start_minute, duration_minutes, repeat_unit, repeat_interval, repeat_days, category_id, start_date, end_date };
     if (changed) {
       const msg = repeat_unit
         ? `오늘부터 "${repeatSummaryText(repeat_unit, repeat_interval, repeat_days)}"로 바뀌어요. 지금까지 밀린 기록은 그대로 두고 다음 예정일부터 새 주기가 적용돼요. 변경할까요?`
@@ -5269,7 +5341,7 @@
     }
     const { error } = await sb.from("tok_habits").update(patch).eq("id", editId);
     if (error) { alert("저장 실패: " + error.message); return; }
-    $("habitSheetBg").classList.remove("open");
+    closeHabitSheet();
     await loadAll();
   };
   $("hs_repeat_unit").addEventListener("change", () => toggleRepeatUiFor("hs", $("hs_repeat_unit").value));
@@ -5291,10 +5363,11 @@
     const sorted = [...undone, ...done]; // 완료 항목은 항상 뒤로(기존 규칙 유지), 각 그룹 안에서 선택한 정렬 기준 적용
     $("somedayList").innerHTML = sorted.length ? sorted.map(item => {
       return `
-      <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}">
+      <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}"${menuAttrs("someday", item.id)}>
         <input type="checkbox" ${item.is_done?"checked":""} data-id="${item.id}" class="someday-check" />
         ${groupTitleHtml("someday-title", "someday", item.tag_id, item.title)}
         <button class="del" data-id="${item.id}">삭제</button>
+        ${moreBtnHtml(item.title)}
       </div>
     `;
     }).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 그룹의 항목이 없어요." : "등록된 언젠가 할일이 없어요."}</div>`;
@@ -5349,13 +5422,6 @@
         input.addEventListener("blur", () => commit());
       };
     });
-    // 오른쪽 클릭 → 그룹 변경/삭제 메뉴
-    document.querySelectorAll(".someday-row").forEach(row => {
-      row.oncontextmenu = (e) => {
-        e.preventDefault();
-        showSomedayItemMenu(e.clientX, e.clientY, row.dataset.id);
-      };
-    });
   }
   $("somedayAddBtn").onclick = async () => {
     const title = $("somedayInput").value.trim();
@@ -5369,6 +5435,133 @@
   $("somedayInput").addEventListener("keydown", (e) => {
     if (e.key === "Enter") $("somedayAddBtn").click();
   });
+
+  // ── 언젠가 수정 창 / 날짜 정해서 할일로 옮기기(2026-09-27, 항목 공통 메뉴에서 엶) ──
+  function focusBack(el) { if (el && document.body.contains(el) && el.getClientRects().length) el.focus({ preventScroll: true }); }
+  let somedaySheetState = { id: null, saving: false, opener: null };
+  function openSomedaySheet(id) {
+    const item = somedayItems.find(x => x.id === id);
+    if (!item) return;
+    somedaySheetState = { id, saving: false, opener: activeOpener() };
+    $("sd_title").value = item.title || "";
+    const cur = item.tag_id || null;
+    $("sd_tag").innerHTML = `<option value="">기본</option>` +
+      assignableTagPool(habitCategories, cur).map(c => `<option value="${c.id}">${escapeHtml(tagPickLabel(c))}</option>`).join("");
+    $("sd_tag").value = cur || "";
+    $("sd_error").textContent = "";
+    $("sd_save").disabled = false;
+    $("sd_save").textContent = "저장";
+    $("somedaySheetBg").classList.add("open");
+    fitCalEventSheetToViewport();
+    $("sd_title").focus();
+  }
+  function closeSomedaySheet() {
+    if (somedaySheetState.saving) return;
+    $("somedaySheetBg").classList.remove("open");
+    fitCalEventSheetToViewport();
+    focusBack(somedaySheetState.opener);
+  }
+  async function saveSomedaySheet() {
+    const st = somedaySheetState;
+    if (st.saving || !st.id) return;
+    const title = $("sd_title").value.trim();
+    if (!title) { $("sd_error").textContent = "제목을 입력해주세요."; $("sd_title").focus(); return; }
+    st.saving = true;
+    $("sd_save").disabled = true;
+    $("sd_save").textContent = "저장 중…";
+    let error = null;
+    try { ({ error } = await sb.from("tok_someday").update({ title, tag_id: $("sd_tag").value || null }).eq("id", st.id)); }
+    catch (err) { error = err; }
+    st.saving = false;
+    $("sd_save").disabled = false;
+    $("sd_save").textContent = "저장";
+    if (error) { $("sd_error").textContent = "저장하지 못했어요. 입력한 내용은 그대로 있어요. (" + (error.message || error) + ")"; return; }
+    closeSomedaySheet();
+    await loadAll();
+  }
+  $("sd_cancel").onclick = closeSomedaySheet;
+  $("sd_save").onclick = saveSomedaySheet;
+  $("sdForm").onsubmit = (e) => { e.preventDefault(); saveSomedaySheet(); };
+  $("somedaySheetBg").addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); closeSomedaySheet(); return; }
+    trapFocusIn($("somedaySheetBg").querySelector(".sheet"), e);
+  });
+
+  // 이동(복제 아님): DB 함수 tok_move_someday_to_todo가 한 트랜잭션에서 언젠가 행 삭제 + 할일 생성.
+  // 원본이 이미 없으면 아무것도 만들지 않으므로 다시 눌러도(재시도) 할일이 두 번 생기지 않음.
+  // 저장 중엔 옮기기·취소 버튼을 막고, 실패하면 성공 안내 없이 원인을 창 안에 보여줌.
+  let somedayMoveState = { id: null, saving: false, opener: null };
+  function openSomedayMoveSheet(id) {
+    const item = somedayItems.find(x => x.id === id);
+    if (!item) return;
+    somedayMoveState = { id, saving: false, opener: activeOpener() };
+    $("sm_desc").textContent = `‘${item.title}’을(를) 언젠가에서 빼서 고른 날짜의 할일로 옮겨요. 제목·그룹은 그대로이고, 완료 표시는 새로 시작해요.`;
+    $("sm_date").value = todayStr();
+    $("sm_error").textContent = "";
+    setSomedayMoveBusy(false);
+    $("somedayMoveSheetBg").classList.add("open");
+    fitCalEventSheetToViewport();
+    $("sm_date").focus();
+  }
+  function setSomedayMoveBusy(busy) {
+    $("sm_save").disabled = busy;
+    $("sm_cancel").disabled = busy;
+    $("sm_date").disabled = busy;
+    $("sm_save").textContent = busy ? "옮기는 중…" : "옮기기";
+  }
+  function closeSomedayMoveSheet() {
+    if (somedayMoveState.saving) return; // 저장 중엔 닫지 않음(결과를 알려줘야 하므로)
+    $("somedayMoveSheetBg").classList.remove("open");
+    fitCalEventSheetToViewport();
+    focusBack(somedayMoveState.opener);
+  }
+  async function saveSomedayMove() {
+    const st = somedayMoveState;
+    if (st.saving || !st.id) return; // 중복 클릭 방지
+    const date = $("sm_date").value;
+    if (!date) { $("sm_error").textContent = "날짜를 골라 주세요."; $("sm_date").focus(); return; }
+    st.saving = true;
+    $("sm_error").textContent = "";
+    setSomedayMoveBusy(true);
+    let error = null;
+    try { ({ error } = await sb.rpc("tok_move_someday_to_todo", { p_someday_id: st.id, p_date: date })); }
+    catch (err) { error = err; }
+    let stillThere = null; // 실패했을 때만: 원본이 아직 있는지 확인(추측으로 성공/실패를 말하지 않기 위해)
+    if (error && !/someday_not_found/.test(error.message || "")) {
+      try {
+        const r = await sb.from("tok_someday").select("id").eq("id", st.id).maybeSingle();
+        if (!r.error) stillThere = !!r.data;
+      } catch (e) { /* 확인 실패 → 모름(null) */ }
+    }
+    st.saving = false;
+    setSomedayMoveBusy(false);
+    if (!error) {
+      closeSomedayMoveSheet();
+      await loadAll();
+      showToast(`${menuDateLabel(date)} 할일로 옮겼어요`);
+      return;
+    }
+    if (/someday_not_found/.test(error.message || "") || stillThere === false) {
+      closeSomedayMoveSheet();
+      await loadAll();
+      alert("이 항목은 이미 언젠가에 없어요(옮겨졌거나 삭제됨). 목록을 새로 불러왔으니 할일 목록에서 확인해 주세요.");
+      return;
+    }
+    $("sm_error").textContent = stillThere === true
+      ? `옮기지 못했어요. 언젠가 항목은 그대로 있어요. 다시 시도해 주세요. (${error.message || error})`
+      : `저장 결과를 확인하지 못했어요. 연결을 확인한 뒤 다시 눌러 주세요 — 다시 눌러도 할일이 두 번 생기지 않아요. (${error.message || error})`;
+    $("sm_save").focus();
+  }
+  $("sm_cancel").onclick = closeSomedayMoveSheet;
+  $("sm_save").onclick = saveSomedayMove;
+  $("smForm").onsubmit = (e) => { e.preventDefault(); saveSomedayMove(); };
+  $("somedayMoveSheetBg").addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); closeSomedayMoveSheet(); return; }
+    trapFocusIn($("somedayMoveSheetBg").querySelector(".sheet"), e);
+  });
+  ["sdForm", "smForm"].forEach(id => $(id).addEventListener("focusin", (e) => {
+    setTimeout(() => e.target.scrollIntoView?.({ block: "nearest" }), 250); // 모바일 키보드가 올라온 뒤 위치 보정
+  }));
 
   // ── 일정 화면 ──
   // 2026-09-27 목록 개편: 조회 월(calCursor, 캘린더와 공유) 안의 일정만 날짜 오름차순으로 보여줌.
@@ -5440,14 +5633,14 @@
             const isRange = end > e.event_date;
             const phase = !isRange ? "" : d === e.event_date ? "시작" : d === end ? "마지막 날" : "진행 중";
             return `
-            <div class="event-row sched-row" data-id="${e.id}">
+            <div class="event-row sched-row" data-id="${e.id}"${menuAttrs("event", e.id, d)}>
               <div class="t">${e.event_time ? e.event_time.slice(0, 5) : "종일"}</div>
               <button type="button" class="sched-open" data-id="${e.id}">
                 <span class="title">${escapeHtml(e.title)}</span>
                 ${(cat || isRange) ? `<span class="sched-meta">${isRange ? `<span class="sched-phase">${phase}</span><span>${calRangeLabel(e)}</span>` : ""}${cat ? eventCategoryHtml(cat) : ""}</span>` : ""}
                 ${e.memo ? `<span class="memo">${escapeHtml(e.memo)}</span>` : ""}
               </button>
-              <button type="button" class="sched-more" data-id="${e.id}" aria-haspopup="menu" aria-label="${escapeHtml(e.title)} 메뉴(수정·삭제)">⋯</button>
+              <button type="button" class="sched-more item-more" data-id="${e.id}" aria-haspopup="menu" aria-expanded="false" aria-label="${escapeHtml(e.title)} 메뉴">⋯</button>
             </div>`;
           }).join("")}
         </div>
@@ -5461,20 +5654,7 @@
     list.querySelectorAll(".sched-open").forEach(btn => {
       btn.onclick = () => openEventDetail(btn.dataset.id, btn);
     });
-    list.querySelectorAll(".sched-more").forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const r = btn.getBoundingClientRect();
-        showScheduleRowMenu(r.right - 120, r.bottom + 2, btn.dataset.id, btn);
-      };
-    });
-    // PC 오른쪽 클릭도 같은 수정/삭제 메뉴
-    list.querySelectorAll(".sched-row").forEach(row => {
-      row.oncontextmenu = (e) => {
-        e.preventDefault();
-        showScheduleRowMenu(e.clientX, e.clientY, row.dataset.id, row.querySelector(".sched-more"));
-      };
-    });
+    // ⋯(.sched-more.item-more)·오른쪽 클릭은 항목 공통 메뉴(openItemMenu)가 문서 전체에서 처리
   }
   // 목록 위 [+ 일정 추가]: 조회 월 기준(이번 달이면 오늘, 아니면 그 달 1일). 달력 보기에선 선택한 날짜 옆 [+ 일정 추가]를 씀.
   $("schedAddBtn").onclick = (e) => openEventEditor({ mode: "add", date: schedDefaultAddDate(), opener: e.currentTarget });
@@ -5553,28 +5733,6 @@
       : name;
   }
 
-  // ⋯ 메뉴: 수정 / 삭제 (목록 보기)
-  function showScheduleRowMenu(x, y, id, anchor) {
-    document.querySelector(".ctx-menu")?.remove();
-    const menu = document.createElement("div");
-    menu.className = "ctx-menu sched-menu";
-    menu.setAttribute("role", "menu");
-    menu.innerHTML = `<button type="button" role="menuitem" class="default" data-act="edit">수정</button><button type="button" role="menuitem" data-act="delete">삭제</button>`;
-    document.body.appendChild(menu);
-    positionCtxMenu(menu, x, y);
-    const close = () => { menu.remove(); anchor?.focus({ preventScroll: true }); };
-    menu.querySelector('[data-act="edit"]').onclick = (e) => { e.stopPropagation(); menu.remove(); openEventEditor({ mode: "edit", id, opener: anchor }); };
-    menu.querySelector('[data-act="delete"]').onclick = async (e) => { e.stopPropagation(); menu.remove(); anchor?.focus({ preventScroll: true }); await deleteEventWithConfirm(id, anchor); };
-    menu.addEventListener("keydown", (e) => {
-      const items = [...menu.querySelectorAll("button")];
-      const i = items.indexOf(document.activeElement);
-      if (e.key === "Escape") { e.preventDefault(); close(); }
-      else if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
-      else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
-    });
-    menu.querySelector("button").focus({ preventScroll: true });
-    attachCtxMenuOutsideClose(menu);
-  }
   async function deleteEventWithConfirm(id, opener = null) {
     const ev = events.find(x => x.id === id);
     const ok = await askConfirm({ title: "일정을 삭제할까요?", message: eventDeleteMessage(ev), okText: "삭제", cancelText: "취소", danger: true });
@@ -5818,7 +5976,7 @@
       const contL = multi && dateStr > e.event_date, contR = multi && dateStr < evEndDate(e);
       const showTitle = !contL || dow === 0;
       const cls = `cal-chip${multi ? " band" : ""}${contL ? " cont-l" : ""}${contR ? " cont-r" : ""}`;
-      return `<div class="${cls}" data-id="${e.id}" title="${escapeHtml(e.title)}"${color ? ` style="--chip-c:${color};"` : ""}>`
+      return `<div class="${cls}" data-id="${e.id}"${menuAttrs("event", e.id, dateStr)} title="${escapeHtml(e.title)}"${color ? ` style="--chip-c:${color};"` : ""}>`
         + (showTitle ? `<span class="dot"></span><span class="cal-chip-title">${escapeHtml(e.title)}</span>` : "") + `</div>`;
     };
     let html = "";
@@ -5896,18 +6054,17 @@
       const cat = eventCategoryOf(e);
       const isRange = isMultiDayEvent(e);
       const color = cat ? (cat.color || null) : null;
-      return `<button type="button" class="cal-day-item" data-id="${e.id}">
+      return `<div class="cal-day-row"${menuAttrs("event", e.id, d)}><button type="button" class="cal-day-item" data-id="${e.id}">
           <span class="cal-day-time">${e.event_time ? e.event_time.slice(0, 5) : "종일"}</span>
           <span class="dot"${color ? ` style="--chip-c:${color};"` : ""} aria-hidden="true"></span>
           <span class="cal-day-body">
             <span class="cal-day-item-title">${escapeHtml(e.title)}</span>
             ${(cat || isRange) ? `<span class="cal-day-meta">${isRange ? `<span>${calRangeLabel({ ...e, end_date: evEndDate(e) })}</span>` : ""}${cat ? `<span>${escapeHtml(tagPickLabel(cat))}</span>` : ""}</span>` : ""}
           </span>
-        </button>`;
+        </button>${moreBtnHtml(e.title)}</div>`;
     }).join("");
     $("calDayList").querySelectorAll(".cal-day-item").forEach(btn => {
       btn.onclick = () => openEventDetail(btn.dataset.id, btn);
-      btn.oncontextmenu = (e) => { e.preventDefault(); showAgendaItemMenu(e.clientX, e.clientY, "event", btn.dataset.id); }; // PC 오른쪽 클릭 = 기존 메뉴
     });
   }
   $("calDayAddBtn").onclick = (e) => openEventEditor({ mode: "add", date: calSelected, opener: e.currentTarget });
@@ -6220,7 +6377,7 @@
       ? `<button class="togglebtn" data-id="${t.id}" data-act="archive">보관하기</button>`
       : `<button class="togglebtn on" data-id="${t.id}" data-act="resume">재개하기</button>`;
     return `
-    <div class="todo-row ${habitsTabView === "active" ? "" : "inactive"}" data-id="${t.id}">
+    <div class="todo-row ${habitsTabView === "active" ? "" : "inactive"}" data-id="${t.id}"${menuAttrs("habit", t.id)}>
       <div class="info">
         <div class="name">${groupTitleHtml("habit-name", "habit", t.category_id, t.name)}${dueChip}</div>
         <div class="block-tag">${t.start_minute != null ? minutesToHHMM(t.start_minute) : "시간 없음"} · ${t.duration_minutes || 30}분 · ${repeatText}${windowText}${catChip}</div>
@@ -6229,6 +6386,7 @@
       <button class="settingsbtn icon-btn" data-id="${t.id}" title="반복·그룹 설정" aria-label="${escapeHtml(t.name)} 반복·그룹 설정">${ICON_SLIDERS_SVG}</button>
       ${actionBtn}
       <button class="del" data-id="${t.id}">삭제</button>
+      ${moreBtnHtml(t.name)}
     </div>
   `;
   }
@@ -6291,12 +6449,7 @@
       };
     });
     document.querySelectorAll("#todoList .del").forEach(btn => {
-      btn.onclick = async () => {
-        if (!confirm("이 습관을 삭제할까요? (기록도 함께 삭제돼요)")) return;
-        const { error } = await sb.from("tok_habits").delete().eq("id", btn.dataset.id);
-        if (error) { alert("삭제 실패: " + error.message); return; }
-        await loadAll();
-      };
+      btn.onclick = () => deleteHabitWithConfirm(btn.dataset.id); // 메뉴의 "습관 삭제"와 같은 확인창(지워지는 기록 범위 안내)
     });
 
     // 클릭 → 이름 인라인 수정
@@ -6325,13 +6478,6 @@
           else if (e.key === "Escape") { done = true; renderTodo(); }
         });
         input.addEventListener("blur", commit);
-      };
-    });
-    // 오른쪽 클릭 → "오늘 하기"(밀렸거나 오늘 예정일 때만) + 삭제 메뉴 (09-13 7-3단계)
-    document.querySelectorAll("#todoList .todo-row").forEach(row => {
-      row.oncontextmenu = (e) => {
-        e.preventDefault();
-        showHabitRowMenu(e.clientX, e.clientY, row.dataset.id);
       };
     });
   }
@@ -6402,122 +6548,31 @@
 
   function escapeHtml(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-  // 우클릭 메뉴(.ctx-menu) 공통 위치보정 — 화면 아래/오른쪽 끝 근처에서 열면 메뉴가 잘려서 아래쪽 항목을
-  // 클릭할 수 없던 문제(결님 제보) 수정: DOM에 붙인 뒤 실제 크기를 재서, 뷰포트를 넘치면 커서 반대쪽으로 뒤집음.
-  function positionCtxMenu(menu, x, y) {
-    const pad = 6;
-    const mw = menu.offsetWidth, mh = menu.offsetHeight;
-    let left = x, top = y;
-    if (left + mw + pad > window.innerWidth) left = Math.max(pad, x - mw);
-    if (top + mh + pad > window.innerHeight) top = Math.max(pad, y - mh);
-    const minTop = fixedHeaderBottom() + pad; // 위로 뒤집혀도 고정 상단 영역 밑으로 숨지 않게
-    if (top < minTop && minTop + mh + pad <= window.innerHeight) top = minTop;
-    menu.style.left = `${left}px`;
-    menu.style.top = `${top}px`;
+  // ── 항목 공통 메뉴(2026-09-27) ──────────────────────────────────────────────────────────────
+  // 같은 항목(종류·id)과 같은 날짜라면 집·개별 탭·달력·타임라인 어디서 열어도 같은 메뉴가 나오도록 세 부분으로 나눔.
+  //   ① itemMenuModel(종류, id, 날짜) → 메뉴 줄 목록(화면 정보는 받지 않음 — 그래서 화면마다 메뉴가 달라질 수 없음)
+  //   ② 각 줄의 run → 기존 편집창·저장 로직 재사용(openTodoSheet / openItemDateSheet / openHabitSheet / openEventEditor …)
+  //   ③ openMenuShell → 표시 틀(PC 작은 팝업 / 모바일 하단 시트, 방향키·Enter·Esc, 바깥 클릭 닫기, 포커스 복귀, 리스너 정리)
+  // 화면 쪽은 줄에 menuAttrs(종류, id, 날짜)와 moreBtnHtml(⋯)만 붙이면 되고, 연결은 아래 문서 전체 위임 리스너가 맡음.
+  const MI = { // 작은 단색 선 아이콘(16px, currentColor)
+    edit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
+    date: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    group: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>`,
+    copy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+    trash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+    check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`,
+    skip: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`,
+    undo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10"/></svg>`,
+    move: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
+    back: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>`,
+    plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  };
+  const ITEM_KIND_NAME = { todo: "할일", habit: "습관", event: "일정", someday: "언젠가" };
+  function menuDateLabel(dateStr) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return `${y !== Number(todayStr().slice(0, 4)) ? `${y}년 ` : ""}${m}월 ${d}일`;
   }
-
-  // 빈 공간 오른쪽 클릭 공통 헬퍼(타임블럭/타임라인/다가오는 계획 3곳 공용, 2026-09-08 추가):
-  // 오른쪽 클릭하면 "일정/할일/습관 추가" 중 고르는 작은 메뉴를 띄움(2026-09-12: 습관 추가 옵션 추가)
-  // (2026-09-12: 메모 기능을 아예 없애면서 메뉴 두번째 항목을 메모→할일로 교체).
-  // 하루종일/시간블럭/다가오는/타임라인 빈칸의 왼쪽 클릭·터치는 이 메뉴 없이 할일 입력창을 바로 엶.
-  function showAddKindMenu(x, y, onPick) {
-    document.querySelector(".ctx-menu")?.remove();
-    const menu = document.createElement("div");
-    menu.className = "ctx-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
-    menu.innerHTML = `<button type="button" class="default" data-kind="event">일정 추가</button><button type="button" class="default" data-kind="todo">할일 추가</button><button type="button" class="default" data-kind="habit">습관 추가</button>`;
-    document.body.appendChild(menu);
-    positionCtxMenu(menu, x, y);
-    menu.querySelectorAll("button[data-kind]").forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        menu.remove();
-        onPick(btn.dataset.kind);
-      };
-    });
-    attachCtxMenuOutsideClose(menu);
-  }
-
-  // 오른쪽 클릭(→ PC 관리 메뉴) 공통 헬퍼: 커서 위치에 "삭제" 한 줄짜리 메뉴를 띄움
-  function showDeleteMenu(x, y, onDelete) {
-    document.querySelector(".ctx-menu")?.remove();
-    const menu = document.createElement("div");
-    menu.className = "ctx-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
-    menu.innerHTML = `<button type="button">삭제</button>`;
-    document.body.appendChild(menu);
-    positionCtxMenu(menu, x, y);
-    menu.querySelector("button").onclick = async (e) => {
-      e.stopPropagation();
-      menu.remove();
-      await onDelete();
-    };
-    setTimeout(() => {
-      const closeOnOutside = (e) => {
-        if (!menu.contains(e.target)) {
-          menu.remove();
-          document.removeEventListener("click", closeOnOutside);
-          document.removeEventListener("contextmenu", closeOnOutside);
-        }
-      };
-      document.addEventListener("click", closeOnOutside);
-      document.addEventListener("contextmenu", closeOnOutside);
-    }, 300); // 2026-09-23: 0 → 300ms. 모바일 롱프레스로 이 메뉴를 열면 손가락 뗄 때 그 자리에서 클릭이 한 번
-             // 더 합성돼서(터치 종료 시 브라우저가 만드는 호환용 click) 열리자마자 바로 닫혀버리는 문제가 있어서,
-             // 그 클릭이 지나갈 동안만 바깥클릭 감지를 늦게 켬(진짜 "바깥 탭해서 닫기"는 이보다 늦게 일어나 정상 동작).
-  }
-
-  // 습관 탭 목록 항목 오른쪽 클릭 메뉴(09-13 7-3단계 신규) — 습관 탭엔 체크박스가 없어서 지금까진 집 화면에서만
-  // 완료 체크가 가능했음. 오늘이 예정일이거나 밀린(habitOverdueDays !== null) 진행중 습관에만 "오늘 하기"를 보여주고,
-  // 고르면 toggleHabitForDate로 오늘 날짜 완료 기록을 남김(집 화면 체크와 완전히 같은 로직 재사용).
-  function showHabitRowMenu(x, y, habitId) {
-    document.querySelector(".ctx-menu")?.remove();
-    const t = tasks.find(x2 => x2.id === habitId);
-    const todayS = todayStr();
-    const canDoToday = t && habitsTabView === "active" && t.repeat_unit && habitOverdueDays(t, todayS) !== null;
-    const menu = document.createElement("div");
-    menu.className = "ctx-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
-    menu.innerHTML = (canDoToday ? `<button type="button" class="default" data-act="today">오늘 하기</button>` : "")
-      + `<button type="button" data-act="delete">삭제</button>`;
-    document.body.appendChild(menu);
-    positionCtxMenu(menu, x, y);
-    const todayBtn = menu.querySelector('[data-act="today"]');
-    if (todayBtn) {
-      todayBtn.onclick = async (e) => {
-        e.stopPropagation();
-        menu.remove();
-        await toggleHabitForDate(habitId, true, todayS);
-      };
-    }
-    menu.querySelector('[data-act="delete"]').onclick = async (e) => {
-      e.stopPropagation();
-      menu.remove();
-      if (!confirm("이 습관을 삭제할까요? (기록도 함께 삭제돼요)")) return;
-      const { error } = await sb.from("tok_habits").delete().eq("id", habitId);
-      if (error) { alert("삭제 실패: " + error.message); return; }
-      await loadAll();
-    };
-    attachCtxMenuOutsideClose(menu);
-  }
-
-  function attachCtxMenuOutsideClose(menu) {
-    setTimeout(() => {
-      const closeOnOutside = (e) => {
-        if (!menu.contains(e.target)) {
-          menu.remove();
-          document.removeEventListener("click", closeOnOutside);
-          document.removeEventListener("contextmenu", closeOnOutside);
-        }
-      };
-      document.addEventListener("click", closeOnOutside);
-      document.addEventListener("contextmenu", closeOnOutside);
-    }, 300); // 2026-09-23: 0 → 300ms, showDeleteMenu와 동일한 이유(모바일 롱프레스로 연 메뉴가 손가락 뗄 때 합성되는
-             // click 때문에 바로 닫혀버리는 문제 방지).
-  }
+  function itemTitleOf(kind, item) { return (kind === "habit" ? item.name : item.title) || `이름 없는 ${ITEM_KIND_NAME[kind]}`; }
   function agendaItemById(kind, id) {
     if (kind === "habit") return tasks.find(t => t.id === id);
     if (kind === "todo") return todos.find(t => t.id === id);
@@ -6525,53 +6580,182 @@
     return events.find(e => e.id === id);
   }
 
-  // 집 화면 항목 오른쪽 클릭 메뉴: 날짜 변경 / 그룹·범주 변경 / 복제 / 삭제 (습관·할일·일정 공용)
-  // 2026-09-12: 반복 할일↔습관 전환 메뉴는 없앰(빈칸 우클릭에서 종류별로 바로 추가할 수 있게 됐으니
-  // 굳이 나중에 종류를 바꾸는 기능은 필요 없다고 판단 — convertTodoToHabit/convertHabitToTodo 함수도 같이 삭제).
-  function showAgendaItemMenu(x, y, kind, id) {
-    document.querySelector(".ctx-menu")?.remove();
-    const menu = document.createElement("div");
-    menu.className = "ctx-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
-    const tagLabel = kind === "event" ? "범주 변경" : "그룹 변경";
+  // ① 메뉴 모델 — dateStr: 날짜가 있는 화면에서 연 경우 그 줄의 날짜, 날짜 없는 목록(습관 관리 등)은 null(= 오늘 기준)
+  function itemMenuModel(kind, id, dateStr) {
     const item = agendaItemById(kind, id);
-    menu.innerHTML = `
-      <button type="button" class="default" data-act="date">날짜 변경</button>
-      <button type="button" class="default" data-act="tag">${tagLabel}</button>
-      <button type="button" class="default" data-act="duplicate">복제</button>
-      <button type="button" data-act="delete">삭제</button>
-    `;
-    document.body.appendChild(menu);
-    positionCtxMenu(menu, x, y);
-    menu.querySelector('[data-act="date"]').onclick = (e) => {
-      e.stopPropagation(); menu.remove();
-      openItemDateSheet(kind, id);
-    };
-    menu.querySelector('[data-act="tag"]').onclick = (e) => {
-      e.stopPropagation(); menu.remove();
-      showItemTagPicker(x, y, kind, id);
-    };
-    menu.querySelector('[data-act="duplicate"]').onclick = async (e) => {
-      e.stopPropagation(); menu.remove();
-      await duplicateAgendaItem(kind, id);
-    };
-    menu.querySelector('[data-act="delete"]').onclick = async (e) => {
-      e.stopPropagation(); menu.remove();
-      const label = item ? (item.name || item.title || "이 항목") : "이 항목";
-      if (!confirm(`"${label}"을(를) 삭제할까요?`)) return;
-      const table = kind === "habit" ? "tok_habits" : kind === "todo" ? "tok_todos" : "tok_events";
-      const { error } = await sb.from(table).delete().eq("id", id);
-      if (error) { alert("삭제 실패: " + error.message); return; }
-      await loadAll();
-    };
-    attachCtxMenuOutsideClose(menu);
+    if (!item) return null;
+    const entries = [];
+    const sep = () => entries.push({ sep: true });
+    const groupEntry = (label) => ({ label, icon: "group", submenu: () => tagPickerEntries(kind, id) });
+    const dupEntry = { label: "복제", icon: "copy", run: async () => { if (await duplicateAgendaItem(kind, id)) showToast("복제했어요"); } };
+    let sub = ITEM_KIND_NAME[kind];
+    if (kind === "habit") {
+      const date = dateStr || todayStr();
+      sub = `${menuDateLabel(date)} · ${dateStr ? "선택한 날" : "오늘 기준"}`;
+      entries.push(...habitStatusEntries(item, date));
+      sep();
+      entries.push({ label: "수정", icon: "edit", window: true, run: () => openHabitSheet(item) });
+      entries.push(groupEntry("그룹 변경"));
+      entries.push(dupEntry);
+      sep();
+      entries.push({ label: "습관 삭제", icon: "trash", danger: true, run: () => deleteHabitWithConfirm(id) });
+    } else if (kind === "todo") {
+      entries.push({ label: "수정", icon: "edit", window: true, run: () => openTodoSheet(item) });
+      entries.push({ label: "날짜 변경", icon: "date", window: true, run: () => openItemDateSheet("todo", id) });
+      entries.push(groupEntry("그룹 변경"));
+      entries.push(dupEntry);
+      sep();
+      entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteTodoWithConfirm(id) });
+    } else if (kind === "event") {
+      entries.push({ label: "수정", icon: "edit", window: true, run: () => openEventEditor({ mode: "edit", id, opener: activeOpener() }) });
+      entries.push({ label: "날짜·시간 변경", icon: "date", window: true, run: () => openItemDateSheet("event", id) });
+      entries.push(groupEntry("범주 변경"));
+      entries.push(dupEntry);
+      sep();
+      entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteEventWithConfirm(id, activeOpener()) });
+    } else if (kind === "someday") {
+      entries.push({ label: "수정", icon: "edit", window: true, run: () => openSomedaySheet(id) });
+      entries.push({ label: "날짜 정해서 할일로 옮기기", icon: "move", window: true, run: () => openSomedayMoveSheet(id) });
+      entries.push(groupEntry("그룹 변경"));
+      sep();
+      entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteSomedayWithConfirm(id) });
+    }
+    return { title: itemTitleOf(kind, item), sub, entries };
+  }
+
+  // 습관의 선택한 날 상태 메뉴: 미완료 → 완료로 표시 / 이번만 건너뛰기, 완료 → 완료 취소, 건너뜀 → 건너뛰기 취소.
+  // 처리 가능 여부는 기존 표시 규칙 그대로(그 날짜 목록에 그 습관이 뜨는 경우 = 체크박스가 보이는 경우에만).
+  function habitStatusEntries(habit, date) {
+    const st = habitDayStatus(habit.id, date);
+    if (st === "done") return [{ label: "완료 취소", icon: "undo", run: () => setHabitDayStatus(habit.id, date, "undone") }];
+    if (st === "skipped") return [{ label: "건너뛰기 취소", icon: "undo", run: () => setHabitDayStatus(habit.id, date, "unskip") }];
+    const reason = habitStatusBlockReason(habit, date);
+    if (reason) return [{ note: reason }];
+    const list = [{ label: "완료로 표시", icon: "check", run: () => setHabitDayStatus(habit.id, date, "done") }];
+    if (habitSkipsReady) list.push({ label: "이번만 건너뛰기", icon: "skip", run: () => setHabitDayStatus(habit.id, date, "skip") });
+    return list;
+  }
+  function habitStatusBlockReason(habit, date) {
+    if (habit.start_date && date < habit.start_date) return "아직 시작 전인 날이라 상태를 바꿀 수 없어요.";
+    if (habit.end_date && date > habit.end_date) return "종료된 습관이라 상태를 바꿀 수 없어요.";
+    if (!habit.is_active) return "보관 중인 습관이라 상태를 바꿀 수 없어요.";
+    if (!isHabitDueOnDate(habit, date, false)) return "이 날은 할 차례가 아니에요.";
+    return null;
+  }
+
+  // 그룹(할일·습관·언젠가 공용 풀) / 범주(일정 전용 풀) 선택 — 현재 값 ✓, 보관된 값은 지금 연결된 경우에만 "· 보관됨"으로 남김
+  function tagPickerEntries(kind, id) {
+    const item = agendaItemById(kind, id);
+    const field = (kind === "todo" || kind === "someday") ? "tag_id" : "category_id";
+    const current = item ? (item[field] || null) : null;
+    const opts = [{ id: null, label: kind === "event" ? "범주 없음" : "기본", color: kind === "event" ? "transparent" : (daySettings.default_tag_color || "var(--sub)") },
+      ...assignableTagPool(itemTagPool(kind), current).map(c => ({ id: c.id, label: tagPickLabel(c), color: c.color || "var(--accent)" }))];
+    return opts.map(o => ({ label: o.label, dot: o.color, radio: true, current: o.id === current, run: () => setItemTag(kind, id, field, o.id, current) }));
+  }
+  async function setItemTag(kind, id, field, val, current) {
+    if (val === current) return;
+    const table = kind === "habit" ? "tok_habits" : kind === "todo" ? "tok_todos" : kind === "someday" ? "tok_someday" : "tok_events";
+    const { error } = await sb.from(table).update({ [field]: val }).eq("id", id);
+    if (error) { alert("변경 실패: " + error.message); return; }
+    await loadAll();
+  }
+
+  // ② 실행 — 습관 날짜별 상태. 완료(tok_habit_logs)와 건너뜀(tok_habit_skips)은 따로 저장하고, 고른 날짜 하나에만 적용
+  // (반복 설정과 다른 날짜 기록은 건드리지 않음). 같은 습관·날짜는 저장 중 다시 누를 수 없음.
+  const habitStatusBusy = new Set();
+  async function setHabitDayStatus(habitId, dateStr, action) {
+    const key = habitId + "|" + dateStr;
+    if (habitStatusBusy.has(key)) return false;
+    habitStatusBusy.add(key);
+    let ok = false;
+    try {
+      if (action === "done" || action === "undone") {
+        ok = await toggleHabitForDate(habitId, action === "done", dateStr);
+      } else if (action === "skip") {
+        const { error } = await sb.from("tok_habit_skips").insert({ habit_id: habitId, skip_date: dateStr });
+        if (error && error.code !== "23505") { // 23505 = 이미 건너뜀(다른 기기 등) → 결과는 같으니 성공으로 봄
+          if (/habit_already_done/.test(error.message || "")) {
+            alert("이 날은 이미 완료로 기록돼 있어서 건너뛸 수 없어요. 화면을 새로 불러올게요.");
+            await loadAll();
+          } else alert("건너뛰기 실패: " + error.message);
+        } else {
+          if (!habitSkippedOn(habitId, dateStr)) habitSkips.push({ habit_id: habitId, skip_date: dateStr });
+          ok = true;
+        }
+      } else if (action === "unskip") {
+        const { error } = await sb.from("tok_habit_skips").delete().eq("habit_id", habitId).eq("skip_date", dateStr);
+        if (error) alert("건너뛰기 취소 실패: " + error.message);
+        else { habitSkips = habitSkips.filter(r => !(r.habit_id === habitId && r.skip_date === dateStr)); ok = true; }
+      }
+    } catch (err) {
+      alert("저장하지 못했어요: " + (err?.message || err));
+    } finally {
+      habitStatusBusy.delete(key);
+    }
+    if (ok) {
+      renderHome();
+      renderTodo();
+      if ($("habitHistoryBg").classList.contains("open") && hhKind === "habit" && hhTask && hhTask.id === habitId) renderHabitHistory();
+      const label = menuDateLabel(dateStr);
+      showToast({ done: `${label} 완료로 표시했어요`, undone: `${label} 완료를 취소했어요`, skip: `${label} 건너뛰었어요`, unskip: `${label} 건너뛰기를 취소했어요` }[action]);
+    }
+    return ok;
+  }
+
+  // 삭제 — 확인창에 실제로 지워지는 범위를 그대로 적음(DB 관계를 확인한 결과 기준)
+  async function deleteHabitWithConfirm(id) {
+    const h = tasks.find(t => t.id === id);
+    if (!h) return false;
+    const logs = habitLogs.filter(r => r.habit_id === id).length;
+    const skips = habitSkips.filter(r => r.habit_id === id).length;
+    const pauses = habitPauses.filter(p => p.habit_id === id).length;
+    const parts = [`완료 기록 ${logs}개`, `건너뛴 기록 ${skips}개`];
+    if (pauses) parts.push(`보관 이력 ${pauses}개`);
+    const ok = await askConfirm({
+      title: "습관을 삭제할까요?",
+      message: `‘${h.name}’ 습관 전체가 삭제되고, 지난 기록(${parts.join(" · ")})도 함께 지워져요. 되돌릴 수 없어요.\n기록을 남기고 반복만 멈추려면 삭제 대신 ‘수정’에서 종료일을 정해 주세요.`,
+      okText: "습관 삭제", cancelText: "취소", danger: true,
+    });
+    if (!ok) return false;
+    const { error } = await sb.from("tok_habits").delete().eq("id", id);
+    if (error) { alert("삭제하지 못했어요: " + error.message); return false; }
+    if (hhKind === "habit" && hhTask && hhTask.id === id) $("habitHistoryBg").classList.remove("open");
+    await loadAll();
+    return true;
+  }
+  // 반복 할일은 회차마다 한 행 — 지우는 건 이 회차 행 하나뿐(지난 회차·이미 만들어진 다음 회차는 남음)
+  async function deleteTodoWithConfirm(id) {
+    const td = todos.find(x => x.id === id);
+    if (!td) return false;
+    let message = `‘${td.title}’`;
+    if (td.repeat_unit) {
+      const next = todos.find(x => x.repeat_source_id === id);
+      message += next
+        ? `\n반복 할일의 이 회차만 삭제돼요. 이미 만들어진 다음 회차(${menuDateLabel(next.start_date)})와 지난 회차 기록은 그대로 남아요.`
+        : `\n반복 할일의 이 회차만 삭제돼요. 다음 회차는 이 회차를 완료할 때 만들어지므로, 삭제하면 반복이 여기서 끝나요. 지난 회차 기록은 그대로 남아요.`;
+    }
+    const ok = await askConfirm({ title: "할일을 삭제할까요?", message, okText: "삭제", cancelText: "취소", danger: true });
+    if (!ok) return false;
+    const { error } = await sb.from("tok_todos").delete().eq("id", id);
+    if (error) { alert("삭제하지 못했어요: " + error.message); return false; }
+    await loadAll();
+    return true;
+  }
+  async function deleteSomedayWithConfirm(id) {
+    const s = somedayItems.find(x => x.id === id);
+    if (!s) return false;
+    const ok = await askConfirm({ title: "언젠가 항목을 삭제할까요?", message: `‘${s.title}’`, okText: "삭제", cancelText: "취소", danger: true });
+    if (!ok) return false;
+    const { error } = await sb.from("tok_someday").delete().eq("id", id);
+    if (error) { alert("삭제하지 못했어요: " + error.message); return false; }
+    await loadAll();
+    return true;
   }
 
   // 오른쪽 클릭 메뉴 "복제" — 같은 종류로 항목 하나를 그대로 복사해서 새로 만듦(제목에 "(사본)" 붙여 구분).
   async function duplicateAgendaItem(kind, id) {
     const item = agendaItemById(kind, id);
-    if (!item) return;
+    if (!item) return false;
     let error;
     if (kind === "habit") {
       ({ error } = await sb.from("tok_habits").insert({
@@ -6593,72 +6777,244 @@
         repeat_unit: item.repeat_unit, repeat_interval: item.repeat_interval,
       }));
     }
-    if (error) { alert("복제 실패: " + error.message); return; }
+    if (error) { alert("복제 실패: " + error.message); return false; }
     await loadAll();
+    return true;
   }
 
-  // 그룹/범주 변경용 작은 선택 메뉴(ctx-menu 재사용) — 습관·할일은 공용 그룹 풀, 일정은 별도 범주 풀에서 고름
-  function showItemTagPicker(x, y, kind, id) {
-    document.querySelector(".ctx-menu")?.remove();
-    const pool = itemTagPool(kind);
-    // 지금 이 항목에 이미 붙어있는 그룹/범주가 어떤 건지 목록에서 바로 보이게(체크 표시 + 배경 강조).
-    const item = agendaItemById(kind, id);
-    const currentVal = item ? ((kind === "todo" || kind === "someday") ? (item.tag_id || null) : (item.category_id || null)) : null;
-    const menu = document.createElement("div");
-    menu.className = "ctx-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
-    // 2026-09-20 — "그룹 없음" -> "기본"으로 이름 변경, 습관/할일 쪽은 이제 기본도 색이 있어서 다른 그룹처럼 점 표시.
-    const noneLabel = kind === "event" ? "범주 없음" : "기본";
-    const noneDot = kind === "event" ? "" : `<span class="ctx-tag-dot" style="background:${daySettings.default_tag_color || "var(--sub)"};"></span>`;
-    const noneBtn = `<button type="button" class="default${currentVal ? "" : " selected"}" data-tag="">${noneDot}${noneLabel}${currentVal ? "" : " ✓"}</button>`;
-    // 보관된 그룹/범주는 숨기되, 이 항목의 현재 연결값이 보관 상태면 그 하나만 “이름 · 보관됨”으로 남겨 유지 가능하게 함.
-    const items = assignableTagPool(pool, currentVal).map(c => `<button type="button" class="default${c.id === currentVal ? " selected" : ""}" data-tag="${c.id}"><span class="ctx-tag-dot" style="background:${c.color || "var(--accent)"};"></span>${escapeHtml(tagPickLabel(c))}${c.id === currentVal ? " ✓" : ""}</button>`).join("");
-    menu.innerHTML = noneBtn + items;
-    document.body.appendChild(menu);
-    positionCtxMenu(menu, x, y);
-    menu.querySelectorAll("button[data-tag]").forEach(btn => {
-      btn.onclick = async (e) => {
-        e.stopPropagation();
-        menu.remove();
-        const val = btn.dataset.tag || null;
-        const table = kind === "habit" ? "tok_habits" : kind === "todo" ? "tok_todos" : kind === "someday" ? "tok_someday" : "tok_events";
-        const field = (kind === "todo" || kind === "someday") ? "tag_id" : "category_id";
-        const { error } = await sb.from(table).update({ [field]: val }).eq("id", id);
-        if (error) { alert("변경 실패: " + error.message); return; }
-        await loadAll();
-      };
+  // ③ 표시 틀 — 한 번에 하나만. PC(>760px)는 커서/⋯ 옆 작은 팝업(화면 끝에서 위치 보정, 길면 안쪽 스크롤),
+  // 모바일은 하단 시트(안전 영역 반영). 닫힐 때 문서에 붙인 리스너를 모두 뗌.
+  let itemMenu = null; // { el, backdrop, opener, key, cleanup }
+  const itemMenuMq = window.matchMedia("(max-width:760px)");
+  function activeOpener() {
+    const a = document.activeElement;
+    return a && a !== document.body && document.body.contains(a) ? a : null;
+  }
+  function closeItemMenu({ restoreFocus = false } = {}) {
+    const m = itemMenu;
+    if (!m) return;
+    itemMenu = null;
+    m.cleanup();
+    m.el.remove();
+    m.backdrop?.remove();
+    if (m.opener?.classList?.contains("item-more")) m.opener.setAttribute("aria-expanded", "false");
+    if (restoreFocus) focusMenuReturn(m.opener, m.key);
+  }
+  // 포커스 복귀: 호출한 ⋯ 버튼(또는 항목). 다시 그려져서 사라졌으면 같은 항목·날짜 줄의 새 ⋯ 버튼으로.
+  function focusMenuReturn(opener, key) {
+    let target = opener && document.body.contains(opener) && opener.getClientRects().length ? opener : null;
+    if (!target && key) {
+      target = [...document.querySelectorAll(`[data-menu-kind="${key.kind}"][data-menu-id="${key.id}"]`)]
+        .filter(r => (r.dataset.menuDate || "") === (key.date || ""))
+        .map(r => r.querySelector(".item-more"))
+        .find(b => b && b.getClientRects().length) || null;
+    }
+    target?.focus({ preventScroll: true });
+  }
+  function openMenuShell({ title = "", sub = "", entries, x = null, y = null, opener = null, key = null, viaTouch = false }) {
+    closeItemMenu();
+    const sheet = itemMenuMq.matches;
+    const el = document.createElement("div");
+    el.className = "item-menu" + (sheet ? " is-sheet" : "");
+    el.setAttribute("role", "menu");
+    el.setAttribute("aria-label", title ? `${title} 메뉴` : "메뉴");
+    let backdrop = null;
+    if (sheet) {
+      backdrop = document.createElement("div");
+      backdrop.className = "item-menu-backdrop";
+      document.body.appendChild(backdrop);
+    }
+    document.body.appendChild(el);
+    const openedAt = Date.now();
+    const tooSoon = () => viaTouch && Date.now() - openedAt < 450; // 길게 눌러 연 직후 손가락을 뗄 때 생기는 클릭은 무시
+    const anchorRect = (x == null && opener) ? opener.getBoundingClientRect() : null;
+    if (opener?.classList?.contains("item-more")) opener.setAttribute("aria-expanded", "true");
+    const enabledItems = () => [...el.querySelectorAll(".item-menu-item:not([aria-disabled='true'])")];
+
+    const place = () => {
+      if (sheet) return;
+      const pad = 8, vw = window.innerWidth, vh = window.innerHeight;
+      el.style.maxHeight = Math.min(480, vh - pad * 2) + "px";
+      const mw = el.offsetWidth, mh = el.offsetHeight;
+      let left, top;
+      if (anchorRect) {
+        left = anchorRect.right - mw;
+        top = anchorRect.bottom + 4;
+        if (top + mh > vh - pad && anchorRect.top - 4 - mh >= pad) top = anchorRect.top - 4 - mh; // 아래 공간이 모자라면 위로
+      } else {
+        left = x ?? pad; top = y ?? pad;
+        if (left + mw > vw - pad) left = left - mw; // 오른쪽 끝이면 커서 왼쪽으로
+        if (top + mh > vh - pad) top = top - mh;    // 아래 끝이면 커서 위로
+      }
+      el.style.left = Math.min(Math.max(pad, left), Math.max(pad, vw - mw - pad)) + "px";
+      el.style.top = Math.min(Math.max(pad, top), Math.max(pad, vh - mh - pad)) + "px";
+    };
+    const render = (list, head) => {
+      el.textContent = "";
+      if (head && (head.title || head.sub)) {
+        const h = document.createElement("div");
+        h.className = "item-menu-head";
+        if (head.title) { const t = document.createElement("div"); t.className = "item-menu-title"; t.textContent = head.title; h.appendChild(t); }
+        if (head.sub) { const t = document.createElement("div"); t.className = "item-menu-sub"; t.textContent = head.sub; h.appendChild(t); }
+        el.appendChild(h);
+      }
+      list.forEach(en => {
+        if (en.sep) { const d = document.createElement("div"); d.className = "item-menu-sep"; d.setAttribute("role", "separator"); el.appendChild(d); return; }
+        if (en.note) { const d = document.createElement("div"); d.className = "item-menu-note"; d.textContent = en.note; el.appendChild(d); return; }
+        const b = document.createElement("button");
+        b.type = "button";
+        b.tabIndex = -1;
+        b.className = "item-menu-item" + (en.danger ? " is-danger" : "") + (en.current ? " is-current" : "");
+        b.setAttribute("role", en.radio ? "menuitemradio" : "menuitem");
+        if (en.radio) b.setAttribute("aria-checked", String(!!en.current));
+        if (en.submenu) b.setAttribute("aria-haspopup", "menu");
+        b.innerHTML = (en.dot ? `<span class="dot" aria-hidden="true" style="background:${en.dot};${en.dot === "transparent" ? "box-shadow:inset 0 0 0 1.5px var(--line);" : ""}"></span>` : (MI[en.icon] || ""))
+          + `<span class="lbl"></span>` + (en.current ? `<span class="chk" aria-hidden="true">✓</span>` : "");
+        b.querySelector(".lbl").textContent = en.label;
+        b.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (tooSoon()) return;
+          if (en.back) { en.back(); return; }
+          if (en.submenu) { // 같은 틀 안에서 선택 목록으로 바꿈(뒤로 가기 가능)
+            const parent = { list, head };
+            render([{ label: "뒤로", icon: "back", back: () => render(parent.list, parent.head) }, { sep: true }, ...en.submenu()],
+              { title: en.label, sub: head?.title || "" });
+            return;
+          }
+          closeItemMenu({ restoreFocus: true }); // 먼저 ⋯로 포커스를 돌려두면, 편집창을 열 때 창이 그 버튼을 "연 곳"으로 기억함
+          runMenuEntry(en, key);
+        });
+        el.appendChild(b);
+      });
+      place();
+      enabledItems()[0]?.focus({ preventScroll: true });
+    };
+
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeItemMenu({ restoreFocus: true }); return; }
+      if (!el.contains(document.activeElement)) return;
+      const list = enabledItems();
+      const i = list.indexOf(document.activeElement);
+      if (e.key === "ArrowDown") { e.preventDefault(); list[(i + 1) % list.length]?.focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); list[(i - 1 + list.length) % list.length]?.focus(); }
+      else if (e.key === "Home") { e.preventDefault(); list[0]?.focus(); }
+      else if (e.key === "End") { e.preventDefault(); list[list.length - 1]?.focus(); }
+      else if (e.key === "Tab") { e.preventDefault(); closeItemMenu({ restoreFocus: true }); }
+    };
+    const onDown = (e) => {
+      if (el.contains(e.target) || e.target === backdrop) return; // 시트 배경은 아래 click에서 처리
+      if (opener && opener.contains(e.target)) return; // 같은 ⋯를 다시 누르면 click에서 닫음(토글)
+      closeItemMenu();
+    };
+    const onBackdropClick = (e) => { e.preventDefault(); e.stopPropagation(); if (!tooSoon()) closeItemMenu({ restoreFocus: true }); };
+    const onResize = () => closeItemMenu();
+    // 스크롤로 항목이 실제로 움직였을 때만 닫음(창 전체 또는 그 항목을 품은 스크롤 영역). 열린 직후 도착하는 스크롤은 무시.
+    const onScroll = (e) => {
+      if (sheet || el.contains(e.target) || Date.now() - openedAt < 250) return;
+      const t = e.target;
+      if (t === document || t === document.documentElement || !opener || (t.contains && t.contains(opener))) closeItemMenu();
+    };
+    document.addEventListener("keydown", onKey, true);
+    document.addEventListener("pointerdown", onDown, true);
+    backdrop?.addEventListener("click", onBackdropClick);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onScroll, true);
+    itemMenu = {
+      el, backdrop, opener, key,
+      cleanup: () => {
+        document.removeEventListener("keydown", onKey, true);
+        document.removeEventListener("pointerdown", onDown, true);
+        backdrop?.removeEventListener("click", onBackdropClick);
+        window.removeEventListener("resize", onResize);
+        window.removeEventListener("scroll", onScroll, true);
+      },
+    };
+    render(entries, { title, sub });
+  }
+  // 편집창을 여는 줄은 포커스를 그 창에 맡기고, 그 밖의 줄은 처리 후 다시 그려진 같은 항목의 ⋯로 포커스를 되돌림
+  async function runMenuEntry(en, key) {
+    try { await en.run?.(); }
+    catch (err) { alert("처리하지 못했어요: " + (err?.message || err)); }
+    if (en.window || !key) return;
+    setTimeout(() => {
+      const a = document.activeElement;
+      if (!a || a === document.body || !document.body.contains(a) || !a.getClientRects().length) focusMenuReturn(null, key);
+    }, 400);
+  }
+  function openItemMenu({ kind, id, date = null, x = null, y = null, opener = null, viaTouch = false }) {
+    const model = itemMenuModel(kind, id, date || null);
+    if (!model) return;
+    openMenuShell({ title: model.title, sub: model.sub, entries: model.entries, x, y, opener, key: { kind, id, date: date || "" }, viaTouch });
+  }
+
+  // 빈 곳 오른쪽 클릭 "할일 추가 / 습관 추가 / 일정 추가" — 집은 그 자리 빠른 입력(onPick), 다른 탭은 각 추가 창(openAddWindowFor)
+  function showAddKindMenu(x, y, onPick) {
+    const viaTouch = lastPointerType === "touch" || lastPointerType === "pen";
+    openMenuShell({
+      entries: [["todo", "할일 추가"], ["habit", "습관 추가"], ["event", "일정 추가"]]
+        .map(([kind, label]) => ({ label, icon: "plus", window: true, run: () => onPick(kind) })),
+      x, y, viaTouch,
     });
-    attachCtxMenuOutsideClose(menu);
+  }
+  function openAddWindowFor(kind, dateStr) {
+    const opener = activeOpener();
+    if (kind === "event") openEventEditor({ mode: "add", date: dateStr, opener });
+    else if (kind === "todo") openTodoSheet(null, { startDate: dateStr });
+    else openHabitAddSheet(opener, { startDate: dateStr });
   }
 
-  // 언젠가 항목 전용 오른쪽 클릭 메뉴 — 날짜변경/전환/복제는 해당 없어서(언젠가는 그 자체가 "날짜 없음" 상태) 그룹변경·삭제만 제공.
-  function showSomedayItemMenu(x, y, id) {
-    document.querySelector(".ctx-menu")?.remove();
-    const menu = document.createElement("div");
-    menu.className = "ctx-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
-    menu.innerHTML = `
-      <button type="button" class="default" data-act="tag">그룹 변경</button>
-      <button type="button" data-act="delete">삭제</button>
-    `;
-    document.body.appendChild(menu);
-    positionCtxMenu(menu, x, y);
-    menu.querySelector('[data-act="tag"]').onclick = (e) => {
-      e.stopPropagation(); menu.remove();
-      showItemTagPicker(x, y, "someday", id);
-    };
-    menu.querySelector('[data-act="delete"]').onclick = async (e) => {
-      e.stopPropagation(); menu.remove();
-      const item = somedayItems.find(s => s.id === id);
-      if (!confirm(`"${item?.title || "이 항목"}"을(를) 삭제할까요?`)) return;
-      const { error } = await sb.from("tok_someday").delete().eq("id", id);
-      if (error) { alert("삭제 실패: " + error.message); return; }
-      await loadAll();
-    };
-    attachCtxMenuOutsideClose(menu);
+  // 문서 전체 위임 — 화면마다 따로 연결하지 않으므로 다시 그려도 메뉴 동작이 달라지지 않음.
+  let lastPointerType = "mouse";
+  document.addEventListener("pointerdown", (e) => { lastPointerType = e.pointerType || "mouse"; }, true);
+  // ⋯ 버튼을 누를 때 줄의 드래그·인라인 이름 수정·상세 열기·체크가 함께 실행되지 않게 여기서 전파를 멈춤
+  ["pointerdown", "pointerup", "mousedown", "mouseup", "touchstart", "touchend", "dblclick"].forEach(type => {
+    document.addEventListener(type, (e) => { if (e.target.closest?.(".item-more")) e.stopPropagation(); }, true);
+  });
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest?.(".item-more");
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (itemMenu && itemMenu.opener === btn) { closeItemMenu({ restoreFocus: true }); return; }
+    const row = btn.closest("[data-menu-kind]");
+    if (!row) return;
+    openItemMenu({ kind: row.dataset.menuKind, id: row.dataset.menuId, date: row.dataset.menuDate || null, opener: btn });
+  }, true);
+  // 입력창(글자 편집)의 기본 오른쪽 클릭 메뉴는 가로채지 않음
+  function isTextEditTarget(t) {
+    return !!t.closest?.('textarea, select, [contenteditable=""], [contenteditable="true"], input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"])');
   }
+  document.addEventListener("contextmenu", (e) => {
+    if (e.defaultPrevented || isTextEditTarget(e.target)) return;
+    if (e.target.closest(".item-menu, .item-menu-backdrop, .sheet-bg.open")) return;
+    const row = e.target.closest("[data-menu-kind]");
+    const viaTouch = lastPointerType === "touch" || lastPointerType === "pen";
+    if (row) {
+      e.preventDefault();
+      // 모바일 길게 누르기는 필수 진입 방식이 아님 — 집 화면에선 길게 누르기가 드래그라서 메뉴는 ⋯로만 엶
+      if (viaTouch && row.closest('[data-page="home"]')) return;
+      const byKeyboard = e.button !== 2 && e.clientX === 0 && e.clientY === 0; // 메뉴 키·Shift+F10
+      const opener = row.querySelector(".item-more") || row.closest(".cal-cell") || null;
+      openItemMenu({
+        kind: row.dataset.menuKind, id: row.dataset.menuId, date: row.dataset.menuDate || null,
+        x: byKeyboard ? null : e.clientX, y: byKeyboard ? null : e.clientY, opener, viaTouch,
+      });
+      return;
+    }
+    // 집 밖의 탭 빈 곳 → 추가 종류 메뉴 → 각 추가 창(빠른 입력은 집에서만)
+    const page = e.target.closest(".page[data-page]");
+    const pageName = page?.dataset.page;
+    if (!page || !["schedule", "todos", "habits"].includes(pageName)) return;
+    if (e.target.closest('button, a, input, select, textarea, label, [role="button"]:not(.cal-cell)')) return;
+    e.preventDefault();
+    let dateStr = todayStr();
+    if (pageName === "schedule") {
+      dateStr = e.target.closest(".cal-cell[data-date]")?.dataset.date
+        || e.target.closest(".day-group[data-date]")?.dataset.date
+        || (scheduleMode === "calendar" ? calSelected : schedDefaultAddDate());
+    }
+    showAddKindMenu(e.clientX, e.clientY, (kind) => openAddWindowFor(kind, dateStr));
+  });
 
   // 날짜/시간/반복 변경 시트: 습관은 날짜 개념이 없어 시간+반복만, 할일·일정은 날짜(+할일은 종료일)+시간만 보여줌
   function openItemDateSheet(kind, id) {
@@ -6667,7 +7023,16 @@
     const bg = $("itemDateSheetBg");
     bg.dataset.kind = kind;
     bg.dataset.editId = id;
-    $("idt_title").textContent = (kind === "habit" ? "습관" : kind === "todo" ? "할일" : "일정") + " 날짜/시간 변경";
+    itemDateSheetOpener = activeOpener();
+    $("idt_title").textContent = kind === "todo" ? "할일 날짜 변경" : kind === "event" ? "일정 날짜·시간 변경" : "습관 날짜/시간 변경";
+    // 반복 항목은 실제로 바뀌는 범위를 창에서 바로 알려줌(할일 = 회차마다 한 행, 일정 = 반복 전체가 한 행)
+    const hint = kind === "todo" && item.repeat_unit
+      ? "반복 할일은 이 회차의 날짜만 바뀌어요. 다음 회차는 바꾼 날짜를 기준으로 만들어지고, 지난 회차 기록은 그대로예요."
+      : kind === "event" && item.repeat_unit
+      ? "반복 일정은 한 건으로 저장돼 있어서, 날짜를 바꾸면 앞으로의 반복도 바꾼 날짜 기준으로 이어져요."
+      : "";
+    $("idt_hint").textContent = hint;
+    $("idt_hint").hidden = !hint;
     $("idt_date_row").style.display = "flex"; // 습관·할일·일정 전부 시작/종료일 있음
     $("idt_end_wrap").style.display = "block";
     $("idt_repeat_row").style.display = "flex"; // 습관·할일·일정 전부 반복 설정 가능
@@ -6696,8 +7061,20 @@
       $("idt_time").value = item.start_minute != null ? minutesToHHMM(item.start_minute) : "";
     }
     bg.classList.add("open");
+    $("idt_date").focus();
   }
-  $("idt_cancel").onclick = () => $("itemDateSheetBg").classList.remove("open");
+  let itemDateSheetOpener = null;
+  function closeItemDateSheet() {
+    $("itemDateSheetBg").classList.remove("open");
+    const o = itemDateSheetOpener;
+    itemDateSheetOpener = null;
+    if (o && document.body.contains(o) && o.getClientRects().length) o.focus({ preventScroll: true });
+  }
+  $("idt_cancel").onclick = closeItemDateSheet;
+  $("itemDateSheetBg").addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); closeItemDateSheet(); return; }
+    trapFocusIn($("itemDateSheetBg").querySelector(".sheet"), e);
+  });
   $("idt_save").onclick = async () => {
     const bg = $("itemDateSheetBg");
     const kind = bg.dataset.kind, id = bg.dataset.editId;
@@ -6734,7 +7111,7 @@
     const table = kind === "habit" ? "tok_habits" : kind === "todo" ? "tok_todos" : "tok_events";
     const { error } = await sb.from(table).update(patch).eq("id", id);
     if (error) { alert("저장 실패: " + error.message); return; }
-    bg.classList.remove("open");
+    closeItemDateSheet();
     await loadAll();
   };
 
