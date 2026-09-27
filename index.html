@@ -208,9 +208,29 @@
   .task-row.dragging{opacity:.5;touch-action:none;}
   /* 마지막 줄 바로 아래 빈 공간이 클릭해서 추가하는 영역. 09-24(지피티 논의 반영): 처음 보는 사람도
      알 수 있게 "＋ 눌러서 추가해요" 보조 문구를 항상 보여줌(예전엔 호버 시에만 티 났음). 너무 연하면
-     놓치니까 --sub 색(보조 문구 톤)으로. PC에선 마우스 올리면 배경+테두리로 한 번 더 강조. */
+     놓치니까 --sub 색(보조 문구 톤)으로. PC에선 마우스 올리면 배경+테두리로 한 번 더 강조.
+     → 2026-09-28 공통 빈칸은 아래 .add-slot 규칙으로 바뀜(평소 문구 최소화, 호버·포커스 때 안내). */
   .block-add-row{min-height:16px;padding:8px 6px;cursor:pointer;border-radius:8px;font-size:12px;color:var(--sub);border:1px solid transparent;text-align:center;} /* 09-24: "＋ 눌러서 추가해요"도 빈 상태 문구(.agenda-empty-block)처럼 가운데 정렬(결님 요청) */
   .block-add-row:hover{background:var(--accent-soft);color:var(--accent-text);border-color:var(--accent);}
+  /* 2026-09-28 공통 추가 빈칸(.add-slot, addSlotHtml) — 평소엔 "계획이 없어요"(빈 목록)만 / 항목 아래 줄은 문구 없음.
+     PC(마우스) 호버·키보드 포커스 때 은은한 테두리 + "눌러서 추가해요". 두 문구를 같은 격자 칸에 겹치고 투명도만 바꿔
+     높이·주변 위치가 변하지 않음(테두리는 늘 1px 투명 → 색만 바뀜). 호버 규칙은 (hover:hover)+(pointer:fine) 기기에만
+     걸어서 모바일 첫 탭이 호버 표시로 소비되지 않고 바로 추가됨. 모바일 항목 아래 줄은 "눌러서 추가해요"를 작게 늘 표시. */
+  .block-add-row.add-slot, .home2-grid .block-add-row.add-slot{display:grid;place-items:center;border:1px solid transparent;background:transparent;color:var(--sub);transition:border-color .15s, background-color .15s;}
+  .block-add-row.add-slot:hover{background:transparent;border-color:transparent;color:var(--sub);}
+  .add-slot > span{grid-area:1 / 1;transition:opacity .12s;pointer-events:none;}
+  .add-slot .add-slot-hint{opacity:0;color:var(--accent-text);}
+  .block-add-row.add-slot:focus-visible{outline:none;border-color:color-mix(in srgb, var(--accent) 55%, var(--line));background:color-mix(in srgb, var(--accent) 6%, transparent);}
+  .add-slot:focus-visible .add-slot-idle{opacity:0;}
+  .add-slot:focus-visible .add-slot-hint{opacity:1;}
+  @media (hover:hover) and (pointer:fine){
+    .block-add-row.add-slot:hover{border-color:color-mix(in srgb, var(--accent) 40%, var(--line));background:color-mix(in srgb, var(--accent) 5%, transparent);}
+    .add-slot:hover .add-slot-idle{opacity:0;}
+    .add-slot:hover .add-slot-hint{opacity:1;}
+  }
+  @media (hover:none), (pointer:coarse){
+    .add-slot:not(.is-empty) .add-slot-hint{opacity:1;font-size:11.5px;color:var(--sub);}
+  }
   /* 09-24 — 빈칸 추가 입력창(openAddInput) 옆 "추가" 버튼. 종류는 입력창을 열기 전 메뉴(showAddKindMenu)에서 고름. */
   .inline-add-wrap .addkind-submit{padding:4px 10px;border:none;border-radius:6px;background:var(--accent);color:var(--accent-on);font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:inherit;}
   .card.drop-target{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft);}
@@ -3153,8 +3173,8 @@
       // 비어있을 땐 안내문구 자체가 곧 클릭해서 추가하는 빈칸(안내문+추가버튼 따로 안 두고 하나로 합침),
       // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙여서 더 추가할 수 있게 함.
       const bodyHtml = rows.length
-        ? rows.join("") + `<div class="block-add-row" data-alladd="${dateStr}">＋ 눌러서 추가해요</div>`
-        : `<div class="agenda-empty-block block-add-row" data-alladd="${dateStr}">＋ 계획이 없어요. 눌러서 추가해요</div>`;
+        ? rows.join("") + addSlotHtml(`data-alladd="${dateStr}"`, false)
+        : addSlotHtml(`data-alladd="${dateStr}"`, true);
       const isToday = dateStr === todayStr();
       const headHtml = dates.length > 1
         ? `<div class="ag-mday-col-head${isToday ? " is-today" : ""}">${formatDateShort(dateStr)}${isToday ? ` <span class="ag-today-tag">오늘</span>` : ""}</div>`
@@ -3188,6 +3208,22 @@
   // onCancel: 빈 값/Esc로 끝낼 때 원래 모습으로 되돌리는 재렌더. onReopen(kind): Enter로 저장한 뒤 같은 자리에
   // 같은 종류로 다음 입력창을 바로 다시 열 때(연속 입력 — 메뉴 없이) 호출.
   const ADD_KIND_PLACEHOLDER = { todo: "할일 이름", habit: "습관 이름", event: "일정 이름" };
+  // 2026-09-28 공통 추가 빈칸(하루종일·타임블럭·다가오는·언젠가). empty=true면 목록이 빈 상태의 큰 빈칸.
+  // 평소 문구: 빈 목록 "계획이 없어요" / 항목 아래 줄은 문구 없음. PC 마우스 호버·키보드 포커스 때만 은은한 테두리 +
+  // "눌러서 추가해요"로 바뀜(CSS .add-slot). 두 문구를 같은 칸에 겹쳐 두고 투명도만 바꿔서 높이·주변 위치가 안 움직임.
+  // 빈칸 전체가 버튼(role=button, tabindex=0) — 클릭·탭·Enter·Space 모두 각 영역의 기존 row.onclick(추가 동작)을 실행.
+  function addSlotHtml(dataAttrs, empty) {
+    const label = empty ? "계획이 없어요. 눌러서 추가해요" : "눌러서 추가해요";
+    return `<div class="${empty ? "agenda-empty-block " : ""}block-add-row add-slot${empty ? " is-empty" : ""}" ${dataAttrs} role="button" tabindex="0" aria-label="${label}">`
+      + `<span class="add-slot-idle" aria-hidden="true">${empty ? "계획이 없어요" : ""}</span>`
+      + `<span class="add-slot-hint" aria-hidden="true">눌러서 추가해요</span></div>`;
+  }
+  document.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && !e.isComposing && e.target.classList?.contains("add-slot")) {
+      e.preventDefault(); // Space로 페이지가 스크롤되지 않게
+      e.target.click();
+    }
+  });
   function openAddInput(mountEl, { kind = "todo", onCommit, onCancel, onReopen }) {
     const wrap = document.createElement("div");
     wrap.className = "inline-add-wrap";
@@ -3545,8 +3581,8 @@
         // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙임.
         // data-date: 이 블럭 카드가 어느 열(날짜) 소속인지(8-3단계, homeDropZone이 드롭 대상 날짜를 여기서 읽음).
         html += inBlock.length
-          ? `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}">${inBlock.map(it => agendaItemRowHtml(it, dateStr)).join("")}<div class="block-add-row" data-block-start="${block.start_minute}">＋ 눌러서 추가해요</div></div>`
-          : `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}"><div class="agenda-empty-block block-add-row" data-block-start="${block.start_minute}">＋ 계획이 없어요. 눌러서 추가해요</div></div>`;
+          ? `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}">${inBlock.map(it => agendaItemRowHtml(it, dateStr)).join("")}${addSlotHtml(`data-block-start="${block.start_minute}"`, false)}</div>`
+          : `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}">${addSlotHtml(`data-block-start="${block.start_minute}"`, true)}</div>`;
       });
       const uncovered = items.filter(it => !covered.has(it));
       if (uncovered.length) {
@@ -4668,8 +4704,8 @@
       }).join("");
 
       const addRowHtml = count
-        ? `<div class="block-add-row" data-upcomingadd="${dateStr}">＋ 눌러서 추가해요</div>`
-        : `<div class="agenda-empty-block block-add-row" data-upcomingadd="${dateStr}">＋ 계획이 없어요. 눌러서 추가해요</div>`;
+        ? addSlotHtml(`data-upcomingadd="${dateStr}"`, false)
+        : addSlotHtml(`data-upcomingadd="${dateStr}"`, true);
       // 2026-09-20 — 결님 요청으로 언젠가/목록/타임라인과 서로 드래그 이동 가능해짐: 날짜별 묶음을
       // .upcoming-day(data-date)로 감싸서 homeDropZone이 "이 날짜의 하루종일 항목"으로 인식하게 함.
       html += `<div class="upcoming-day" data-date="${dateStr}">
@@ -4864,10 +4900,10 @@
       ? `<button type="button" class="someday-more-row" data-somedaymore="1">${nextCount}개 더 보기</button><p class="someday-more-hint">아래로 한 번 더 스크롤하면 펼쳐져요</p>`
       : "";
     $("somedaySummaryList").innerHTML = items.length
-      ? rowsHtml + moreHtml + `<div class="block-add-row" data-somedayadd="1">＋ 눌러서 추가해요</div>`
+      ? rowsHtml + moreHtml + addSlotHtml(`data-somedayadd="1"`, false)
       : undone.length === 0
-        ? `<div class="agenda-empty-block block-add-row" data-somedayadd="1">＋ 계획이 없어요. 눌러서 추가해요</div>`
-        : `<div class="agenda-empty-block">이 그룹의 항목이 없어요.</div><div class="block-add-row" data-somedayadd="1">＋ 눌러서 추가해요</div>`;
+        ? addSlotHtml(`data-somedayadd="1"`, true)
+        : `<div class="agenda-empty-block">이 그룹의 항목이 없어요.</div>` + addSlotHtml(`data-somedayadd="1"`, false);
     document.querySelectorAll(".somedaysum-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
