@@ -332,7 +332,7 @@
   button.someday-more-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
   /* PC 전용 안내(모바일 ≤900px은 버튼으로만 펼치므로 숨김). 더 볼 게 있는 동안엔 바닥에서 휠이 페이지로 넘어가지 않게 함 */
   .someday-more-hint{margin:-4px 0 6px;text-align:center;font-size:12px;color:var(--sub);}
-  @media (max-width:900px){ .someday-more-hint{display:none;} }
+  @media (max-width:1100px){ .someday-more-hint{display:none;} }
   @media (min-width:901px){ #somedayZone.has-more{overscroll-behavior-y:contain;} }
   .someday-more-row:hover{text-decoration:underline;}
   .someday-row.done span{color:var(--sub);text-decoration:line-through;}
@@ -436,10 +436,7 @@
   .home2-tab:hover{color:var(--text);}
   .home2-tab.active{background:var(--card);color:var(--text);border-color:color-mix(in srgb, var(--accent) 40%, var(--line));font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.04);}
   .home2-tabpanel{min-width:0;}
-  /* 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간/타임라인) 높이에 맞추고, 언젠가·다가오는은
-     그 높이만큼 기본으로 펼쳐진 뒤 넘치는 분량만 내부 스크롤. #homeCol1의 실제 height는 JS(syncHomeCol1Height)가
-     2열 렌더 높이를 재서 매번 넣어줌 — 여기 CSS는 그 안에서 활성 탭패널이 남는 세로 공간을 꽉 채우고
-     목록 부분만 스크롤되도록 flex 구조만 잡아줌(2열 쪽 .home2-tabpanel은 건드리지 않음). */
+  /* 카드 안에서는 조작부를 남겨두고 목록 영역만 스크롤한다. */
   #homeCol1{overflow:hidden;}
   #homeCol1 .home2-tabpanel{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
   /* overflow-y:auto만 주면 CSS 스펙상 overflow-x도 자동으로 visible→auto로 바뀌어서(옆 축이 hidden이
@@ -1180,6 +1177,27 @@
     [data-theme="black"] #app .gc-title{color:oklch(from var(--gc) max(l, 0.75) c h);}
   }
   #app .done .gc-title, [data-theme="black"] #app .done .gc-title{color:var(--sub);text-decoration:line-through;}
+
+  /* 집 1단계: 화면 가용 높이 안의 독립된 세 목록. 낮거나 좁으면 자연스러운 세로 배치. */
+  .content:has(.page[data-page="home"]:not([style*="display: none"])){max-width:none;padding-bottom:20px;}
+  .home2-grid{grid-template-columns:minmax(0,3fr) minmax(0,4fr) minmax(0,3fr);gap:16px;align-items:stretch;}
+  .home2-grid.home-bounded{height:var(--home-height);}
+  .home2-grid .home2-col{min-height:0;}
+  .home2-grid .home2-tabpanel{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
+  .home2-grid .agenda-head,.home2-col-label,.home2-tabs,.someday-toolbar{flex-shrink:0;}
+  .home-date-reset{border:0;background:none;color:inherit;font:inherit;cursor:pointer;min-height:40px;padding:4px;overflow-wrap:anywhere;}
+  .home2-grid .agenda-date-wrap{min-width:0;text-align:center;}
+  .home-list-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;}
+  .home-bounded :is(.home-list-scroll,#homeTodayBlockWrap,#homeUpcomingList,#somedayZone){overscroll-behavior-y:contain;}
+  .home-bounded #homeLeftover{flex-shrink:0;max-height:30%;overflow:auto;}
+  .home-bounded #somedayHomeTagChips{max-height:100px;overflow-y:auto;flex-shrink:0;}
+  .home2-grid:not(.home-bounded) :is(.home2-tabpanel,.home-list-scroll,#homeTodayBlockWrap,#homeUpcomingList,#somedayZone){overflow:visible;flex:none;}
+  @media(max-width:1100px){
+    .home2-grid{grid-template-columns:minmax(0,1fr);}
+    #homeCol2{order:-1;}
+    .content:has(.page[data-page="home"]:not([style*="display: none"])){padding-bottom:calc(90px + env(safe-area-inset-bottom));}
+  }
+
 </style>
 </head>
 <body>
@@ -1250,25 +1268,11 @@
           <button type="button" class="close" id="homeHabitBannerClose">✕</button>
         </div>
 
-        <!-- 2026-09-20 1단계: 2열 카드 구조로 재설계. 1열=오늘/다가오는/언젠가 탭, 2열=타임라인/다가오는 탭.
-             1일/3일/7일 토글은 완전히 제거(집은 항상 "오늘"만). 기존 렌더 함수가 찾는 id는 그대로 유지한 채
-             DOM만 옮겨서(agendaAllDayZone·agendaTimeWrap→2열 타임라인 탭, somedayZone→1열 언젠가 탭)
-             renderHome()의 나머지 호출부는 손대지 않아도 그대로 동작함. -->
-        <!-- 09-24: 모바일 상단 "목록"/"타임라인·다가오는" 토글 버튼 제거(클릭해도 탭이 안 바뀌는
-             버그가 있었고, 결님 판단으로도 없어도 되는 카드라 삭제. 모바일에선 아래 .home2-grid가
-             그냥 1열로 쌓여서 목록/타임라인이 순서대로 보임). -->
-        <!-- 09-24 — 결님 요청으로 탭 재배치: 1열(보관함)은 "언젠가/다가오는" 2개로, 2열(실행공간)은
-             "타임라인/시간블럭" 2개로 재구성. 1열 옛 "목록"(오늘) 탭은 삭제하고, 그 안의 목록형/시간블럭형
-             하위 토글에서 시간블럭형 쪽만 남겨 2열 "시간블럭" 탭으로 승격(타임라인과 같은 homeAgendaDate를
-             공유하는 대안 보기 — 사용자가 편한 쪽을 골라 씀). "다가오는"은 2열→1열로 이동. id는 기존
-             homeList*/homeTodayBlock*/homeUpcoming* 그대로 재사용(코드 여러 곳에서 참조하는 식별자). -->
+        <!-- 집 1단계: 언젠가 / 지금, 한칸 / 다가오는. 기존 렌더 대상 ID를 보존한다. -->
         <div class="home2-grid">
           <div class="home2-col" id="homeCol1">
-            <div class="home2-col-label" role="heading" aria-level="2">담아두기</div>
-            <div class="home2-tabs" id="homeCol1Tabs">
-              <button type="button" class="home2-tab tab-someday active" data-col1tab="someday">언젠가</button>
-              <button type="button" class="home2-tab tab-upcoming" data-col1tab="upcoming">다가오는</button>
-            </div>
+            <div class="home2-col-label" role="heading" aria-level="2">언젠가</div>
+
 
             <div class="home2-tabpanel" data-col1panel="someday" id="homeSomedayPanel">
               <div class="someday-toolbar">
@@ -1280,16 +1284,7 @@
               </div>
             </div>
 
-            <div class="home2-tabpanel" data-col1panel="upcoming" id="homeUpcomingPanel" style="display:none;">
-              <!-- 2026-09-20 — 결님 요청으로 "다가오는"도 날짜 이동 가능해짐. 다른 탭들과 같은 homeAgendaDate를
-                   공유하되(연동), 이 탭의 이전/다음 버튼은 7일(한 주) 단위로 이동. -->
-              <div class="agenda-head">
-                <button id="homeUpcomingPrevBtn" class="agenda-nav" aria-label="이전 7일">‹</button>
-                <span class="agenda-date-wrap"><span id="homeUpcomingDateLabel" style="cursor:pointer;">다가오는 7일</span></span>
-                <button id="homeUpcomingNextBtn" class="agenda-nav" aria-label="다음 7일">›</button>
-              </div>
-              <div id="homeUpcomingList"></div>
-            </div>
+
           </div>
 
           <div class="home2-col" id="homeCol2">
@@ -1316,10 +1311,11 @@
                    버튼들의 클릭 핸들러는 1단계 때 지우지 않고 옵셔널 체이닝으로 남겨뒀던 걸 그대로 씀. -->
               <div class="agenda-head">
                 <button id="agendaPrevBtn" class="agenda-nav" aria-label="이전 날">‹</button>
-                <span class="agenda-date-wrap"><span id="agendaDateLabel" style="cursor:pointer;">오늘</span></span>
+                <span class="agenda-date-wrap"><button type="button" class="home-date-reset" id="agendaDateLabel" aria-label="오늘로 돌아가기">오늘</button></span>
                 <button id="agendaNextBtn" class="agenda-nav" aria-label="다음 날">›</button>
               </div>
 
+              <div id="homeTimelineScroll" class="home-list-scroll">
               <div class="ag-section-head" id="agendaAllDayHead" style="margin-top:10px;">
                 <span class="label"><span class="ag-dot" id="agendaAllDayHeadDot" style="background:#b98cf0;"></span>하루종일</span>
                 <span class="count" id="agendaAllDayCount" style="display:none;"></span>
@@ -1329,6 +1325,7 @@
               </div>
 
               <div id="agendaTimeWrap" style="margin-top:12px;"></div>
+              </div>
             </div>
 
             <div class="home2-tabpanel" data-col2panel="block" id="homeBlockPanel" style="display:none;">
@@ -1336,13 +1333,25 @@
                    "타임라인"과 공유). 목록형(flat list) 서브뷰는 결님 요청으로 완전히 삭제. -->
               <div class="agenda-head">
                 <button id="homeListPrevBtn" class="agenda-nav" aria-label="이전 날">‹</button>
-                <span class="agenda-date-wrap"><span id="homeListDateLabel" style="cursor:pointer;">오늘</span></span>
+                <span class="agenda-date-wrap"><button type="button" class="home-date-reset" id="homeListDateLabel" aria-label="오늘로 돌아가기">오늘</button></span>
                 <button id="homeListNextBtn" class="agenda-nav" aria-label="다음 날">›</button>
               </div>
               <div id="homeTodayBlockWrap">
                 <div id="homeTodayBlockAllDay"></div>
                 <div id="homeTodayBlockBody"></div>
               </div>
+            </div>
+          </div>
+          <div class="home2-col" id="homeCol3">
+            <div class="home2-col-label" role="heading" aria-level="2">다가오는</div>
+            <div class="home2-tabpanel" id="homeUpcomingPanel">
+
+              <div class="agenda-head">
+                <button id="homeUpcomingPrevBtn" class="agenda-nav" aria-label="이전 7일">‹</button>
+                <span class="agenda-date-wrap"><button type="button" class="home-date-reset" id="homeUpcomingDateLabel" aria-label="내일부터 7일로 돌아가기">다가오는 7일</button></span>
+                <button id="homeUpcomingNextBtn" class="agenda-nav" aria-label="다음 7일">›</button>
+              </div>
+              <div id="homeUpcomingList"></div>
             </div>
           </div>
         </div>
@@ -2148,7 +2157,7 @@
   // bottomAt = 목록 바닥에 도착한 시각(바닥이 아니면 null). 둘 다 이벤트 timeStamp(performance.now와 같은 시계).
   const somedayAutoMore = { bound: false, lastWheelAt: 0, bottomAt: null };
   const SOMEDAY_WHEEL_GAP_MS = 250; // 휠 입력이 이만큼 끊긴 뒤 들어온 입력 = "새 입력"(실제 휠·트랙패드 체감에 맞춰 조정할 값)
-  const homeSingleColMq = window.matchMedia("(max-width: 900px)"); // 집 화면 1열(모바일) 기준 — syncHomeCol1Height와 동일
+  const homeSingleColMq = window.matchMedia("(max-width: 1100px)"); // 집 화면 1열(모바일) 기준 — syncHomeViewportHeight와 동일
   let somedayHomeVisible = SOMEDAY_HOME_INITIAL; // 09-24: 결님 요청으로 기본 8→15개로 확대, "+더보기" 증가폭도 8→5개로 축소
   let somedayTabSort = "recent";
   let somedayTabFilterTag = null;
@@ -2510,36 +2519,30 @@
     }
   }
 
-  // 2026-09-20 — 결님 요청: 1열(할일 보관함) 높이를 2열(실행 공간) 실제 렌더 높이에 맞춤. 2열 높이는
-  // 날짜 이동·탭 전환·항목 추가삭제 등으로 계속 바뀌므로, 렌더 함수마다 일일이 동기화를 끼워넣는 대신
-  // ResizeObserver로 #homeCol2 자체의 렌더 크기 변화를 감시해서 자동 반영(모바일 1단 레이아웃 폭에선 끔 —
-  // 그땐 한쪽 열만 보이므로 높이를 맞출 필요가 없음, auto로 되돌림).
-  function syncHomeCol1Height() {
-    const col1 = $("homeCol1"), col2 = $("homeCol2");
-    if (!col1 || !col2) return;
-    if (window.matchMedia("(max-width: 900px)").matches) { col1.style.height = ""; return; }
-    const h = col2.getBoundingClientRect().height;
-    if (h > 0) col1.style.height = h + "px";
+  function syncHomeViewportHeight() {
+    const grid = document.querySelector('.home2-grid');
+    if (!grid || !grid.getClientRects().length) return;
+    const top = grid.getBoundingClientRect().top + window.scrollY;
+    const height = window.innerHeight - top - 20;
+    const bounded = !homeSingleColMq.matches && height >= 440;
+    const wasBounded = grid.classList.contains('home-bounded');
+    grid.classList.toggle('home-bounded', bounded);
+    grid.style.setProperty('--home-height', Math.max(440, height) + 'px');
+    if (bounded && !wasBounded) requestAnimationFrame(restoreHomeViewScroll);
   }
-  (function initHomeColHeightSync() {
-    const col2 = $("homeCol2");
-    if (!col2) return;
-    if (typeof ResizeObserver !== "undefined") {
-      new ResizeObserver(() => syncHomeCol1Height()).observe(col2);
-    }
-    window.addEventListener("resize", syncHomeCol1Height);
-  })();
+  window.addEventListener('resize', syncHomeViewportHeight);
+  new ResizeObserver(syncHomeViewportHeight).observe(document.querySelector('.page[data-page="home"]'));
 
   // ── 집 : 오늘 한눈에 보기(2026-09-05 재개편 — 다가오는 일정 카드 제거, 오늘 열에 습관도 통합) ──
   function renderHome() {
     renderAgendaAllDay();
     renderAgendaTimed();
     renderHomeTodayTab(); // 2열 "시간블럭" 탭 — homeAgendaDate 기준
-    renderHomeUpcomingList(); // 1열 "다가오는" 탭(날짜별 리스트, 09-24에 2열→1열로 이동)
+    renderHomeUpcomingList(); // 오른쪽 독립 7일 목록
     renderPlanUpcomingBoard();
     renderSomedaySummary();
     renderIncompleteBanner();
-    requestAnimationFrame(syncHomeCol1Height); // 위 렌더들 DOM 반영 뒤 1열 높이 재동기화
+    requestAnimationFrame(syncHomeViewportHeight); // 배너와 목록이 반영된 뒤 가용 높이 계산
   }
 
   // ── 집 화면 미완료 알림 배너(2026-09-13, 6단계 → 7-4단계에서 할일/습관 각각 따로 물어보는 배너 2개로 분리) ──
@@ -2608,6 +2611,8 @@
   }
 
   let homeAgendaDate = todayStr();
+  let homeUpcomingStart = addDaysStr(todayStr(), 1);
+  const homeRenderVersion = { allDay: 0, timed: 0, block: 0, upcoming: 0 };
   // 8-6단계: 타임블럭 보기를 없애고 타임라인 하나만 남겨서, "block"으로 바뀌는 경우가 이제 없음(토글 버튼 자체를 지움).
   // 그래도 renderAgendaTimed/renderAgendaAllDay 등 곳곳에서 이 값을 참조하므로 변수 자체는 남겨두고 "timeline"로 고정.
   let agendaView = "timeline"; // 항상 "timeline" — 오늘 열 전용(습관탭의 homeView와는 별개 상태)
@@ -3127,6 +3132,7 @@
   // "하루종일": 그 날짜에 걸친 할일(시간 없음) + 시간 없는 일정 + 시간 없는 습관
   // 8-3단계: homeAgendaDate 하루가 아니라 agendaWindowDates()가 계산한 N일(1/3/7)을 나란히(열) 그림.
   async function renderAgendaAllDay() {
+    const version = ++homeRenderVersion.allDay;
     renderLeftoverTodos(); // 날짜 이동·데이터 갱신 때마다 같이 갱신(오늘을 볼 때만 표시)
     const dates = agendaWindowDates();
     const dateLabelText = dates.length > 1
@@ -3155,6 +3161,7 @@
       const dayTodos = [...todos.filter(td => td.start_date === dateStr && !td.todo_time), ...overdueUntimed];
       const dayUntimedEvents = events.filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr && !e.event_time);
       const doneSet = await fetchLogsForDate(dateStr);
+      if (version !== homeRenderVersion.allDay) return;
       const untimedHabits = tasks.filter(t => t.is_active && t.start_minute == null && isHabitDueOnDate(t, dateStr, doneSet.has(t.id)));
 
       const rows = [
@@ -3320,6 +3327,37 @@
   //             "today-allday"(N일 중 특정 날짜, 시간 없음) / "today-timed"(N일 중 특정 날짜, 특정 시각)
   //   8-3단계: 하루종일/타임블럭/타임라인이 이제 여러 날짜 열로 나뉘어 있어서, "오늘"이 아니라 실제로 놓인
   //   열의 날짜(data-date)를 같이 돌려줌 — moveItemToZone이 homeAgendaDate 대신 이 date를 씀.
+  let homeDragFrame = 0, homeDragPointer = null;
+  function stopHomeEdgeScroll() {
+    cancelAnimationFrame(homeDragFrame); homeDragFrame = 0; homeDragPointer = null;
+  }
+  function scrollHomeDragEdge() {
+    homeDragFrame = 0;
+    if (!homeDragPointer || !document.querySelector('.home2-grid .dragging, .ag-drag-ghost')) return;
+    const { x, y, pointerId, pointerType } = homeDragPointer;
+    const hit = document.elementFromPoint(x, y);
+    const scroller = hit?.closest('#somedayZone, #homeUpcomingList, #homeTodayBlockWrap, #homeTimelineScroll');
+    if (scroller && document.querySelector('.home2-grid.home-bounded')) {
+      const r = scroller.getBoundingClientRect();
+      const delta = y < r.top + 44 ? -10 : y > r.bottom - 44 ? 10 : 0;
+      if (delta) {
+        const before = scroller.scrollTop;
+        scroller.scrollTop += delta;
+        if (scroller.scrollTop !== before) {
+          document.querySelector('.home2-grid .dragging')?.dispatchEvent(new PointerEvent('pointermove', { clientX: x, clientY: y, pointerId, pointerType }));
+        }
+      }
+    }
+    homeDragFrame = requestAnimationFrame(scrollHomeDragEdge);
+  }
+  document.addEventListener('pointermove', e => {
+    homeDragPointer = { x: e.clientX, y: e.clientY, pointerId: e.pointerId, pointerType: e.pointerType };
+    if (!homeDragFrame) homeDragFrame = requestAnimationFrame(scrollHomeDragEdge);
+  });
+  document.addEventListener('pointerup', stopHomeEdgeScroll);
+  document.addEventListener('pointercancel', stopHomeEdgeScroll);
+  window.addEventListener('blur', stopHomeEdgeScroll);
+
   function homeDropZone(x, y) {
     const el = document.elementFromPoint(x, y);
     if (!el) return null;
@@ -3506,6 +3544,8 @@
   // 각 열은 독립된 컨테이너(.ag-col-body)를 가지므로, 아래 render/attach 함수들은 전부 "어느 날짜/어느 컨테이너"인지
   // 인자로 받도록 일반화함(같은 셀렉터를 열마다 반복 조회해서 이벤트 리스너가 중복으로 쌓이는 걸 막기 위함).
   async function renderAgendaTimed() {
+    const version = ++homeRenderVersion.timed;
+    beginHomeScrollRender("timeline");
     const dates = agendaWindowDates();
     const colCls = agendaView === "timeline" ? "ag-tl-col" : "ag-block-col";
     const colsHtml = dates.map(dateStr => {
@@ -3520,8 +3560,11 @@
       const bodyEl = document.querySelector(`#agendaTimeWrap .ag-col-body[data-date="${dateStr}"]`);
       if (!bodyEl) continue;
       const items = await timedItemsForDate(dateStr);
+      if (version !== homeRenderVersion.timed) return;
       if (agendaView === "timeline") renderAgendaTimeline(items, dateStr, bodyEl);
       else renderAgendaBlocks(items, dateStr, bodyEl);
+      homeScrollRendering.timeline = false;
+      if (homeView === "timeline") requestAnimationFrame(restoreHomeViewScroll);
     }
   }
 
@@ -3889,6 +3932,8 @@
   // 따로 붙임(todayAllDayItems + homeTodayRowHtml 재사용, 옛 #agendaAllDayZone의 "하루종일" 라벨/점 색과
   // 동일한 스타일).
   async function renderHomeTodayBlock() {
+    const version = ++homeRenderVersion.block;
+    beginHomeScrollRender("block");
     const dateStr = homeAgendaDate; // 2026-09-20: "목록" 탭이 타임라인과 날짜를 공유하게 됨(예전엔 항상 todayStr())
 
     // 2026-09-28 '하루종일'은 시간블럭 맨 위 고정 영역 — 항목이 없어도 늘 표시(예전엔 비면 통째로 숨김).
@@ -3897,6 +3942,7 @@
     const allDayEl = $("homeTodayBlockAllDay");
     if (allDayEl) {
       const allDayItems = await todayAllDayItems(dateStr);
+      if (version !== homeRenderVersion.block) return;
       allDayEl.innerHTML = `<div class="ag-section-head"><span class="label"><span class="ag-dot" style="background:${agBlockStyle("하루종일").dot};"></span>하루종일</span></div>
            <div class="agenda-flat">${allDayItems.map(it => homeTodayRowHtml(it, dateStr)).join("")}${addSlotHtml(`data-blockallday="${dateStr}"`, !allDayItems.length)}</div>`;
       wireHomeTodayChecks(allDayEl);
@@ -3907,10 +3953,13 @@
     const containerEl = $("homeTodayBlockBody");
     if (!containerEl) return;
     const items = await timedItemsForDate(dateStr);
+    if (version !== homeRenderVersion.block) return;
     renderAgendaBlocks(items, dateStr, containerEl, renderHomeTodayBlock, () => $("homeTodayBlockBody"));
     // renderAgendaBlocks 내부가 wireAgendaHabitChecks로 옛 재렌더 대상(#agendaTimeWrap)에 먼저 연결해두므로,
     // 여기서 이 탭을 아는 핸들러로 덮어씀(onchange 직접 대입이라 뒤에 건 게 이김 — 중복 리스너 걱정 없음).
     wireHomeTodayChecks(containerEl);
+    homeScrollRendering.block = false;
+    if (homeView === "block") requestAnimationFrame(restoreHomeViewScroll);
   }
 
   // 시간블럭 탭 '하루종일' 빈칸 → 왼쪽 클릭·탭·Enter = 시간 없는 할일 입력창, 오른쪽 클릭 = 종류 메뉴(일정/할일/습관).
@@ -4077,6 +4126,8 @@
 
       let dragKind = null, startY = 0, moved = false, cancelled = false, pressed = false, edgeAtStart = null, isMouse = false;
       let longPressTimer = null;
+      let startScrollTop = 0;
+      const timelineScroller = task.closest("#homeTimelineScroll");
       let pendingStart = origStart, pendingDuration = origDuration;
       let outsideZone = null, outsideEl = null; // 이동 중 하루종일/다가오는계획/언젠가 쪽 위에 올라갔는지(놓으면 그쪽으로 옮김)
 
@@ -4135,6 +4186,7 @@
         moved = false; cancelled = false;
         pendingStart = origStart; pendingDuration = origDuration;
         startY = e.clientY;
+        startScrollTop = timelineScroller?.scrollTop || 0;
         edgeAtStart = zoneAt(e.clientY);
         dragKind = null;
         isMouse = e.pointerType === "mouse";
@@ -4159,7 +4211,7 @@
           task.style.cursor = zone ? "ns-resize" : "";
           return;
         }
-        const dy = e.clientY - startY;
+        const dy = e.clientY - startY + (timelineScroller?.scrollTop || 0) - startScrollTop;
         if (dragKind === null) {
           if (cancelled) return;
           const moveThreshold = isMouse ? 3 : 6;
@@ -4411,14 +4463,12 @@
   // 2026-09-20 추가 — 결님 요청으로 1열 "목록" 탭도 이 homeAgendaDate를 그대로 같이 씀(연동): 아래 두
   // 헬퍼로 공용화해서 2열 타임라인 버튼(agendaPrevBtn 등)과 1열 목록 버튼(homeListPrevBtn 등) 모두가
   // 같은 함수를 호출 — 날짜를 어느 쪽에서 옮기든 두 열이 같이 움직이고, renderHomeTodayTab()도 매번 같이 불림.
-  // 2026-09-20 추가 — "다가오는" 탭도 결님 요청으로 homeAgendaDate에 연동(같이 움직임), 단 이 탭 자체의
-  // 이전/다음 버튼(homeUpcomingPrevBtn/NextBtn)은 한 번에 7일씩 이동(다른 두 탭은 1일씩).
+  // 다가오는 7일 탐색은 가운데 선택 날짜와 독립적이다.
   function goAgendaDate(stepDays) {
     homeAgendaDate = addDaysStr(homeAgendaDate, stepDays * agendaDayCount);
     renderAgendaAllDay();
     renderAgendaTimed();
     renderHomeTodayTab();
-    renderHomeUpcomingList();
   }
   function resetAgendaDateToToday() {
     if (homeAgendaDate === todayStr()) return;
@@ -4426,13 +4476,20 @@
     renderAgendaAllDay();
     renderAgendaTimed();
     renderHomeTodayTab();
-    renderHomeUpcomingList();
   }
   ["agendaPrevBtn", "homeListPrevBtn"].forEach(id => $(id)?.addEventListener("click", () => goAgendaDate(-1)));
   ["agendaNextBtn", "homeListNextBtn"].forEach(id => $(id)?.addEventListener("click", () => goAgendaDate(1)));
-  ["homeUpcomingPrevBtn"].forEach(id => $(id)?.addEventListener("click", () => goAgendaDate(-7)));
-  ["homeUpcomingNextBtn"].forEach(id => $(id)?.addEventListener("click", () => goAgendaDate(7)));
-  ["agendaDateLabel", "homeListDateLabel", "homeUpcomingDateLabel", "agendaTodayBtn"].forEach(id => $(id)?.addEventListener("click", resetAgendaDateToToday));
+  ["homeUpcomingPrevBtn"].forEach(id => $(id)?.addEventListener("click", () => goHomeUpcoming(-7)));
+  ["homeUpcomingNextBtn"].forEach(id => $(id)?.addEventListener("click", () => goHomeUpcoming(7)));
+  ["agendaDateLabel", "homeListDateLabel", "agendaTodayBtn"].forEach(id => $(id)?.addEventListener("click", resetAgendaDateToToday));
+  function goHomeUpcoming(days) {
+    homeUpcomingStart = addDaysStr(homeUpcomingStart, days);
+    renderHomeUpcomingList();
+  }
+  $('homeUpcomingDateLabel').onclick = () => {
+    homeUpcomingStart = addDaysStr(todayStr(), 1);
+    renderHomeUpcomingList();
+  };
   document.querySelectorAll("#agendaDayCountToggle button[data-days]").forEach(btn => {
     btn.onclick = () => {
       agendaDayCount = parseInt(btn.dataset.days, 10);
@@ -4442,22 +4499,52 @@
     };
   });
 
-  // ── 집 : 2열 탭 구조(2026-09-20 1단계) — 1열 오늘/다가오는/언젠가, 2열 타임라인/포커스 전환.
-  // 지금은 탭 보이기/숨기기만 담당하는 뼈대이고, 각 탭의 실제 내용은 2~5단계에서 채워짐. ──
-  function switchHomeCol1Tab(tab) {
-    document.querySelectorAll("#homeCol1Tabs .home2-tab").forEach(btn => btn.classList.toggle("active", btn.dataset.col1tab === tab));
-    document.querySelectorAll("#homeCol1 > .home2-tabpanel").forEach(p => { p.style.display = p.dataset.col1panel === tab ? "" : "none"; });
+  // 집 가운데 보기 선택과 보기별 스크롤 위치. 저장이 막힌 환경에서는 메모리만 사용한다.
+  let homeView = 'timeline';
+  const homeViewScroll = { timeline: 0, block: 0 };
+  const homeScrollReady = { timeline: false, block: false };
+  const homeScrollRendering = { timeline: false, block: false };
+  function beginHomeScrollRender(tab) {
+    if (homeScrollReady[tab] && homeView === tab && document.querySelector('.home2-grid.home-bounded')) homeViewScroll[tab] = homeScroller(tab).scrollTop;
+    homeScrollReady[tab] = false;
+    homeScrollRendering[tab] = true;
   }
-  document.querySelectorAll("#homeCol1Tabs .home2-tab").forEach(btn => {
-    btn.onclick = () => switchHomeCol1Tab(btn.dataset.col1tab);
-  });
-  function switchHomeCol2Tab(tab) {
-    document.querySelectorAll("#homeCol2Tabs .home2-tab").forEach(btn => btn.classList.toggle("active", btn.dataset.col2tab === tab));
-    document.querySelectorAll("#homeCol2 > .home2-tabpanel").forEach(p => { p.style.display = p.dataset.col2panel === tab ? "" : "none"; });
+  function restoreHomeViewScroll() {
+    if (homeScrollRendering[homeView] || !document.querySelector('.home2-grid.home-bounded')) return;
+    const el = homeScroller(homeView);
+    if (!el.scrollHeight || !el.querySelector('.add-slot, .ag-tl-grid')) return;
+    el.scrollTop = homeViewScroll[homeView];
+    homeScrollReady[homeView] = true;
   }
-  document.querySelectorAll("#homeCol2Tabs .home2-tab").forEach(btn => {
+  const homeScroller = tab => $(tab === 'block' ? 'homeTodayBlockWrap' : 'homeTimelineScroll');
+  try {
+    homeView = localStorage.getItem('tok_home_view') === 'block' ? 'block' : 'timeline';
+    const saved = JSON.parse(sessionStorage.getItem('tok_home_scroll') || '{}');
+    for (const tab of ['timeline', 'block']) homeViewScroll[tab] = Math.max(0, Number(saved[tab]) || 0);
+  } catch (_) {}
+  function switchHomeCol2Tab(tab, initial = false) {
+    if (!['timeline', 'block'].includes(tab)) return;
+    if (!initial && homeScrollReady[homeView] && document.querySelector('.home2-grid.home-bounded')) homeViewScroll[homeView] = homeScroller(homeView).scrollTop;
+    homeView = tab;
+    document.querySelectorAll('#homeCol2Tabs .home2-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.col2tab === tab);
+      btn.setAttribute('aria-pressed', String(btn.dataset.col2tab === tab));
+    });
+    document.querySelectorAll('#homeCol2 > .home2-tabpanel').forEach(p => { p.style.display = p.dataset.col2panel === tab ? '' : 'none'; });
+    try { localStorage.setItem('tok_home_view', tab); } catch (_) {}
+    requestAnimationFrame(restoreHomeViewScroll);
+  }
+  for (const tab of ['timeline', 'block']) {
+    homeScroller(tab).addEventListener('scroll', () => {
+      if (homeView !== tab || !homeScrollReady[tab] || !document.querySelector('.home2-grid.home-bounded')) return;
+      homeViewScroll[tab] = homeScroller(tab).scrollTop;
+      try { sessionStorage.setItem('tok_home_scroll', JSON.stringify(homeViewScroll)); } catch (_) {}
+    }, { passive: true });
+  }
+  document.querySelectorAll('#homeCol2Tabs .home2-tab').forEach(btn => {
     btn.onclick = () => switchHomeCol2Tab(btn.dataset.col2tab);
   });
+  switchHomeCol2Tab(homeView, true);
 
   // 09-24: 모바일 상단 "목록"/"타임라인·다가오는" 토글 제거 — switchHomeMobileCol 등 관련 로직 삭제.
   // (원래도 CSS 소스 순서 버그로 클릭해도 탭이 안 바뀌었고, 모바일에선 .home2-grid가 1열로 쌓여
@@ -4678,24 +4765,26 @@
   // 7일, 일정+할일+습관)을 그대로 재사용하되, 7일 카드보드 대신 항목이 있는 날짜만 위에서 아래로 나열하는
   // 날짜별 리스트로 다시 그림. #planUpcomingBoard(7일 카드보드) 자체와 그 드래그 로직은 이제 아무 데서도
   // 안 쓰이지만 건드리지 않고 그대로 둠(위 renderPlanUpcomingBoard가 이미 no-op 가드로 조용히 종료됨).
-  // 드래그 핸들·타임라인 드롭 연동은 4단계에서 붙임 — 지금은 체크·완료/제목 클릭 수정/우클릭 메뉴만 됨.
+  // 기존 체크·수정·메뉴와 행 드래그 연결을 그대로 재사용한다.
   async function renderHomeUpcomingList() {
+    const version = ++homeRenderVersion.upcoming;
     const containerEl = $("homeUpcomingList");
     if (!containerEl) return;
-    // 2026-09-20 — 결님 요청으로 "다가오는"도 날짜 이동 가능해짐(homeAgendaDate 연동, 이전/다음은 7일씩).
-    // 창 범위는 항상 homeAgendaDate 기준 +1일~+7일.
+    // 가운데 날짜와 독립된 7일 창.
+    const rangeStart = homeUpcomingStart;
     const days = [];
-    for (let i = 1; i <= 7; i++) days.push(addDaysStr(homeAgendaDate, i));
+    for (let i = 0; i < 7; i++) days.push(addDaysStr(rangeStart, i));
     const dateLabelEl = $("homeUpcomingDateLabel");
     if (dateLabelEl) dateLabelEl.textContent = `${formatDateShort(days[0])} ~ ${formatDateShort(days[days.length - 1])}`;
 
     const { data: logData } = await sb.from("tok_habit_logs").select("habit_id, done_date").in("done_date", days);
+    if (version !== homeRenderVersion.upcoming) return;
     const logsByDate = {};
     days.forEach(d => { logsByDate[d] = new Set(); });
     (logData || []).forEach(r => { if (logsByDate[r.done_date]) logsByDate[r.done_date].add(r.habit_id); });
 
     const active = tasks.filter(t => t.is_active);
-    const habitNextDate = new Map(active.map(t => [t.id, t.repeat_unit ? habitNextDueAfter(t, homeAgendaDate) : null]));
+    const habitNextDate = new Map(active.map(t => [t.id, t.repeat_unit ? habitNextDueAfter(t, addDaysStr(rangeStart, -1)) : null]));
 
     let html = "";
     days.forEach(dateStr => {
@@ -4915,8 +5004,8 @@
 
   // "언젠가" 열: 정렬/그룹필터 적용 후 일정 개수(somedayHomeVisible, 09-24부터 기본 15)까지만 보여주고
   // 나머지는 "N개 더 보기" 버튼으로 최대 5개씩 더(N = 이번에 추가될 개수, 남은 게 5개 미만이면 그 개수).
-  // 2026-09-27: PC(2열, >900px)에선 #somedayZone 안쪽을 아래로 스크롤해 끝에 닿아도 5개씩 자동 추가
-  // (initSomedayAutoMore). 모바일(1열, ≤900px — syncHomeCol1Height와 같은 기준)은 버튼으로만 추가.
+  // 2026-09-27: PC(3열, >1100px)에선 #somedayZone 안쪽을 아래로 스크롤해 끝에 닿아도 5개씩 자동 추가
+  // (initSomedayAutoMore). 모바일(1열, ≤1100px — syncHomeViewportHeight와 같은 기준)은 버튼으로만 추가.
   // ⚠️ data-id 대신 data-someday-id를 씀: 습관 탭의 attachBlockDrag가 전역으로 ".task-row[data-id]"를
   //   찾기 때문에, 여기서 data-id를 그대로 쓰면 이 행에도 그 핸들러가 잘못 붙어버림(이름공간 충돌 방지).
   function renderSomedaySummary() {
@@ -5001,7 +5090,7 @@
   // - 도착한 그 동작으로는 안 펼침: 크롬은 passive 휠에서 스크롤을 먼저 적용하기도 해서, 바닥에 "막 닿게 한" 휠을
   //   받았을 때 이미 바닥으로 보일 수 있음 → 도착 시각을 따로 기록하고, 도착 후 250ms 넘게 지난 새 입력만 인정.
   // - 바닥 판정은 실제 끝(소수점 오차 1px만 허용). 펼친 뒤엔 위치를 그대로 두므로 다음 펼침도 같은 조건을 처음부터.
-  // - 드래그 중·모바일 폭(≤900px, 버튼만)·다 보여준 상태·Ctrl+휠(확대)은 제외. 리스너는 한 번만 등록.
+  // - 드래그 중·모바일 폭(≤1100px, 버튼만)·다 보여준 상태·Ctrl+휠(확대)은 제외. 리스너는 한 번만 등록.
   function somedayZoneAtBottom(zone) { return zone.scrollHeight - zone.clientHeight - zone.scrollTop <= 1; }
   function initSomedayAutoMore() {
     const zone = $("somedayZone");
@@ -5020,7 +5109,7 @@
       const arrivedAt = somedayAutoMore.bottomAt;
       if (arrivedAt == null || now - arrivedAt <= SOMEDAY_WHEEL_GAP_MS) return; // 바닥 아님 / 방금 도착
       if (!isNewInput || e.deltaY <= 0 || e.ctrlKey) return;
-      if (homeSingleColMq.matches) return;
+      if (!document.querySelector('.home2-grid.home-bounded')) return;
       if (document.querySelector(".dragging, .ag-drag-ghost")) return;
       if (!zone.querySelector('.someday-more-row[data-somedaymore]')) return; // 다 보여줌
       expandSomedayHome(false);
