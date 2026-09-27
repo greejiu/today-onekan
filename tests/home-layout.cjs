@@ -36,16 +36,19 @@ async function fixture(page, source = html) {
   await page.locator('#app').waitFor({state:'visible'});
   await page.waitForFunction(()=>document.querySelectorAll('.upcoming-day').length===7);
 }
-(async()=>{
+module.exports = { fixture };
+if (require.main === module) (async()=>{
   const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
   const page=await browser.newPage({viewport:{width:1440,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>localStorage.setItem('tok_home_fit_all','0'));
   await fixture(page);
   for(const [width,height] of [[1440,900],[1366,768],[900,650],[720,450],[390,844],[1440,500]]){
     await page.setViewportSize({width,height});await page.waitForTimeout(100);
     const metrics=await page.evaluate(()=>({w:document.documentElement.scrollWidth,inner:innerWidth,bounded:document.querySelector('.home2-grid').classList.contains('home-bounded'),cards:[...document.querySelectorAll('.home2-col')].map(e=>({id:e.id,x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,bottom:e.getBoundingClientRect().bottom}))}));
     assert(metrics.w<=width,JSON.stringify(metrics));
     if(width>1100 && height>=768){assert(metrics.bounded);assert(metrics.cards.every(c=>c.bottom<=height));assert(metrics.cards[0].x<metrics.cards[1].x&&metrics.cards[1].x<metrics.cards[2].x);}
-    if(width<=1100)assert(metrics.cards[1].y<metrics.cards[0].y);
+    assert.deepEqual(metrics.cards.map(c=>c.id),['homeCol2','homeCol3','homeCol1']);
+    if(width<=1100)assert(metrics.cards[0].y<metrics.cards[1].y && metrics.cards[1].y<metrics.cards[2].y);
     fs.mkdirSync('test-results',{recursive:true});await page.screenshot({path:`test-results/home-${width}x${height}.png`});
     console.log('layout',width,height,'PASS');
   }
@@ -110,7 +113,7 @@ async function fixture(page, source = html) {
   await page.evaluate(()=>{showPage('home');document.querySelector('#homeTodoBanner').style.display='flex';document.querySelector('#homeHabitBanner').style.display='flex';});await page.waitForTimeout(100);
   assert((await page.locator('#homeCol2').boundingBox()).y+(await page.locator('#homeCol2').boundingBox()).height<=768);
   await page.screenshot({path:'test-results/home-banners-empty.png'});
-  const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await fixture(mobile);
+  const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await mobile.addInitScript(()=>localStorage.setItem('tok_home_fit_all','0'));await fixture(mobile);
   await mobile.locator('[data-col2tab="block"]').tap();assert(await mobile.locator('#homeBlockPanel').isVisible());
   await mobile.locator('#somedaySummaryList .item-more').first().tap();assert(await mobile.locator('.item-menu.is-sheet').isVisible());await mobile.keyboard.press('Escape');
   await mobile.locator('[data-somedaymore]').tap();assert.equal(await mobile.locator('.ag-someday-row').count(),20);
