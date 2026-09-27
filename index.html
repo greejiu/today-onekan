@@ -297,6 +297,8 @@
   /* 펼쳤을 때 칩이 아주 많아도 아래 목록이 카드 밖으로 밀려나지 않게 칩 영역 자체에 높이 제한 + 내부 스크롤 */
   .someday-tag-chips.is-expanded{max-height:176px;overflow-y:auto;}
   .someday-more-row{text-align:center;font-size:12px;color:var(--accent-text);cursor:pointer;padding:6px 0;}
+  button.someday-more-row{width:100%;border:none;background:none;font-family:inherit;border-radius:10px;}
+  button.someday-more-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
   .someday-more-row:hover{text-decoration:underline;}
   .someday-row.done span{color:var(--sub);text-decoration:line-through;}
 
@@ -2089,7 +2091,10 @@
   // 언젠가 목록 정렬/필터/더보기 상태 — 집 카드와 할일 탭이 각자 따로 기억(둘이 다른 뷰라 독립적으로 고를 수 있어야 함).
   let somedayHomeSort = "recent"; // "recent"(최근순)|"old"(오래된순)|"name"(이름순)
   let somedayHomeFilterTag = null; // null=전체, 아니면 tok_habit_categories.id
-  let somedayHomeVisible = 15; // 09-24: 결님 요청으로 기본 8→15개로 확대, "+더보기" 증가폭도 8→5개로 축소
+  const SOMEDAY_HOME_INITIAL = 15, SOMEDAY_HOME_STEP = 5; // 처음 15개, "N개 더 보기"로 최대 5개씩 추가
+  const somedayAutoMore = { bound: false, lastTop: 0, coolUntil: 0, intentAt: 0 }; // PC 카드 안 스크롤 자동 추가 상태(initSomedayAutoMore)
+  const homeSingleColMq = window.matchMedia("(max-width: 900px)"); // 집 화면 1열(모바일) 기준 — syncHomeCol1Height와 동일
+  let somedayHomeVisible = SOMEDAY_HOME_INITIAL; // 09-24: 결님 요청으로 기본 8→15개로 확대, "+더보기" 증가폭도 8→5개로 축소
   let somedayTabSort = "recent";
   let somedayTabFilterTag = null;
   let timeBlocks = []; // tok_time_blocks: 타임블럭 탭의 이름표 그룹핑용(시작/종료 분 포함 — 설정 페이지에서 목록으로 추가/수정/삭제)
@@ -4777,14 +4782,16 @@
   }
 
   // "언젠가" 열: 정렬/그룹필터 적용 후 일정 개수(somedayHomeVisible, 09-24부터 기본 15)까지만 보여주고
-  // 나머지는 "+더보기"로 5개씩 더(09-24: 결님 요청으로 8→5).
+  // 나머지는 "N개 더 보기" 버튼으로 최대 5개씩 더(N = 이번에 추가될 개수, 남은 게 5개 미만이면 그 개수).
+  // 2026-09-27: PC(2열, >900px)에선 #somedayZone 안쪽을 아래로 스크롤해 끝에 닿아도 5개씩 자동 추가
+  // (initSomedayAutoMore). 모바일(1열, ≤900px — syncHomeCol1Height와 같은 기준)은 버튼으로만 추가.
   // ⚠️ data-id 대신 data-someday-id를 씀: 습관 탭의 attachBlockDrag가 전역으로 ".task-row[data-id]"를
   //   찾기 때문에, 여기서 data-id를 그대로 쓰면 이 행에도 그 핸들러가 잘못 붙어버림(이름공간 충돌 방지).
   function renderSomedaySummary() {
     const sortSel = $("somedayHomeSortSelect");
-    if (sortSel) renderSomedaySortSelect(sortSel, somedayHomeSort, (v) => { somedayHomeSort = v; somedayHomeVisible = 15; renderSomedaySummary(); });
+    if (sortSel) renderSomedaySortSelect(sortSel, somedayHomeSort, (v) => { somedayHomeSort = v; resetSomedayHomeList(); });
     const chipsHost = $("somedayHomeTagChips");
-    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; somedayHomeVisible = 15; renderSomedaySummary(); }, somedayItems.filter(s => !s.is_done), true);
+    if (chipsHost) renderSomedayTagChips(chipsHost, somedayHomeFilterTag, (tagId) => { somedayHomeFilterTag = tagId; resetSomedayHomeList(); }, somedayItems.filter(s => !s.is_done), true);
 
     const undone = somedayItems.filter(s => !s.is_done);
     const all = filterSomedayList(sortSomedayList(undone, somedayHomeSort), somedayHomeFilterTag);
@@ -4798,7 +4805,8 @@
         ${moreBtnHtml(item.title)}
       </div>`;
     }).join("");
-    const moreHtml = all.length > items.length ? `<div class="someday-more-row" data-somedaymore="1">+ 더보기 (${all.length - items.length}개 더)</div>` : "";
+    const nextCount = Math.min(SOMEDAY_HOME_STEP, all.length - items.length); // 이번에 추가로 보일 개수(0이면 버튼 없음)
+    const moreHtml = nextCount > 0 ? `<button type="button" class="someday-more-row" data-somedaymore="1">${nextCount}개 더 보기</button>` : "";
     $("somedaySummaryList").innerHTML = items.length
       ? rowsHtml + moreHtml + `<div class="block-add-row" data-somedayadd="1">＋ 눌러서 추가해요</div>`
       : undone.length === 0
@@ -4812,9 +4820,70 @@
       };
     });
     const moreBtn = document.querySelector('#somedaySummaryList .someday-more-row[data-somedaymore]');
-    if (moreBtn) moreBtn.onclick = () => { somedayHomeVisible += 5; renderSomedaySummary(); };
+    if (moreBtn) moreBtn.onclick = () => expandSomedayHome(true);
     attachSomedayDrag();
     attachSomedayAddClick();
+    initSomedayAutoMore();
+  }
+
+  // 정렬·그룹 필터를 바꾸면 15개로 초기화하고 목록 맨 위로(PC는 카드 안 스크롤, 모바일은 목록 머리가 화면 위로 지나가 있을 때만 페이지를 올림).
+  function resetSomedayHomeList() {
+    somedayHomeVisible = SOMEDAY_HOME_INITIAL;
+    renderSomedaySummary();
+    const zone = $("somedayZone");
+    if (!zone) return;
+    zone.scrollTop = 0;
+    somedayAutoMore.lastTop = 0;
+    const top = zone.getBoundingClientRect().top;
+    if (top < fixedHeaderBottom()) window.scrollBy({ top: top - fixedHeaderBottom() - 12 });
+  }
+  // 최대 5개 더 보여주기(버튼·PC 자동 공용). 다시 그려도 카드 안·페이지 스크롤 위치는 그대로 둠.
+  // fromButton: 눌렀던 버튼이 사라지면 키보드 포커스가 없어지므로, 새 버튼(없으면 새로 보인 첫 항목)으로 옮김.
+  function expandSomedayHome(fromButton = false) {
+    const zone = $("somedayZone");
+    const hadBtnFocus = !!document.activeElement?.matches?.('#somedaySummaryList .someday-more-row');
+    fromButton = fromButton || hadBtnFocus; // 자동 추가 때 버튼에 포커스가 있었어도 새 버튼으로 이어줌
+    const prevCount = somedayHomeVisible;
+    const zoneTop = zone ? zone.scrollTop : 0, winY = window.scrollY;
+    somedayHomeVisible += SOMEDAY_HOME_STEP;
+    renderSomedaySummary();
+    if (zone) zone.scrollTop = zoneTop;
+    if (window.scrollY !== winY) window.scrollTo(0, winY);
+    somedayAutoMore.lastTop = zone ? zone.scrollTop : 0;
+    if (fromButton) {
+      const next = document.querySelector('#somedaySummaryList .someday-more-row[data-somedaymore]')
+        || document.querySelectorAll('#somedaySummaryList .ag-someday-row .somedaysum-check')[prevCount];
+      next?.focus({ preventScroll: true });
+    }
+  }
+  // PC 자동 추가: #somedayZone 자체의 scroll 이벤트만 봄(문서·타임라인 스크롤과 무관). 한 번만 등록.
+  // 연속 실행 방지 — ① 사용자가 "아래로" 움직인 스크롤만(재렌더로 scrollTop이 줄거나 그대로면 무시),
+  // ② 한 번 추가한 뒤 400ms 동안은 쉼, ③ 드래그 중(.dragging/드래그 미리보기 칩이 떠 있는 동안)엔 멈춤,
+  // ④ 실제 사용자 스크롤 입력(휠·터치·스크롤바 잡기·스크롤 키) 직후 1초 안의 스크롤만 — 포커스 이동이나
+  //    코드가 바꾼 scrollTop 때문에 생긴 스크롤로는 펼치지 않음.
+  // 목록이 짧아 카드 안에 스크롤이 안 생기면 scroll 이벤트 자체가 없으므로 첫 진입에 자동으로 펼쳐지지 않음.
+  function initSomedayAutoMore() {
+    const zone = $("somedayZone");
+    if (!zone || somedayAutoMore.bound) return;
+    somedayAutoMore.bound = true;
+    const markIntent = () => { somedayAutoMore.intentAt = Date.now(); };
+    zone.addEventListener("wheel", markIntent, { passive: true });
+    zone.addEventListener("touchmove", markIntent, { passive: true });
+    zone.addEventListener("pointerdown", markIntent);
+    zone.addEventListener("keydown", (e) => { if (["ArrowDown", "PageDown", "End", " "].includes(e.key)) markIntent(); });
+    zone.addEventListener("scroll", () => {
+      const top = zone.scrollTop;
+      const movedDown = top > somedayAutoMore.lastTop;
+      somedayAutoMore.lastTop = top;
+      if (!movedDown || homeSingleColMq.matches) return;
+      if (Date.now() - somedayAutoMore.intentAt > 1000) return;
+      if (Date.now() < somedayAutoMore.coolUntil) return;
+      if (document.querySelector(".dragging, .ag-drag-ghost")) return;
+      if (!zone.querySelector('.someday-more-row[data-somedaymore]')) return; // 다 보여줌
+      if (top + zone.clientHeight < zone.scrollHeight - 24) return; // 아직 바닥 근처 아님
+      somedayAutoMore.coolUntil = Date.now() + 400;
+      expandSomedayHome(false);
+    }, { passive: true });
   }
 
   // "언젠가" 빈칸/+ 추가 클릭 → 인라인 입력으로 tok_someday에 바로 생성.
