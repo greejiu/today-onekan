@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>오늘한칸</title>
+<!-- 2026-09-27: 로고 C안(치즈 한 칸 — 귀 달린 칸+체크) 파비콘 -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M14 44 L18 10 L42 28 L58 28 L82 10 L86 44 L86 76 Q86 92 70 92 L30 92 Q14 92 14 76 Z' fill='%23222222' stroke='%23222222' stroke-width='6' stroke-linejoin='round'/%3E%3Cpath d='M34 60 L46 72 L67 50' fill='none' stroke='%23ffffff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <!-- 2026-09-20: 원본 목업(Main.dc.html/Mobile.dc.html)의 상단바 로고가 이 손글씨체(Gaegu)를 씀 -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -81,7 +83,12 @@
   /* 상단 고정바 — 원본 목업(Main.dc.html/Mobile.dc.html) 그대로: 손글씨체 로고+오늘 날짜(왼쪽),
      둥근 설정 아이콘 버튼(오른쪽). 목업엔 없던 퀵 인풋 바는 바로 아래 얇은 줄로 따로 둠. */
   .topbar{position:fixed;top:0;left:0;right:0;height:64px;background:var(--card);border-bottom:1px solid var(--line);z-index:30;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 20px;}
-  .topbar-brand{display:flex;align-items:baseline;gap:10px;min-width:0;}
+  .topbar-brand{display:flex;align-items:center;gap:10px;min-width:0;}
+  /* 2026-09-27 — 로고 C안 심볼(귀 달린 칸+체크). 칸은 테마 accent 색, 체크는 카드 배경색이라 5개 테마 모두 따라감 */
+  .brand-logo{display:inline-flex;align-items:center;gap:6px;}
+  .brand-mark{width:26px;height:26px;flex-shrink:0;}
+  .brand-mark .bm-body{fill:currentColor;stroke:currentColor;}
+  .brand-mark .bm-check{stroke:var(--card);}
   /* 2026-09-23 — 로고/상단바가 파스텔 시절 보라색(#7B4FA0 등)에 고정돼있어서 테마를 바꿔도 안 바뀌던 것을
      수정: 전부 테마 변수(--accent/--sub/--line/--accent-soft)로 교체해서 5개 테마 전부 따라가게 함. */
   .brand-logo{font-family:'Gaegu',cursive;font-size:23px;font-weight:700;color:var(--accent);white-space:nowrap;}
@@ -108,6 +115,7 @@
   @media (max-width:760px){
     .topbar{gap:8px;padding:0 14px;}
     .brand-logo{font-size:20px;}
+    .brand-mark{width:22px;height:22px;}
     .topbar-quickadd-row{display:flex;padding:0 14px;}
     .topbar-quickadd button span.lbl{display:none;}
     .layout{padding-top:120px !important;}
@@ -576,7 +584,7 @@
        이번에 원한 기능이라 그 아래 얇은 줄로 유지(기능은 그대로, 위치만 조정). -->
   <div class="topbar">
     <div class="topbar-brand">
-      <span class="brand-logo">오늘한칸</span>
+      <span class="brand-logo"><svg class="brand-mark" viewBox="0 0 100 100" fill="none" aria-hidden="true"><path class="bm-body" d="M14 44 L18 10 L42 28 L58 28 L82 10 L86 44 L86 76 Q86 92 70 92 L30 92 Q14 92 14 76 Z" stroke-width="6" stroke-linejoin="round"></path><path class="bm-check" d="M34 60 L46 72 L67 50" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path></svg>오늘한칸</span>
       <span class="brand-date" id="topbarDateLabel"></span>
     </div>
     <button type="button" class="topbar-settings" id="topbarSettingsBtn" aria-label="설정">
