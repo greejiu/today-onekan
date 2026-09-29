@@ -9021,43 +9021,21 @@
     } else if (m.timed.length || !m.hideEmpty) {
       // 타임라인: 설정의 하루 범위(항목이 밖에 있으면 넓힘 — 앱 타임라인과 같은 규칙)를 1시간 줄로 나눔.
       // 각 줄 높이는 그 시간에 시작하는 카드가 다 들어가게 늘어남(제목을 자르거나 줄이지 않음).
-      // 빈 시간 숨기기: 연속된 빈 시간은 "HH:00 – HH:00 비어 있음" 한 줄로 압축(실제 시간 라벨 유지).
+      // 빈 시간 숨기기(2026-09-29 결 요청): 항목이 시작하지 않는 시간 줄은 아예 그리지 않음 — "비어 있음" 표시도 없음.
+      //   (앞 시간에서 이어지기만 하는 줄도 빈 줄로 보여서 같이 숨김.) 끄면 하루 범위의 모든 시간 줄을 그림.
       let minM = daySettings.day_start_minute, maxM = daySettings.day_end_minute;
       m.timed.forEach(it => { minM = Math.min(minM, it.start_minute); maxM = Math.max(maxM, it.start_minute + (it.duration_minutes || 30)); });
       const h0 = Math.floor(minM / 60), h1 = Math.max(h0 + 1, Math.ceil(maxM / 60));
       const GUT = 44, cx = X0 + GUT, cw = CW - GUT;
       const hourLabel = (h) => h === 24 ? "24:00" : `${pad2(h % 24)}:00`;
-      const rule = (h, dashed) => {
-        if (!draw) return;
-        ctx.save();
-        if (dashed) ctx.setLineDash([3, 3]);
-        ctx.fillStyle = shareCss(T.line); ctx.strokeStyle = shareCss(T.line); ctx.lineWidth = 1;
-        if (dashed) { ctx.beginPath(); ctx.moveTo(cx, y + 0.5); ctx.lineTo(X0 + CW, y + 0.5); ctx.stroke(); } else ctx.fillRect(cx, y, cw, 1);
-        ctx.restore();
-      };
-      let h = h0;
-      while (h < h1) {
+      const rule = () => { if (draw) { ctx.fillStyle = shareCss(T.line); ctx.fillRect(cx, y, cw, 1); } };
+      for (let h = h0; h < h1; h++) {
         const starts = m.timed.filter(it => Math.floor(it.start_minute / 60) === h);
+        if (!starts.length && m.hideEmpty) continue;
         const running = m.timed.filter(it => it.start_minute < h * 60 && it.start_minute + (it.duration_minutes || 30) > h * 60);
-        if (!starts.length && !running.length) {
-          let e = h;
-          while (e < h1 && !m.timed.some(it => Math.floor(it.start_minute / 60) === e || (it.start_minute < e * 60 && it.start_minute + (it.duration_minutes || 30) > e * 60))) e++;
-          if (m.hideEmpty) {
-            rule(h, true);
-            text(hourLabel(h), X0, y + 12, F(600, 11), T.sub);
-            text(`⋯  ${hourLabel(h)} – ${hourLabel(e)} 비어 있음`, cx + 4, y + 21, F(400, 12), T.sub);
-            y += 32;
-            h = e;
-            continue;
-          }
-          rule(h, false);
-          text(hourLabel(h), X0, y + 12, F(600, 11), T.sub);
-          y += 28;
-          h++;
-          continue;
-        }
-        rule(h, false);
+        rule();
         text(hourLabel(h), X0, y + 12, F(600, 11), T.sub);
+        if (!starts.length && !running.length) { y += 28; continue; }
         const top = y;
         y += 6;
         if (starts.length) cardList(starts, cx + 6, cw - 6, true);
@@ -9072,11 +9050,13 @@
           });
         }
         y = Math.max(y, top + 28);
-        h++;
       }
-      rule(h1, false);
-      text(hourLabel(h1), X0, y + 12, F(600, 11), T.sub);
-      y += 22;
+      if (m.hideEmpty) { y += 8; }
+      else {
+        rule();
+        text(hourLabel(h1), X0, y + 12, F(600, 11), T.sub);
+        y += 22;
+      }
     }
 
     y += 4;
