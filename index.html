@@ -8992,11 +8992,14 @@
     const cardList = (items, x, w, tl) => { items.forEach((it, i) => { if (i) y += 6; itemCard(it, x, w, tl); }); };
 
     const allDayDot = shareCss(shareRgb(agBlockStyle("하루종일").dot, T.accent));
+    // 타임라인 카드 들여쓰기(왼쪽 시간 라벨 칸 44 + 간격 6). 하루종일 카드도 같은 위치에 맞춤(2026-09-29 결 요청 — 들여쓰기 통일).
+    const TL_IND = 50;
+    const listX = m.view === "timeline" ? X0 + TL_IND : X0, listW = m.view === "timeline" ? CW - TL_IND : CW;
     // 하루종일(시간 미지정 항목) — 두 보기 모두 맨 위, 임의 시간을 붙이지 않음
     if (m.allDay.length || !m.hideEmpty) {
       sectionHead("하루종일", "", allDayDot);
-      if (m.allDay.length) { cardList(m.allDay, X0, CW, m.view === "timeline"); y += 8; }
-      else emptyRow("비어 있음", X0, CW);
+      if (m.allDay.length) { cardList(m.allDay, listX, listW, m.view === "timeline"); y += 8; }
+      else emptyRow("비어 있음", listX, listW);
       y += 8;
     }
 
@@ -9026,7 +9029,7 @@
       let minM = daySettings.day_start_minute, maxM = daySettings.day_end_minute;
       m.timed.forEach(it => { minM = Math.min(minM, it.start_minute); maxM = Math.max(maxM, it.start_minute + (it.duration_minutes || 30)); });
       const h0 = Math.floor(minM / 60), h1 = Math.max(h0 + 1, Math.ceil(maxM / 60));
-      const GUT = 44, cx = X0 + GUT, cw = CW - GUT;
+      const GUT = TL_IND - 6, cx = X0 + GUT, cw = CW - GUT;
       const hourLabel = (h) => h === 24 ? "24:00" : `${pad2(h % 24)}:00`;
       const rule = () => { if (draw) { ctx.fillStyle = shareCss(T.line); ctx.fillRect(cx, y, cw, 1); } };
       for (let h = h0; h < h1; h++) {
