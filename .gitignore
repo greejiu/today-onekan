@@ -1,2 +1,5 @@
 # Local browser verification artifacts
 /test-results/
+
+# Personal Claude Code settings (not shared)
+/.claude/settings.local.json
