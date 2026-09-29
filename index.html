@@ -8996,9 +8996,19 @@
     const TL_IND = 50;
     const listX = m.view === "timeline" ? X0 + TL_IND : X0, listW = m.view === "timeline" ? CW - TL_IND : CW;
     // 하루종일(시간 미지정 항목) — 두 보기 모두 맨 위, 임의 시간을 붙이지 않음
-    if (m.allDay.length || !m.hideEmpty) {
+    if ((m.allDay.length || !m.hideEmpty) && m.view === "timeline") {
+      // 타임라인: '하루종일' 라벨도 시간 라벨과 같은 글꼴 서식(왼쪽 칸의 작은 회색 글자)으로(2026-09-29 결 요청).
+      // 바로 위에 날짜 구분선이 있어 이 줄의 구분선은 생략(선이 두 겹으로 보이지 않게).
+      text("하루종일", X0, y + 12, F(600, 11), T.sub);
+      const top = y;
+      y += 6;
+      if (m.allDay.length) cardList(m.allDay, listX, listW, true);
+      else emptyRow("비어 있음", listX, listW);
+      y += 6;
+      y = Math.max(y, top + 28);
+    } else if (m.allDay.length || !m.hideEmpty) {
       sectionHead("하루종일", "", allDayDot);
-      if (m.allDay.length) { cardList(m.allDay, listX, listW, m.view === "timeline"); y += 8; }
+      if (m.allDay.length) { cardList(m.allDay, listX, listW, false); y += 8; }
       else emptyRow("비어 있음", listX, listW);
       y += 8;
     }
