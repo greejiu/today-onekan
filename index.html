@@ -8902,13 +8902,6 @@
     ctx.restore();
   }
 
-  const shareEndLabel = (m) => m === 1440 ? "24:00" : minutesToHHMM(m);
-  function shareTimeText(it) {
-    if (it.start_minute == null) return "";
-    const end = it.start_minute + (it.duration_minutes || 30);
-    return `${minutesToHHMM(it.start_minute)} – ${shareEndLabel(end)}`;
-  }
-
   // 레이아웃 + 그리기. draw=false면 높이만 계산(같은 코드로 두 번 돌려서 계산과 그림이 어긋나지 않게).
   // m = { T, dateStr, view, record, allDay, timed, hideEmpty, height? }
   function shareCompose(ctx, m, draw) {
@@ -8955,15 +8948,15 @@
       text(label, x + 12, y + 20, F(400, 12), T.sub);
       y += 30 + 6;
     };
-    // 항목 카드: 앞자리(할일·습관 = 체크 상자, 일정 = 범주색 동그라미) + 제목(전부 줄바꿈) + 시간
+    // 항목 카드: 앞자리(할일·습관 = 체크 상자, 일정 = 범주색 동그라미) + 제목(전부 줄바꿈).
+    // 2026-09-29 결 요청: 카드 안 시간 줄은 빼서 세로 길이를 줄임(타임라인은 왼쪽 시간 라벨, 시간블럭은 블럭 이름·범위로 시간대를 알 수 있음).
     // tl=true(타임라인): 그룹/범주색을 옅은 배경으로(앱 타임라인과 같음). false(시간블럭): 제목 글자를 그룹색으로(앱 시간블럭과 같음).
     const itemCard = (it, x, w, tl) => {
       const padX = 10, padY = 8, lead = 16, gap = 8, lineH = 20;
       const tx = x + padX + lead + gap, tw = w - (padX * 2 + lead + gap);
       ctx.font = F(it.done ? 400 : 500, 14);
       const lines = shareWrap(ctx, it.name, tw - 1);
-      const time = shareTimeText(it);
-      const h = padY * 2 + lines.length * lineH + (time ? 17 : 0);
+      const h = padY * 2 + lines.length * lineH;
       if (draw) {
         const tag = itemTagColor(it.kind, it.cat_id);
         const tagRgb = tag ? shareRgb(tag, null) : null;
@@ -8994,7 +8987,6 @@
           ctx.fillStyle = shareCss(T.sub); ctx.fillRect(tx, by - 5, lw, 1.2);
         }
       });
-      if (time) text(time, tx, y + padY + lines.length * lineH + 13, F(400, 12), T.sub);
       y += h;
     };
     const cardList = (items, x, w, tl) => { items.forEach((it, i) => { if (i) y += 6; itemCard(it, x, w, tl); }); };
