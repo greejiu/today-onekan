@@ -1212,6 +1212,98 @@
   .symbol-option input:disabled + .symbol-option-body{cursor:default;}
   .symbol-selected{position:absolute;right:8px;top:4px;color:var(--accent-text);visibility:hidden;}
   .symbol-option input:checked + .symbol-option-body .symbol-selected{visibility:visible;}
+
+  /* ── 2026-09-29 1차 구조 개편: 메뉴 8개 · 작업(프로젝트) · 시간 추적 · 기록 · 설정 분류 ── */
+  .bottombar .nav-more-btn{border:none;background:none;font:inherit;color:var(--sub);cursor:pointer;}
+  .bottombar .nav-more-btn.active{background:var(--accent-soft);color:var(--accent-text);font-weight:600;}
+  .nav-more-bg{position:fixed;inset:0;z-index:45;background:rgba(0,0,0,.28);display:flex;align-items:flex-end;justify-content:flex-end;padding:0 10px calc(64px + env(safe-area-inset-bottom));}
+  .nav-more-bg[hidden]{display:none;}
+  .nav-more-sheet{width:min(240px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:6px;}
+  .nav-more-sheet .navitem{margin:0;min-height:48px;}
+  .nav-more-sheet .navitem:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .settings-group-title{font-size:16px;font-weight:700;color:var(--text);margin:28px 2px 10px;padding-top:14px;border-top:1px solid var(--line);}
+  .page[data-page="settings"] > .settings-group-title:first-of-type{margin-top:4px;padding-top:0;border-top:none;}
+  .appearance-settings > .settings-group-title{margin-top:28px;}
+  .simple-empty{padding:28px 20px;text-align:center;}
+  .simple-empty-title{margin:0 0 6px;font-size:15px;font-weight:700;color:var(--text);}
+  .simple-empty-sub{margin:0;font-size:13px;color:var(--sub);line-height:1.6;}
+  .work-muted{color:var(--sub);font-weight:400;font-size:12px;}
+  .work-path{margin:-4px 2px 14px;font-size:12.5px;color:var(--sub);}
+  .work-not-ready{text-align:center;padding:24px 18px;}
+  .work-not-ready .btn-ghost{margin-top:12px;}
+  .work-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:16px;align-items:start;}
+  .work-layout[hidden]{display:none;}
+  .work-side{display:flex;flex-direction:column;gap:18px;min-width:0;}
+  .proj-tree,.proj-children,.rec-list{list-style:none;margin:0;padding:0;}
+  .proj-children{margin:2px 0 6px 14px;padding-left:10px;border-left:2px solid var(--line);}
+  .proj-item{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:44px;padding:9px 12px;margin-bottom:4px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);font:inherit;text-align:left;cursor:pointer;}
+  .proj-item.child{border-color:transparent;background:transparent;}
+  .proj-item:hover{background:var(--accent-soft);}
+  .proj-item.active{background:var(--accent-soft);border-color:color-mix(in srgb, var(--accent) 60%, var(--line));}
+  .proj-item:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  .proj-name{font-size:14px;font-weight:600;overflow-wrap:anywhere;}
+  .proj-item.child .proj-name{font-weight:500;}
+  .proj-meta{font-size:11.5px;color:var(--sub);}
+  .proj-empty{text-align:center;padding:24px 16px;}
+  .proj-empty .sched-add-btn{margin-top:12px;}
+  .identity-row{margin-bottom:6px;}
+  .identity-name-input,.work-inline-add input{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:var(--card);color:var(--text);min-width:0;}
+  .work-inline-add{display:flex;gap:6px;margin-top:6px;}
+  .work-inline-add .btn-ghost{flex:none;}
+  .identity-empty{margin:0 2px 6px;}
+  .proj-detail{padding:18px;min-width:0;}
+  .proj-detail-empty{color:var(--sub);font-size:13px;text-align:center;padding:40px 16px;}
+  .proj-back{display:none;border:none;background:none;color:var(--accent-text);font:inherit;font-size:13px;font-weight:600;padding:4px 0;margin-bottom:6px;cursor:pointer;min-height:36px;}
+  .proj-crumb{display:inline-block;border:none;background:none;color:var(--sub);font:inherit;font-size:12.5px;padding:0;cursor:pointer;}
+  .proj-title{margin:2px 0 4px;font-size:19px;font-weight:700;overflow-wrap:anywhere;}
+  .proj-title:focus{outline:none;}
+  .proj-identity{margin:0 0 4px;font-size:12.5px;color:var(--accent-text);font-weight:600;}
+  .proj-desc{margin:4px 0 0;font-size:13px;color:var(--sub);white-space:pre-wrap;overflow-wrap:anywhere;}
+  .proj-actions{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px;}
+  .proj-section{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);}
+  .proj-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+  .proj-section-title{margin:0 0 6px;font-size:14px;font-weight:700;}
+  .proj-section-head .proj-section-title{margin:0;}
+  .proj-section-btns{display:flex;flex-wrap:wrap;gap:6px;}
+  .proj-section-btns .btn-ghost,.proj-actions .btn-ghost{min-height:36px;padding:0 12px;font-size:13px;}
+  .proj-kids{display:flex;flex-direction:column;}
+  .proj-row{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 2px;border-bottom:1px solid var(--line);}
+  .proj-row:last-child{border-bottom:none;}
+  .proj-row input[type=checkbox]{width:20px;height:20px;flex:none;accent-color:var(--accent);cursor:pointer;}
+  .proj-row-lead{width:20px;flex:none;text-align:center;color:var(--sub);}
+  .proj-row-title{flex:1;min-width:0;border:none;background:none;color:var(--text);font:inherit;font-size:14px;text-align:left;padding:4px 0;cursor:pointer;overflow-wrap:anywhere;}
+  .proj-row.done .proj-row-title{color:var(--sub);text-decoration:line-through;}
+  .proj-row-meta{flex:none;font-size:12px;color:var(--sub);white-space:nowrap;}
+  .proj-unlink{flex:none;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:8px;font:inherit;font-size:11.5px;padding:5px 8px;cursor:pointer;min-height:32px;}
+  .proj-unlink:hover{color:var(--text);background:var(--accent-soft);}
+  .proj-none{margin:4px 2px;font-size:13px;color:var(--sub);}
+  .proj-done{margin-top:8px;}
+  .proj-done summary{cursor:pointer;font-size:12.5px;color:var(--sub);padding:6px 0;}
+  .project-link-list{max-height:min(50vh,420px);overflow-y:auto;margin:8px 0;}
+  .pl-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 2px;border-bottom:1px solid var(--line);}
+  .pl-name{flex:1 1 140px;min-width:0;font-size:14px;overflow-wrap:anywhere;}
+  .pl-meta{flex:1 1 100%;order:3;font-size:12px;color:var(--sub);}
+  .pl-link{flex:none;min-height:34px;padding:0 12px;}
+  .records-section{margin-bottom:22px;}
+  .records-day-nav{margin-bottom:8px;}
+  .rec-group + .rec-group{margin-top:14px;}
+  .rec-group-title{margin:0 0 4px;font-size:13.5px;font-weight:700;}
+  .rec-list li{padding:7px 2px;border-bottom:1px solid var(--line);font-size:14px;overflow-wrap:anywhere;}
+  .rec-list li:last-child{border-bottom:none;}
+  .rec-items li{padding:0;}
+  .rec-item{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:44px;border:none;background:none;color:var(--text);font:inherit;font-size:14px;text-align:left;padding:8px 2px;cursor:pointer;}
+  .rec-item:hover{background:var(--accent-soft);}
+  @media (max-width:900px){
+    .work-layout{grid-template-columns:minmax(0,1fr);}
+    .page[data-page="work"].work-has-selection .work-side{display:none;}
+    .page[data-page="work"]:not(.work-has-selection) .work-detail{display:none;}
+    .proj-back{display:inline-block;}
+  }
+  @media (max-width:760px){
+    .proj-row{flex-wrap:wrap;}
+    .proj-row-meta{order:3;flex-basis:100%;padding-left:30px;white-space:normal;}
+    .proj-detail{padding:14px;}
+  }
 </style>
 </head>
 <body>
@@ -1254,10 +1346,13 @@
       <!-- 2026-09-20: 이모지 아이콘 → 상단바 설정 아이콘과 같은 계열의 선 아이콘(SVG, currentColor)으로 교체.
            .navitem이 color:var(--sub)/active시 var(--accent)을 이미 쓰고 있어서 stroke="currentColor"만
            넣으면 활성/비활성 색이 자동으로 맞춰짐(따로 손볼 곳 없음). -->
-      <div class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> 집</div>
+      <div class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> 지금 한칸</div>
+      <div class="navitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 시간 추적</div>
+      <div class="navitem" data-page="work"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> 작업</div>
       <div class="navitem" data-page="schedule"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> 일정</div>
       <div class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> 할일</div>
       <div class="navitem" data-page="habits"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> 습관</div>
+      <div class="navitem" data-page="records"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 기록</div>
       <div class="sidebar-footer">
         <!-- 2026-09-28 결님 요청: 상단바 오른쪽 톱니 아이콘을 없애고 설정 메뉴를 사이드바 원래 자리(맨 아래, 계정 위)로 되돌림.
              모바일(사이드바 없음)은 하단 메뉴의 '설정'으로 들어감. -->
@@ -1286,7 +1381,7 @@
         <!-- 집: 지금, 한칸 / 다가오는 / 언젠가. 기존 렌더 대상 ID를 보존한다. -->
         <div class="home2-grid">
           <div class="home2-col" id="homeCol2">
-            <div class="home2-col-label" role="heading" aria-level="2">지금, 한칸</div>
+            <div class="home2-col-label" role="heading" aria-level="2">지금 한칸</div>
             <div class="home2-tabs" id="homeCol2Tabs">
               <button type="button" class="home2-tab tab-timeline active" data-col2tab="timeline">타임라인</button>
               <button type="button" class="home2-tab tab-block" data-col2tab="block">시간블럭</button>
@@ -1353,7 +1448,7 @@
             </div>
           </div>
           <div class="home2-col" id="homeCol1">
-            <div class="home2-col-label" role="heading" aria-level="2">언젠가</div>
+            <div class="home2-col-label" role="heading" aria-level="2">담아두기</div>
 
 
             <div class="home2-tabpanel" data-col1panel="someday" id="homeSomedayPanel">
@@ -1449,7 +1544,7 @@
           <div class="view-toggle" id="todoTopTabs" style="margin-bottom:10px;">
             <button type="button" data-tab="all" class="active">모두</button>
             <button type="button" data-tab="scheduled">예정된</button>
-            <button type="button" data-tab="someday">언젠가</button>
+            <button type="button" data-tab="someday">담아두기</button>
           </div>
 
           <div id="todoUnifiedView">
@@ -1501,15 +1596,73 @@
         </div>
       </div>
 
+      <!-- 2026-09-29 시간 추적: 현재 코드에는 실행 타이머가 없음 → 1차는 화면 틀과 빈 상태만(동작하지 않는 시작 버튼 없음) -->
+      <div class="page" data-page="timer" style="display:none;">
+        <h1 class="page-title">시간 추적</h1>
+        <div class="card simple-empty">
+          <p class="simple-empty-title">아직 시간 추적 기능이 준비 중이에요</p>
+          <p class="simple-empty-sub">할일에 쓴 시간을 재는 타이머는 다음 단계에서 이 화면에 추가돼요. 지금은 할일·습관 체크로 기록이 남아요.</p>
+        </div>
+      </div>
+
+      <!-- 2026-09-29 작업: 정체성(선택) → 프로젝트 → 하위 프로젝트(선택) → 할일·습관.
+           할일·습관은 복제하지 않고 project_id로 같은 행을 가리킴(할일·습관·지금 한칸과 같은 항목). -->
+      <div class="page" data-page="work" style="display:none;">
+        <div class="tab-add-bar">
+          <h1 class="page-title" style="margin:0;">작업</h1>
+          <button type="button" class="sched-add-btn" id="projAddBtn">+ 프로젝트</button>
+        </div>
+        <p class="work-path">정체성(선택) → 프로젝트 → 하위 프로젝트(선택) → 할일·습관</p>
+        <div class="card work-not-ready" id="workNotReady" hidden>
+          <p class="simple-empty-title">프로젝트 기능을 쓰려면 데이터 저장소 업데이트가 필요해요</p>
+          <p class="simple-empty-sub">아직 서버에 프로젝트 저장 공간이 없어요. 기존 할일·습관·일정은 그대로 쓸 수 있어요.</p>
+          <button type="button" class="btn-ghost" id="workRetryBtn">다시 확인</button>
+        </div>
+        <div class="work-layout" id="workLayout">
+          <div class="work-side">
+            <div class="work-list" id="projectList"></div>
+            <section class="work-identities" aria-labelledby="identityHeading">
+              <h2 class="section-label" id="identityHeading">정체성 <span class="work-muted">(선택 · 상위 프로젝트에 연결)</span></h2>
+              <div id="identityList"></div>
+              <div class="work-inline-add">
+                <input id="identityNameInput" type="text" placeholder="예: 그림 잘 그리는 사람" aria-label="새 정체성 이름" autocomplete="off" />
+                <button type="button" class="btn-ghost" id="identityAddBtn">추가</button>
+              </div>
+            </section>
+          </div>
+          <div class="work-detail" id="projectDetail"></div>
+        </div>
+      </div>
+
+      <!-- 2026-09-29 기록: 실제 저장된 완료·건너뛰기 기록만 날짜별로 보여줌(임시 수치·예상 통계 없음). 항목별 기록 달력은 기존 화면 재사용. -->
+      <div class="page" data-page="records" style="display:none;">
+        <h1 class="page-title">기록</h1>
+        <section class="records-section" aria-labelledby="recDayHeading">
+          <h2 class="section-label" id="recDayHeading">날짜별 기록</h2>
+          <div class="agenda-head records-day-nav">
+            <button type="button" class="agenda-nav" id="recPrevBtn" aria-label="이전 날">‹</button>
+            <span class="agenda-date-wrap"><button type="button" class="home-date-reset" id="recDateLabel" aria-label="오늘로 돌아가기">오늘</button></span>
+            <button type="button" class="agenda-nav" id="recNextBtn" aria-label="다음 날">›</button>
+          </div>
+          <div class="card" id="recDayList"></div>
+        </section>
+        <section class="records-section" aria-labelledby="recItemHeading">
+          <h2 class="section-label" id="recItemHeading">항목별 기록 <span class="work-muted">(습관·반복 할일의 달력 기록)</span></h2>
+          <div class="card" id="recItemList"></div>
+        </section>
+      </div>
+
       <!-- 설정 -->
       <div class="page" data-page="settings" style="display:none;">
         <h1 class="page-title">설정</h1>
 
+        <!-- 2026-09-29 설정 분류: 프로필 / 꾸미기 / 사용 설정(있는 설정만 옮겨 담음, 새 기능·빈 탭 없음) -->
+        <h2 class="section-label settings-group-title">프로필</h2>
         <div class="section-label">계정</div>
         <div class="card" id="settingsAccountCard" style="font-size:13px;color:var(--sub);"></div>
 
         <section class="appearance-settings" aria-labelledby="appearanceHeading">
-        <h2 class="section-label" id="appearanceHeading">꾸미기</h2>
+        <h2 class="section-label settings-group-title" id="appearanceHeading">꾸미기</h2>
         <fieldset class="symbol-picker">
           <legend>앱 심볼</legend>
           <p class="symbol-help" id="appSymbolHelp">앱 안에서 사용할 심볼을 골라 주세요. 색상은 현재 테마를 따라요.</p>
@@ -1547,7 +1700,8 @@
 
         </section>
 
-        <div class="section-label" style="margin-top:20px;">그룹 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
+        <h2 class="section-label settings-group-title">사용 설정</h2>
+        <div class="section-label">그룹 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
         <div class="hs-cat-list" id="settingsTagList"></div>
         <div class="field">
           <div style="display:flex;gap:6px;align-items:flex-end;">
@@ -1589,11 +1743,51 @@
   </div>
 
   <div class="bottombar">
-    <div class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><br/>집</div>
+    <div class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><br/>지금 한칸</div>
     <div class="navitem" data-page="schedule"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><br/>일정</div>
     <div class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><br/>할일</div>
     <div class="navitem" data-page="habits"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg><br/>습관</div>
-    <div class="navitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><br/>설정</div>
+    <button type="button" class="navitem nav-more-btn" id="navMoreBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="navMoreSheet"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg><br/>더보기</button>
+  </div>
+  <!-- 2026-09-29 모바일 더보기: 하단 메뉴는 4개(지금 한칸·일정·할일·습관) + 더보기. 나머지 메뉴(작업·시간 추적·기록·설정)는 여기서 들어감 -->
+  <div class="nav-more-bg" id="navMoreBg" hidden>
+    <div class="nav-more-sheet" id="navMoreSheet" role="menu" aria-label="더보기 메뉴">
+      <div class="navitem" role="menuitem" data-page="work"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> 작업</div>
+      <div class="navitem" role="menuitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 시간 추적</div>
+      <div class="navitem" role="menuitem" data-page="records"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 기록</div>
+      <div class="navitem" role="menuitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> 설정</div>
+    </div>
+  </div>
+</div>
+
+<!-- 2026-09-29 프로젝트 만들기/수정 창(작업 탭). 하위 프로젝트는 상위를 고정해서 만듦. -->
+<div class="sheet-bg cal-ev-sheet-bg add-sheet" id="projectSheetBg">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="projectSheetTitle">
+    <h2 id="projectSheetTitle">프로젝트 추가</h2>
+    <form id="projectForm" class="cal-ev-fields" novalidate>
+      <p class="cev-hint" id="pj_parent_note" hidden></p>
+      <div class="field"><label for="pj_name">이름</label><input id="pj_name" type="text" placeholder="예: 인체드로잉 공부" autocomplete="off" enterkeyhint="done" /></div>
+      <div class="field"><label for="pj_desc">설명 <span class="cev-opt">(선택)</span></label><textarea id="pj_desc" rows="3" placeholder="무엇을 위한 프로젝트인지 짧게"></textarea></div>
+      <div class="field" id="pj_identity_wrap"><label for="pj_identity">정체성 <span class="cev-opt">(선택)</span></label><select id="pj_identity"></select></div>
+      <div class="cal-ev-error" id="pj_error" role="alert"></div>
+    </form>
+    <div class="sheet-actions">
+      <button type="button" class="btn-ghost" id="pj_cancel">취소</button>
+      <button type="button" class="btn-primary" id="pj_save">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2026-09-29 기존 할일·습관을 프로젝트에 연결하는 선택 창. 항목은 복제하지 않고 project_id만 바꿈. -->
+<div class="sheet-bg cal-ev-sheet-bg add-sheet" id="projectLinkBg">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="projectLinkTitle">
+    <h2 id="projectLinkTitle">기존 할일 연결</h2>
+    <input id="pl_search" type="search" class="font-search" placeholder="이름으로 찾기" aria-label="이름으로 찾기" autocomplete="off" />
+    <div class="project-link-list" id="pl_list" role="list"></div>
+    <div class="cal-ev-error" id="pl_error" role="alert"></div>
+    <div class="sheet-actions">
+      <button type="button" class="btn-ghost" id="pl_close">닫기</button>
+    </div>
   </div>
 </div>
 
@@ -1613,6 +1807,7 @@
         <div><label for="td_time">시간 <span class="cev-opt">(선택)</span></label><select id="td_time"></select></div>
         <div><label for="td_tag">그룹</label><select id="td_tag"></select></div>
       </div>
+      <div class="field project-field" id="td_project_wrap" hidden><label for="td_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="td_project"></select></div>
       <div class="cal-ev-error" id="td_error" role="alert"></div>
     </form>
     <div class="sheet-actions">
@@ -1741,6 +1936,7 @@
         <div><label for="ha_duration">소요 시간(분)</label><input id="ha_duration" type="number" min="5" step="5" value="30" inputmode="numeric" /></div>
         <div><label for="ha_category">그룹</label><select id="ha_category"></select></div>
       </div>
+      <div class="field project-field" id="ha_project_wrap" hidden><label for="ha_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="ha_project"></select></div>
       <div class="cev-hint">이름만 적고 저장하면 오늘부터 매일 반복돼요. 요일 지정 등은 저장 후 습관 설정에서 바꿀 수 있어요.</div>
       <div class="cal-ev-error" id="ha_error" role="alert"></div>
     </form>
@@ -1794,6 +1990,7 @@
       <div><label>종료일(선택, 반복이 끝나는 날)</label><input id="hs_end" type="date" /></div>
     </div>
     <div class="field"><label>그룹</label><select id="hs_category"></select></div>
+    <div class="field project-field" id="hs_project_wrap" hidden><label for="hs_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="hs_project"></select></div>
     <div class="hs-cat-manage-label">그룹 관리 (이름 수정 · 삭제)</div>
     <div class="hs-cat-list" id="hs_cat_list"></div>
     <div class="field">
@@ -1814,7 +2011,7 @@
 <!-- 언젠가 수정 창(2026-09-27, 항목 메뉴 "수정") — 언젠가에 있는 칸(제목·그룹)만. 할일 창과 같은 저장 규칙 -->
 <div class="sheet-bg cal-ev-sheet-bg add-sheet" id="somedaySheetBg">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sd_sheet_title">
-    <h2 id="sd_sheet_title">언젠가 수정</h2>
+    <h2 id="sd_sheet_title">담아두기 수정</h2>
     <form id="sdForm" class="cal-ev-fields" novalidate>
       <div class="field"><label for="sd_title">제목</label><input id="sd_title" type="text" autocomplete="off" enterkeyhint="done" /></div>
       <div class="field"><label for="sd_tag">그룹</label><select id="sd_tag"></select></div>
@@ -2405,6 +2602,8 @@
   // habitSkipsReady=false면 테이블을 못 불러온 상태 → 건너뛰기 메뉴를 숨김(나머지 기능은 그대로 동작).
   let habitSkips = [];
   let habitSkipsReady = false;
+  // 2026-09-29 작업 탭: tok_projects(상위·하위 2단계) / tok_identities. projectsReady=false면 DB에 아직 없음 → 기능 숨김.
+  let projects = [], identities = [], projectsReady = false;
   let habitPauses = []; // tok_habit_pauses 전체({habit_id, paused_at, resumed_at, reason}) — 보관/재개 이력(2026-09-12, 여러 번 가능)
   let habitsTabView = "active"; // 습관 관리 목록 상단탭: "active"(진행중) | "archived"(보관) | "ended"(종료)
   let habitListSettings = loadTabSettings("tok_habitListSettings", ["active", "archived", "ended"]); // 습관 탭별 정렬/그룹화 기억
@@ -2472,17 +2671,37 @@
   window.addEventListener("pageshow", (e) => { if (e.persisted) autoRefreshIfStale(); }); // 뒤로가기 등으로 캐시(bfcache)에서 복귀한 경우
 
   // ── 네비게이션 ──
-  document.querySelectorAll(".navitem").forEach(el => {
-    el.onclick = () => showPage(el.dataset.page);
+  document.querySelectorAll(".navitem[data-page]").forEach(el => {
+    el.onclick = () => { closeNavMore(false); showPage(el.dataset.page); };
   });
+  // 2026-09-29 모바일 더보기(하단 메뉴 5번째 칸): 작업·시간 추적·기록·설정으로 가는 보조 메뉴
+  const NAV_MORE_PAGES = ["work", "timer", "records", "settings"];
+  function openNavMore() {
+    $("navMoreBg").hidden = false;
+    $("navMoreBtn").setAttribute("aria-expanded", "true");
+    $("navMoreSheet").querySelector(".navitem")?.focus?.();
+  }
+  function closeNavMore(restoreFocus = true) {
+    if (!$("navMoreBg") || $("navMoreBg").hidden) return;
+    $("navMoreBg").hidden = true;
+    $("navMoreBtn").setAttribute("aria-expanded", "false");
+    if (restoreFocus) $("navMoreBtn").focus();
+  }
+  $("navMoreBtn").onclick = () => ($("navMoreBg").hidden ? openNavMore() : closeNavMore());
+  $("navMoreBg").addEventListener("click", (e) => { if (e.target === $("navMoreBg")) closeNavMore(); });
+  $("navMoreBg").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); closeNavMore(); } });
+  $("navMoreSheet").querySelectorAll(".navitem").forEach(el => { el.tabIndex = 0; el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } }); });
   let scheduleScrollY = 0; // 일정 탭을 떠날 때 목록 스크롤 위치를 기억했다가 돌아오면 복원(2026-09-27)
   function showPage(page) {
     const prevPage = currentPage;
     if (prevPage === "schedule" && page !== "schedule") scheduleScrollY = window.scrollY;
     currentPage = page;
     // 빠른 입력(한칸 추가)은 모든 탭에서 항상 보임(2026-09-28). 입력 중이던 제목은 탭을 옮겨도 그대로, 탭 이동만으로는 저장하지 않음.
-    document.querySelectorAll(".navitem").forEach(el => el.classList.toggle("active", el.dataset.page === page));
+    document.querySelectorAll(".navitem[data-page]").forEach(el => el.classList.toggle("active", el.dataset.page === page));
+    $("navMoreBtn")?.classList.toggle("active", NAV_MORE_PAGES.includes(page)); // 더보기 안 메뉴를 보고 있으면 더보기 칸 강조
     document.querySelectorAll(".page").forEach(el => el.style.display = el.dataset.page === page ? "block" : "none");
+    if (page === "work") renderWork();
+    if (page === "records") renderRecords();
     // 숨겨진 입력창에 포커스가 남으면(모바일 키보드가 열린 채) 해제
     const ae = document.activeElement;
     if (ae && ae !== document.body && ae.getClientRects().length === 0) ae.blur();
@@ -2538,6 +2757,17 @@
       habitSkipsReady = !e14;
       habitSkips = e14 ? [] : (skipData || []);
     } catch (err) { habitSkipsReady = false; habitSkips = []; }
+    // 2026-09-29 작업 탭(프로젝트·정체성)도 따로 불러옴 — 마이그레이션 20260929000000 적용 전이면 테이블이 없어서
+    // 실패하는데, 그래도 기존 기능은 그대로 쓰고 프로젝트 기능만 끔(projectsReady=false).
+    try {
+      const [{ data: projData, error: ep }, { data: idData, error: ei }] = await Promise.all([
+        sb.from("tok_projects").select("*").order("sort_order").order("created_at"),
+        sb.from("tok_identities").select("*").order("sort_order").order("created_at"),
+      ]);
+      projectsReady = !ep && !ei;
+      projects = projectsReady ? (projData || []) : [];
+      identities = projectsReady ? (idData || []) : [];
+    } catch (err) { projectsReady = false; projects = []; identities = []; }
     const firstError = e1 || e2 || e3 || e5 || e6 || e7 || e8 || e10 || e12 || e13;
     if (firstError) { alert("불러오기 실패: " + firstError.message); return; }
     tasks = taskData || [];
@@ -2559,6 +2789,8 @@
     renderTodo();
     renderSettingsTagLists();
     renderSettingsDaySettings();
+    if (currentPage === "work") renderWork();
+    if (currentPage === "records") renderRecords();
   }
 
   // ── 할일·일정 반복 (2026-09-06 추가): 습관과 같은 방식으로 통일하되, 트리거는 종류별로 다름 ──
@@ -2589,12 +2821,14 @@
       const dates = legacyLater.map(x => x.start_date).sort().slice(0, 3).join(", ");
       if (!confirm(`이 반복 할일 뒤에 이미 회차가 있어요(${dates}).\n예전에 만든 회차라 이 회차와의 연결을 확인할 수 없어요.\n\n다음 회차를 새로 하나 더 만들까요?\n(취소 = 만들지 않음)`)) return { ok: true };
     }
-    const { error } = await sb.from("tok_todos").insert({
+    const nextRow = {
       title: todo.title, start_date: nextStart, end_date: todo.end_date || null,
       todo_time: todo.todo_time || null, duration_minutes: todo.duration_minutes || null,
       tag_id: todo.tag_id || null, repeat_unit: todo.repeat_unit, repeat_interval: todo.repeat_interval, repeat_days: todo.repeat_days || null,
       repeat_chain_id: chainId, repeat_source_id: todo.id,
-    });
+    };
+    if (todo.project_id) nextRow.project_id = todo.project_id; // 2026-09-29 다음 회차도 같은 프로젝트에 연결
+    const { error } = await sb.from("tok_todos").insert(nextRow);
     // 23505 = unique 위반: 동시 요청 등으로 다른 쪽이 먼저 만들었음 → 이미 1개 있으니 성공으로 취급
     if (error && error.code !== "23505") return { ok: false, error };
     return { ok: true };
@@ -5257,7 +5491,7 @@
     const openInput = () => {
       const wrap = document.createElement("div");
       wrap.className = "inline-add-wrap";
-      wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="언젠가 할 일" />`;
+      wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="담아둘 일" />`;
       row.replaceWith(wrap);
       const input = wrap.querySelector("input");
       input.focus();
@@ -5577,6 +5811,7 @@
     $("td_end").value = existing ? (existing.end_date || "") : (prefill?.endDate || "");
     fillHalfHourTimeSelect($("td_time"), existing ? (existing.todo_time ? existing.todo_time.slice(0, 5) : "") : (prefill?.time || ""));
     populateTodoTagSelect(existing ? (existing.tag_id || null) : (prefill?.tagId || null));
+    fillProjectSelect($("td_project"), $("td_project_wrap"), existing ? (existing.project_id || null) : (prefill?.projectId || null));
     $("td_error").textContent = "";
     $("todoSaveBtn").disabled = false;
     $("todoSaveBtn").textContent = "저장";
@@ -5618,6 +5853,7 @@
       // 새 할일: 시간을 정하면 소요시간 30분(시간 미지정이면 null). 수정: 소요시간은 사용자가 정한 값 그대로 두고,
       // 시간 없던 할일에 처음 시간을 넣었는데 소요시간이 비어 있을 때만 30분을 채움(기존 값은 바꾸지 않음).
       const patch = { title, start_date, end_date, todo_time, tag_id };
+      if (projectsReady) patch.project_id = $("td_project").value || null; // DB에 프로젝트가 없으면(마이그레이션 전) 보내지 않음
       if (!editId) patch.duration_minutes = todo_time ? TODO_DEFAULT_DURATION_MIN : null;
       else if (todo_time && existingTodo && existingTodo.duration_minutes == null) patch.duration_minutes = TODO_DEFAULT_DURATION_MIN;
       ({ error } = editId
@@ -5727,6 +5963,7 @@
     $("hs_start").value = habit.start_date || todayStr();
     $("hs_end").value = habit.end_date || "";
     populateHabitCategorySelect(habit.category_id);
+    fillProjectSelect($("hs_project"), $("hs_project_wrap"), habit.project_id || null);
     renderHabitCategoryList();
     $("hs_newcat_name").value = "";
     $("habitSheetBg").classList.add("open");
@@ -5791,6 +6028,7 @@
       { unit: repeat_unit, interval: repeat_interval, days: repeat_days }
     );
     const patch = { name, start_minute, duration_minutes, repeat_unit, repeat_interval, repeat_days, category_id, start_date, end_date };
+    if (projectsReady) patch.project_id = $("hs_project").value || null; // 마이그레이션 전이면 보내지 않음
     if (changed) {
       const msg = repeat_unit
         ? `오늘부터 "${repeatSummaryText(repeat_unit, repeat_interval, repeat_days)}"로 바뀌어요. 지금까지 밀린 기록은 그대로 두고 다음 예정일부터 새 주기가 적용돼요. 변경할까요?`
@@ -5829,7 +6067,7 @@
         ${moreBtnHtml(item.title)}
       </div>
     `;
-    }).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 그룹의 항목이 없어요." : "등록된 언젠가 할일이 없어요."}</div>`;
+    }).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 그룹의 항목이 없어요." : "담아둔 일이 없어요."}</div>`;
     document.querySelectorAll(".someday-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
@@ -5954,7 +6192,7 @@
     const item = somedayItems.find(x => x.id === id);
     if (!item) return;
     somedayMoveState = { id, saving: false, opener: activeOpener() };
-    $("sm_desc").textContent = `‘${item.title}’을(를) 언젠가에서 빼서 고른 날짜의 할일로 옮겨요. 제목·그룹은 그대로이고, 완료 표시는 새로 시작해요.`;
+    $("sm_desc").textContent = `‘${item.title}’을(를) 담아두기에서 빼서 고른 날짜의 할일로 옮겨요. 제목·그룹은 그대로이고, 완료 표시는 새로 시작해요.`;
     $("sm_date").value = todayStr();
     $("sm_error").textContent = "";
     setSomedayMoveBusy(false);
@@ -6003,11 +6241,11 @@
     if (/someday_not_found/.test(error.message || "") || stillThere === false) {
       closeSomedayMoveSheet();
       await loadAll();
-      alert("이 항목은 이미 언젠가에 없어요(옮겨졌거나 삭제됨). 목록을 새로 불러왔으니 할일 목록에서 확인해 주세요.");
+      alert("이 항목은 이미 담아두기에 없어요(옮겨졌거나 삭제됨). 목록을 새로 불러왔으니 할일 목록에서 확인해 주세요.");
       return;
     }
     $("sm_error").textContent = stillThere === true
-      ? `옮기지 못했어요. 언젠가 항목은 그대로 있어요. 다시 시도해 주세요. (${error.message || error})`
+      ? `옮기지 못했어요. 담아두기 항목은 그대로 있어요. 다시 시도해 주세요. (${error.message || error})`
       : `저장 결과를 확인하지 못했어요. 연결을 확인한 뒤 다시 눌러 주세요 — 다시 눌러도 할일이 두 번 생기지 않아요. (${error.message || error})`;
     $("sm_save").focus();
   }
@@ -7035,6 +7273,7 @@
     $("ha_category").innerHTML = `<option value="">기본</option>` +
       assignableTagPool(habitCategories, null).map(c => `<option value="${c.id}">${escapeHtml(tagPickLabel(c))}</option>`).join("");
     $("ha_category").value = prefill?.categoryId || "";
+    fillProjectSelect($("ha_project"), $("ha_project_wrap"), prefill?.projectId || null);
     $("ha_error").textContent = "";
     $("ha_save").disabled = false;
     $("ha_save").textContent = "저장";
@@ -7064,6 +7303,7 @@
       start_date: $("ha_start").value || todayStr(),
       category_id: $("ha_category").value || null,
     };
+    if (projectsReady) row.project_id = $("ha_project").value || null; // 마이그레이션 전이면 보내지 않음
     habitAddState.saving = true;
     $("ha_error").textContent = "";
     $("ha_save").disabled = true;
@@ -7104,7 +7344,7 @@
     back: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>`,
     plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
   };
-  const ITEM_KIND_NAME = { todo: "할일", habit: "습관", event: "일정", someday: "언젠가" };
+  const ITEM_KIND_NAME = { todo: "할일", habit: "습관", event: "일정", someday: "담아두기" };
   function menuDateLabel(dateStr) {
     const [y, m, d] = dateStr.split("-").map(Number);
     return `${y !== Number(todayStr().slice(0, 4)) ? `${y}년 ` : ""}${m}월 ${d}일`;
@@ -7281,7 +7521,7 @@
   async function deleteSomedayWithConfirm(id) {
     const s = somedayItems.find(x => x.id === id);
     if (!s) return false;
-    const ok = await askConfirm({ title: "언젠가 항목을 삭제할까요?", message: `‘${s.title}’`, okText: "삭제", cancelText: "취소", danger: true });
+    const ok = await askConfirm({ title: "담아두기 항목을 삭제할까요?", message: `‘${s.title}’`, okText: "삭제", cancelText: "취소", danger: true });
     if (!ok) return false;
     const { error } = await sb.from("tok_someday").delete().eq("id", id);
     if (error) { alert("삭제하지 못했어요: " + error.message); return false; }
@@ -7300,12 +7540,14 @@
         repeat_unit: item.repeat_unit, repeat_interval: item.repeat_interval, repeat_days: item.repeat_days || null,
         start_date: item.start_date || todayStr(), end_date: item.end_date || null,
         start_minute: item.start_minute, duration_minutes: item.duration_minutes || 30,
+        ...(item.project_id ? { project_id: item.project_id } : {}), // 2026-09-29 복제본도 같은 프로젝트에 연결
       }));
     } else if (kind === "todo") {
       ({ error } = await sb.from("tok_todos").insert({
         title: (item.title || "이름 없는 할일") + " (사본)", start_date: item.start_date, end_date: item.end_date || null,
         todo_time: item.todo_time || null, duration_minutes: item.duration_minutes || null,
         tag_id: item.tag_id || null, repeat_unit: item.repeat_unit, repeat_interval: item.repeat_interval, repeat_days: item.repeat_days || null,
+        ...(item.project_id ? { project_id: item.project_id } : {}),
       }));
     } else {
       ({ error } = await sb.from("tok_events").insert({
@@ -7757,7 +7999,7 @@
         const cat = pool.find(c => c.id === id);
         const ok = await askConfirm({
           title: `‘${cat ? cat.name : "이 " + noun}’ ${nounObj} 완전히 삭제할까요?`,
-          message: `이 ${nounObj} 쓰던 ${isEvent ? "일정은" : "할일·습관·언젠가는"} 지워지지 않고 "${noneLabel}"으로 바뀌어요.${isEvent ? "" : " 완료 기록도 그대로 남아요."} 삭제한 ${nounTopic} 되돌릴 수 없어요.`,
+          message: `이 ${nounObj} 쓰던 ${isEvent ? "일정은" : "할일·습관·담아두기는"} 지워지지 않고 "${noneLabel}"으로 바뀌어요.${isEvent ? "" : " 완료 기록도 그대로 남아요."} 삭제한 ${nounTopic} 되돌릴 수 없어요.`,
           okText: "완전 삭제", cancelText: "취소", danger: true,
         });
         if (!ok) return;
@@ -8051,6 +8293,365 @@
     renderSettingsBlockList();
     renderTodo();
   };
+
+  // ── 작업(프로젝트) 탭 — 2026-09-29 1차 ──
+  // 구조: 정체성(선택) → 프로젝트 → 하위 프로젝트(선택, 2단계까지) → 할일·습관(project_id로 같은 행을 가리킴, 복제 없음).
+  // 삭제·보관·완료율·자동 완료는 후속 설계라 이번엔 만들지 않음. 연결 해제 = project_id만 비움(원본·기록 그대로).
+  let workSelectedId = null;
+  const projectById = (id) => projects.find(p => p.id === id) || null;
+  const identityById = (id) => identities.find(i => i.id === id) || null;
+  const projectChildren = (id) => projects.filter(p => p.parent_id === id);
+  // 상위가 없는(또는 상위를 못 찾는) 프로젝트 = 목록의 최상위
+  const topProjects = () => projects.filter(p => !p.parent_id || !projectById(p.parent_id));
+  const projectPathLabel = (p) => { const par = p && p.parent_id ? projectById(p.parent_id) : null; return p ? (par ? `${par.name} › ${p.name}` : p.name) : ""; };
+  const projectTodos = (id) => todos.filter(t => t.project_id === id);
+  const projectHabits = (id) => tasks.filter(h => h.project_id === id);
+  function nextSortOrder(list) { return list.reduce((m, x) => Math.max(m, Number.isFinite(x.sort_order) ? x.sort_order : -1), -1) + 1; }
+
+  // 할일·습관 입력창의 프로젝트 선택칸(기존 입력·수정 창 재사용). DB 준비 전(projectsReady=false)이면 칸 자체를 숨김.
+  function fillProjectSelect(sel, wrap, currentId) {
+    if (!sel || !wrap) return;
+    wrap.hidden = !projectsReady;
+    if (!projectsReady) { sel.innerHTML = ""; return; }
+    const opts = [`<option value="">없음</option>`];
+    topProjects().forEach(p => {
+      opts.push(`<option value="${p.id}">${escapeHtml(p.name)}</option>`);
+      projectChildren(p.id).forEach(c => opts.push(`<option value="${c.id}">└ ${escapeHtml(c.name)}</option>`));
+    });
+    if (currentId && !projectById(currentId)) opts.push(`<option value="${escapeHtml(currentId)}">(찾을 수 없는 프로젝트)</option>`);
+    sel.innerHTML = opts.join("");
+    sel.value = currentId || "";
+  }
+
+  function renderWork() {
+    const page = document.querySelector('.page[data-page="work"]');
+    if (!page) return;
+    $("workNotReady").hidden = projectsReady;
+    $("workLayout").hidden = !projectsReady;
+    $("projAddBtn").hidden = !projectsReady;
+    if (!projectsReady) return;
+    if (workSelectedId && !projectById(workSelectedId)) workSelectedId = null;
+    page.classList.toggle("work-has-selection", !!workSelectedId);
+    renderProjectList();
+    renderIdentityList();
+    renderProjectDetail();
+  }
+
+  function projectItemHtml(p, isChild) {
+    const undone = projectTodos(p.id).filter(t => !t.is_done).length;
+    const habits = projectHabits(p.id).length;
+    const ident = !isChild && p.identity_id ? identityById(p.identity_id) : null;
+    const meta = [ident ? ident.name : "", `할일 ${undone}`, `습관 ${habits}`].filter(Boolean).join(" · ");
+    return `<button type="button" class="proj-item${isChild ? " child" : ""}${p.id === workSelectedId ? " active" : ""}" data-proj="${p.id}" aria-current="${p.id === workSelectedId}">
+      <span class="proj-name">${escapeHtml(p.name)}</span><span class="proj-meta">${escapeHtml(meta)}</span></button>`;
+  }
+  function renderProjectList() {
+    const host = $("projectList");
+    const tops = topProjects();
+    if (!tops.length) {
+      host.innerHTML = `<div class="card proj-empty"><p class="simple-empty-title">아직 프로젝트가 없어요</p>
+        <p class="simple-empty-sub">프로젝트를 만들고 그 안에 할일·습관을 담아 보세요.</p>
+        <button type="button" class="sched-add-btn" id="projEmptyAddBtn">+ 프로젝트 추가</button></div>`;
+      $("projEmptyAddBtn").onclick = (e) => openProjectSheet({ mode: "add", opener: e.currentTarget });
+      return;
+    }
+    host.innerHTML = `<ul class="proj-tree">${tops.map(p => {
+      const kids = projectChildren(p.id);
+      return `<li>${projectItemHtml(p, false)}${kids.length ? `<ul class="proj-children">${kids.map(c => `<li>${projectItemHtml(c, true)}</li>`).join("")}</ul>` : ""}</li>`;
+    }).join("")}</ul>`;
+    host.querySelectorAll(".proj-item[data-proj]").forEach(btn => {
+      btn.onclick = () => { workSelectedId = btn.dataset.proj; renderWork(); $("projectDetail").querySelector(".proj-title")?.focus?.({ preventScroll: false }); };
+    });
+  }
+
+  function renderIdentityList() {
+    const host = $("identityList");
+    host.innerHTML = identities.length
+      ? identities.map(i => `<div class="identity-row"><input type="text" class="identity-name-input" data-id="${i.id}" value="${escapeHtml(i.name)}" aria-label="정체성 이름" /></div>`).join("")
+      : `<p class="work-muted identity-empty">아직 없어요. 정체성 없이도 프로젝트를 만들 수 있어요.</p>`;
+    host.querySelectorAll(".identity-name-input").forEach(inp => {
+      const commit = async () => {
+        const it = identityById(inp.dataset.id);
+        const name = inp.value.trim();
+        if (!it || !name || name === it.name) { if (it) inp.value = it.name; return; }
+        const { error } = await sb.from("tok_identities").update({ name }).eq("id", it.id);
+        if (error) { alert("이름을 바꾸지 못했어요. (" + error.message + ")"); inp.value = it.name; return; }
+        it.name = name;
+        renderProjectList(); renderProjectDetail();
+      };
+      inp.onblur = commit;
+      inp.onkeydown = (e) => { if (e.key === "Enter" && !e.isComposing) inp.blur(); };
+    });
+  }
+  async function addIdentity() {
+    const inp = $("identityNameInput");
+    const name = inp.value.trim();
+    if (!name) { inp.focus(); return; }
+    $("identityAddBtn").disabled = true;
+    const { data, error } = await sb.from("tok_identities").insert({ name, sort_order: nextSortOrder(identities) }).select().single();
+    $("identityAddBtn").disabled = false;
+    if (error) { alert("정체성을 추가하지 못했어요. (" + error.message + ")"); return; }
+    identities.push(data);
+    inp.value = "";
+    renderIdentityList();
+  }
+  $("identityAddBtn").onclick = addIdentity;
+  $("identityNameInput").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); addIdentity(); } });
+  $("projAddBtn").onclick = (e) => openProjectSheet({ mode: "add", opener: e.currentTarget });
+  $("workRetryBtn").onclick = () => loadAll();
+
+  function projectTodoRowHtml(t) {
+    const date = t.start_date ? formatDateShort(t.start_date) : "";
+    const time = t.todo_time ? t.todo_time.slice(0, 5) : "";
+    const meta = [date, time, t.repeat_unit ? "반복" : ""].filter(Boolean).join(" · ");
+    return `<div class="proj-row${t.is_done ? " done" : ""}" data-kind="todo" data-id="${t.id}">
+      <input type="checkbox" class="proj-todo-check" data-id="${t.id}" ${t.is_done ? "checked" : ""} aria-label="${escapeHtml(t.title)} 완료" />
+      <button type="button" class="proj-row-title" data-open-todo="${t.id}">${escapeHtml(t.title)}</button>
+      <span class="proj-row-meta">${escapeHtml(meta)}</span>
+      <button type="button" class="proj-unlink" data-unlink-kind="todo" data-id="${t.id}">연결 해제</button>
+    </div>`;
+  }
+  function projectHabitRowHtml(h) {
+    const state = !h.is_active ? "보관" : (h.end_date && h.end_date < todayStr() ? "종료" : "");
+    const meta = [repeatSummaryText(h.repeat_unit, h.repeat_interval, h.repeat_days), state].filter(Boolean).join(" · ");
+    return `<div class="proj-row" data-kind="habit" data-id="${h.id}">
+      <span class="proj-row-lead" aria-hidden="true">↻</span>
+      <button type="button" class="proj-row-title" data-open-habit="${h.id}">${escapeHtml(h.name)}</button>
+      <span class="proj-row-meta">${escapeHtml(meta)}</span>
+      <button type="button" class="proj-unlink" data-unlink-kind="habit" data-id="${h.id}">연결 해제</button>
+    </div>`;
+  }
+  function renderProjectDetail() {
+    const host = $("projectDetail");
+    const p = workSelectedId ? projectById(workSelectedId) : null;
+    if (!p) {
+      host.innerHTML = projects.length ? `<div class="card proj-detail-empty">프로젝트를 고르면 여기에서 하위 프로젝트·할일·습관을 볼 수 있어요.</div>` : "";
+      return;
+    }
+    const parent = p.parent_id ? projectById(p.parent_id) : null;
+    const ident = !parent && p.identity_id ? identityById(p.identity_id) : null;
+    const kids = parent ? [] : projectChildren(p.id);
+    const ts = projectTodos(p.id);
+    const undone = ts.filter(t => !t.is_done).sort((a, b) => (a.start_date || "").localeCompare(b.start_date || "") || (a.todo_time || "").localeCompare(b.todo_time || ""));
+    const done = ts.filter(t => t.is_done).sort((a, b) => (b.completed_date || b.start_date || "").localeCompare(a.completed_date || a.start_date || ""));
+    const hs = projectHabits(p.id);
+    host.innerHTML = `<div class="card proj-detail">
+      <button type="button" class="proj-back" id="projBackBtn">‹ 프로젝트 목록</button>
+      ${parent ? `<button type="button" class="proj-crumb" data-proj="${parent.id}">${escapeHtml(parent.name)} ›</button>` : ""}
+      <h2 class="proj-title" tabindex="-1">${escapeHtml(p.name)}</h2>
+      ${ident ? `<p class="proj-identity">정체성 · ${escapeHtml(ident.name)}</p>` : ""}
+      ${p.description ? `<p class="proj-desc">${escapeHtml(p.description)}</p>` : ""}
+      <div class="proj-actions">
+        <button type="button" class="btn-ghost" id="projEditBtn">수정</button>
+        ${parent ? "" : `<button type="button" class="btn-ghost" id="projAddChildBtn">+ 하위 프로젝트</button>`}
+      </div>
+      ${kids.length ? `<section class="proj-section"><h3 class="proj-section-title">하위 프로젝트 <span class="work-muted">${kids.length}</span></h3>
+        <div class="proj-kids">${kids.map(c => projectItemHtml(c, true)).join("")}</div></section>` : ""}
+      <section class="proj-section">
+        <div class="proj-section-head"><h3 class="proj-section-title">할일 <span class="work-muted">${undone.length}</span></h3>
+          <div class="proj-section-btns"><button type="button" class="btn-ghost" id="projNewTodoBtn">+ 새 할일</button><button type="button" class="btn-ghost" id="projLinkTodoBtn">기존 할일 연결</button></div></div>
+        ${undone.length ? undone.map(projectTodoRowHtml).join("") : `<p class="proj-none">연결된 할일이 없어요.</p>`}
+        ${done.length ? `<details class="proj-done"><summary>완료한 할일 ${done.length}</summary>${done.map(projectTodoRowHtml).join("")}</details>` : ""}
+      </section>
+      <section class="proj-section">
+        <div class="proj-section-head"><h3 class="proj-section-title">습관 <span class="work-muted">${hs.length}</span></h3>
+          <div class="proj-section-btns"><button type="button" class="btn-ghost" id="projNewHabitBtn">+ 새 습관</button><button type="button" class="btn-ghost" id="projLinkHabitBtn">기존 습관 연결</button></div></div>
+        ${hs.length ? hs.map(projectHabitRowHtml).join("") : `<p class="proj-none">연결된 습관이 없어요.</p>`}
+      </section>
+    </div>`;
+    $("projBackBtn").onclick = () => { workSelectedId = null; renderWork(); $("projectList").querySelector(".proj-item")?.focus(); };
+    host.querySelectorAll("[data-proj]").forEach(b => { b.onclick = () => { workSelectedId = b.dataset.proj; renderWork(); }; });
+    $("projEditBtn").onclick = (e) => openProjectSheet({ mode: "edit", id: p.id, opener: e.currentTarget });
+    $("projAddChildBtn") && ($("projAddChildBtn").onclick = (e) => openProjectSheet({ mode: "add", parentId: p.id, opener: e.currentTarget }));
+    // 새 항목은 기존 할일·습관 추가 창을 그대로 쓰고 이 프로젝트만 미리 골라 둠(날짜는 창의 기존 규칙대로)
+    $("projNewTodoBtn").onclick = () => openTodoSheet(null, { projectId: p.id });
+    $("projNewHabitBtn").onclick = (e) => openHabitAddSheet(e.currentTarget, { projectId: p.id });
+    $("projLinkTodoBtn").onclick = (e) => openProjectLink("todo", p.id, e.currentTarget);
+    $("projLinkHabitBtn").onclick = (e) => openProjectLink("habit", p.id, e.currentTarget);
+    host.querySelectorAll("[data-open-todo]").forEach(b => { b.onclick = () => openTodoSheet(todos.find(t => t.id === b.dataset.openTodo)); });
+    host.querySelectorAll("[data-open-habit]").forEach(b => { b.onclick = () => openHabitSheet(tasks.find(h => h.id === b.dataset.openHabit)); });
+    host.querySelectorAll(".proj-todo-check").forEach(cb => {
+      cb.onchange = async () => {
+        cb.disabled = true;
+        const reloaded = await setTodoDone(cb.dataset.id, cb.checked); // 기존 완료 규칙(반복 다음 회차·완료일) 그대로
+        if (!reloaded) { renderHome(); renderTodosPage(); renderWork(); }
+      };
+    });
+    host.querySelectorAll(".proj-unlink").forEach(b => { b.onclick = () => setItemProject(b.dataset.unlinkKind, b.dataset.id, null); });
+  }
+
+  // 할일·습관의 프로젝트 연결/해제 — project_id 한 칸만 바꿈(항목·완료 기록·날짜는 그대로). val=null이면 해제.
+  async function setItemProject(kind, id, val) {
+    const table = kind === "habit" ? "tok_habits" : "tok_todos";
+    const { error } = await sb.from(table).update({ project_id: val }).eq("id", id);
+    if (error) { alert((val ? "연결" : "연결 해제") + "하지 못했어요. (" + error.message + ")"); return false; }
+    const row = (kind === "habit" ? tasks : todos).find(x => x.id === id);
+    if (row) row.project_id = val;
+    showToast(val ? "프로젝트에 연결했어요" : "연결을 해제했어요 · 항목은 그대로 있어요");
+    renderWork();
+    return true;
+  }
+
+  // 기존 할일·습관 연결 창 — 다른 프로젝트에 이미 연결된 항목은 옮길지 한 번 물어봄(직접 연결은 프로젝트 하나).
+  let projectLinkState = { kind: "todo", projectId: null, opener: null };
+  function openProjectLink(kind, projectId, opener) {
+    projectLinkState = { kind, projectId, opener: opener || null };
+    $("projectLinkTitle").textContent = kind === "habit" ? "기존 습관 연결" : "기존 할일 연결";
+    $("pl_search").value = "";
+    $("pl_error").textContent = "";
+    renderProjectLinkList();
+    $("projectLinkBg").classList.add("open");
+    fitCalEventSheetToViewport();
+    $("pl_search").focus();
+  }
+  function closeProjectLink() {
+    $("projectLinkBg").classList.remove("open");
+    fitCalEventSheetToViewport();
+    const o = projectLinkState.opener;
+    const again = o && document.body.contains(o) ? o : $(projectLinkState.kind === "habit" ? "projLinkHabitBtn" : "projLinkTodoBtn");
+    again?.focus?.({ preventScroll: true });
+  }
+  function renderProjectLinkList() {
+    const { kind, projectId } = projectLinkState;
+    const q = $("pl_search").value.trim().toLowerCase();
+    const nameOf = (x) => kind === "habit" ? x.name : x.title;
+    // 할일은 완료되지 않은 것만(반복 할일의 지난 완료 회차는 기록이라 제외), 습관은 보관·종료 포함 전체
+    let list = kind === "habit" ? tasks.slice() : todos.filter(t => !t.is_done);
+    list = list.filter(x => x.project_id !== projectId && (!q || (nameOf(x) || "").toLowerCase().includes(q)));
+    if (kind === "todo") list.sort((a, b) => (a.start_date || "").localeCompare(b.start_date || ""));
+    $("pl_list").innerHTML = list.length ? list.slice(0, 200).map(x => {
+      const other = x.project_id ? projectById(x.project_id) : null;
+      const meta = kind === "habit" ? repeatSummaryText(x.repeat_unit, x.repeat_interval, x.repeat_days) : (x.start_date ? formatDateShort(x.start_date) : "");
+      return `<div class="pl-row" role="listitem"><span class="pl-name">${escapeHtml(nameOf(x))}</span>
+        <span class="pl-meta">${escapeHtml(meta)}${other ? ` · 지금: ${escapeHtml(projectPathLabel(other))}` : ""}</span>
+        <button type="button" class="btn-ghost pl-link" data-id="${x.id}">연결</button></div>`;
+    }).join("") : `<p class="proj-none">${q ? "찾는 항목이 없어요." : (kind === "habit" ? "연결할 수 있는 습관이 없어요." : "연결할 수 있는 할일이 없어요.")}</p>`;
+    $("pl_list").querySelectorAll(".pl-link").forEach(btn => {
+      btn.onclick = async () => {
+        const item = (kind === "habit" ? tasks : todos).find(x => x.id === btn.dataset.id);
+        if (!item) return;
+        const other = item.project_id ? projectById(item.project_id) : null;
+        if (other) {
+          const ok = await askConfirm({ title: "다른 프로젝트에서 옮길까요?", message: `‘${nameOf(item)}’은(는) 지금 ‘${projectPathLabel(other)}’에 연결돼 있어요. 한 항목은 프로젝트 하나에만 연결돼요.`, okText: "옮기기", cancelText: "취소" });
+          if (!ok) return;
+        }
+        btn.disabled = true;
+        const done = await setItemProject(kind, item.id, projectId);
+        if (!done) { btn.disabled = false; $("pl_error").textContent = "연결하지 못했어요. 다시 시도해 주세요."; return; }
+        renderProjectLinkList();
+      };
+    });
+  }
+  $("pl_search").addEventListener("input", renderProjectLinkList);
+  $("pl_close").onclick = closeProjectLink;
+  $("projectLinkBg").addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("confirmBg").classList.contains("open")) { e.preventDefault(); closeProjectLink(); return; }
+    trapFocusIn($("projectLinkBg").querySelector(".sheet"), e);
+  });
+  $("projectLinkBg").addEventListener("click", (e) => { if (e.target === $("projectLinkBg")) closeProjectLink(); });
+
+  // 프로젝트 만들기/수정 창. 하위 프로젝트는 상위를 고정(2단계까지 — 하위 아래에는 만들 수 없음, DB 트리거도 막음).
+  let projectSheet = { mode: "add", id: null, parentId: null, saving: false, opener: null };
+  function openProjectSheet({ mode = "add", id = null, parentId = null, opener = null } = {}) {
+    const p = mode === "edit" ? projectById(id) : null;
+    if (mode === "edit" && !p) return;
+    const parent = p ? (p.parent_id ? projectById(p.parent_id) : null) : (parentId ? projectById(parentId) : null);
+    projectSheet = { mode, id: p ? p.id : null, parentId: p ? (p.parent_id || null) : (parentId || null), saving: false, opener };
+    $("projectSheetTitle").textContent = mode === "edit" ? "프로젝트 수정" : (parent ? "하위 프로젝트 추가" : "프로젝트 추가");
+    $("pj_parent_note").hidden = !parent;
+    $("pj_parent_note").textContent = parent ? `상위 프로젝트: ${parent.name}` : "";
+    $("pj_name").value = p ? p.name : "";
+    $("pj_desc").value = p ? (p.description || "") : "";
+    // 정체성은 상위 프로젝트에만(하위는 상위의 정체성을 따름)
+    $("pj_identity_wrap").hidden = !!parent;
+    const curIdent = p ? (p.identity_id || "") : "";
+    $("pj_identity").innerHTML = `<option value="">없음</option>` + identities.map(i => `<option value="${i.id}">${escapeHtml(i.name)}</option>`).join("");
+    $("pj_identity").value = curIdent;
+    $("pj_error").textContent = "";
+    $("pj_save").disabled = false; $("pj_save").textContent = "저장";
+    $("projectSheetBg").classList.add("open");
+    fitCalEventSheetToViewport();
+    $("pj_name").focus();
+  }
+  function closeProjectSheet() {
+    if (projectSheet.saving) return;
+    $("projectSheetBg").classList.remove("open");
+    fitCalEventSheetToViewport();
+    const o = projectSheet.opener;
+    if (o && document.body.contains(o) && o.getClientRects().length) o.focus({ preventScroll: true });
+  }
+  async function saveProjectSheet() {
+    if (projectSheet.saving) return;
+    const name = $("pj_name").value.trim();
+    if (!name) { $("pj_error").textContent = "프로젝트 이름을 적어주세요."; $("pj_name").focus(); return; }
+    const description = $("pj_desc").value.trim() || null;
+    const identity_id = projectSheet.parentId ? null : ($("pj_identity").value || null);
+    projectSheet.saving = true;
+    $("pj_save").disabled = true; $("pj_save").textContent = "저장 중…";
+    let data, error;
+    try {
+      ({ data, error } = projectSheet.mode === "edit"
+        ? await sb.from("tok_projects").update({ name, description, identity_id }).eq("id", projectSheet.id).select().single()
+        : await sb.from("tok_projects").insert({ name, description, identity_id, parent_id: projectSheet.parentId, sort_order: nextSortOrder(projects) }).select().single());
+    } catch (err) { error = err; }
+    projectSheet.saving = false;
+    $("pj_save").disabled = false; $("pj_save").textContent = "저장";
+    if (error) {
+      const m = error.message || String(error);
+      $("pj_error").textContent = /project_depth_limit/.test(m) ? "하위 프로젝트 아래에는 프로젝트를 만들 수 없어요(2단계까지)."
+        : /project_self_parent|project_has_children/.test(m) ? "이 위치로는 옮길 수 없어요."
+        : "저장하지 못했어요. 입력한 내용은 그대로 있어요. (" + m + ")";
+      return;
+    }
+    if (data && data.id) workSelectedId = data.id;
+    closeProjectSheet();
+    await loadAll();
+  }
+  $("pj_save").onclick = saveProjectSheet;
+  $("pj_cancel").onclick = closeProjectSheet;
+  $("projectForm").onsubmit = (e) => { e.preventDefault(); saveProjectSheet(); };
+  $("pj_name").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); saveProjectSheet(); } });
+  $("projectSheetBg").addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); closeProjectSheet(); return; }
+    trapFocusIn($("projectSheetBg").querySelector(".sheet"), e);
+  });
+  $("projectSheetBg").addEventListener("click", (e) => { if (e.target === $("projectSheetBg")) closeProjectSheet(); });
+
+  // ── 기록 탭 — 2026-09-29 1차 ──
+  // 날짜별: 그날 실제로 저장된 기록만(할일 완료일 completed_date, 습관 완료 tok_habit_logs, 습관 건너뛰기 tok_habit_skips).
+  // 항목별: 기존 습관·반복 할일 기록 달력(openHabitHistory / openTodoHistory)을 그대로 엶. 임시 수치·예상 통계는 만들지 않음.
+  let recDate = todayStr();
+  function renderRecords() {
+    const d = recDate, t = todayStr();
+    $("recDateLabel").textContent = d === t ? "오늘" : calDateLabel(d);
+    $("recDateLabel").setAttribute("aria-label", d === t ? "오늘" : `${calDateLabel(d)}, 오늘로 돌아가기`);
+    const habitName = (id) => tasks.find(h => h.id === id)?.name || "삭제된 습관";
+    const doneTodos = todos.filter(x => x.is_done && x.completed_date === d);
+    const doneHabits = habitLogs.filter(l => l.done_date === d);
+    const skipped = habitSkips.filter(s => s.skip_date === d);
+    const group = (title, rows) => rows.length ? `<div class="rec-group"><h3 class="rec-group-title">${title} <span class="work-muted">${rows.length}</span></h3><ul class="rec-list">${rows.join("")}</ul></div>` : "";
+    const html = group("완료한 할일", doneTodos.map(x => `<li>${escapeHtml(x.title)}${x.project_id && projectById(x.project_id) ? ` <span class="work-muted">· ${escapeHtml(projectPathLabel(projectById(x.project_id)))}</span>` : ""}</li>`))
+      + group("완료한 습관", doneHabits.map(l => `<li>${escapeHtml(habitName(l.habit_id))}</li>`))
+      + group("건너뛴 습관", skipped.map(s => `<li>${escapeHtml(habitName(s.habit_id))}</li>`));
+    $("recDayList").innerHTML = html || `<p class="proj-none">이 날 남은 기록이 없어요.</p>`;
+    // 항목별 기록 달력: 습관 전체 + 반복 할일(체인당 가장 최근 회차 하나)
+    const chains = new Map();
+    todos.filter(x => x.repeat_unit || x.repeat_chain_id).forEach(x => {
+      const key = x.repeat_chain_id || x.id;
+      const cur = chains.get(key);
+      if (!cur || (x.start_date || "") > (cur.start_date || "")) chains.set(key, x);
+    });
+    const habitRows = tasks.map(h => `<li><button type="button" class="rec-item" data-habit="${h.id}"><span>${escapeHtml(h.name)}</span><span class="work-muted">습관 기록 달력</span></button></li>`);
+    const todoRows = [...chains.values()].map(x => `<li><button type="button" class="rec-item" data-todo="${x.id}"><span>${escapeHtml(x.title)}</span><span class="work-muted">반복 할일 기록 달력</span></button></li>`);
+    const all = habitRows.concat(todoRows);
+    $("recItemList").innerHTML = all.length ? `<ul class="rec-list rec-items">${all.join("")}</ul>` : `<p class="proj-none">습관이나 반복 할일이 생기면 여기서 기록 달력을 볼 수 있어요.</p>`;
+    $("recItemList").querySelectorAll("[data-habit]").forEach(b => { b.onclick = () => openHabitHistory(b.dataset.habit); });
+    $("recItemList").querySelectorAll("[data-todo]").forEach(b => { b.onclick = () => openTodoHistory(b.dataset.todo); });
+  }
+  $("recPrevBtn").onclick = () => { recDate = addDaysStr(recDate, -1); renderRecords(); };
+  $("recNextBtn").onclick = () => { recDate = addDaysStr(recDate, 1); renderRecords(); };
+  $("recDateLabel").onclick = () => { recDate = todayStr(); renderRecords(); };
+
 
   boot();
 </script>
