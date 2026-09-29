@@ -1351,6 +1351,8 @@
   @media (max-width:760px){
     .share-open-btn{padding:0 10px;}
     .share-view-tabs{flex:1 1 100%;margin-left:0;}
+    .share-opts{gap:5px;}
+    .share-opt{gap:5px;padding:0 9px 0 8px;font-size:12.5px;}
   }
 </style>
 </head>
@@ -1839,10 +1841,15 @@
           <button type="button" class="home2-tab" data-shareview="block" aria-pressed="false">시간블럭</button>
         </div>
       </div>
+      <!-- 첫 줄 = 보여줄 종류(일정·할일·습관), 둘째 줄 = 할일·습관의 완료 상태 + 빈 시간 숨기기 -->
+      <div class="share-opts" role="group" aria-label="보여줄 종류">
+        <label class="share-opt"><input type="checkbox" id="shareOptEvents" checked /><span>일정</span></label>
+        <label class="share-opt"><input type="checkbox" id="shareOptTodo" checked /><span>할일</span></label>
+        <label class="share-opt"><input type="checkbox" id="shareOptHabit" checked /><span>습관</span></label>
+      </div>
       <div class="share-opts" role="group" aria-label="표시 옵션">
         <label class="share-opt"><input type="checkbox" id="shareOptDone" checked /><span>완료한 일</span></label>
         <label class="share-opt"><input type="checkbox" id="shareOptUndone" checked /><span>미완료한 일</span></label>
-        <label class="share-opt"><input type="checkbox" id="shareOptEvents" checked /><span>일정</span></label>
         <label class="share-opt"><input type="checkbox" id="shareOptHideEmpty" checked /><span>빈 시간 숨기기</span></label>
       </div>
       <p class="share-note" id="shareNote" hidden></p>
@@ -8762,7 +8769,7 @@
   const SHARE_W = 360, SHARE_SCALE = 3; // 논리 폭 360 → 1080px PNG
   const SHARE_MAX_PX = 15500;          // 세로 한계(px). 1080×15500 ≈ 1,674만 화소 — 모바일 사파리 캔버스 한계(약 1,670만) 안
   const shareState = {
-    date: todayStr(), view: "timeline", opts: { done: true, undone: true, events: true, hideEmpty: true },
+    date: todayStr(), view: "timeline", opts: { events: true, todo: true, habit: true, done: true, undone: true, hideEmpty: true },
     version: 0, blob: null, busy: false, ready: false, opener: null, record: false,
   };
   const shareCanShareFiles = (() => {
@@ -8796,8 +8803,11 @@
     timed.sort((a, b) => a.start_minute - b.start_minute);
     return { record, allDay, timed };
   }
+  // 종류(일정·할일·습관) → 할일·습관은 완료 상태(완료한 일·미완료한 일)까지 통과해야 표시. 일정은 완료 개념이 없어 종류만 봄.
   function shareFilterItems(items, opts, record) {
-    return items.filter(it => it.kind === "event" ? opts.events : it.done ? opts.done : (opts.undone && !record));
+    return items.filter(it => it.kind === "event" ? opts.events
+      : !(it.kind === "habit" ? opts.habit : opts.todo) ? false
+      : it.done ? opts.done : (opts.undone && !record));
   }
 
   // ── 색: 테마 변수·그룹색을 캔버스용 RGB로. 1×1 캔버스에 칠해서 읽으므로 oklch 등 브라우저가 아는 색이면 그대로 변환됨 ──
@@ -9108,11 +9118,16 @@
       b.classList.toggle("active", on);
       b.setAttribute("aria-pressed", String(on));
     });
-    $("shareOptDone").checked = s.opts.done;
     $("shareOptEvents").checked = s.opts.events;
+    $("shareOptTodo").checked = s.opts.todo;
+    $("shareOptHabit").checked = s.opts.habit;
     $("shareOptHideEmpty").checked = s.opts.hideEmpty;
+    // 할일·습관을 둘 다 끄면 완료 상태 옵션은 적용할 대상이 없어 잠시 비활성(값은 그대로 기억)
+    const noTask = !s.opts.todo && !s.opts.habit;
+    $("shareOptDone").disabled = noTask;
+    $("shareOptDone").checked = s.opts.done;
     const undone = $("shareOptUndone");
-    undone.disabled = s.record;
+    undone.disabled = s.record || noTask;
     undone.checked = s.record ? false : s.opts.undone;
     undone.closest(".share-opt").title = s.record ? "지난 날짜는 미완료 항목을 정확히 알 수 없어요" : "";
     const note = $("shareNote");
@@ -9184,7 +9199,7 @@
     s.opener = document.activeElement;
     s.date = dateStr || todayStr();
     s.view = view === "block" ? "block" : "timeline";
-    s.opts = { done: true, undone: true, events: true, hideEmpty: true }; // 옵션은 열 때마다 기본값(모두 켜짐)
+    s.opts = { events: true, todo: true, habit: true, done: true, undone: true, hideEmpty: true }; // 옵션은 열 때마다 기본값(모두 켜짐)
     s.busy = false;
     $("shareSheetBg").classList.add("open");
     $("sharePreview").scrollTop = 0;
@@ -9247,7 +9262,7 @@
   document.querySelectorAll("#shareViewTabs [data-shareview]").forEach(b => {
     b.onclick = () => { if (shareState.view === b.dataset.shareview) return; shareState.view = b.dataset.shareview; $("sharePreview").scrollTop = 0; shareRender(); };
   });
-  [["shareOptDone", "done"], ["shareOptUndone", "undone"], ["shareOptEvents", "events"], ["shareOptHideEmpty", "hideEmpty"]].forEach(([id, key]) => {
+  [["shareOptEvents", "events"], ["shareOptTodo", "todo"], ["shareOptHabit", "habit"], ["shareOptDone", "done"], ["shareOptUndone", "undone"], ["shareOptHideEmpty", "hideEmpty"]].forEach(([id, key]) => {
     $(id).addEventListener("change", (e) => { if (e.target.disabled) return; shareState.opts[key] = e.target.checked; shareRender(); });
   });
   $("shareSaveBtn").onclick = shareSave;
