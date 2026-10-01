@@ -858,6 +858,11 @@
   /* 09-24: 저장 완료 등을 잠깐 알려주는 작은 팝업(토스트) — 화면 아래 가운데, 모바일 하단 메뉴에 안 가리게 살짝 위로. */
   .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,8px);background:var(--text);color:var(--card);font-size:13px;font-weight:600;padding:9px 16px;border-radius:999px;box-shadow:0 6px 16px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:1000;white-space:nowrap;}
   .toast.show{opacity:1;transform:translate(-50%,0);}
+  /* 2026-10-01 실행 취소 버튼이 붙은 알림 — 보이는 동안만 누를 수 있음, 좁은 화면에서도 화면 밖으로 안 나가게 */
+  .toast.has-action{display:flex;align-items:center;gap:6px;max-width:calc(100vw - 32px);padding:4px 4px 4px 16px;}
+  .toast.has-action.show{pointer-events:auto;}
+  .toast-action{flex:none;min-height:36px;padding:0 12px;border:none;border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+  .toast-action:hover,.toast-action:focus-visible{background:color-mix(in srgb, var(--card) 18%, transparent);}
 
   /* ── 2026-09-26 앱 전체 통일("차분하고 부드러운 다이어리") ──
      같은 역할 = 같은 모양. 글씨: 페이지 제목 21px / 영역 제목 16px / 본문 14~15px / 보조 12~13px.
@@ -1276,6 +1281,12 @@
   .proj-row-meta{flex:none;font-size:12px;color:var(--sub);white-space:nowrap;}
   .proj-unlink{flex:none;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:8px;font:inherit;font-size:11.5px;padding:5px 8px;cursor:pointer;min-height:32px;}
   .proj-unlink:hover{color:var(--text);background:var(--accent-soft);}
+  /* 2026-10-01 프로젝트 할일 '오늘하기' / '오늘 예정' — 연결 해제 왼쪽, 같은 크기 */
+  .proj-row-actions{flex:none;display:flex;align-items:center;gap:6px;}
+  .proj-today{flex:none;border:1px solid color-mix(in srgb, var(--accent) 45%, var(--line));background:var(--card);color:var(--accent-text);border-radius:8px;font:inherit;font-size:11.5px;font-weight:600;padding:5px 8px;cursor:pointer;min-height:32px;white-space:nowrap;}
+  .proj-today:hover{background:var(--accent-soft);}
+  .proj-today:disabled{opacity:.55;cursor:default;}
+  .proj-today-state{flex:none;font-size:11.5px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:8px;padding:5px 8px;white-space:nowrap;}
   .proj-none{margin:4px 2px;font-size:13px;color:var(--sub);}
   .proj-done{margin-top:8px;}
   .proj-done summary{cursor:pointer;font-size:12.5px;color:var(--sub);padding:6px 0;}
@@ -1300,8 +1311,10 @@
     .proj-back{display:inline-block;}
   }
   @media (max-width:760px){
-    .proj-row{flex-wrap:wrap;}
-    .proj-row-meta{order:3;flex-basis:100%;padding-left:30px;white-space:normal;}
+    .proj-row{flex-wrap:wrap;row-gap:4px;}
+    .proj-row-title{flex:1 1 calc(100% - 48px);}
+    .proj-row-meta{order:3;flex:1 1 auto;padding-left:30px;white-space:normal;}
+    .proj-row-actions,.proj-row > .proj-unlink{order:4;margin-left:auto;}
     .proj-detail{padding:14px;}
   }
 
@@ -3491,11 +3504,32 @@
   // 테마 바탕에 읽히도록 진하기를 조정(CSS .gc-title). 완료 항목은 흐린 글자·취소선이 그룹색보다 우선.
   // 일정 줄은 기존대로 앞의 범주색 동그라미(eventDotHtml)만 쓰고 제목은 기본 글자색.
   // 2026-09-28: 그룹이 없는 할일·습관·언젠가도 그룹 "기본" 색(설정)이 있으면 그 색으로 — 일정 줄은 제목색을 쓰지 않음(동그라미 규칙).
-  function groupTitleHtml(cls, kind, catId, text) {
+  // projectName: 프로젝트에 연결된 할일이면 "프로젝트명 - 할일명"으로 보여 줌(todoProjectName). 제목 칸 안에 같이 넣어서
+  // 그룹색·완료 흐림/취소선·말줄임 규칙을 그대로 따름. 원본 제목은 바꾸지 않음(이름 수정은 rawItemTitle로 원본만 다룸).
+  function groupTitleHtml(cls, kind, catId, text, projectName = null) {
     const color = kind === "event" ? null : itemTagColor(kind, catId);
+    const inner = titleWithProjectHtml(text, projectName);
     return color
-      ? `<span class="${cls} gc-title" style="--gc:${color};">${escapeHtml(text)}</span>`
-      : `<span class="${cls}">${escapeHtml(text)}</span>`;
+      ? `<span class="${cls} gc-title" style="--gc:${color};">${inner}</span>`
+      : `<span class="${cls}">${inner}</span>`;
+  }
+  // 2026-10-01 목록 제목 앞 프로젝트명 — 바로 연결된 프로젝트 이름만(상위 경로 X), 화면에서만 조합(DB 제목엔 저장 안 함).
+  // 프로젝트가 없거나·못 찾거나·프로젝트 기능 준비 전이면 null → 기존 제목 그대로. 습관·일정·담아두기는 쓰지 않음.
+  // 프로젝트 상세 안에서는 부르지 않음(같은 이름 반복 방지).
+  function todoProjectName(td) {
+    if (!projectsReady || !td || !td.project_id) return null;
+    const p = projects.find(x => x.id === td.project_id);
+    return p && p.name ? p.name : null;
+  }
+  function titleWithProjectHtml(text, projectName) {
+    return projectName
+      ? `<span class="title-proj">${escapeHtml(projectName)} - </span>${escapeHtml(text)}`
+      : escapeHtml(text);
+  }
+  // 이름 인라인 수정용 원본 제목 — 화면 글자(프로젝트명이 붙어 있을 수 있음) 대신 데이터의 제목을 씀
+  function rawItemTitle(kind, id) {
+    const it = agendaItemById(kind, id);
+    return it ? ((kind === "habit" ? it.name : it.title) || "") : null;
   }
   // 그룹/범주 색을 카드 배경으로 옅게 깔아줌(원색 그대로면 글자가 안 보여서 흰색과 섞어 파스텔톤으로), 그룹 없으면 흰 배경 고정
   function itemTagBgStyle(kind, catId) {
@@ -3550,7 +3584,7 @@
       const checked = leftoverBusy.get(td.id) === "done" ? " checked" : ""; // 완료 저장 중엔 체크된 채로
       return `<div class="leftover-row${busy ? " is-busy" : ""}" data-id="${td.id}"${menuAttrs("todo", td.id)}>
         <input type="checkbox" class="leftover-check" data-id="${td.id}" aria-label="${escapeHtml(td.title)} 완료"${checked}${dis} />
-        ${groupTitleHtml("leftover-title", "todo", td.tag_id, td.title)}
+        ${groupTitleHtml("leftover-title", "todo", td.tag_id, td.title, todoProjectName(td))}
         <span class="leftover-date">원래 날짜 ${leftoverDateLabel(td.start_date)}</span>
         <span class="leftover-actions">
           <button type="button" class="leftover-today" data-id="${td.id}"${dis}>오늘로</button>
@@ -3596,11 +3630,24 @@
   // 오늘로 = 같은 행의 시작일만 오늘로, 시간은 비워서 종일로. 나머지(제목·그룹·소요 시간·연결 등)는 건드리지 않음.
   function moveLeftoverTodoToToday(id) {
     return runLeftoverAction(id, "today", async () => {
-      const { error } = await sb.from("tok_todos").update({ start_date: todayStr(), todo_time: null }).eq("id", id);
-      if (error) { alert("오늘로 옮기지 못했어요: " + error.message + "\n다시 시도해 주세요."); return false; }
+      if (!(await saveTodoToToday(id))) return false;
       await loadAll();
       return true;
     });
+  }
+  // 할일 "오늘로" 공용 저장(남아 있는 할일 '오늘로'·프로젝트 상세 '오늘하기') — 새 행을 만들지 않고 같은 행의
+  // start_date만 오늘로, todo_time은 비워서 종일로. 성공하면 { before, after }(실행 취소용으로 바뀐 칸의 전·후 값),
+  // 실패하면 알림 후 null.
+  async function saveTodoToToday(id) {
+    const td = todos.find(x => x.id === id);
+    const before = td ? { start_date: td.start_date ?? null, todo_time: td.todo_time ?? null } : null;
+    const after = { start_date: todayStr(), todo_time: null };
+    const { data, error } = await sb.from("tok_todos").update(after).eq("id", id).select("id");
+    if (error || !data || !data.length) {
+      alert("오늘로 옮기지 못했어요: " + (error ? error.message : "할일을 찾지 못했어요.") + "\n다시 시도해 주세요.");
+      return null;
+    }
+    return { before, after };
   }
 
   // "하루종일": 그 날짜에 걸친 할일(시간 없음) + 시간 없는 일정 + 시간 없는 습관
@@ -3655,7 +3702,7 @@
         ...dayTodos.map(td => `
           <div class="${rowCls} ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo" data-date="${dateStr}"${menuAttrs("todo", td.id, dateStr)}${tlStyle ? ` style="${itemTagBgStyle("todo", td.tag_id)}"` : ""}>
             <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="agenda-todo-check" />
-            <span class="agenda-title">${escapeHtml(td.title)}</span>
+            <span class="agenda-title">${titleWithProjectHtml(td.title, todoProjectName(td))}</span>
             ${td.start_date !== dateStr ? `<span class="habit-due-chip due-overdue">${daysBetween(td.start_date, dateStr)}일 지남</span>` : ""}
             ${moreBtnHtml(td.title)}
           </div>`),
@@ -4007,7 +4054,7 @@
     const overdueTimed = overdueTodosForToday(dateStr).filter(td => td.todo_time);
     const dayTimedTodos = [...todos.filter(td => td.todo_time && td.start_date === dateStr), ...overdueTimed];
     const todoItems = dayTimedTodos.map(td => ({
-      kind: "todo", id: td.id, name: td.title,
+      kind: "todo", id: td.id, name: td.title, proj: todoProjectName(td),
       start_minute: hhmmToMinutes(td.todo_time.slice(0, 5)), duration_minutes: td.duration_minutes || 30, done: td.is_done, cat_id: td.tag_id,
       overdue: td.start_date !== dateStr ? daysBetween(td.start_date, dateStr) : null,
     }));
@@ -4081,7 +4128,7 @@
     return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, dateStr)}>
       ${DRAG_HANDLE_SVG}
       ${lead}
-      ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name)}
+      ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name, it.proj)}
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${skipChipHtml(it.kind, it.id, dateStr)}
       ${it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
@@ -4184,7 +4231,7 @@
   function startAgendaItemInlineEdit(rowEl, id, kind, onDone = renderAgendaTimed) {
     const titleEl = rowEl.querySelector(".agenda-title, .plan-todo-title");
     if (!titleEl) return;
-    const current = titleEl.textContent;
+    const current = rawItemTitle(kind, id) ?? titleEl.textContent; // 화면 글자엔 프로젝트명이 붙어 있을 수 있어 원본 제목으로
     const wrap = document.createElement("div");
     wrap.className = "inline-add-wrap";
     wrap.style.flex = "1"; wrap.style.minWidth = "0";
@@ -4289,7 +4336,7 @@
     return [
       ...dayUntimedEvents.map(e => ({ kind: "event", id: e.id, name: e.title, start_minute: null, duration_minutes: null, done: false, cat_id: e.category_id })),
       ...untimedHabits.map(t => ({ kind: "habit", id: t.id, name: t.name, start_minute: null, duration_minutes: null, done: doneSet.has(t.id), cat_id: t.category_id })),
-      ...dayTodos.map(td => ({ kind: "todo", id: td.id, name: td.title, start_minute: null, duration_minutes: null, done: td.is_done, cat_id: td.tag_id, overdue: td.start_date !== dateStr ? daysBetween(td.start_date, dateStr) : null })),
+      ...dayTodos.map(td => ({ kind: "todo", id: td.id, name: td.title, proj: todoProjectName(td), start_minute: null, duration_minutes: null, done: td.is_done, cat_id: td.tag_id, overdue: td.start_date !== dateStr ? daysBetween(td.start_date, dateStr) : null })),
     ];
   }
 
@@ -4310,7 +4357,7 @@
     return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, dateStr)}>
       ${DRAG_HANDLE_SVG}
       ${lead}
-      ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name)}
+      ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name, it.proj)}
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${skipChipHtml(it.kind, it.id, dateStr)}
       ${it.start_minute != null && it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
@@ -4523,7 +4570,7 @@
           : it.kind === "todo"
           ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
           : eventDotHtml(it.cat_id, 8, 14)}
-        <span class="ag-tl-title" style="-webkit-line-clamp:${titleLines}">${escapeHtml(it.name)}</span>
+        <span class="ag-tl-title" style="-webkit-line-clamp:${titleLines}">${titleWithProjectHtml(it.name, it.proj)}</span>
         ${moreBtnHtml(it.name)}
       </div>`;
     });
@@ -4625,7 +4672,7 @@
       const startEditTitle = () => {
         const titleEl = task.querySelector(".ag-tl-title");
         if (!titleEl) return;
-        const current = titleEl.textContent;
+        const current = rawItemTitle(kind, id) ?? titleEl.textContent; // 프로젝트명 없이 원본 제목만 수정
         const wrap = document.createElement("div");
         wrap.className = "inline-add-wrap";
         wrap.style.flex = "1"; wrap.style.minWidth = "0";
@@ -5759,7 +5806,7 @@
     <div class="someday-row ${item.is_done?'done':''}" data-id="${item.id}" data-kind="${item._kind}"${menuAttrs(item._kind, item.id)}>
       <input type="checkbox" ${item.is_done?"checked":""} class="tu-check" />
       ${dateBadge}
-      ${groupTitleHtml("someday-title tu-title", isTodo ? "todo" : "someday", item.tag_id, item.title)}
+      ${groupTitleHtml("someday-title tu-title", isTodo ? "todo" : "someday", item.tag_id, item.title, isTodo ? todoProjectName(item) : null)}
       ${historyBtn}
       <button class="del tu-del">삭제</button>
       ${moreBtnHtml(item.title)}
@@ -8296,8 +8343,9 @@
     renderSettingsBlockList();
   }
   // 09-24: 저장 완료 같은 짧은 알림을 화면 아래에 잠깐(1.6초) 띄움. 연달아 불러도 요소 하나를 재사용.
+  // 2026-10-01: action({ label, run })을 넘기면 오른쪽에 버튼(예: 실행 취소)을 붙이고 더 오래(6초) 보여 줌. 버튼은 한 번만 눌림.
   let toastTimer = null;
-  function showToast(msg) {
+  function showToast(msg, action = null) {
     let el = $("appToast");
     if (!el) {
       el = document.createElement("div");
@@ -8307,9 +8355,23 @@
       document.body.appendChild(el);
     }
     el.textContent = msg;
+    el.classList.toggle("has-action", !!action);
+    if (action) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "toast-action";
+      btn.textContent = action.label;
+      btn.onclick = () => {
+        btn.disabled = true;
+        clearTimeout(toastTimer);
+        el.classList.remove("show");
+        action.run();
+      };
+      el.append(" ", btn);
+    }
     requestAnimationFrame(() => el.classList.add("show"));
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove("show"), 1600);
+    toastTimer = setTimeout(() => el.classList.remove("show"), action ? 6000 : 1600);
   }
   $("settingsDaySaveBtn").onclick = async () => {
     const startVal = $("settingsDayStart").value, endVal = $("settingsDayEnd").value;
@@ -8507,6 +8569,16 @@
   $("projAddBtn").onclick = (e) => openProjectSheet({ mode: "add", opener: e.currentTarget });
   $("workRetryBtn").onclick = () => loadAll();
 
+  // 2026-10-01 '오늘하기' — 미완료·반복 없는 할일에만. 이미 오늘이면 '오늘 예정' 표시(버튼 없음 = 다시 실행 불가),
+  // 저장 중이면 버튼 잠금. 완료한 할일·습관·반복 할일에는 붙이지 않음(반복 할일은 시작일을 옮기면 다음 회차 기준이 같이 밀림).
+  const projTodayBusy = new Set();
+  function projectTodoTodayHtml(t) {
+    if (t.is_done) return "";
+    if (t.start_date === todayStr()) return `<span class="proj-today-state">오늘 예정</span>`;
+    if (t.repeat_unit) return "";
+    const busy = projTodayBusy.has(t.id);
+    return `<button type="button" class="proj-today" data-today-todo="${t.id}" aria-label="${escapeHtml(t.title)} 오늘 하기"${busy ? " disabled" : ""}>${busy ? "담는 중…" : "오늘하기"}</button>`;
+  }
   function projectTodoRowHtml(t) {
     const date = t.start_date ? formatDateShort(t.start_date) : "";
     const time = t.todo_time ? t.todo_time.slice(0, 5) : "";
@@ -8515,8 +8587,54 @@
       <input type="checkbox" class="proj-todo-check" data-id="${t.id}" ${t.is_done ? "checked" : ""} aria-label="${escapeHtml(t.title)} 완료" />
       <button type="button" class="proj-row-title" data-open-todo="${t.id}">${escapeHtml(t.title)}</button>
       <span class="proj-row-meta">${escapeHtml(meta)}</span>
-      <button type="button" class="proj-unlink" data-unlink-kind="todo" data-id="${t.id}">연결 해제</button>
+      <span class="proj-row-actions">${projectTodoTodayHtml(t)}<button type="button" class="proj-unlink" data-unlink-kind="todo" data-id="${t.id}">연결 해제</button></span>
     </div>`;
+  }
+  // 프로젝트 상세 '오늘하기' — 남아 있는 할일 '오늘로'와 같은 저장(saveTodoToToday). 성공해야 화면(지금 한칸·할일·작업)을
+  // 다시 그리고 안내 + 실행 취소를 띄움. 실패하면 안내 없이 잠금만 풀어 원래 모습으로 되돌림.
+  async function moveProjectTodoToToday(id) {
+    const td = todos.find(x => x.id === id);
+    if (!td || td.is_done || td.repeat_unit || td.start_date === todayStr() || projTodayBusy.has(id)) return false;
+    projTodayBusy.add(id);
+    renderWork();
+    let res = null;
+    try { res = await saveTodoToToday(id); }
+    catch (err) { alert("오늘로 옮기지 못했어요: " + (err?.message || err)); }
+    projTodayBusy.delete(id);
+    if (!res) { renderWork(); return false; }
+    Object.assign(td, res.after);
+    renderHome();
+    renderTodosPage();
+    renderWork();
+    $("projectDetail").querySelector(`[data-open-todo="${id}"]`)?.focus({ preventScroll: true }); // 다시 그려 사라진 버튼 대신 같은 할일로
+    showToast("오늘 할 일에 담았어요", { label: "실행 취소", run: () => undoTodoToToday(id, res) });
+    return true;
+  }
+  // 실행 취소 — 이번 동작으로 바뀐 칸(start_date·todo_time)만 원래 값으로. 그사이 다른 곳에서 날짜·시간을 바꿨거나
+  // 완료했으면 덮어쓰지 않음(조건에 맞는 행이 없으면 되돌리지 않고 알림).
+  async function undoTodoToToday(id, { before, after }) {
+    if (!before || projTodayBusy.has(id)) return false;
+    projTodayBusy.add(id);
+    let data = null, error = null;
+    try {
+      let q = sb.from("tok_todos").update(before).eq("id", id).eq("start_date", after.start_date).eq("is_done", false);
+      q = after.todo_time == null ? q.is("todo_time", null) : q.eq("todo_time", after.todo_time);
+      ({ data, error } = await q.select("id"));
+    } catch (err) { error = err; }
+    projTodayBusy.delete(id);
+    if (error) { alert("되돌리지 못했어요: " + (error.message || error)); renderWork(); return false; }
+    if (!data || !data.length) {
+      alert("그사이 이 할일의 날짜·시간이나 완료 상태가 바뀌어서 되돌리지 않았어요.");
+      await loadAll();
+      return false;
+    }
+    const td = todos.find(x => x.id === id);
+    if (td) Object.assign(td, before);
+    renderHome();
+    renderTodosPage();
+    renderWork();
+    showToast("원래 일정으로 되돌렸어요");
+    return true;
   }
   function projectHabitRowHtml(h) {
     const state = !h.is_active ? "보관" : (h.end_date && h.end_date < todayStr() ? "종료" : "");
@@ -8585,6 +8703,7 @@
       };
     });
     host.querySelectorAll(".proj-unlink").forEach(b => { b.onclick = () => setItemProject(b.dataset.unlinkKind, b.dataset.id, null); });
+    host.querySelectorAll("[data-today-todo]").forEach(b => { b.onclick = () => moveProjectTodoToToday(b.dataset.todayTodo); });
   }
 
   // 할일·습관의 프로젝트 연결/해제 — project_id 한 칸만 바꿈(항목·완료 기록·날짜는 그대로). val=null이면 해제.
