@@ -13,9 +13,11 @@ window.Together = (() => {
   const image=path=>path?`<div data-image="${esc(path)}" class="pair-muted">사진 불러오는 중…</div>`:'';
   const field=(label,name,type='text',value='',extra='')=>`<label>${label}<input name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`;
   const bodyField=(label,name,value='',max=1000)=>`<label>${label}<textarea name="${name}" maxlength="${max}" required>${esc(value)}</textarea></label>`;
-  const fileField=(required=false)=>field('사진 / 그림 (최대 8MB)','image','file','','accept="image/jpeg,image/png,image/webp,image/gif" '+(required?'required':''));
+  const fileField=(required=false)=>field('사진 / 그림 (최대 8MB)','image','file','','accept="image/jpeg,image/png,image/webp,image/gif" '+(required?'required':''))+
+    '<button type="button" data-camera>사진 촬영</button><input name="camera" type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" style="display:none"><div data-preview></div>';
+  function clearPreview(){const f=dialog?.querySelector('form');if(f?._previewUrl)URL.revokeObjectURL(f._previewUrl);if(f){f._previewUrl=null;f._pairFile=null;}}
   function release(){ urls.forEach(URL.revokeObjectURL); urls=[]; }
-  function reset(){ epoch++; revision++; user=null; state=null; busy=false; release(); dialog?.close(); if(dialog)dialog.innerHTML=''; if(host)host.innerHTML=''; }
+  function reset(){ epoch++; revision++; user=null; state=null; busy=false; release(); clearPreview(); dialog?.close(); if(dialog)dialog.innerHTML=''; if(host)host.innerHTML=''; }
   function errorText(e){
     if(['42P01','PGRST202','PGRST205'].includes(e?.code))return '같이 한칸 서버 준비가 아직 완료되지 않았어요. DB 마이그레이션 적용 후 다시 시도해주세요.';
     if(e?.code==='23505')return '이미 같은 날짜에 등록한 항목이 있어요. 목록을 새로고침해서 확인해주세요.';
@@ -40,7 +42,7 @@ window.Together = (() => {
       const room=rooms[0]; let next={room};
       if(room){const rows=await Promise.all(tables.map(t=>query(t,room.id)));tables.forEach((t,i)=>next[t]=rows[i]);}
       if(ticket!==epoch||api.getUser()!==me)return;
-      state=next;render();
+      state=next;render();return true;
     }catch(e){if(ticket===epoch){if(!state)host.innerHTML=`<div class="pair-card"><h2>같이 한칸</h2><p class="pair-error" role="alert">${esc(errorText(e))}</p>${action('다시 불러오기','refresh')}</div>`;else status(errorText(e));}}
   }
   function status(message){const el=host.querySelector('[data-status]');if(el)el.textContent=message;}
@@ -67,8 +69,8 @@ window.Together = (() => {
   }
   function plansView(){
     const list=state.plans.filter(p=>(!date||p.due_date===date)&&(filter==='mine'?p.user_id===user:filter==='friend'?p.user_id!==user:filter==='pending'?state.proofs.some(x=>x.plan_id===p.id&&x.user_id!==user&&!x.confirmed_at):true)).sort((a,b)=>a.due_date.localeCompare(b.due_date)||a.created_at.localeCompare(b.created_at));
-    return `<div class="pair-row pair-between"><div class="pair-row"><label class="pair-muted">예정일<input aria-label="계획 날짜" type="date" data-date value="${esc(date)}"></label>${action('모든 날짜','all_dates')}</div>${action('계획 추가','plan','','pair-primary')}</div><div class="pair-row" style="margin-top:12px">${[['all','전체'],['mine','내 것'],['friend','친구 것']].map(([id,label])=>`<button data-action="filter" data-id="${id}" aria-pressed="${filter===id}">${label}</button>`).join('')}</div>
-      ${list.length?list.map(p=>{const proof=state.proofs.find(x=>x.plan_id===p.id);return `<article class="pair-card">${person(p.user_id)}<h3 style="margin-top:14px">${esc(p.title)}</h3><p class="pair-muted">${esc(p.due_date)} · ${num(p.points)}점${p.source_kind?' · 내 '+(p.source_kind==='habit'?'습관':'할일')+'에서 연결':''}</p><span class="pair-badge">${proof?(proof.confirmed_at?`확인 완료 · +${num(p.points)}점`:'인증했어요 · 확인 기다리는 중'):'함께 약속했어요'}</span>${proof?`${image(proof.image_path)}<p class="pair-text">${esc(proof.body)}</p><p class="pair-muted">수행 ${esc(proof.performed_on)} · 제출 ${esc(when(proof.created_at))}</p>${proof.confirmed_at?`<p class="pair-muted">${esc(member(proof.confirmed_by))} 확인 · 적립 ${esc(when(proof.confirmed_at))}<br>확인된 점수와 인증은 변경할 수 없어요.</p>`:proof.user_id!==user?action('확인했어요','confirm',proof.id,'pair-primary'):''}`:p.user_id===user?`<p>${action('인증하기','proof',p.id,'pair-primary')}</p>`:''}</article>`;}).join(''):'<div class="pair-card pair-empty">이 날짜에는 아직 계획이 없어요.<p class="pair-muted">작은 약속 하나부터 시작해요.</p></div>'}`;
+    return `<div class="pair-row pair-between"><div class="pair-row"><label class="pair-muted">예정일<input aria-label="계획 날짜" type="date" data-date value="${esc(date)}"></label>${action('모든 날짜','all_dates')}</div><div class="pair-row">${action('계획 추가','plan','','pair-primary')}${action('이미지로 공유·인증','image')}</div></div><div class="pair-row" style="margin-top:12px">${[['all','전체'],['mine','내 것'],['friend','친구 것']].map(([id,label])=>`<button data-action="filter" data-id="${id}" aria-pressed="${filter===id}">${label}</button>`).join('')}</div>
+      ${list.length?list.map(p=>{const proof=state.proofs.find(x=>x.plan_id===p.id);return `<article class="pair-card">${person(p.user_id)}<h3 style="margin-top:14px">${esc(p.title)}</h3><p class="pair-muted">${esc(p.due_date)} · ${num(p.points)}점${p.source_kind?' · 내 '+(p.source_kind==='habit'?'습관':'할일')+'에서 연결':''}</p><span class="pair-badge">${proof?(proof.confirmed_at?`확인 완료 · +${num(p.points)}점`:'인증했어요 · 확인 기다리는 중'):'함께 약속했어요'}</span>${p.image_path?`<p class="pair-muted">공유한 계획 이미지</p>${image(p.image_path)}`:''}${proof?`<p class="pair-muted">완료 인증</p>${image(proof.image_path)}<p class="pair-text">${esc(proof.body)}</p><p class="pair-muted">수행 ${esc(proof.performed_on)} · 제출 ${esc(when(proof.created_at))}</p>${proof.confirmed_at?`<p class="pair-muted">${esc(member(proof.confirmed_by))} 확인 · 적립 ${esc(when(proof.confirmed_at))}<br>확인된 점수와 인증은 변경할 수 없어요.</p>`:proof.user_id!==user?action('확인했어요','confirm',proof.id,'pair-primary'):''}`:p.user_id===user?`<p>${action('인증하기','proof',p.id,'pair-primary')}</p>`:''}</article>`;}).join(''):'<div class="pair-card pair-empty">이 날짜에는 아직 계획이 없어요.<p class="pair-muted">작은 약속 하나부터 시작해요.</p></div>'}`;
   }
   function rewardsView(){
     return `${action('나에게 보상하기','reward','','pair-primary')}<p class="pair-muted">1점 = ${num(state.room.rate)}원 상당 · 실제 결제나 정산 없이 자기 보상을 기록해요.</p>${state.members.map(m=>{
@@ -83,26 +85,72 @@ window.Together = (() => {
     return `${action('하루 이야기 쓰기','diary','','pair-primary')}<p class="pair-muted">한 줄이어도 좋아요. 초안은 나만 보고, ‘함께 보기로 올리기’를 눌러 공유해요.</p>${days.map(day=>`<h3 style="margin-top:24px">${esc(day)}</h3>${state.diaries.filter(d=>d.entry_date===day).map(d=>`<article class="pair-card">${person(d.user_id)}<p class="pair-muted">${esc(d.mood)} · ${d.published_at?'함께 보는 이야기':'나만 보는 초안'}</p><p class="pair-text">${esc(d.body)}</p>${image(d.image_path)}${d.user_id===user?`<div class="pair-row">${action('수정','diary',d.id)}${action('삭제','delete_diary',d.id)}</div>`:''}${d.published_at?`<div class="pair-reply">${state.replies.filter(x=>x.diary_id===d.id).sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(x=>`<div class="pair-reply">${person(x.user_id)}<p class="pair-text">${esc(x.body)}</p><p class="pair-muted">${esc(when(x.updated_at))}</p>${x.user_id===user?action('답글 수정','edit_reply',x.id)+action('답글 삭제','delete_reply',x.id):''}</div>`).join('')}${action('짧은 답글 남기기','reply',d.id)}</div>`:''}</article>`).join('')}`).join('')||'<div class="pair-card pair-empty">아직 이야기가 없어요. 오늘은 어땠나요?</div>'}`;
   }
   async function upload(form){
-    const file=form.elements.image?.files[0];if(!file)return form.dataset.imagePath||null;
-    if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)||file.size>8388608)throw new Error('사진은 JPEG, PNG, WebP, GIF 형식으로 8MB 이하만 올릴 수 있어요.');
+    const file=form._pairFile||form.elements.image?.files[0];if(!file)return form.dataset.imagePath||null;
+    validateImage(file);
     // Retain successful upload when a subsequent database request fails.
-    const key=[file.name,file.size,file.lastModified].join(':');if(form.dataset.fileKey===key)return form.dataset.imagePath;
+    if(form._uploadedFile===file)return form.dataset.imagePath;
     const path=`${state.room.id}/${user}/${uid()}`;
     const {error}=await api.sb.storage.from('tok-pair-images').upload(path,file,{contentType:file.type,upsert:false});if(error)throw error;
-    form.dataset.fileKey=key;form.dataset.imagePath=path;return path;
+    form._uploadedFile=file;form.dataset.imagePath=path;return path;
+  }
+  function validateImage(file){
+    if(!file||!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)||file.size>8388608||!file.size)
+      throw new Error('사진은 JPEG, PNG, WebP, GIF 형식으로 8MB 이하만 올릴 수 있어요. 앱 이미지가 크면 표시할 항목을 줄여주세요.');
+  }
+  function selectImage(f,file){
+    if(f._previewUrl)URL.revokeObjectURL(f._previewUrl);f._previewUrl=null;f._pairFile=file||null;
+    f.querySelector('[data-preview]')?.replaceChildren();
+    f.elements.image.required=!!f._imageRequired&&!file;
+    const error=f.querySelector('[data-error]');error.textContent='';
+    if(!file)return;
+    try{validateImage(file);const caption=document.createElement('p');caption.className='pair-muted';caption.textContent='선택한 이미지: '+file.name;const img=document.createElement('img');f._previewUrl=URL.createObjectURL(file);img.src=f._previewUrl;img.alt='올릴 이미지 미리보기';img.className='pair-image';f.querySelector('[data-preview]').append(caption,img);}
+    catch(e){error.textContent=e.message;}
   }
   function form(title,fields,onSave,buttons='<button type="submit" class="pair-primary">저장하기</button>',initialImage=''){
+    clearPreview();
     dialog.innerHTML=`<form><h3>${esc(title)}</h3>${fields}<p class="pair-error" data-error role="alert"></p><div class="pair-actions">${buttons}<button type="button" data-close>닫기</button></div></form>`;
     const f=dialog.querySelector('form');f.dataset.imagePath=initialImage||'';const requestId=uid();
-    f.onsubmit=async e=>{e.preventDefault();if(busy)return;if(!f.reportValidity())return;const saving={};busy=saving;const ticket=epoch,me=user;const controls=[...f.querySelectorAll('button')];controls.forEach(b=>b.disabled=true);f.querySelector('[data-error]').textContent='저장 중…';
+    if(f.elements.image){f._imageRequired=f.elements.image.required;f.elements.image.onchange=()=>selectImage(f,f.elements.image.files[0]);f.elements.camera.onchange=()=>selectImage(f,f.elements.camera.files[0]);f.querySelector('[data-camera]').onclick=()=>f.elements.camera.click();}
+    f.onsubmit=async e=>{e.preventDefault();if(busy)return;if(!f.reportValidity())return;const saving={};busy=saving;const ticket=epoch,me=user;const controls=[...f.querySelectorAll('button')];controls.forEach(b=>b.disabled=true);f.inert=true;f.querySelector('[data-error]').textContent='저장 중…';
       try{await onSave(f,requestId,e.submitter?.value);if(user===me&&ticket===epoch){dialog.close();await load();}}
       catch(err){if(user===me&&dialog.open){f.querySelector('[data-error]').textContent=errorText(err);}}
-      finally{if(busy===saving)busy=false;controls.forEach(b=>b.disabled=false);}
+      finally{if(busy===saving)busy=false;f.inert=false;controls.forEach(b=>b.disabled=false);}
     };
     f.querySelector('[data-close]').onclick=()=>{if(!busy)dialog.close();};dialog.showModal();return f;
   }
   const values=f=>Object.fromEntries(new FormData(f));
+  function imageComposer(file=null,imageDate=''){
+    const eligible=state.plans.filter(p=>p.user_id===user&&!state.proofs.some(x=>x.plan_id===p.id));
+    const options=eligible.map(p=>`<option value="${esc(p.id)}">${esc(p.due_date)} · ${esc(p.title)} · ${num(p.points)}점</option>`).join('');
+    const f=form('이미지로 함께하기',
+      '<label>어떻게 올릴까요?<select name="purpose"><option value="plan">계획 공유</option><option value="proof">완료 인증</option></select></label>'+
+      '<div data-purpose="plan">'+field('계획 제목','title','text',file?`${imageDate||api.today()} 하루 계획`:'','required maxlength="160"')+
+      field('예정일 / 수행 회차','due_date','date',imageDate||date||api.today(),'required')+
+      field('약속할 점수','points','number','','required min="1" max="1000000" step="1"')+
+      '<p class="pair-muted">이미지 속 계획을 하나의 약속으로 공유해요. 점수는 직접 정하고, 나중에 완료 인증을 올려 친구가 확인하면 적립돼요.</p></div>'+
+      `<div data-purpose="proof" hidden><label>완료한 내 계획<select name="plan_id" required><option value="">계획을 선택해주세요</option>${options}</select></label>`+
+      bodyField('짧은 설명','body')+`<p class="pair-muted">${eligible.length?'완료한 내용이 보이는 이미지인지 확인해주세요. 친구 확인 전에는 점수가 쌓이지 않아요.':'인증할 내 계획이 없어요. 먼저 계획을 공유해주세요.'}</p></div>`+
+      fileField(true)+'<p class="pair-muted">미리보기에 담긴 내용이 방 참여자에게 공개돼요. 제출 후 계획 이미지와 인증은 바꿀 수 없어요.</p>',
+      async(f,k)=>{const v=values(f),owner=user;const path=await upload(f);let result;
+        if(v.purpose==='proof')result=await rpc('proof',{id:k,plan_id:v.plan_id,body:v.body,image_path:path});
+        else result=await rpc('plan',{id:k,title:v.title,due_date:v.due_date,points:v.points,image_path:path});
+        if(owner===user){tab='plans';filter='all';date=v.purpose==='proof'?eligible.find(p=>p.id===v.plan_id)?.due_date||'':v.due_date;}return result;},
+      '<button type="submit" class="pair-primary">계획 공유하기</button>');
+    const sync=()=>{const mode=f.elements.purpose.value;f.querySelectorAll('[data-purpose]').forEach(el=>{const active=el.dataset.purpose===mode;el.hidden=!active;el.querySelectorAll('input,select,textarea').forEach(input=>input.disabled=!active);});f.querySelector('[type=submit]').textContent=mode==='proof'?'완료 인증 올리기':'계획 공유하기';};
+    f.elements.purpose.onchange=sync;sync();if(file)selectImage(f,file);
+  }
+  async function receiveImage(file,imageDate,owner,isCurrent=()=>true){
+    validateImage(file);
+    if(!owner||api.getUser()!==owner)throw new Error('현재 계정의 이미지 공유 화면을 다시 열어주세요.');
+    if(busy||dialog.open)throw new Error('작성 중인 내용을 먼저 저장하거나 닫아주세요.');
+    if(!await load())throw new Error('방을 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+    if(api.getUser()!==owner||user!==owner)throw new Error('계정이 변경됐어요. 이미지 공유 화면을 다시 열어주세요.');
+    if(!isCurrent())throw new Error('이미지 공유가 취소됐어요.');
+    if(!state.room)throw new Error('더보기 → 같이 한칸에서 방을 만들거나 초대에 참여한 뒤 다시 올려주세요.');
+    tab='plans';filter='all';date=imageDate||api.today();render();api.goToTogether();imageComposer(file,imageDate);
+  }
   function editor(op,id){
+    if(op==='image')return imageComposer();
     if(op==='create_room')return form('둘만의 방 만들기',field('방 이름','name','text','','required maxlength="60"')+field('내 별명','nickname','text','','required maxlength="30"')+field('1점당 보상 금액 (원)','rate','number',100,'required min="1" max="1000000" step="1"')+'<p class="pair-muted">100원은 제안 기본값이에요. 원하는 환산율을 확인하고 방을 만들어주세요. 생성 후에는 변경할 수 없어요.</p>',(f,k)=>rpc(op,{...values(f),id:k}));
     if(op==='join')return form('초대로 참여하기',field('초대 코드','id','text','','required autocomplete="off"')+field('내 별명','nickname','text','','required maxlength="30"'),f=>rpc(op,{...values(f),id:f.elements.id.value.trim()}));
     if(op==='plan'){
@@ -138,6 +186,6 @@ window.Together = (() => {
     }
     editor(op,id);
   }
-  function init(config){api=config;host=document.getElementById('togetherRoot');dialog=document.getElementById('togetherDialog');host.addEventListener('click',click);host.addEventListener('change',e=>{if(e.target.matches('[data-date]')){date=e.target.value;render();}});dialog.addEventListener('cancel',e=>{if(busy)e.preventDefault();});window.addEventListener('focus',()=>{if(host.getClientRects().length&&!dialog.open&&!busy)void load();});}
-  return {init,open:load,reset};
+  function init(config){api=config;host=document.getElementById('togetherRoot');dialog=document.getElementById('togetherDialog');host.addEventListener('click',click);host.addEventListener('change',e=>{if(e.target.matches('[data-date]')){date=e.target.value;render();}});dialog.addEventListener('cancel',e=>{if(busy)e.preventDefault();});dialog.addEventListener('close',()=>{if(!dialog.open)clearPreview();});window.addEventListener('focus',()=>{if(host.getClientRects().length&&!dialog.open&&!busy)void load();});}
+  return {init,open:load,reset,receiveImage};
 })();
