@@ -1,0 +1,37 @@
+const assert=require('node:assert/strict');
+const {fixture}=require('./together-fixture.cjs');
+(async()=>{
+ const {db,as,rpc,upload,A,B,C,uuid}=await fixture();const room=uuid();
+ await rpc(A,'create_room',{id:room,name:'이미지 계획',nickname:'나',rate:100});
+ const invite=(await as(A,'select id from tok_pair_invites')).rows[0].id;
+ await rpc(B,'join',{id:invite,nickname:'친구'});
+ const path=`${room}/${A}/${uuid()}`,other=`${room}/${B}/${uuid()}`;await upload(A,path);await upload(B,other);
+ assert.equal((await as(B,'select * from storage.objects where name=$1',[path])).rows.length,0);
+ const p={id:uuid(),room_id:room,title:'수기 하루 계획',points:7,due_date:'2026-10-02',image_path:path};
+ await assert.rejects(rpc(A,'plan',{...p,image_path:other}),/업로드/);
+ await assert.rejects(rpc(A,'plan',{...p,image_path:`${room}/${A}/missing`}),/업로드/);
+ await assert.rejects(rpc(C,'plan',p),/참여자/);
+ await assert.rejects(rpc(null,'plan',p));
+ await rpc(A,'plan',p);
+ assert.equal((await as(B,'select * from storage.objects where name=$1',[path])).rows.length,1);
+ assert.equal((await as(C,'select * from storage.objects where name=$1',[path])).rows.length,0);
+ assert.equal((await as(B,'select image_path from tok_pair_plans where id=$1',[p.id])).rows[0].image_path,path);
+ assert.equal((await as(A,'select * from tok_pair_proofs')).rows.length,0);
+ assert.equal((await as(A,'select * from tok_pair_ledger')).rows.length,0);
+ const retryPath=`${room}/${A}/${uuid()}`;await upload(A,retryPath);
+ await rpc(A,'plan',{...p,image_path:retryPath});
+ assert.equal((await as(B,'select image_path from tok_pair_plans where id=$1',[p.id])).rows[0].image_path,path);
+ assert.equal((await as(B,'select * from storage.objects where name=$1',[retryPath])).rows.length,0);
+ const proof=uuid();await rpc(A,'proof',{id:proof,room_id:room,plan_id:p.id,image_path:retryPath,body:'모두 마쳤어요'});
+ assert.equal((await as(A,'select * from tok_pair_ledger')).rows.length,0);
+ await rpc(B,'confirm',{id:proof,room_id:room});await rpc(B,'confirm',{id:proof,room_id:room});
+ assert.equal((await as(A,'select sum(amount)::int as n from tok_pair_ledger')).rows[0].n,7);
+ await rpc(A,'plan',{...p,image_path:retryPath,points:999});
+ const row=(await as(A,'select image_path,points from tok_pair_plans where id=$1',[p.id])).rows[0];assert.equal(row.image_path,path);assert.equal(row.points,7);
+ await assert.rejects(as(A,'update tok_pair_plans set image_path=$1 where id=$2',[retryPath,p.id]));
+ // Invalid points roll back creation and never publish the uploaded file.
+ const invalidPath=`${room}/${A}/${uuid()}`;await upload(A,invalidPath);
+ await assert.rejects(rpc(A,'plan',{...p,id:uuid(),points:0,image_path:invalidPath}));
+ assert.equal((await as(B,'select * from storage.objects where name=$1',[invalidPath])).rows.length,0);
+ await db.close();console.log('PASS: plan image ownership/private access, no points on share, atomic validation, immutable retry, confirmation-only earning');
+})().catch(e=>{console.error(e);process.exit(1)});

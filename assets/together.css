@@ -24,6 +24,7 @@
 .pair-dialog label { display:block; margin:14px 0; font-size:14px; }
 .pair-dialog input,.pair-dialog textarea,.pair-dialog select,.pair-page input { display:block; box-sizing:border-box; width:100%; max-width:100%; margin-top:6px; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px; font:inherit; }
 .pair-dialog textarea { min-height:100px; resize:vertical; }
+.pair-dialog [data-preview] { overflow-wrap:anywhere; }
 .pair-dialog input[type="file"] { font-size:12px; }
 .pair-dialog .pair-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
 .pair-page input[type="date"] { width:auto; min-width:0; }

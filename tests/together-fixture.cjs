@@ -19,6 +19,7 @@ async function fixture(){
  insert into tok_todos values('10000000-0000-0000-0000-000000000001','${A}','개인 할일','절대 공유하지 않을 메모',false);
  insert into tok_habits values('10000000-0000-0000-0000-000000000002','${A}','매일 그림','비공개 습관 메모');`);
  await db.exec(fs.readFileSync('supabase/migrations/20261002101836_tok_together_phase1.sql','utf8'));
+ await db.exec(fs.readFileSync('supabase/migrations/20261002111004_tok_together_plan_images.sql','utf8'));
  let tail=Promise.resolve();
  const as=(user,sql,params=[])=>{const run=tail.then(()=>db.transaction(async tx=>{await tx.exec(`set local role ${user?'authenticated':'anon'}`);await tx.query("select set_config('request.jwt.claim.sub',$1,true)",[user||'']);return tx.query(sql,params);}));tail=run.catch(()=>{});return run;};
  const rpc=(user,op,p)=>as(user,'select public.tok_pair_mutate($1,$2::jsonb) as result',[op,JSON.stringify(p)]).then(x=>x.rows[0].result);

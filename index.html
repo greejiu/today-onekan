@@ -1878,6 +1878,7 @@
     <div class="sheet-actions share-actions">
       <button type="button" class="btn-ghost" id="shareRetryBtn" hidden>다시 시도</button>
       <button type="button" class="btn-primary" id="shareSaveBtn">이미지 저장</button>
+      <button type="button" class="btn-primary" id="shareTogetherBtn">같이 한칸에 올리기</button>
       <button type="button" class="btn-primary" id="shareShareBtn" hidden>공유하기</button>
     </div>
   </div>
@@ -2819,8 +2820,8 @@
   $("navMoreBg").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); closeNavMore(); } });
   $("navMoreSheet").querySelectorAll(".navitem").forEach(el => { el.tabIndex = 0; el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } }); });
   let scheduleScrollY = 0; // 일정 탭을 떠날 때 목록 스크롤 위치를 기억했다가 돌아오면 복원(2026-09-27)
-  function showPage(page) {
-    if (page === "together") window.Together?.open();
+  function showPage(page, togetherLoaded = false) {
+    if (page === "together" && !togetherLoaded) window.Together?.open();
     const prevPage = currentPage;
     if (prevPage === "schedule" && page !== "schedule") scheduleScrollY = window.scrollY;
     currentPage = page;
@@ -9229,6 +9230,7 @@
   function shareSetButtons() {
     const can = shareState.ready && !!shareState.blob && !shareState.busy;
     $("shareSaveBtn").disabled = !can;
+    $("shareTogetherBtn").disabled = !can;
     $("shareShareBtn").disabled = !can;
     $("shareShareBtn").hidden = !shareCanShareFiles;
     $("shareSaveBtn").className = shareCanShareFiles ? "btn-ghost" : "btn-primary";
@@ -9323,6 +9325,7 @@
 
   function openShareSheet(dateStr, view) {
     const s = shareState;
+    s.userId = appSymbolUserId;
     s.opener = document.activeElement;
     s.date = dateStr || todayStr();
     s.view = view === "block" ? "block" : "timeline";
@@ -9365,6 +9368,16 @@
     // 연타로 같은 파일이 여러 번 내려받아지지 않게 저장 직후 잠깐 잠금(실패면 바로 다시 누를 수 있음)
     setTimeout(() => { s.busy = false; shareSetButtons(); }, ok ? 1200 : 0);
   }
+  async function shareToTogether() {
+    const s = shareState;
+    if (!s.ready || !s.blob || s.busy) return;
+    const version = s.version;
+    const file = new File([s.blob], shareFileName(), { type: "image/png" });
+    s.busy = true; shareSetButtons();
+    try { await window.Together.receiveImage(file, s.date, s.userId, () => s.version === version && $("shareSheetBg").classList.contains("open")); }
+    catch (err) { if (s.version === version) shareSetStatus(err.message || "이미지를 넘기지 못했어요. 다시 시도해주세요.", true); }
+    finally { if (s.version === version) { s.busy = false; shareSetButtons(); } }
+  }
   async function shareShare() {
     const s = shareState;
     if (!s.ready || !s.blob || s.busy || !shareCanShareFiles) return;
@@ -9393,6 +9406,7 @@
     $(id).addEventListener("change", (e) => { if (e.target.disabled) return; shareState.opts[key] = e.target.checked; shareRender(); });
   });
   $("shareSaveBtn").onclick = shareSave;
+  $("shareTogetherBtn").onclick = shareToTogether;
   $("shareShareBtn").onclick = shareShare;
   $("shareRetryBtn").onclick = shareRender;
   $("shareSheetBg").addEventListener("keydown", (e) => trapFocusIn($("shareSheetBg").querySelector(".sheet"), e));
@@ -9405,6 +9419,7 @@
 
   window.Together?.init({
     sb, getUser: () => appSymbolUserId, today: todayStr,
+    goToTogether: () => { closeShareSheet(); showPage("together", true); },
     sources: () => [
       ...todos.filter(t => t.user_id === appSymbolUserId).map(t => ({ id: t.id, title: t.title, kind: "todo" })),
       ...tasks.filter(t => t.user_id === appSymbolUserId).map(t => ({ id: t.id, title: t.name, kind: "habit" }))
