@@ -1416,6 +1416,7 @@
       <div class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> 할일</div>
       <div class="navitem" data-page="habits"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> 습관</div>
       <div class="navitem" data-page="records"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 기록</div>
+      <div class="navitem" data-page="together"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 5 5v3"/></svg> 같이 한칸</div>
       <div class="sidebar-footer">
         <!-- 2026-09-28 결님 요청: 상단바 오른쪽 톱니 아이콘을 없애고 설정 메뉴를 사이드바 원래 자리(맨 아래, 계정 위)로 되돌림.
              모바일(사이드바 없음)은 하단 메뉴의 '설정'으로 들어감. -->
@@ -1729,6 +1730,7 @@
       </div>
 
       <!-- 설정 -->
+      <div class="page" data-page="together" style="display:none;"><div id="togetherRoot" class="pair-page"></div></div>
       <div class="page" data-page="settings" style="display:none;">
         <h1 class="page-title">설정</h1>
 
@@ -1828,6 +1830,7 @@
   <!-- 2026-09-29 모바일 더보기: 하단 메뉴는 4개(지금 한칸·일정·할일·습관) + 더보기. 나머지 메뉴(작업·시간 추적·기록·설정)는 여기서 들어감 -->
   <div class="nav-more-bg" id="navMoreBg" hidden>
     <div class="nav-more-sheet" id="navMoreSheet" role="menu" aria-label="더보기 메뉴">
+      <div class="navitem" role="menuitem" data-page="together"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 5 5v3"/></svg> 같이 한칸</div>
       <div class="navitem" role="menuitem" data-page="work"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> 작업</div>
       <div class="navitem" role="menuitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 시간 추적</div>
       <div class="navitem" role="menuitem" data-page="records"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 기록</div>
@@ -2225,6 +2228,9 @@
   </div>
 </div>
 
+<dialog id="togetherDialog" class="pair-dialog" aria-label="같이 한칸 입력"></dialog>
+<link rel="stylesheet" href="assets/together.css">
+<script src="assets/together.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
   // ── Supabase 설정 (그리지우 프로젝트, tok_ 접두사 테이블 사용) ──
@@ -2427,6 +2433,7 @@
   sb.auth.onAuthStateChange?.((_event, session) => {
     const userId = session?.user?.id || null;
     if (userId === appSymbolUserId) return;
+    window.Together?.reset();
     bindAppSymbolUser(userId); // Synchronous reset before any new account's asynchronous response.
     if (!userId) { $('app').style.display = 'none'; $('authBox').style.display = ''; }
     else setTimeout(loadAppSymbolPreference, 0); // Do not await another Supabase call inside auth callbacks.
@@ -2795,7 +2802,7 @@
     el.onclick = () => { closeNavMore(false); showPage(el.dataset.page); };
   });
   // 2026-09-29 모바일 더보기(하단 메뉴 5번째 칸): 작업·시간 추적·기록·설정으로 가는 보조 메뉴
-  const NAV_MORE_PAGES = ["work", "timer", "records", "settings"];
+  const NAV_MORE_PAGES = ["together", "work", "timer", "records", "settings"];
   function openNavMore() {
     $("navMoreBg").hidden = false;
     $("navMoreBtn").setAttribute("aria-expanded", "true");
@@ -2813,6 +2820,7 @@
   $("navMoreSheet").querySelectorAll(".navitem").forEach(el => { el.tabIndex = 0; el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } }); });
   let scheduleScrollY = 0; // 일정 탭을 떠날 때 목록 스크롤 위치를 기억했다가 돌아오면 복원(2026-09-27)
   function showPage(page) {
+    if (page === "together") window.Together?.open();
     const prevPage = currentPage;
     if (prevPage === "schedule" && page !== "schedule") scheduleScrollY = window.scrollY;
     currentPage = page;
@@ -9395,6 +9403,13 @@
   $("shareSheetBg").addEventListener("click", (e) => { if (e.target === $("shareSheetBg")) closeShareSheet(); });
 
 
+  window.Together?.init({
+    sb, getUser: () => appSymbolUserId, today: todayStr,
+    sources: () => [
+      ...todos.filter(t => t.user_id === appSymbolUserId).map(t => ({ id: t.id, title: t.title, kind: "todo" })),
+      ...tasks.filter(t => t.user_id === appSymbolUserId).map(t => ({ id: t.id, title: t.name, kind: "habit" }))
+    ]
+  });
   boot();
 </script>
 </body>
