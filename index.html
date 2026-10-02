@@ -153,8 +153,17 @@
     .sidebar{top:120px !important;height:calc(100vh - 120px) !important;}
   }
   .layout{display:flex;min-height:100vh;padding-top:64px;}
-  .sidebar{width:180px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);padding:20px 12px;position:sticky;top:64px;height:calc(100vh - 64px);box-shadow:2px 0 16px rgba(150,130,200,.06);display:flex;flex-direction:column;}
-  .sidebar .sidebar-label{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.03em;padding:0 8px 10px;}
+  .sidebar{width:180px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);padding:20px 12px;position:sticky;top:64px;height:calc(100vh - 64px);box-shadow:2px 0 16px rgba(150,130,200,.06);display:flex;flex-direction:column;overflow-y:auto;min-height:0;}
+  .sidebar-nav{flex-shrink:0;}
+  .sidebar .navitem{width:100%;border:0;background:none;font-family:inherit;text-align:left;line-height:1.4;}
+  .sidebar .navitem:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .sidebar .sidebar-divider{height:1px;border:0;background:var(--line);margin:8px 0 12px;}
+  .desktop-only{display:none;}
+  @media (min-width:761px){
+    .desktop-only{display:block;}
+    .mobile-only{display:none;}
+    .work-page-switch{margin-bottom:16px;}
+  }
   .navitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:var(--sub);font-size:14px;cursor:pointer;margin-bottom:4px;transition:background .15s,color .15s;}
   .nav-icon{flex-shrink:0;}
   .bottombar .nav-icon{vertical-align:-4px;}
@@ -163,8 +172,8 @@
   .pagehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
   .pagehead h2{font-size:18px;margin:0;}
   #logoutBtn{background:none;border:none;color:var(--sub);font-size:12px;cursor:pointer;}
-  /* 설정/로그인정보/로그아웃을 메뉴 바로 아래가 아니라 사이드바 맨 아래에 붙임(결님 요청) — .sidebar를 세로 flex로 만들고 margin-top:auto로 밀어냄. */
-  .sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);}
+  /* 계정 정보는 아래로 밀되, 낮은 창에서는 사이드바 전체를 스크롤한다. */
+  .sidebar-footer{margin-top:auto;padding-top:12px;flex-shrink:0;}
   .sidebar-user{font-size:11px;color:var(--sub);padding:0 8px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   /* ── 설정 : 테마 선택 ── */
@@ -1405,22 +1414,20 @@
         <input id="quickTaskInputSide" type="text" placeholder="딱 한 가지만 적기" aria-label="한칸 추가 — 어느 탭에서든 오늘 할일로 저장돼요" autocomplete="off" />
         <button type="button" id="quickAddBtnSide" title="오늘 할일로 저장">+ 한칸 추가</button>
       </div>
-      <div class="sidebar-label">카테고리</div>
-      <!-- 2026-09-20: 이모지 아이콘 → 상단바 설정 아이콘과 같은 계열의 선 아이콘(SVG, currentColor)으로 교체.
-           .navitem이 color:var(--sub)/active시 var(--accent)을 이미 쓰고 있어서 stroke="currentColor"만
-           넣으면 활성/비활성 색이 자동으로 맞춰짐(따로 손볼 곳 없음). -->
-      <div class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> 지금 한칸</div>
-      <div class="navitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 시간 추적</div>
-      <div class="navitem" data-page="work"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> 작업</div>
-      <div class="navitem" data-page="schedule"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> 일정</div>
-      <div class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> 할일</div>
-      <div class="navitem" data-page="habits"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> 습관</div>
-      <div class="navitem" data-page="records"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 기록</div>
-      <div class="navitem" data-page="together"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 5 5v3"/></svg> 같이 한칸</div>
+      <nav class="sidebar-nav" aria-label="주 메뉴">
+        <button type="button" class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> 지금한칸</button>
+        <button type="button" class="navitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 시간추적</button>
+        <hr class="sidebar-divider" />
+        <button type="button" class="navitem" data-page="schedule"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> 일정</button>
+        <button type="button" class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> 작업</button>
+        <button type="button" class="navitem" data-page="work"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> 목표</button>
+        <hr class="sidebar-divider" />
+        <button type="button" class="navitem" data-page="together"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 5 5v3"/></svg> 같이한칸</button>
+        <hr class="sidebar-divider" />
+        <button type="button" class="navitem" data-page="records"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 기록</button>
+        <button type="button" class="navitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> 설정</button>
+      </nav>
       <div class="sidebar-footer">
-        <!-- 2026-09-28 결님 요청: 상단바 오른쪽 톱니 아이콘을 없애고 설정 메뉴를 사이드바 원래 자리(맨 아래, 계정 위)로 되돌림.
-             모바일(사이드바 없음)은 하단 메뉴의 '설정'으로 들어감. -->
-        <div class="navitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> 설정</div>
         <div class="sidebar-user" id="sidebarUserEmail"></div>
         <button id="logoutBtn">로그아웃</button>
       </div>
@@ -1610,7 +1617,14 @@
       <!-- 할일 (2026-09-12: 사이드바에서 습관과 별도 탭으로 분리) -->
       <div class="page" data-page="todos" style="display:none;">
 
-        <h1 class="page-title">할일</h1>
+        <div class="desktop-only">
+          <h1 class="page-title">작업</h1>
+          <div class="view-toggle work-page-switch" role="group" aria-label="작업 종류">
+            <button type="button" data-work-page="todos" class="active" aria-current="page">할일</button>
+            <button type="button" data-work-page="habits">습관</button>
+          </div>
+        </div>
+        <h1 class="page-title mobile-only">할일</h1>
         <div id="todosTodosView">
           <div class="view-toggle" id="todoTopTabs" style="margin-bottom:10px;">
             <button type="button" data-tab="all" class="active">모두</button>
@@ -1648,9 +1662,16 @@
       <!-- 습관 (2026-09-12: 사이드바에서 할일과 별도 탭으로 분리) -->
       <div class="page" data-page="habits" style="display:none;">
 
+        <div class="desktop-only">
+          <h1 class="page-title">작업</h1>
+          <div class="view-toggle work-page-switch" role="group" aria-label="작업 종류">
+            <button type="button" data-work-page="todos">할일</button>
+            <button type="button" data-work-page="habits" class="active" aria-current="page">습관</button>
+          </div>
+        </div>
         <div id="todosHabitsView">
           <div class="tab-add-bar">
-            <h1 class="page-title" style="margin:0;">습관</h1>
+            <h1 class="page-title mobile-only" style="margin:0;">습관</h1>
             <button type="button" class="sched-add-btn" id="habitAddBtn">+ 습관</button>
           </div>
           <div class="view-toggle" id="habitsTabRow" style="margin-bottom:10px;">
@@ -1680,7 +1701,7 @@
            할일·습관은 복제하지 않고 project_id로 같은 행을 가리킴(할일·습관·지금 한칸과 같은 항목). -->
       <div class="page" data-page="work" style="display:none;">
         <div class="tab-add-bar">
-          <h1 class="page-title" style="margin:0;">작업</h1>
+          <h1 class="page-title" style="margin:0;"><span class="desktop-only">목표</span><span class="mobile-only">작업</span></h1>
           <button type="button" class="sched-add-btn" id="projAddBtn">+ 프로젝트</button>
         </div>
         <p class="work-path">정체성(선택) → 프로젝트 → 하위 프로젝트(선택) → 할일·습관</p>
@@ -2803,6 +2824,10 @@
     el.onclick = () => { closeNavMore(false); showPage(el.dataset.page); };
   });
   // 2026-09-29 모바일 더보기(하단 메뉴 5번째 칸): 작업·시간 추적·기록·설정으로 가는 보조 메뉴
+  document.querySelectorAll("[data-work-page]").forEach(el => {
+    el.onclick = () => showPage(el.dataset.workPage);
+  });
+  // 모바일 더보기의 순서와 대상은 그대로 유지한다.
   const NAV_MORE_PAGES = ["together", "work", "timer", "records", "settings"];
   function openNavMore() {
     $("navMoreBg").hidden = false;
@@ -2826,7 +2851,12 @@
     if (prevPage === "schedule" && page !== "schedule") scheduleScrollY = window.scrollY;
     currentPage = page;
     // 빠른 입력(한칸 추가)은 모든 탭에서 항상 보임(2026-09-28). 입력 중이던 제목은 탭을 옮겨도 그대로, 탭 이동만으로는 저장하지 않음.
-    document.querySelectorAll(".navitem[data-page]").forEach(el => el.classList.toggle("active", el.dataset.page === page));
+    document.querySelectorAll(".navitem[data-page]").forEach(el => {
+      const active = el.dataset.page === page || (el.closest(".sidebar") && el.dataset.page === "todos" && page === "habits");
+      el.classList.toggle("active", active);
+      if (active) el.setAttribute("aria-current", "page");
+      else el.removeAttribute("aria-current");
+    });
     $("navMoreBtn")?.classList.toggle("active", NAV_MORE_PAGES.includes(page)); // 더보기 안 메뉴를 보고 있으면 더보기 칸 강조
     document.querySelectorAll(".page").forEach(el => el.style.display = el.dataset.page === page ? "block" : "none");
     if (page === "work") renderWork();
