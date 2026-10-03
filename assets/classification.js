@@ -2,11 +2,11 @@
 window.createOnekanClassification = api => {
  'use strict';
  const $=id=>document.getElementById(id),esc=api.escape;
- let groups=[],ready=false,user=null,epoch=0,manager=null,busy=false,opener=null;
+ let groups=[],ready=false,user=null,legacyOwner=null,epoch=0,manager=null,busy=false,opener=null;
  const states={};
  const kindForPage=()=>({schedule:'event',todos:'todo',habits:'habit'})[api.page()];
  const normalized=kind=>kind==='someday'?'todo':kind;
- const pool=kind=>normalized(kind)==='event'?api.eventGroups():groups.filter(g=>g.kind===normalized(kind));
+ const pool=kind=>normalized(kind)==='event'?(legacyOwner===api.user()?api.eventGroups():[]):groups.filter(g=>g.kind===normalized(kind));
  const groupId=(kind,item)=>normalized(kind)==='event'?item.category_id:item.group_id;
  const key=kind=>'tok_classification:'+user+':'+normalized(kind);
  function state(kind){
@@ -20,10 +20,10 @@ window.createOnekanClassification = api => {
   return states[kind];
  }
  function remember(kind){const s=state(kind);try{localStorage.setItem(key(kind),JSON.stringify({...s,hidden:[...s.hidden]}));}catch{}}
- function bind(){const next=api.user();if(user===next)return;user=next;epoch++;groups=[];ready=false;Object.keys(states).forEach(k=>delete states[k]);close(true);}
+ function bind(){const next=api.user();if(user===next)return;user=next;legacyOwner=null;epoch++;groups=[];ready=false;Object.keys(states).forEach(k=>delete states[k]);close(true);}
  async function load(){
   bind();const ticket=++epoch,owner=user;
-  try{const r=await api.sb.from('tok_item_groups').select('*').order('sort_order').order('created_at');if(ticket!==epoch||owner!==api.user())return;ready=!r.error;groups=ready?(r.data||[]):[];}catch{if(ticket===epoch){ready=false;groups=[];}}
+  try{const r=await api.sb.from('tok_item_groups').select('*').order('sort_order').order('created_at');if(ticket!==epoch||owner!==api.user())return;legacyOwner=owner;ready=!r.error;groups=ready?(r.data||[]):[];}catch{if(ticket===epoch&&owner===api.user()){legacyOwner=owner;ready=false;groups=[];}}
   render();
  }
  function matches(kind,item){const s=state(kind),id=groupId(kind,item)||'none';return s.selected==='all'||s.selected===id;}
@@ -61,7 +61,7 @@ window.createOnekanClassification = api => {
  async function archive(kind,g){const owner=user,{error}=await api.sb.from(table(kind)).update({is_archived:!g.is_archived}).eq('id',g.id);if(error){api.alert('저장하지 못했어요: '+error.message);return;}if(owner!==api.user())return;await api.reload();refresh();}
  function close(force=false){if(busy&&!force)return;const shown=$('classificationManageBg')?.classList.contains('open');$('classificationManageBg')?.classList.remove('open');manager=null;if(shown&&opener?.getClientRects().length)opener.focus({preventScroll:true});}
  function open(type,kind,b,g=null){
-  bind();manager={type,kind,id:g?.id||null,user};opener=b;$('classificationManageTitle').textContent=type==='category'?'범주 관리':g?'그룹 수정':'그룹 추가';$('classificationManageName').value=g?.name||'';$('classificationManageColor').value=g?.color||'#9a8cf0';$('classificationManageError').textContent='';
+  bind();if(legacyOwner!==api.user()){api.alert('분류를 불러오는 중이에요. 잠시 후 다시 열어주세요.');return;}manager={type,kind,id:g?.id||null,user};opener=b;$('classificationManageTitle').textContent=type==='category'?'범주 관리':g?'그룹 수정':'그룹 추가';$('classificationManageName').value=g?.name||'';$('classificationManageColor').value=g?.color||'#9a8cf0';$('classificationManageError').textContent='';
   $('classificationManageList').onclick=null;$('classificationManageList').hidden=type!=='category';$('classificationManageForm').hidden=false;
   if(type==='category')api.categoryList('classificationManageList');
   $('classificationManageBg').classList.add('open');$('classificationManageName').focus();
@@ -85,7 +85,7 @@ window.createOnekanClassification = api => {
  function prepare(kind,prefix,item=null){
   bind();const field=normalized(kind)==='event'?'shared_category_id':'group_id',select=$(prefix+'_'+field);
   if(!select)return;const id=item?.[field]||(field==='group_id'&&!item?defaultGroup(kind):null);
-  fillSelect(select,field==='group_id'?pool(kind):api.categories(),id);select.disabled=!ready;select.dataset.original=id||'';
+  fillSelect(select,field==='group_id'?pool(kind):(legacyOwner===api.user()?api.categories():[]),id);select.disabled=!ready;select.dataset.original=id||'';
   $(prefix+'_classification_notice').hidden=ready;
  }
  function patch(kind,prefix,item=null){
