@@ -8,6 +8,8 @@ async function fixture(page, source = html) {
     const url = route.request().url();
     if (url === 'http://onekan.test/') return route.fulfill({ contentType:'text/html', body:source });
     if (url.endsWith('/assets/cheese-drawing.png')) return route.fulfill({contentType:'image/png',body:fs.readFileSync('assets/cheese-drawing.png')});
+    if (url.endsWith('/assets/schedule-views.js')) return route.fulfill({contentType:'application/javascript',body:fs.readFileSync('assets/schedule-views.js')});
+    if (url.endsWith('/assets/schedule-views.css')) return route.fulfill({contentType:'text/css',body:fs.readFileSync('assets/schedule-views.css')});
     if (url.endsWith('/assets/classification.js')) return route.fulfill({contentType:'application/javascript',body:fs.readFileSync('assets/classification.js')});
     if (url.endsWith('/assets/classification.css')) return route.fulfill({contentType:'text/css',body:fs.readFileSync('assets/classification.css')});
     if (url.includes('supabase.min.js')) return route.fulfill({ contentType:'application/javascript', body:'/* isolated mock supplied by init script */' });
