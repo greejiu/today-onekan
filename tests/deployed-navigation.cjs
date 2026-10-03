@@ -1,0 +1,37 @@
+// Read deployed static files; browser auth/database/network use intercepted test data.
+const fs=require('node:fs'),assert=require('node:assert/strict'),crypto=require('node:crypto');
+const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
+(async()=>{
+ const url='https://greejiu.github.io/today-onekan/',sha=process.env.DEPLOY_SHA;
+ assert(sha,'DEPLOY_SHA required');
+ const response=await fetch(url+'?phase2='+sha,{cache:'no-store'});assert.equal(response.status,200);
+ const source=await response.text(),normalize=s=>s.replace(/\r\n/g,'\n');
+ assert.equal(normalize(source),normalize(fs.readFileSync('index.html','utf8')),'served HTML must match the reviewed commit');
+ const assetResults=[];
+ for(const file of ['assets/together.js','assets/together.css']){
+  const r=await fetch(url+file+'?phase2='+sha);assert.equal(r.status,200);const text=await r.text();assert.equal(normalize(text),normalize(fs.readFileSync(file,'utf8')));assetResults.push(file+' matched');
+ }
+ const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768},timezoneId:'Asia/Seoul'}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await fixture(page,source); // Installs auth/DB mocks and blocks all external requests.
+  await page.route(url+'**',route=>{
+   const pathname=new URL(route.request().url()).pathname.replace('/today-onekan/','');
+   if(!pathname)return route.fulfill({contentType:'text/html',body:source});
+   if(['assets/together.js','assets/together.css','assets/cheese-drawing.png'].includes(pathname))return route.fulfill({contentType:pathname.endsWith('.js')?'application/javascript':pathname.endsWith('.css')?'text/css':'image/png',body:fs.readFileSync(pathname)});
+   return route.abort();
+  });
+  await page.goto(url+'?phase2='+sha);await page.waitForSelector('.upcoming-day');fs.mkdirSync('test-results',{recursive:true});
+  await page.screenshot({path:'test-results/deployed-global.png'});
+  for(const target of ['schedule','todos','habits','work','records','settings','all','community','together']){
+   if(await page.locator('#dedicatedSidebarNav').isVisible())await page.locator('#sidebarAllMenuBtn').click();await page.locator('#mainSidebarNav [data-page='+target+']').click();assert.equal(await page.evaluate(()=>currentPage),target);assert(await page.locator('#sidebarHomeNav button').isVisible());
+   if(target==='schedule')await page.screenshot({path:'test-results/deployed-dedicated.png'});
+  }
+  await page.locator('#pageSidebarItems [data-together-section=friends]').click();await page.screenshot({path:'test-results/deployed-together.png'});await page.locator('#pageSidebarItems [data-together-section=private]').click();await page.getByRole('button',{name:'방 만들기',exact:true}).waitFor();
+  await page.setViewportSize({width:390,height:844});await page.locator('.together-section-tabs [data-together-section=friends]').click();await page.screenshot({path:'test-results/deployed-mobile.png'});
+  await page.locator('#navMoreBtn').click();assert(await page.locator('#navMoreSheet [data-page=all]').isVisible());assert(await page.locator('#navMoreSheet [data-page=community]').isVisible());
+  assert.equal(await page.evaluate(()=>mockWrites.length),0);assert.deepEqual(errors,[]);
+  const proof={url,sha,httpStatus:response.status,htmlSHA256:crypto.createHash('sha256').update(normalize(source)).digest('hex'),assets:assetResults,browser:'deployed URL and served HTML; isolated auth/data; desktop/mobile major entrypoints; no writes or page errors'};
+  fs.writeFileSync('test-results/deployment-verification.json',JSON.stringify(proof,null,2));console.log(JSON.stringify(proof,null,2));
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});
