@@ -19,7 +19,7 @@
     --bg:#FAFAF9; --card:#FFFFFF; --line:#E7E7E5; --text:#2A2A2A; --sub:#737373;
     --accent:#2A2A2A; --accent-soft:#EFEFED; --danger:#f28b82; --ok:#8fd6b7;
     /* 2026-09-26 — --accent-text: 옅은 바탕 위 강조 글자(파스텔 accent를 그대로 글자에 쓰면 흐려서 테마별 진한 톤),
-       --accent-on: accent 바탕 버튼 위 글자색. 간격·모서리 기준값(4·8·12·16·24·32 / 카드 18·버튼 12·태그 999). */
+       --accent-on: accent 바탕 버튼 위 글자색. 간격·모서리 기준값(4·8·12·16·24·32 / 카드 18·버튼 12·범주 999). */
     --accent-text:#2A2A2A; --accent-on:#FFFFFF;
     /* 2026-09-27 — --danger-text: 흰 카드 위에서도 읽히는 붉은 글자(삭제 글자·아이콘 전용). --danger는 연한 톤이라 글자로 쓰면 흐림 */
     --danger-text:#C0392B;
@@ -913,7 +913,7 @@
 
   /* ── 2026-09-26 앱 전체 통일("차분하고 부드러운 다이어리") ──
      같은 역할 = 같은 모양. 글씨: 페이지 제목 21px / 영역 제목 16px / 본문 14~15px / 보조 12~13px.
-     모서리: 카드 --r-card(18px), 버튼 --r-btn(12px), 태그·칩 둥근 알약. 그림자는 거의 없이 얇은 테두리로 구분.
+     모서리: 카드 --r-card(18px), 버튼 --r-btn(12px), 범주·칩 둥근 알약. 그림자는 거의 없이 얇은 테두리로 구분.
      색은 전부 테마 변수(--accent-text: 옅은 바탕 위 강조 글자, --accent-on: 강조 버튼 위 글자)라 5개 테마 공통. */
   .page-title{font-size:21px;font-weight:700;line-height:1.35;color:var(--text);margin:0 2px 16px;letter-spacing:-.01em;}
   .section-label{font-size:16px;font-weight:700;color:var(--text);margin:24px 2px 8px;}
@@ -1472,8 +1472,7 @@
       <section id="scheduleSidebarNav" class="schedule-side-nav" aria-label="일정 하위 메뉴" hidden>
         <button type="button" class="navitem active" data-schedule-mode="calendar" aria-pressed="true">달력</button>
         <button type="button" class="navitem" data-schedule-mode="list" aria-pressed="false">목록</button>
-        <hr class="sidebar-divider" />
-        <div id="scheduleCategoryDesktopHost" class="schedule-cat-host">
+        <div id="scheduleCategoryDesktopHost" class="schedule-cat-host" hidden style="display:none;">
           <section id="scheduleCategoryPanel" class="schedule-cat-panel" aria-label="일정 범주">
             <button type="button" id="scheduleCategoryCollapse" class="schedule-cat-heading" aria-expanded="true" aria-controls="scheduleCategoryList">▾ 범주</button>
             <div id="scheduleCategoryList" class="schedule-cat-list"></div>
@@ -1620,7 +1619,7 @@
         <div class="sched-top">
           <div class="sched-title-row">
             <h1 class="page-title sched-page-title">일정</h1>
-            <button type="button" id="scheduleCategoryMobileBtn" class="mobile-only sched-add-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="scheduleFilterBg">범주</button>
+            <button type="button" id="scheduleCategoryMobileBtn" class="mobile-only sched-add-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="classificationManageBg">그룹</button>
             <div class="view-toggle" id="scheduleModeToggle" role="group" aria-label="일정 보기 방식">
               <button type="button" id="scheduleModeCalendarBtn" class="active" aria-pressed="true">달력</button>
               <button type="button" id="scheduleModeListBtn" aria-pressed="false">목록</button>
@@ -1865,28 +1864,6 @@
         </section>
 
         <h2 class="section-label settings-group-title" id="usageSettingsHeading">사용 설정</h2>
-        <div class="section-label">태그 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
-        <div class="hs-cat-list" id="settingsTagList"></div>
-        <div class="field">
-          <div style="display:flex;gap:6px;align-items:flex-end;">
-            <div style="flex:1;"><label>새 태그</label><input id="settingsTagName" type="text" placeholder="예: 집안일" /></div>
-            <input id="settingsTagColor" type="color" value="#FF6B6B" class="color-native-input" />
-            <button type="button" class="color-swatch-btn" data-for="settingsTagColor" title="색상 선택" style="background:#FF6B6B;"></button>
-            <button class="btn-ghost" id="settingsTagAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
-          </div>
-        </div>
-
-        <div class="section-label" style="margin-top:20px;">범주 <span style="color:var(--sub);font-weight:400;">(일정 전용)</span></div>
-        <div class="hs-cat-list" id="settingsEventCatList"></div>
-        <div class="field">
-          <div style="display:flex;gap:6px;align-items:flex-end;">
-            <div style="flex:1;"><label>새 범주</label><input id="settingsEventCatName" type="text" placeholder="예: 병원" /></div>
-            <input id="settingsEventCatColor" type="color" value="#5B8CFF" class="color-native-input" />
-            <button type="button" class="color-swatch-btn" data-for="settingsEventCatColor" title="색상 선택" style="background:#5B8CFF;"></button>
-            <button class="btn-ghost" id="settingsEventCatAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
-          </div>
-        </div>
-
         <div class="section-label" style="margin-top:20px;">하루 시간 범위 <span style="color:var(--sub);font-weight:400;">(타임라인·시간블럭에서 보여줄 범위)</span></div>
         <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
           <div style="flex:1;"><label>시작</label><input id="settingsDayStart" type="time" step="900" /></div>
@@ -2017,7 +1994,7 @@
       <div class="cev-hint" id="td_date_hint">제목만 적고 저장해도 돼요. 시작일을 비우면 오늘로 저장돼요.</div>
       <div class="field split">
         <div><label for="td_time">시간 <span class="cev-opt">(선택)</span></label><select id="td_time"></select></div>
-        <div><label for="td_tag">태그</label><select id="td_tag"></select></div>
+        <div><label for="td_tag">범주</label><select id="td_tag"></select></div>
       </div>
       <div class="field project-field" id="td_project_wrap" hidden><label for="td_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="td_project"></select></div>
       <div class="cal-ev-error" id="td_error" role="alert"></div>
@@ -2065,7 +2042,7 @@
         <div class="cev-field-error" id="cev_time_err"></div>
       </div>
       <fieldset class="field cev-cat-field">
-        <legend>범주 <span class="cev-opt">(선택)</span></legend>
+        <legend>그룹 <span class="cev-opt">(선택)</span></legend>
         <div class="cev-cat-list" id="cev_category"></div>
       </fieldset>
       <button type="button" class="cev-memo-toggle" id="cev_memo_toggle" aria-expanded="false" aria-controls="cev_memo_wrap">메모 쓰기</button>
@@ -2163,7 +2140,7 @@
       </div>
       <div class="field split">
         <div><label for="ha_duration">소요 시간(분)</label><input id="ha_duration" type="number" min="5" step="5" value="30" inputmode="numeric" /></div>
-        <div><label for="ha_category">태그</label><select id="ha_category"></select></div>
+        <div><label for="ha_category">범주</label><select id="ha_category"></select></div>
       </div>
       <div class="field project-field" id="ha_project_wrap" hidden><label for="ha_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="ha_project"></select></div>
       <div class="cev-hint">이름만 적고 저장하면 오늘부터 매일 반복돼요. 요일 지정 등은 저장 후 습관 설정에서 바꿀 수 있어요.</div>
@@ -2218,13 +2195,13 @@
       <div><label>시작일(반복이 시작된 날)</label><input id="hs_start" type="date" /></div>
       <div><label>종료일(선택, 반복이 끝나는 날)</label><input id="hs_end" type="date" /></div>
     </div>
-    <div class="field"><label>태그</label><select id="hs_category"></select></div>
+    <div class="field"><label>범주</label><select id="hs_category"></select></div>
     <div class="field project-field" id="hs_project_wrap" hidden><label for="hs_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="hs_project"></select></div>
-    <div class="hs-cat-manage-label">태그 관리 (이름 수정 · 삭제)</div>
+    <div class="hs-cat-manage-label">범주 관리 (이름 수정 · 삭제)</div>
     <div class="hs-cat-list" id="hs_cat_list"></div>
     <div class="field">
       <div style="display:flex;gap:6px;align-items:flex-end;">
-        <div style="flex:1;"><label>새 태그</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
+        <div style="flex:1;"><label>새 범주</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
         <input id="hs_newcat_color" type="color" value="#FF6B6B" class="color-native-input" />
         <button type="button" class="color-swatch-btn" data-for="hs_newcat_color" title="색상 선택" style="background:#FF6B6B;"></button>
         <button class="btn-ghost" id="hs_newcat_btn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
@@ -2243,7 +2220,7 @@
     <h2 id="sd_sheet_title">담아두기 수정</h2>
     <form id="sdForm" class="cal-ev-fields" novalidate>
       <div class="field"><label for="sd_title">제목</label><input id="sd_title" type="text" autocomplete="off" enterkeyhint="done" /></div>
-      <div class="field"><label for="sd_tag">태그</label><select id="sd_tag"></select></div>
+      <div class="field"><label for="sd_tag">범주</label><select id="sd_tag"></select></div>
       <div class="cal-ev-error" id="sd_error" role="alert"></div>
     </form>
     <div class="sheet-actions">
@@ -2338,6 +2315,8 @@
 <link rel="stylesheet" href="assets/together.css">
 <script src="assets/together.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="assets/classification.css">
+<script src="assets/classification.js"></script>
 <script>
   // ── Supabase 설정 (그리지우 프로젝트, tok_ 접두사 테이블 사용) ──
   const SUPABASE_URL = "https://mmpsyajgyufdxmmnxqba.supabase.co";
@@ -2724,8 +2703,8 @@
   let daySettings = { day_start_minute: 360, day_end_minute: 1440, default_tag_color: null, default_event_color: null }; // tok_settings: 타임라인/타임블럭에서 보여줄 하루 시작~종료 시간(분) + 그룹 "기본"·범주 "기본"(분류 없음) 색상. 행이 없으면 이 기본값 사용.
   let lastLoadAllAt = 0; // 2026-09-23: 다른 기기/탭에서 바뀐 내용을 돌아왔을 때 자동으로 다시 불러오기 위한 마지막 로드 시각(아래 loadAll/자동새로고침 참고)
   let todos = []; // tok_todos: 다가오는 계획 보드용 (날짜 있는 1회성 할일)
-  let habitCategories = []; // tok_habit_categories: 습관·할일 공용 "그룹"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
-  let eventCategories = []; // tok_event_categories: 일정 전용 "범주"(이름+색상), 그룹 풀과는 별개
+  let habitCategories = []; // tok_habit_categories: 일정·습관·할일 공용 "범주"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
+  let eventCategories = []; // tok_event_categories: 기존 일정 분류를 유지하는 일정 그룹(이름+색상), 공용 범주 풀과는 별개
   // 그룹/범주 새로 만들 때 빠르게 고를 수 있는 프리셋 팔레트(2026-09-23, 결님이 지피티로 뽑아온 5세트 전부) —
   // 네이티브 <input type="color"> 커스텀 선택은 그대로 두고, 그 아래 세트별로 묶은 프리셋 원형 버튼을 덧붙이는 방식(둘 다 가능).
   const COLOR_PALETTE_SETS = [
@@ -2844,6 +2823,7 @@
   let todoTabView = "all"; // 할일 탭 상단탭: "all"(모두) | "scheduled"(예정된) | "someday"(언젠가)
   let todoListSettings = loadTabSettings("tok_todoListSettings", ["all", "scheduled"]); // 할일 탭별 정렬/그룹화 기억(언젠가는 기존 정렬 그대로 유지)
   let currentPage = "home";
+  let classification = null;
   // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가). 메모 기능은 2026-09-12에 완전히 제거함(scheduleSubView도 함께 삭제).
   let scheduleMode = "calendar"; // "calendar" | "list" — 2026-09-26: 첫 화면은 캘린더(앱 사용 중 바꾼 보기는 탭을 오가도 유지, 새로고침하면 다시 캘린더)
   // 일정 화면의 표시 설정만 저장한다. events 원본과 다른 화면은 필터링하지 않는다.
@@ -2854,13 +2834,14 @@
   const scheduleFilterKey = () => 'tok_schedule_categories:' + scheduleFilterUser;
   const scheduleCategoryKey = event => event.category_id && eventCategories.some(c => c.id === event.category_id) ? event.category_id : 'default';
   function scheduleEventVisible(event) {
-    return !scheduleHiddenCategories.has(scheduleCategoryKey(event));
+    return classification ? classification.calendarVisible(event) : !scheduleHiddenCategories.has(scheduleCategoryKey(event));
   }
   function scheduleFilteredEmptyText() {
-    return scheduleHiddenCategories.size ? '선택한 범주에 표시할 일정이 없어요' : '등록된 일정이 없어요';
+    return '표시할 일정이 없어요. 그룹 조회와 달력 표시 설정을 확인해주세요.';
   }
   function bindScheduleFilterUser(userId) {
     if (scheduleFilterUser === userId) return;
+    classification?.bind();
     scheduleFilterUser = userId;
     scheduleDataUser = null;
     scheduleHiddenCategories = new Set();
@@ -2915,6 +2896,7 @@
       host.innerHTML = config?.anchors?.map(([id,label]) => `<button type="button" class="navitem" data-sidebar-anchor="${id}">${label}</button>`).join('') || (config?.preparing ? `<p class="sidebar-preparing">${config.preparing}</p>` : '');
     }
     if (focusKey) host.querySelector('[data-' + focusKey[0] + '="' + focusKey[1] + '"]')?.focus({ preventScroll: true });
+    classification?.render();
     syncScheduleModeButtons();
   }
   function setSidebarMode(dedicated) {
@@ -2998,7 +2980,7 @@
     $('scheduleCategoryCollapse').textContent = (scheduleCategoriesCollapsed ? '▸' : '▾') + ' 범주';
     $('scheduleCategoryCollapse').setAttribute('aria-expanded', String(!scheduleCategoriesCollapsed));
     list.hidden = scheduleCategoriesCollapsed;
-    $('scheduleCategoryMobileBtn').textContent = scheduleHiddenCategories.size ? '범주 · 필터 중' : '범주';
+    $('scheduleCategoryMobileBtn').textContent = '그룹';
     if (focus) [...list.children].find(row => row.dataset.scheduleCat === focus.id)?.querySelector(focus.eye ? '.schedule-cat-eye' : '.schedule-cat-more')?.focus({ preventScroll: true });
   }
   function refreshScheduleFilterViews() {
@@ -3048,10 +3030,7 @@
     if (open && restore && $('scheduleCategoryMobileBtn').getClientRects().length) $('scheduleCategoryMobileBtn').focus({ preventScroll: true });
   }
   $('scheduleCategoryMobileBtn').onclick = () => {
-    renderScheduleCategories();
-    $('scheduleFilterBg').classList.add('open');
-    $('scheduleCategoryMobileBtn').setAttribute('aria-expanded', 'true');
-    $('scheduleCategoryCollapse').focus();
+    classification?.manageGroups('event',$('scheduleCategoryMobileBtn'));
   };
   $('scheduleFilterClose').onclick = () => closeScheduleFilter();
   $('scheduleFilterBg').addEventListener('click', event => { if (event.target === $('scheduleFilterBg')) closeScheduleFilter(); });
@@ -3316,6 +3295,7 @@
     habitCategories = habitCatData || [];
     eventCategories = eventCatData || [];
     scheduleDataUser = scheduleLoadUser;
+    await classification?.load();
     if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute, default_tag_color: settingsData.default_tag_color || null, default_event_color: settingsData.default_event_color || null }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00, 기본색 없음) 유지
     await advancePastRepeatingEvents(events); // 반복 설정된 일정 중 날짜 지난 것은 다음 회차로 자동 이동
     renderScheduleCategories();
@@ -3364,6 +3344,7 @@
       tag_id: todo.tag_id || null, repeat_unit: todo.repeat_unit, repeat_interval: todo.repeat_interval, repeat_days: todo.repeat_days || null,
       repeat_chain_id: chainId, repeat_source_id: todo.id,
     };
+    Object.assign(nextRow,classification?.inherited("todo",todo));
     if (todo.project_id) nextRow.project_id = todo.project_id; // 2026-09-29 다음 회차도 같은 프로젝트에 연결
     const { error } = await sb.from("tok_todos").insert(nextRow);
     // 23505 = unique 위반: 동시 요청 등으로 다른 쪽이 먼저 만들었음 → 이미 1개 있으니 성공으로 취급
@@ -3878,7 +3859,7 @@
   function assignableTagPool(pool, keepId = null) { return pool.filter(c => !c.is_archived || (keepId && c.id === keepId)); }
   // "기본" = 분류 없음(연결값 null) 전용 이름 — 같은 이름의 그룹·범주를 새로 만들거나 이름을 바꿔 겹치지 않게 막음(기존 행은 건드리지 않음)
   const isReservedCategoryName = (name) => name.trim() === "기본";
-  const RESERVED_CATEGORY_NAME_MSG = (noun) => `‘기본’은 ${noun}을 정하지 않은 항목에 쓰는 이름이라 새 ${noun} 이름으로 쓸 수 없어요.`.replace("범주을", "범주를").replace("태그을", "태그를");
+  const RESERVED_CATEGORY_NAME_MSG = (noun) => `‘기본’은 ${noun}을 정하지 않은 항목에 쓰는 이름이라 새 ${noun} 이름으로 쓸 수 없어요.`.replace("범주을", "범주를").replace("범주을", "범주를");
   function tagPickLabel(c) { return c.is_archived ? `${c.name} · 보관됨` : c.name; }
   // 새 그룹/범주·보관 해제 항목을 사용 중 목록 맨 아래에 두기 위한 다음 sort_order(보관된 행 포함 전체 최댓값 + 1)
   function nextCategorySortOrder(pool) { return pool.reduce((m, c) => Math.max(m, Number.isFinite(c.sort_order) ? c.sort_order : -1), -1) + 1; }
@@ -4368,7 +4349,8 @@
       if (zone === "someday") {
         const t = todos.find(x => x.id === id);
         if (!t) return;
-        const { error: insErr } = await sb.from("tok_someday").insert({ title: t.title, is_done: t.is_done, tag_id: t.tag_id });
+        if (!classification?.isReady() && (t.group_id || t.project_id)) { alert('그룹·프로젝트 연결을 보존하려면 분류 저장소를 다시 불러온 후 이동해주세요.'); return; }
+        const { error: insErr } = await sb.from("tok_someday").insert({ title: t.title, is_done: t.is_done, tag_id: t.tag_id, ...classification?.inherited("todo",t), ...(classification?.isReady()&&t.project_id?{project_id:t.project_id}:{}) });
         if (insErr) { alert("이동 실패: " + insErr.message); return; }
         const { error: delErr } = await sb.from("tok_todos").delete().eq("id", id);
         if (delErr) { alert("이동 실패: " + delErr.message); return; }
@@ -4385,7 +4367,7 @@
       if (zone === "someday") return; // 이미 언젠가라 놓아도 변화 없음
       const s = somedayItems.find(x => x.id === id);
       if (!s) return;
-      const patch = { title: s.title, is_done: s.is_done, tag_id: s.tag_id };
+      const patch = { title: s.title, is_done: s.is_done, tag_id: s.tag_id, ...classification?.inherited("someday",s), ...(s.project_id?{project_id:s.project_id}:{}) };
       if (zone === "planday") patch.start_date = zoneObj.date;
       else if (zone === "today-allday") patch.start_date = targetDate;
       else { patch.start_date = targetDate; patch.todo_time = minutesToHHMM(zoneObj.startMinute) + ":00"; }
@@ -5930,7 +5912,7 @@
     const hiddenCount = () => chips.filter(c => c.hidden).length;
     const secondRowTop = rowTops[1];
     // 2026-09-28 버튼 글자는 "더 보기"만(숨은 개수 "+N" 표시 삭제). 개수는 읽기 도구용 aria-label에만 남김.
-    const setLabel = () => { moreBtn.textContent = "더 보기"; moreBtn.setAttribute("aria-label", `더 보기, 숨은 태그 ${hiddenCount()}개`); };
+    const setLabel = () => { moreBtn.textContent = "더 보기"; moreBtn.setAttribute("aria-label", `더 보기, 숨은 범주 ${hiddenCount()}개`); };
     chips.forEach(c => { if (c.offsetTop > secondRowTop && !c.classList.contains("active")) c.hidden = true; });
     setLabel();
     // 선택 칩 또는 버튼이 아직 3번째 줄로 밀려나 있으면, 뒤에서부터(선택 칩·"전체" 제외) 하나씩 더 숨김
@@ -5975,7 +5957,7 @@
       ? rowsHtml + moreHtml + addSlotHtml(`data-somedayadd="1"`, false)
       : undone.length === 0
         ? addSlotHtml(`data-somedayadd="1"`, true)
-        : `<div class="agenda-empty-block">이 태그의 항목이 없어요.</div>` + addSlotHtml(`data-somedayadd="1"`, false);
+        : `<div class="agenda-empty-block">이 범주의 항목이 없어요.</div>` + addSlotHtml(`data-somedayadd="1"`, false);
     document.querySelectorAll(".somedaysum-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
@@ -6147,7 +6129,7 @@
   // ── 할일 탭 재설계(2026-09-12): 모두/예정된/언젠가 상단탭 + 정렬/그룹화 ──
   // 예전의 "다가오는 계획 7일 드래그보드"는 없앰(날짜 있는 할일 전체를 볼 수 없던 한계 — 집 화면의
   // 다가오는 계획 보드는 별개 인스턴스라 그대로 유지됨, 안 건드림). "언젠가" 탭은 기존 renderSomeday()를
-  // 그대로 재사용(정렬 3종+태그필터 그대로 유지, 정렬/그룹화 신규 시스템은 모두/예정된에만 적용).
+  // 그대로 재사용(정렬 3종+범주필터 그대로 유지, 정렬/그룹화 신규 시스템은 모두/예정된에만 적용).
   document.querySelectorAll("#todoTopTabs button").forEach(btn => {
     btn.onclick = () => {
       todoTabView = btn.dataset.tab;
@@ -6172,7 +6154,7 @@
     btns.forEach(b => { b.disabled = true; });
     let error;
     try {
-      ({ error } = await sb.from("tok_todos").insert({ title, start_date: todayStr(), end_date: null, todo_time: null }));
+      ({ error } = await sb.from("tok_todos").insert({ title, start_date: todayStr(), end_date: null, todo_time: null, ...(currentPage==="todos"&&classification?.isReady()?{group_id:classification.defaultGroup("todo")}: {}) }));
     } catch (err) { error = err; }
     quickAddBusy = false;
     btns.forEach(b => { b.disabled = false; });
@@ -6201,6 +6183,7 @@
     });
     let items = todos.map(t => ({ ...t, _kind: "todo" }));
     if (todoTabView === "all") items = items.concat(somedayItems.map(s => ({ ...s, _kind: "someday" })));
+    items = items.filter(item => !classification || classification.matches("todo", item));
     const sorted = sortItemsBy(items, settings.sort, "start_date", habitCategories, "tag_id");
     const sections = groupItemsBy(sorted, settings.group, "start_date", habitCategories, "tag_id");
     renderSections($("todoUnifiedList"), sections, renderTodoUnifiedRow,
@@ -6218,6 +6201,7 @@
       <input type="checkbox" ${item.is_done?"checked":""} class="tu-check" />
       ${dateBadge}
       ${groupTitleHtml("someday-title tu-title", isTodo ? "todo" : "someday", item.tag_id, item.title, isTodo ? todoProjectName(item) : null)}
+      ${classification?.badge(isTodo ? "todo" : "someday", item) || ""}
       ${historyBtn}
       <button class="del tu-del">삭제</button>
       ${moreBtnHtml(item.title)}
@@ -6375,6 +6359,7 @@
     $("td_start").value = start || "";
     $("td_end").value = existing ? (existing.end_date || "") : (prefill?.endDate || "");
     fillHalfHourTimeSelect($("td_time"), existing ? (existing.todo_time ? existing.todo_time.slice(0, 5) : "") : (prefill?.time || ""));
+    classification?.prepare("todo","td",existing);
     populateTodoTagSelect(existing ? (existing.tag_id || null) : (prefill?.tagId || null));
     fillProjectSelect($("td_project"), $("td_project_wrap"), existing ? (existing.project_id || null) : (prefill?.projectId || null));
     $("td_error").textContent = "";
@@ -6417,10 +6402,10 @@
     try {
       // 새 할일: 시간을 정하면 소요시간 30분(시간 미지정이면 null). 수정: 소요시간은 사용자가 정한 값 그대로 두고,
       // 시간 없던 할일에 처음 시간을 넣었는데 소요시간이 비어 있을 때만 30분을 채움(기존 값은 바꾸지 않음).
-      const patch = { title, start_date, end_date, todo_time, tag_id };
+      const patch = { title, start_date, end_date, todo_time, tag_id, ...classification?.patch("todo","td",existingTodo) };
       if (projectsReady) patch.project_id = $("td_project").value || null; // DB에 프로젝트가 없으면(마이그레이션 전) 보내지 않음
       if (!editId) patch.duration_minutes = todo_time ? TODO_DEFAULT_DURATION_MIN : null;
-      else if (todo_time && existingTodo && existingTodo.duration_minutes == null) patch.duration_minutes = TODO_DEFAULT_DURATION_MIN;
+      else if (todo_time && existingTodo && !existingTodo.todo_time && existingTodo.duration_minutes == null) patch.duration_minutes = TODO_DEFAULT_DURATION_MIN;
       ({ error } = editId
         ? await sb.from("tok_todos").update(patch).eq("id", editId)
         : await sb.from("tok_todos").insert(patch));
@@ -6527,6 +6512,7 @@
     toggleRepeatUiFor("hs", habit.repeat_unit || "");
     $("hs_start").value = habit.start_date || todayStr();
     $("hs_end").value = habit.end_date || "";
+    classification?.prepare("habit","hs",habit);
     populateHabitCategorySelect(habit.category_id);
     fillProjectSelect($("hs_project"), $("hs_project_wrap"), habit.project_id || null);
     renderHabitCategoryList();
@@ -6547,13 +6533,13 @@
   });
   $("hs_newcat_btn").onclick = async () => {
     const name = $("hs_newcat_name").value.trim();
-    if (!name) { alert("태그 이름을 입력해주세요."); return; }
-    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("태그")); return; }
+    if (!name) { alert("범주 이름을 입력해주세요."); return; }
+    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("범주")); return; }
     const color = $("hs_newcat_color").value;
     const { data, error } = await sb.from("tok_habit_categories")
       .insert({ name, color, sort_order: nextCategorySortOrder(habitCategories) })
       .select().single();
-    if (error) { alert("태그 추가 실패: " + error.message); return; }
+    if (error) { alert("범주 추가 실패: " + error.message); return; }
     habitCategories.push(data);
     populateHabitCategorySelect(data.id);
     renderHabitCategoryList();
@@ -6592,7 +6578,9 @@
       { unit: habit.repeat_unit, interval: habit.repeat_interval, days: habit.repeat_days },
       { unit: repeat_unit, interval: repeat_interval, days: repeat_days }
     );
-    const patch = { name, start_minute, duration_minutes, repeat_unit, repeat_interval, repeat_days, category_id, start_date, end_date };
+    let classificationPatch;
+    try { classificationPatch=classification?.patch("habit","hs",habit); } catch(error) { alert(error.message); return; }
+    const patch = { name, start_minute, duration_minutes, repeat_unit, repeat_interval, repeat_days, category_id, start_date, end_date, ...classificationPatch };
     if (projectsReady) patch.project_id = $("hs_project").value || null; // 마이그레이션 전이면 보내지 않음
     if (changed) {
       const msg = repeat_unit
@@ -6619,7 +6607,7 @@
     const chipsHost = $("somedayTabTagChips");
     if (chipsHost) renderSomedayTagChips(chipsHost, somedayTabFilterTag, (tagId) => { somedayTabFilterTag = tagId; renderSomeday(); }, somedayItems);
 
-    const filtered = filterSomedayList(somedayItems, somedayTabFilterTag);
+    const filtered = filterSomedayList(somedayItems.filter(item => !classification || classification.matches("todo",item)), somedayTabFilterTag);
     const undone = sortSomedayList(filtered.filter(s => !s.is_done), somedayTabSort);
     const done = sortSomedayList(filtered.filter(s => s.is_done), somedayTabSort);
     const sorted = [...undone, ...done]; // 완료 항목은 항상 뒤로(기존 규칙 유지), 각 그룹 안에서 선택한 정렬 기준 적용
@@ -6632,7 +6620,7 @@
         ${moreBtnHtml(item.title)}
       </div>
     `;
-    }).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 태그의 항목이 없어요." : "담아둔 일이 없어요."}</div>`;
+    }).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 범주의 항목이 없어요." : "담아둔 일이 없어요."}</div>`;
     document.querySelectorAll(".someday-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
@@ -6688,7 +6676,7 @@
   $("somedayAddBtn").onclick = async () => {
     const title = $("somedayInput").value.trim();
     if (!title) return;
-    const { data, error } = await sb.from("tok_someday").insert({ title }).select().single();
+    const { data, error } = await sb.from("tok_someday").insert({ title, ...(classification?.isReady()?{group_id:classification.defaultGroup("todo")}: {}) }).select().single();
     if (error) { alert("추가 실패: " + error.message); return; }
     somedayItems.push(data);
     $("somedayInput").value = "";
@@ -6710,6 +6698,7 @@
     $("sd_tag").innerHTML = `<option value="">기본</option>` +
       assignableTagPool(habitCategories, cur).map(c => `<option value="${c.id}">${escapeHtml(tagPickLabel(c))}</option>`).join("");
     $("sd_tag").value = cur || "";
+    classification?.prepare("someday","sd",item);
     $("sd_error").textContent = "";
     $("sd_save").disabled = false;
     $("sd_save").textContent = "저장";
@@ -6732,7 +6721,7 @@
     $("sd_save").disabled = true;
     $("sd_save").textContent = "저장 중…";
     let error = null;
-    try { ({ error } = await sb.from("tok_someday").update({ title, tag_id: $("sd_tag").value || null }).eq("id", st.id)); }
+    try { ({ error } = await sb.from("tok_someday").update({ title, tag_id: $("sd_tag").value || null, ...classification?.patch("someday","sd",somedayItems.find(x=>x.id===st.id)) }).eq("id", st.id)); }
     catch (err) { error = err; }
     st.saving = false;
     $("sd_save").disabled = false;
@@ -6757,7 +6746,7 @@
     const item = somedayItems.find(x => x.id === id);
     if (!item) return;
     somedayMoveState = { id, saving: false, opener: activeOpener() };
-    $("sm_desc").textContent = `‘${item.title}’을(를) 담아두기에서 빼서 고른 날짜의 할일로 옮겨요. 제목·태그는 그대로이고, 완료 표시는 새로 시작해요.`;
+    $("sm_desc").textContent = `‘${item.title}’을(를) 담아두기에서 빼서 고른 날짜의 할일로 옮겨요. 제목·범주는 그대로이고, 완료 표시는 새로 시작해요.`;
     $("sm_date").value = todayStr();
     $("sm_error").textContent = "";
     setSomedayMoveBusy(false);
@@ -6845,7 +6834,7 @@
   }
   function schedMonthEvents() {
     const { ms, me } = schedMonthInfo();
-    return events.filter(e => scheduleEventVisible(e) && e.event_date <= me && evEndDate(e) >= ms);
+    return events.filter(e => (!classification || classification.matches("event", e)) && e.event_date <= me && evEndDate(e) >= ms);
   }
   // 목록 상단 [+ 일정 추가] 기본 시작일: 이번 달이면 오늘, 다른 달이면 조회 월 1일
   function schedDefaultAddDate() {
@@ -7039,8 +7028,8 @@
     if (!e) return;
     evDetail = { id, opener: opener || null, busy: false };
     const cat = eventCategoryOf(e);
-    $("evd_cat").innerHTML = cat ? eventCategoryHtml(cat) : ""; // 범주 미지정이면 “기본” 글자도 표시 안 함
-    $("evd_cat").hidden = !cat;
+    $("evd_cat").innerHTML = (cat ? eventCategoryHtml(cat) : "") + (classification?.badge("event",e) || "");
+    $("evd_cat").hidden = !$("evd_cat").innerHTML;
     $("evd_title").textContent = e.title;
     $("evd_when").textContent = eventWhenLabel(e);
     const rep = eventRepeatLabel(e);
@@ -7408,7 +7397,7 @@
   // 변경 여부 비교용 — 꺼진 스위치 뒤에 숨은 칸(종료일·시간)은 비교에서 뺌
   function cevFormState() {
     const multi = $("cev_multi").checked, allDay = $("cev_allday").checked;
-    return JSON.stringify([$("cev_title").value, $("cev_date").value, multi, multi ? $("cev_end").value : "", allDay, allDay ? "" : $("cev_time").value, cevCategoryValue(), $("cev_memo").value]);
+    return JSON.stringify([$("cev_title").value, $("cev_date").value, multi, multi ? $("cev_end").value : "", allDay, allDay ? "" : $("cev_time").value, cevCategoryValue(), $("cev_shared_category_id")?.value || "", $("cev_memo").value]);
   }
   function syncCevFields() {
     $("cev_end_wrap").hidden = !$("cev_multi").checked;
@@ -7438,7 +7427,8 @@
     const ev = mode === "edit" ? events.find(x => x.id === id) : null;
     if (mode === "edit" && !ev) return;
     calEvSheet = { mode, id: ev ? ev.id : null, saving: false, opener: opener || null, snapshot: "", keepMonth: !ev && keepMonth };
-    renderCevCategories(ev ? (ev.category_id || null) : null);
+    renderCevCategories(ev ? (ev.category_id || null) : classification?.defaultGroup("event"));
+    classification?.prepare("event","cev",ev);
     const startVal = ev ? ev.event_date : (date || todayStr());
     const rangeEnd = !ev && endDate && endDate > startVal ? endDate : "";
     const multi = ev ? isMultiDayEvent(ev) : !!rangeEnd;
@@ -7498,12 +7488,14 @@
     const memoRaw = $("cev_memo").value;
     const isAdd = calEvSheet.mode !== "edit";
     let payload;
+    let classificationPatch;
+    try { classificationPatch=classification?.patch("event","cev",isAdd?null:events.find(x=>x.id===calEvSheet.id)); } catch(error) { $("cev_error").textContent=error.message; return; }
     if (isAdd) {
-      payload = { title, event_date, end_date, event_time: time ? time + ":00" : null, category_id, memo: memoRaw.trim() || null };
+      payload = { ...classificationPatch, title, event_date, end_date, event_time: time ? time + ":00" : null, category_id, memo: memoRaw.trim() || null };
     } else {
       const ev = events.find(x => x.id === calEvSheet.id);
       if (!ev) { $("cev_error").textContent = "이 일정을 찾을 수 없어요. 다른 기기에서 삭제됐을 수 있어요."; return; }
-      payload = {};
+      payload = { ...classificationPatch };
       if (title !== ev.title) payload.title = title;
       if (event_date !== ev.event_date) payload.event_date = event_date;
       const origEnd = isMultiDayEvent(ev) ? ev.end_date : null;
@@ -7664,13 +7656,13 @@
   // 정렬/그룹화 select 두 개를 채우고 onChange 연결(공용) — allowDateGroup=false면 "날짜별" 옵션은 뺌(습관·언젠가처럼 날짜 개념이 약한 목록용).
   function renderSortGroupControls(sortSelEl, groupSelEl, settings, allowDateGroup, onChange) {
     if (!sortSelEl.dataset.filled) {
-      sortSelEl.innerHTML = `<option value="created">정렬: 없음(등록일순)</option><option value="date_desc">날짜 최신순</option><option value="date_asc">날짜 오래된순</option><option value="group">태그순</option>`;
+      sortSelEl.innerHTML = `<option value="created">정렬: 없음(등록일순)</option><option value="date_desc">날짜 최신순</option><option value="date_asc">날짜 오래된순</option><option value="group">범주순</option>`;
       sortSelEl.dataset.filled = "1";
     }
     sortSelEl.value = settings.sort;
     sortSelEl.onchange = () => { settings.sort = sortSelEl.value; onChange(); };
     if (!groupSelEl.dataset.filled) {
-      groupSelEl.innerHTML = `<option value="none">그룹화: 안 함</option>${allowDateGroup ? `<option value="date">날짜별</option>` : ""}<option value="group">태그별</option>`;
+      groupSelEl.innerHTML = `<option value="none">그룹화: 안 함</option>${allowDateGroup ? `<option value="date">날짜별</option>` : ""}<option value="group">범주별</option>`;
       groupSelEl.dataset.filled = "1";
     }
     groupSelEl.value = settings.group;
@@ -7692,7 +7684,7 @@
     const todayS = todayStr();
     const cat = habitCategories.find(c => c.id === t.category_id);
     const repeatText = repeatSummaryText(t.repeat_unit, t.repeat_interval, t.repeat_days);
-    // 2026-09-28: 그룹색은 습관 이름 글자에(아래 .name), 그룹 이름은 옅은 회색 태그로 유지(색 점은 없앰)
+    // 2026-09-28: 그룹색은 습관 이름 글자에(아래 .name), 그룹 이름은 옅은 회색 범주로 유지(색 점은 없앰)
     const catChip = cat ? `<span class="habit-cat-chip">${escapeHtml(cat.name)}</span>` : "";
     // 시작일이 아직 안 왔거나 종료일이 있을 때만 기간을 같이 보여줌(평범하게 계속 진행 중인 습관은 굳이 안 보여줘서 안 복잡하게).
     const windowText = t.end_date ? ` · ~${formatDateShort(t.end_date)}까지`
@@ -7721,10 +7713,10 @@
     <div class="todo-row ${habitsTabView === "active" ? "" : "inactive"}" data-id="${t.id}"${menuAttrs("habit", t.id)}>
       <div class="info">
         <div class="name">${groupTitleHtml("habit-name", "habit", t.category_id, t.name)}${dueChip}</div>
-        <div class="block-tag">${t.start_minute != null ? minutesToHHMM(t.start_minute) : "시간 없음"} · ${t.duration_minutes || 30}분 · ${repeatText}${windowText}${catChip}</div>
+        <div class="block-tag">${t.start_minute != null ? minutesToHHMM(t.start_minute) : "시간 없음"} · ${t.duration_minutes || 30}분 · ${repeatText}${windowText}${catChip}${classification?.badge("habit",t) || ""}</div>
       </div>
       <button class="historybtn icon-btn" data-id="${t.id}" title="기록 보기" aria-label="${escapeHtml(t.name)} 기록 보기">${ICON_HISTORY_SVG}</button>
-      <button class="settingsbtn icon-btn" data-id="${t.id}" title="반복·태그 설정" aria-label="${escapeHtml(t.name)} 반복·태그 설정">${ICON_SLIDERS_SVG}</button>
+      <button class="settingsbtn icon-btn" data-id="${t.id}" title="반복·범주 설정" aria-label="${escapeHtml(t.name)} 반복·범주 설정">${ICON_SLIDERS_SVG}</button>
       ${actionBtn}
       <button class="del" data-id="${t.id}">삭제</button>
       ${moreBtnHtml(t.name)}
@@ -7733,7 +7725,7 @@
   }
   function renderTodo() {
     const todayS = todayStr();
-    const visible = tasks.filter(t => habitLifecycleState(t, todayS) === habitsTabView);
+    const visible = tasks.filter(t => habitLifecycleState(t, todayS) === habitsTabView && (!classification || classification.matches("habit",t)));
     const settings = habitListSettings[habitsTabView];
     renderSortGroupControls($("habitSortSelect"), $("habitGroupSelect"), settings, true, () => {
       saveTabSettings("tok_habitListSettings", habitListSettings);
@@ -7839,6 +7831,7 @@
     $("ha_category").innerHTML = `<option value="">기본</option>` +
       assignableTagPool(habitCategories, null).map(c => `<option value="${c.id}">${escapeHtml(tagPickLabel(c))}</option>`).join("");
     $("ha_category").value = prefill?.categoryId || "";
+    classification?.prepare("habit","ha");
     fillProjectSelect($("ha_project"), $("ha_project_wrap"), prefill?.projectId || null);
     $("ha_error").textContent = "";
     $("ha_save").disabled = false;
@@ -7869,6 +7862,7 @@
       start_date: $("ha_start").value || todayStr(),
       category_id: $("ha_category").value || null,
     };
+    try { Object.assign(row,classification?.patch("habit","ha")); } catch(error) { showErr(error.message); return; }
     if (projectsReady) row.project_id = $("ha_project").value || null; // 마이그레이션 전이면 보내지 않음
     habitAddState.saving = true;
     $("ha_error").textContent = "";
@@ -7938,28 +7932,28 @@
       entries.push(...habitStatusEntries(item, date));
       sep();
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openHabitSheet(item) });
-      entries.push(groupEntry("태그 변경"));
+      entries.push(groupEntry("범주 변경"));
       entries.push(dupEntry);
       sep();
       entries.push({ label: "습관 삭제", icon: "trash", danger: true, run: () => deleteHabitWithConfirm(id) });
     } else if (kind === "todo") {
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openTodoSheet(item) });
       entries.push({ label: "날짜 변경", icon: "date", window: true, run: () => openItemDateSheet("todo", id) });
-      entries.push(groupEntry("태그 변경"));
+      entries.push(groupEntry("범주 변경"));
       entries.push(dupEntry);
       sep();
       entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteTodoWithConfirm(id) });
     } else if (kind === "event") {
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openEventEditor({ mode: "edit", id, opener: activeOpener() }) });
       entries.push({ label: "날짜·시간 변경", icon: "date", window: true, run: () => openItemDateSheet("event", id) });
-      entries.push(groupEntry("범주 변경"));
+      entries.push(groupEntry("그룹 변경"));
       entries.push(dupEntry);
       sep();
       entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteEventWithConfirm(id, activeOpener()) });
     } else if (kind === "someday") {
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openSomedaySheet(id) });
       entries.push({ label: "날짜 정해서 할일로 옮기기", icon: "move", window: true, run: () => openSomedayMoveSheet(id) });
-      entries.push(groupEntry("태그 변경"));
+      entries.push(groupEntry("범주 변경"));
       sep();
       entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteSomedayWithConfirm(id) });
     }
@@ -8102,6 +8096,7 @@
     let error;
     if (kind === "habit") {
       ({ error } = await sb.from("tok_habits").insert({
+        ...classification?.inherited("habit",item),
         name: (item.name || "이름 없는 습관") + " (사본)", category_id: item.category_id || null,
         repeat_unit: item.repeat_unit, repeat_interval: item.repeat_interval, repeat_days: item.repeat_days || null,
         start_date: item.start_date || todayStr(), end_date: item.end_date || null,
@@ -8110,6 +8105,7 @@
       }));
     } else if (kind === "todo") {
       ({ error } = await sb.from("tok_todos").insert({
+        ...classification?.inherited("todo",item),
         title: (item.title || "이름 없는 할일") + " (사본)", start_date: item.start_date, end_date: item.end_date || null,
         todo_time: item.todo_time || null, duration_minutes: item.duration_minutes || null,
         tag_id: item.tag_id || null, repeat_unit: item.repeat_unit, repeat_interval: item.repeat_interval, repeat_days: item.repeat_days || null,
@@ -8117,6 +8113,7 @@
       }));
     } else {
       ({ error } = await sb.from("tok_events").insert({
+        ...classification?.inherited("event",item),
         title: (item.title || "이름 없는 일정") + " (사본)", event_date: item.event_date, end_date: item.end_date || null,
         event_time: item.event_time || null, duration_minutes: item.duration_minutes || null, memo: item.memo || null, category_id: item.category_id || null,
         repeat_unit: item.repeat_unit, repeat_interval: item.repeat_interval,
@@ -8471,7 +8468,7 @@
   // 설정 목록과 일정 범주 편집창이 같은 검증·저장·메모리 갱신을 사용한다.
   async function saveManagedCategory(pool, table, id, patch) {
     const cat = pool.find(c => c.id === id), userId = appSymbolUserId;
-    const noun = table === 'tok_event_categories' ? '범주' : '태그';
+    const noun = table === 'tok_event_categories' ? '그룹' : '범주';
     if (!cat || cat.is_archived) return { ok: false, error: new Error('사용 중인 ' + noun + '만 수정할 수 있어요.') };
     if ('name' in patch) {
       patch = { ...patch, name: patch.name.trim() };
@@ -8488,12 +8485,12 @@
       return { ok: true };
     } catch (error) { return { ok: false, error }; }
   }
-  function renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow = false) {
+  function renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow = false, allowPurge = true) {
     const host = $(hostId);
     if (!host) return;
     const isEvent = table === "tok_event_categories";
-    const noun = isEvent ? "범주" : "태그";
-    const nounObj = isEvent ? "범주를" : "태그를", nounSubj = isEvent ? "범주가" : "태그가", nounTopic = isEvent ? "범주는" : "태그는"; // 받침에 맞춘 조사
+    const noun = isEvent ? "그룹" : "범주";
+    const nounObj = isEvent ? "그룹을" : "범주를", nounSubj = isEvent ? "그룹이" : "범주가", nounTopic = isEvent ? "그룹은" : "범주는"; // 받침에 맞춘 조사
     const noneLabel = "기본";
     const defaultField = isEvent ? "default_event_color" : "default_tag_color";
     const defaultColor = daySettings[defaultField] || "#c7c2d6";
@@ -8531,13 +8528,13 @@
         <span class="hs-cat-archived-dot" style="background:${c.color || "#9a8cf0"};"></span>
         <span class="hs-cat-name-fixed">${escapeHtml(c.name)}</span>
         <button type="button" class="hs-cat-unarchive" data-id="${c.id}">다시 사용</button>
-        <button type="button" class="hs-cat-purge" data-id="${c.id}">완전 삭제</button>
+        ${allowPurge ? `<button type="button" class="hs-cat-purge" data-id="${c.id}">완전 삭제</button>` : ""}
       </div>
     `).join("");
       bodyHtml = archivedList.length ? rowsHtml : `<div class="empty" style="font-size:12px;padding:4px 0;">보관된 ${nounSubj} 없어요.</div>`;
     }
     host.innerHTML = tabsHtml + bodyHtml;
-    const rerender = () => renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow);
+    const rerender = () => renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow, allowPurge);
     host.querySelectorAll("button[data-catview]").forEach(btn => {
       btn.onclick = () => { categoryManageView[hostId] = btn.dataset.catview; rerender(); };
     });
@@ -8745,28 +8742,6 @@
     renderCategoryManageList("settingsTagList", habitCategories, "tok_habit_categories", rerenderCategoryViews, true);
     renderCategoryManageList("settingsEventCatList", eventCategories, "tok_event_categories", rerenderCategoryViews, true);
   }
-  $("settingsTagAddBtn").onclick = async () => {
-    const name = $("settingsTagName").value.trim();
-    if (!name) { alert("태그 이름을 입력해주세요."); return; }
-    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("태그")); return; }
-    const color = $("settingsTagColor").value;
-    const { data, error } = await sb.from("tok_habit_categories").insert({ name, color, sort_order: nextCategorySortOrder(habitCategories) }).select().single();
-    if (error) { alert("태그 추가 실패: " + error.message); return; }
-    habitCategories.push(data);
-    $("settingsTagName").value = "";
-    renderSettingsTagLists();
-  };
-  $("settingsEventCatAddBtn").onclick = async () => {
-    const name = $("settingsEventCatName").value.trim();
-    if (!name) { alert("범주 이름을 입력해주세요."); return; }
-    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("범주")); return; }
-    const color = $("settingsEventCatColor").value;
-    const { data, error } = await sb.from("tok_event_categories").insert({ name, color, sort_order: nextCategorySortOrder(eventCategories) }).select().single();
-    if (error) { alert("범주 추가 실패: " + error.message); return; }
-    eventCategories.push(data);
-    $("settingsEventCatName").value = "";
-    renderSettingsTagLists();
-  };
   initColorSwatches(); // 설정 페이지 2곳 + 습관 설정 시트 "새 그룹" 스와치 버튼에 팝오버 연결(정적 버튼이라 한 번만 연결하면 됨)
 
   // ── 설정 페이지: 하루 시간 범위(타임라인·타임블럭 표시 범위) ──
@@ -9849,6 +9824,14 @@
       ...todos.filter(t => t.user_id === appSymbolUserId).map(t => ({ id: t.id, title: t.title, kind: "todo" })),
       ...tasks.filter(t => t.user_id === appSymbolUserId).map(t => ({ id: t.id, title: t.name, kind: "habit" }))
     ]
+  });
+  classification = window.createOnekanClassification({
+    sb, user:()=>appSymbolUserId, page:()=>currentPage, escape:escapeHtml,
+    categories:()=>habitCategories,eventGroups:()=>eventCategories,
+    reload:loadAll, refresh:rerenderCategoryViews,
+    calendarRefresh:()=>{renderScheduleCalendar();},
+    categoryList:host=>renderCategoryManageList(host,habitCategories,'tok_habit_categories',()=>{rerenderCategoryViews();classification.render();},false,false),
+    menu:openMenuShell,alert,trap:trapFocusIn,reserved:isReservedCategoryName
   });
   boot();
 </script>

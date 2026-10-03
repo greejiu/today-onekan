@@ -8,6 +8,8 @@ async function fixture(page, source = html) {
     const url = route.request().url();
     if (url === 'http://onekan.test/') return route.fulfill({ contentType:'text/html', body:source });
     if (url.endsWith('/assets/cheese-drawing.png')) return route.fulfill({contentType:'image/png',body:fs.readFileSync('assets/cheese-drawing.png')});
+    if (url.endsWith('/assets/classification.js')) return route.fulfill({contentType:'application/javascript',body:fs.readFileSync('assets/classification.js')});
+    if (url.endsWith('/assets/classification.css')) return route.fulfill({contentType:'text/css',body:fs.readFileSync('assets/classification.css')});
     if (url.includes('supabase.min.js')) return route.fulfill({ contentType:'application/javascript', body:'/* isolated mock supplied by init script */' });
     return route.abort(); // Never contact production or external services.
   });
@@ -107,7 +109,7 @@ if (require.main === module) (async()=>{
   console.log('mobile more / menu / check / add / empty all-day PASS');
   const baseline=await browser.newPage({viewport:{width:390,height:844}});
   await fixture(baseline,require('node:child_process').execFileSync('git',['show','origin/main:index.html'],{encoding:'utf8'}));
-  for(const tab of ['schedule','todos','habits','settings']){await page.evaluate(tab=>showPage(tab),tab);const overflow=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));console.log('tab',tab,overflow);await baseline.evaluate(tab=>showPage(tab),tab);const baseWidth=await baseline.evaluate(()=>document.documentElement.scrollWidth);assert.equal(overflow.scroll,baseWidth,tab+' matches main');}
+  for(const tab of ['schedule','todos','habits','settings']){await page.evaluate(tab=>showPage(tab),tab);const overflow=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));console.log('tab',tab,overflow);await baseline.evaluate(tab=>showPage(tab),tab);const baseWidth=await baseline.evaluate(()=>document.documentElement.scrollWidth);if(tab==='settings')assert(overflow.scroll<=baseWidth,'removed classification settings must not increase overflow');else assert.equal(overflow.scroll,baseWidth,tab+' matches main');}
   await page.setViewportSize({width:1366,height:768});
   await page.evaluate(()=>{showPage('home');document.querySelector('#homeTodoBanner').style.display='flex';document.querySelector('#homeHabitBanner').style.display='flex';});await page.waitForTimeout(100);
   assert((await page.locator('#homeCol2').boundingBox()).y+(await page.locator('#homeCol2').boundingBox()).height<=768);

@@ -4,12 +4,12 @@ const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
 (async()=>{
  const url='https://greejiu.github.io/today-onekan/',sha=process.env.DEPLOY_SHA;
  assert(sha,'DEPLOY_SHA required');
- const response=await fetch(url+'?phase2='+sha,{cache:'no-store'});assert.equal(response.status,200);
+ const response=await fetch(url+'?phase3='+sha,{cache:'no-store'});assert.equal(response.status,200);
  const source=await response.text(),normalize=s=>s.replace(/\r\n/g,'\n');
  assert.equal(normalize(source),normalize(fs.readFileSync('index.html','utf8')),'served HTML must match the reviewed commit');
  const assetResults=[];
- for(const file of ['assets/together.js','assets/together.css']){
-  const r=await fetch(url+file+'?phase2='+sha);assert.equal(r.status,200);const text=await r.text();assert.equal(normalize(text),normalize(fs.readFileSync(file,'utf8')));assetResults.push(file+' matched');
+ for(const file of ['assets/together.js','assets/together.css','assets/classification.js','assets/classification.css']){
+  const r=await fetch(url+file+'?phase3='+sha);assert.equal(r.status,200);const text=await r.text();assert.equal(normalize(text),normalize(fs.readFileSync(file,'utf8')));assetResults.push(file+' matched');
  }
  const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
  try{
@@ -18,10 +18,10 @@ const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
   await page.route(url+'**',route=>{
    const pathname=new URL(route.request().url()).pathname.replace('/today-onekan/','');
    if(!pathname)return route.fulfill({contentType:'text/html',body:source});
-   if(['assets/together.js','assets/together.css','assets/cheese-drawing.png'].includes(pathname))return route.fulfill({contentType:pathname.endsWith('.js')?'application/javascript':pathname.endsWith('.css')?'text/css':'image/png',body:fs.readFileSync(pathname)});
+   if(['assets/together.js','assets/together.css','assets/classification.js','assets/classification.css','assets/cheese-drawing.png'].includes(pathname))return route.fulfill({contentType:pathname.endsWith('.js')?'application/javascript':pathname.endsWith('.css')?'text/css':'image/png',body:fs.readFileSync(pathname)});
    return route.abort();
   });
-  await page.goto(url+'?phase2='+sha);await page.waitForSelector('.upcoming-day');fs.mkdirSync('test-results',{recursive:true});
+  await page.goto(url+'?phase3='+sha);await page.waitForSelector('.upcoming-day');fs.mkdirSync('test-results',{recursive:true});
   await page.screenshot({path:'test-results/deployed-global.png'});
   for(const target of ['schedule','todos','habits','work','records','settings','all','community','together']){
    if(await page.locator('#dedicatedSidebarNav').isVisible())await page.locator('#sidebarAllMenuBtn').click();await page.locator('#mainSidebarNav [data-page='+target+']').click();assert.equal(await page.evaluate(()=>currentPage),target);assert(await page.locator('#sidebarHomeNav button').isVisible());

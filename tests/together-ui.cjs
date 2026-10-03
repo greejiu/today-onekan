@@ -20,7 +20,7 @@ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42
    }catch(e){return {data:null,error:{message:e.message,code:e.code}};}
   });
   await page.route('**/*',route=>{const url=new URL(route.request().url());if(url.hostname==='localhost'){
-    const file=url.pathname==='/'?'index.html':url.pathname.slice(1);if(['index.html','assets/together.js','assets/together.css'].includes(file))return route.fulfill({contentType:file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html',body:fs.readFileSync(file)});
+    const file=url.pathname==='/'?'index.html':url.pathname.slice(1);if(['index.html','assets/together.js','assets/together.css','assets/classification.js','assets/classification.css'].includes(file))return route.fulfill({contentType:file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html',body:fs.readFileSync(file)});
    }return route.fulfill({body:'',status:200});});
   await page.addInitScript(({user,png})=>{
    let current=user,callback;window.testChangeUser=id=>{current=id;callback?.('SIGNED_IN',{user:{id,email:'test@example.invalid'}});};
