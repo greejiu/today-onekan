@@ -89,7 +89,7 @@ const { fixture } = require('./home-layout.cjs');
     await page.locator('#cev_save').click();await page.locator('#calEventSheetBg').waitFor({state:'hidden'});
     assert.equal(await page.evaluate(()=>events.find(e=>e.id==='life').title),'생활 일정 수정');
     await page.evaluate(()=>showScheduleMode('list'));await page.locator('#schedAddBtn').click();
-    await page.locator('#cev_title').fill('목록에서 추가한 여러 날 일정');await page.locator('.cev-switch:has(#cev_multi)').click();
+    await page.locator('#cev_title').fill('목록에서 추가한 여러 날 일정');
     await page.locator('#cev_end').fill(await page.evaluate(()=>addDaysStr(todayStr(),2)));await page.locator('#cev_save').click();
     await page.locator('#calEventSheetBg').waitFor({state:'hidden'});
     assert(await page.evaluate(()=>events.some(e=>e.title==='목록에서 추가한 여러 날 일정'&&e.end_date===addDaysStr(todayStr(),2))));

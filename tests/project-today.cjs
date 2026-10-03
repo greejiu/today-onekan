@@ -60,14 +60,15 @@ const todoRow = (page, id) => page.evaluate(id => ({ ...mockRows.tok_todos.find(
     await row(page, 'pf').locator('.proj-today').click();
     await page.locator('#appToast.show', { hasText: '오늘 할 일에 담았어요' }).waitFor();
     let after = await todoRow(page, 'pf');
-    assert.equal(after.start_date, today); assert.equal(after.todo_time, null); assert.equal(after.project_id, 'p1');
+    assert.equal(after.start_date, today); assert.equal(after.todo_time, before.todo_time); assert.equal(after.project_id, 'p1');
     assert.equal(after.duration_minutes, 45); assert.equal(after.tag_id, 'g1');
     assert.equal(await page.evaluate(() => mockRows.tok_todos.length), countBefore, 'no duplicate row');
     assert.equal(await page.evaluate(() => mockWrites.filter(w => w.op === 'insert').length), 0);
     assert.equal(await row(page, 'pf').locator('.proj-today-state').textContent(), '오늘 예정');
-    // 집·할일 탭 반영 — 오늘 하루종일 목록에 한 번씩만
-    assert.equal(await page.locator('#agendaAllDayList [data-kind][data-id="pf"]').count(), 1);
-    assert.equal(await page.locator('#homeTodayBlockAllDay [data-kind][data-id="pf"]').count(), 1);
+    // 집·할일 탭 반영 — 실제 시각을 유지해 시간 목록에 한 번만
+    assert.equal(await page.locator('#agendaAllDayList [data-kind][data-id="pf"]').count(), 0);
+    assert.equal(await page.locator('#homeTodayBlockAllDay [data-kind][data-id="pf"]').count(), 0);
+    assert.equal(await page.locator('#agendaTimeWrap [data-kind][data-id="pf"]').count(), 1);
     assert.equal(await page.locator('#todoUnifiedList [data-kind][data-id="pf"]').count(), 1);
     if (width < 500) await page.screenshot({ path: `test-results/project-today-toast-${width}.png` });
     await page.locator('#appToast .toast-action').click();
