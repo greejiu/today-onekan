@@ -148,6 +148,24 @@
   .schedule-side-nav > .schedule-cat-host{min-height:112px;}
   #mainSidebarNav[hidden], #scheduleSidebarNav[hidden]{display:none;}
   .schedule-side-nav > .navitem, .schedule-side-nav > .sidebar-divider{flex-shrink:0;}
+
+  /* The home entry and account stay fixed; only menu content scrolls. */
+  .sidebar{overflow:hidden;}
+  #sidebarHomeNav{flex-shrink:0;}
+  .sidebar-nav,.dedicated-side-nav{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
+  .dedicated-side-nav{display:flex;flex-direction:column;}
+  #dedicatedSidebarNav[hidden]{display:none;}
+  .dedicated-side-nav > button,.sidebar-page-title{flex-shrink:0;}
+  .sidebar-page-title{font-size:14px;margin:8px 12px 14px;color:var(--text);}
+  .sidebar .navitem:disabled{opacity:.5;cursor:default;box-shadow:none;}
+  .sidebar-preparing{margin:8px 12px;font-size:12px;color:var(--sub);}
+  .together-section-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
+  .together-section-tabs button{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--card);color:var(--sub);cursor:pointer;}
+  .together-section-tabs button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-text);border-color:var(--accent);}
+  .together-section-tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .future-views{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;color:var(--sub);font-size:13px;}
+  .future-views span{border:1px solid var(--line);border-radius:10px;padding:8px 12px;}
+  #togetherPreparing[hidden],#togetherRoot[hidden]{display:none;}
   .schedule-cat-host, .schedule-cat-panel{display:flex;flex-direction:column;flex:1;min-height:0;}
   .schedule-cat-list{overflow-y:auto;min-height:0;overscroll-behavior:contain;}
   .schedule-cat-list[hidden]{display:none;}
@@ -192,7 +210,7 @@
   .pagehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
   .pagehead h2{font-size:18px;margin:0;}
   #logoutBtn{background:none;border:none;color:var(--sub);font-size:12px;cursor:pointer;}
-  /* 계정 정보는 아래로 밀되, 낮은 창에서는 사이드바 전체를 스크롤한다. */
+  /* 계정 영역은 고정하고 낮은 창에서도 메뉴 내용만 스크롤한다. */
   .sidebar-footer{margin-top:auto;padding-top:12px;flex-shrink:0;}
   .sidebar-user{font-size:11px;color:var(--sub);padding:0 8px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
@@ -1429,22 +1447,29 @@
   </div>
   <div class="layout">
     <div class="sidebar">
-      <nav class="sidebar-nav" id="mainSidebarNav" aria-label="주 메뉴">
+      <nav id="sidebarHomeNav" aria-label="지금한칸">
         <button type="button" class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> 지금한칸</button>
         <hr class="sidebar-divider" />
+      </nav>
+      <nav class="sidebar-nav" id="mainSidebarNav" aria-label="전체 메뉴">
+        <button type="button" class="navitem" data-page="all"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> 모두</button>
         <button type="button" class="navitem" data-page="schedule"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> 일정</button>
         <button type="button" class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> 할일</button>
         <button type="button" class="navitem" data-page="habits"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> 습관</button>
+        <hr class="sidebar-divider" />
         <button type="button" class="navitem" data-page="work"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> 목표</button>
-        <hr class="sidebar-divider" />
-        <button type="button" class="navitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 시간추적</button>
-        <button type="button" class="navitem" data-page="together"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 5 5v3"/></svg> 같이한칸</button>
-        <hr class="sidebar-divider" />
+        <button type="button" class="navitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 추적</button>
         <button type="button" class="navitem" data-page="records"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 기록</button>
+        <hr class="sidebar-divider" />
+        <button type="button" class="navitem" data-page="together"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 5 5v3"/></svg> 같이한칸</button>
+        <button type="button" class="navitem" data-page="community"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a18 18 0 0 1 0 18 18 18 0 0 1 0-18"/></svg> 커뮤니티</button>
+        <hr class="sidebar-divider" />
         <button type="button" class="navitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> 설정</button>
       </nav>
-      <nav id="scheduleSidebarNav" class="schedule-side-nav" aria-label="일정 메뉴" hidden>
-        <button type="button" class="navitem" id="scheduleSidebarBack">← 뒤로가기</button>
+      <nav id="dedicatedSidebarNav" class="dedicated-side-nav" aria-label="전용 메뉴" hidden>
+        <button type="button" class="navitem" id="sidebarAllMenuBtn">← 전체 메뉴</button>
+        <h2 id="sidebarPageTitle" class="sidebar-page-title"></h2>
+      <section id="scheduleSidebarNav" class="schedule-side-nav" aria-label="일정 하위 메뉴" hidden>
         <button type="button" class="navitem active" data-schedule-mode="calendar" aria-pressed="true">달력</button>
         <button type="button" class="navitem" data-schedule-mode="list" aria-pressed="false">목록</button>
         <hr class="sidebar-divider" />
@@ -1454,6 +1479,8 @@
             <div id="scheduleCategoryList" class="schedule-cat-list"></div>
           </section>
         </div>
+      </section>
+        <div id="pageSidebarItems"></div>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-user" id="sidebarUserEmail"></div>
@@ -1462,6 +1489,19 @@
     </div>
 
     <div class="content">
+      <div class="page" data-page="all" style="display:none;">
+        <h1 class="page-title">모두</h1>
+        <div class="card simple-empty">
+          <p class="simple-empty-title">일정·할일·습관을 함께 보는 화면을 준비하고 있어요</p>
+          <p class="simple-empty-sub">통합 조회와 필터는 다음 단계에서 추가돼요.</p>
+          <div class="future-views" aria-label="향후 보기"><span>달력 · 준비 중</span><span>목록 · 준비 중</span><span>보드 · 준비 중</span></div>
+          <p class="simple-empty-sub">종류별 눈 필터: 일정 · 할일 · 습관 (준비 중)</p>
+        </div>
+      </div>
+      <div class="page" data-page="community" style="display:none;">
+        <h1 class="page-title">커뮤니티</h1>
+        <div class="card simple-empty"><p class="simple-empty-title">전체 공개 공간을 준비하고 있어요</p><p class="simple-empty-sub">내 방 공개와 공개 게시물 조회·작성, 검색·반응은 다음 단계에서 추가돼요.</p></div>
+      </div>
       <!-- 집 -->
       <div class="page" data-page="home">
 
@@ -1705,7 +1745,7 @@
 
       <!-- 2026-09-29 시간 추적: 현재 코드에는 실행 타이머가 없음 → 1차는 화면 틀과 빈 상태만(동작하지 않는 시작 버튼 없음) -->
       <div class="page" data-page="timer" style="display:none;">
-        <h1 class="page-title">시간 추적</h1>
+        <h1 class="page-title">추적</h1>
         <div class="card simple-empty">
           <p class="simple-empty-title">아직 시간 추적 기능이 준비 중이에요</p>
           <p class="simple-empty-sub">할일에 쓴 시간을 재는 타이머는 다음 단계에서 이 화면에 추가돼요. 지금은 할일·습관 체크로 기록이 남아요.</p>
@@ -1766,7 +1806,17 @@
       </div>
 
       <!-- 설정 -->
-      <div class="page" data-page="together" style="display:none;"><div id="togetherRoot" class="pair-page"></div></div>
+      <div class="page" data-page="together" style="display:none;">
+        <h1 class="page-title">같이한칸</h1>
+        <div class="together-section-tabs" aria-label="같이한칸 하위 메뉴">
+          <button type="button" data-together-section="friends">친구들</button>
+          <button type="button" data-together-section="guestbook">방명록</button>
+          <button type="button" data-together-section="myroom">내 방</button>
+          <button type="button" data-together-section="private">비공개 방</button>
+        </div>
+        <section id="togetherPreparing" class="card simple-empty" hidden><h2 id="togetherPreparingTitle" class="simple-empty-title"></h2><p id="togetherPreparingText" class="simple-empty-sub"></p></section>
+        <div id="togetherRoot" class="pair-page"></div>
+      </div>
       <div class="page" data-page="settings" style="display:none;">
         <h1 class="page-title">설정</h1>
 
@@ -1814,7 +1864,7 @@
 
         </section>
 
-        <h2 class="section-label settings-group-title">사용 설정</h2>
+        <h2 class="section-label settings-group-title" id="usageSettingsHeading">사용 설정</h2>
         <div class="section-label">태그 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
         <div class="hs-cat-list" id="settingsTagList"></div>
         <div class="field">
@@ -1868,9 +1918,11 @@
     <div class="nav-more-sheet" id="navMoreSheet" role="menu" aria-label="더보기 메뉴">
       <div class="navitem" role="menuitem" data-page="together"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 5 5v3"/></svg> 같이 한칸</div>
       <div class="navitem" role="menuitem" data-page="work"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> 작업</div>
-      <div class="navitem" role="menuitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 시간 추적</div>
+      <div class="navitem" role="menuitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 추적</div>
       <div class="navitem" role="menuitem" data-page="records"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 기록</div>
       <div class="navitem" role="menuitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> 설정</div>
+      <button type="button" class="navitem" role="menuitem" data-page="all"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> 모두</button>
+      <button type="button" class="navitem" role="menuitem" data-page="community"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a18 18 0 0 1 0 18 18 18 0 0 1 0-18"/></svg> 커뮤니티</button>
     </div>
   </div>
 </div>
@@ -2795,7 +2847,8 @@
   // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가). 메모 기능은 2026-09-12에 완전히 제거함(scheduleSubView도 함께 삭제).
   let scheduleMode = "calendar"; // "calendar" | "list" — 2026-09-26: 첫 화면은 캘린더(앱 사용 중 바꾼 보기는 탭을 오가도 유지, 새로고침하면 다시 캘린더)
   // 일정 화면의 표시 설정만 저장한다. events 원본과 다른 화면은 필터링하지 않는다.
-  let scheduleSidebarOpen = false, scheduleFilterUser = null, scheduleDataUser = null;
+  let sidebarDedicated = false, scheduleFilterUser = null, scheduleDataUser = null;
+  let togetherSection = "private";
   let scheduleHiddenCategories = new Set(), scheduleCategoriesCollapsed = false;
   let scheduleCategoryEditor = null;
   const scheduleFilterKey = () => 'tok_schedule_categories:' + scheduleFilterUser;
@@ -2826,17 +2879,96 @@
     if (!scheduleFilterUser) return;
     try { localStorage.setItem(scheduleFilterKey(), JSON.stringify({ hidden: [...scheduleHiddenCategories], collapsed: scheduleCategoriesCollapsed })); } catch (_) {}
   }
-  function setScheduleSidebar(open) {
-    scheduleSidebarOpen = !!open;
-    $('mainSidebarNav').hidden = scheduleSidebarOpen;
-    $('scheduleSidebarNav').hidden = !scheduleSidebarOpen;
-    document.querySelector('.sidebar').classList.toggle('schedule-sidebar', scheduleSidebarOpen);
+  // Compatibility wrapper for the existing category/auth reset path.
+  function setScheduleSidebar(open) { setSidebarMode(open); }
+  const sidebarPages = {
+    all: { title: '모두', preparing: '달력·목록·보드 · 준비 중' },
+    schedule: { title: '일정' },
+    todos: { title: '할일', tabs: 'todoTopTabs' },
+    habits: { title: '습관', tabs: 'habitsTabRow' },
+    work: { title: '목표', anchors: [['projectList','프로젝트'],['identityHeading','정체성']] },
+    timer: { title: '추적', preparing: '시간 추적 · 준비 중' },
+    records: { title: '기록', anchors: [['recDayHeading','날짜별 기록'],['recItemHeading','항목별 기록']] },
+    together: { title: '같이한칸' },
+    community: { title: '커뮤니티', preparing: '전체 공개 공간 · 준비 중' },
+    settings: { title: '설정', anchors: [['settingsAccountCard','프로필'],['appearanceHeading','꾸미기'],['usageSettingsHeading','사용 설정']] }
+  };
+  const togetherSections = {
+    friends: ['친구들','친구별 공간과 초대 기능을 준비하고 있어요.'],
+    guestbook: ['방명록','방명록을 남기고 읽는 기능을 준비하고 있어요.'],
+    myroom: ['내 방','나만의 공간과 꾸미기 기능을 준비하고 있어요.'],
+    private: ['비공개 방','']
+  };
+  function syncPageSidebar() {
+    const config = sidebarPages[currentPage], host = $('pageSidebarItems');
+    const focused = host.contains(document.activeElement) ? document.activeElement : null;
+    const focusKey = focused?.dataset.sidebarTab ? ['sidebar-tab', focused.dataset.sidebarTab]
+      : focused?.dataset.togetherSection ? ['together-section', focused.dataset.togetherSection] : null;
+    $('sidebarPageTitle').textContent = config?.title || '';
+    $('dedicatedSidebarNav').setAttribute('aria-label', (config?.title || '') + ' 메뉴');
+    $('scheduleSidebarNav').hidden = currentPage !== 'schedule';
+    if (config?.tabs) {
+      host.innerHTML = [...$(config.tabs).querySelectorAll('button')].map(button => `<button type="button" class="navitem${button.classList.contains('active') ? ' active' : ''}" data-sidebar-tab="${button.dataset.tab}" aria-pressed="${button.classList.contains('active')}">${escapeHtml(button.textContent)}</button>`).join('');
+    } else if (currentPage === 'together') {
+      host.innerHTML = Object.entries(togetherSections).map(([key, value]) => `<button type="button" class="navitem${togetherSection === key ? ' active' : ''}" data-together-section="${key}" aria-pressed="${togetherSection === key}">${value[0]}</button>`).join('');
+    } else {
+      host.innerHTML = config?.anchors?.map(([id,label]) => `<button type="button" class="navitem" data-sidebar-anchor="${id}">${label}</button>`).join('') || (config?.preparing ? `<p class="sidebar-preparing">${config.preparing}</p>` : '');
+    }
+    if (focusKey) host.querySelector('[data-' + focusKey[0] + '="' + focusKey[1] + '"]')?.focus({ preventScroll: true });
     syncScheduleModeButtons();
   }
+  function setSidebarMode(dedicated) {
+    sidebarDedicated = !!dedicated && currentPage !== 'home';
+    $('mainSidebarNav').hidden = sidebarDedicated;
+    $('dedicatedSidebarNav').hidden = !sidebarDedicated;
+    document.querySelector('.sidebar').classList.toggle('schedule-sidebar', sidebarDedicated && currentPage === 'schedule');
+    syncPageSidebar();
+  }
+  $('sidebarAllMenuBtn').onclick = () => {
+    setSidebarMode(false); // Do not call showPage or rerender any body content.
+    document.querySelector('#mainSidebarNav [data-page="' + currentPage + '"]')?.focus({ preventScroll: true });
+  };
+  $('pageSidebarItems').addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (!button) return;
+    if (button.dataset.sidebarTab) {
+      const tab = button.dataset.sidebarTab;
+      $(sidebarPages[currentPage].tabs).querySelector('[data-tab="' + tab + '"]').click();
+      syncPageSidebar();
+      $('pageSidebarItems').querySelector('[data-sidebar-tab="' + tab + '"]')?.focus({ preventScroll: true });
+    } else if (button.dataset.togetherSection) selectTogetherSection(button.dataset.togetherSection);
+    else if (button.dataset.sidebarAnchor) {
+      const target = $(button.dataset.sidebarAnchor);
+      target.scrollIntoView({ block: 'start' });
+      window.scrollBy(0, -fixedHeaderBottom() - 12);
+      target.tabIndex = -1; target.focus({ preventScroll: true });
+    }
+  });
+  // Existing body filters remain the source of truth, including programmatic changes.
+  const sidebarTabObserver = new MutationObserver(() => {
+    if (sidebarPages[currentPage]?.tabs) syncPageSidebar();
+  });
+  ['todoTopTabs','habitsTabRow'].forEach(id => sidebarTabObserver.observe($(id), { subtree: true, attributes: true, attributeFilter: ['class'] }));
+  function selectTogetherSection(section, loaded = false) {
+    if (!togetherSections[section]) return;
+    togetherSection = section;
+    $('togetherPreparing').hidden = section === 'private';
+    $('togetherRoot').hidden = section !== 'private';
+    $('togetherPreparingTitle').textContent = togetherSections[section][0];
+    $('togetherPreparingText').textContent = togetherSections[section][1];
+    document.querySelectorAll('.together-section-tabs button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.togetherSection === section)));
+    syncPageSidebar();
+    if (section === 'private' && !loaded) window.Together?.open();
+    if (document.activeElement?.getClientRects().length === 0) document.activeElement.blur();
+  }
+  document.querySelector('.together-section-tabs').addEventListener('click', event => {
+    const button = event.target.closest('[data-together-section]');
+    if (button) selectTogetherSection(button.dataset.togetherSection);
+  });
   function syncScheduleModeButtons() {
     document.querySelectorAll('[data-schedule-mode]').forEach(button => {
       const selected = button.dataset.scheduleMode === scheduleMode;
-      button.classList.toggle('active', selected && scheduleSidebarOpen);
+      button.classList.toggle('active', selected);
       button.setAttribute('aria-pressed', String(selected));
     });
   }
@@ -2876,10 +3008,6 @@
     renderScheduleCalendar();
     window.scrollTo(0, scroll);
   }
-  $('scheduleSidebarBack').onclick = () => {
-    setScheduleSidebar(false);
-    document.querySelector('#mainSidebarNav [data-page="schedule"]').focus({ preventScroll: true });
-  };
   document.querySelectorAll('[data-schedule-mode]').forEach(button => { button.onclick = () => showScheduleMode(button.dataset.scheduleMode); });
   $('scheduleCategoryCollapse').onclick = () => {
     scheduleCategoriesCollapsed = !scheduleCategoriesCollapsed;
@@ -3050,21 +3178,19 @@
   window.addEventListener("pageshow", (e) => { if (e.persisted) autoRefreshIfStale(); }); // 뒤로가기 등으로 캐시(bfcache)에서 복귀한 경우
 
   // ── 네비게이션 ──
-  document.querySelectorAll(".navitem[data-page]").forEach(el => {
+  document.querySelectorAll('.navitem[data-page]').forEach(el => {
     el.onclick = () => {
       closeNavMore(false);
-      if (el.closest('#mainSidebarNav') && el.dataset.page === 'schedule') {
-        if (currentPage !== 'schedule') showPage('schedule');
-        setScheduleSidebar(true);
-        document.querySelector('#scheduleSidebarNav [data-schedule-mode="' + scheduleMode + '"]').focus({ preventScroll: true });
-        return;
+      const page = el.dataset.page;
+      if (currentPage !== page) showPage(page);
+      else setSidebarMode(page !== 'home');
+      if (el.closest('.sidebar') && page !== 'home') {
+        const target = ($('scheduleSidebarNav').hidden ? $('pageSidebarItems').querySelector('button') : document.querySelector('#scheduleSidebarNav [data-schedule-mode="' + scheduleMode + '"]')) || $('sidebarAllMenuBtn');
+        target.focus({ preventScroll: true });
       }
-      showPage(el.dataset.page);
     };
   });
-  // 2026-09-29 모바일 더보기(하단 메뉴 5번째 칸): 작업·시간 추적·기록·설정으로 가는 보조 메뉴
-  // 모바일 더보기의 순서와 대상은 그대로 유지한다.
-  const NAV_MORE_PAGES = ["together", "work", "timer", "records", "settings"];
+  const NAV_MORE_PAGES = ['together','work','timer','records','settings','all','community'];
   function openNavMore() {
     $("navMoreBg").hidden = false;
     $("navMoreBtn").setAttribute("aria-expanded", "true");
@@ -3082,12 +3208,12 @@
   $("navMoreSheet").querySelectorAll(".navitem").forEach(el => { el.tabIndex = 0; el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } }); });
   let scheduleScrollY = 0; // 일정 탭을 떠날 때 목록 스크롤 위치를 기억했다가 돌아오면 복원(2026-09-27)
   function showPage(page, togetherLoaded = false) {
-    if (page === "together" && !togetherLoaded) window.Together?.open();
     const prevPage = currentPage;
     if (prevPage === "schedule" && page !== "schedule") scheduleScrollY = window.scrollY;
     currentPage = page;
-    if (page !== 'schedule') { setScheduleSidebar(false); closeScheduleFilter(false); }
-    else if (prevPage !== 'schedule') setScheduleSidebar(true);
+    if (page !== 'schedule') closeScheduleFilter(false);
+    setSidebarMode(page !== 'home');
+    if (page === 'together') selectTogetherSection(togetherLoaded ? 'private' : togetherSection, togetherLoaded);
     // 빠른 입력(한칸 추가)은 모든 탭에서 항상 보임(2026-09-28). 입력 중이던 제목은 탭을 옮겨도 그대로, 탭 이동만으로는 저장하지 않음.
     document.querySelectorAll(".navitem[data-page]").forEach(el => {
       const active = el.dataset.page === page;
@@ -3104,6 +3230,16 @@
     if (ae && ae !== document.body && ae.getClientRects().length === 0) ae.blur();
     if (page === "schedule" && prevPage !== "schedule") window.scrollTo(0, scheduleScrollY);
   }
+  scheduleSidebarMq.addEventListener('change', () => {
+    closeNavMore(false);
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && !focused.getClientRects().length) {
+      const target = scheduleSidebarMq.matches
+        ? document.querySelector('.bottombar [data-page="' + currentPage + '"]') || $('navMoreBtn')
+        : sidebarDedicated ? $('sidebarAllMenuBtn') : document.querySelector('#mainSidebarNav [data-page="' + currentPage + '"]') || document.querySelector('#sidebarHomeNav button');
+      target?.focus({ preventScroll: true });
+    }
+  });
   // 고정 상단 영역(상단바 + 보이는 경우 빠른 입력 줄)의 실제 아래쪽 좌표 — 스크롤·팝업 위치 계산용
   function fixedHeaderBottom() {
     let bottom = 0;
