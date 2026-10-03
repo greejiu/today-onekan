@@ -69,7 +69,7 @@ const todoRow = (page, id) => page.evaluate(id => ({ ...mockRows.tok_todos.find(
     assert.equal(await page.locator('#agendaAllDayList [data-kind][data-id="pf"]').count(), 0);
     assert.equal(await page.locator('#homeTodayBlockAllDay [data-kind][data-id="pf"]').count(), 0);
     assert.equal(await page.locator('#agendaTimeWrap [data-kind][data-id="pf"]').count(), 1);
-    assert.equal(await page.locator('#todoUnifiedList [data-kind][data-id="pf"]').count(), 1);
+    assert.equal(await page.locator('#todoUnifiedList .sv-card[data-id="pf"]').count(), 1);
     if (width < 500) await page.screenshot({ path: `test-results/project-today-toast-${width}.png` });
     await page.locator('#appToast .toast-action').click();
     await page.locator('#appToast.show', { hasText: '원래 일정으로 되돌렸어요' }).waitFor();
@@ -115,8 +115,9 @@ const todoRow = (page, id) => page.evaluate(id => ({ ...mockRows.tok_todos.find(
     assert.equal(await page.locator('#agendaAllDayList [data-kind][data-id="pt"] .agenda-title').textContent(), '포트폴리오 - 오늘 이미 할 일');
     assert.equal(await page.locator('#homeTodayBlockAllDay [data-kind][data-id="plain"] .agenda-title').textContent(), '프로젝트 없는 할일');
     assert.equal(await page.locator('#homeTodayBlockAllDay [data-kind][data-id="h1"] .agenda-title').textContent(), '프로젝트 습관');
-    assert.equal(await page.locator('#todoUnifiedList [data-kind][data-id="pt"] .tu-title').textContent(), '포트폴리오 - 오늘 이미 할 일');
-    assert.equal(await page.locator('#todoUnifiedList [data-kind][data-id="plain"] .tu-title').textContent(), '프로젝트 없는 할일');
+    assert.equal(await page.locator('#todoUnifiedList .sv-card[data-id="pt"] .sv-open strong').textContent(), '오늘 이미 할 일');
+    assert.match(await page.locator('#todoUnifiedList .sv-card[data-id="pt"] .sv-open').textContent(), /포트폴리오/);
+    assert.equal(await page.locator('#todoUnifiedList .sv-card[data-id="plain"] .sv-open strong').textContent(), '프로젝트 없는 할일');
     // 완료: 프로젝트명까지 흐린 글자 + 취소선
     const doneStyle = await page.locator('#homeTodayBlockAllDay [data-kind][data-id="pdone"] .title-proj').evaluate(e => { const t = e.closest('.agenda-title'); return { deco: getComputedStyle(t).textDecorationLine, color: getComputedStyle(t).color, sub: getComputedStyle(document.body).getPropertyValue('--sub') }; });
     assert.match(doneStyle.deco, /line-through/);
@@ -135,7 +136,8 @@ const todoRow = (page, id) => page.evaluate(id => ({ ...mockRows.tok_todos.find(
     // 7) 프로젝트 이름 변경 → 표시 반영
     await page.evaluate(() => { mockRows.tok_projects[0].name = '포트폴리오 2차'; return loadAll(); });
     assert.equal(await ptTitle.textContent(), '포트폴리오 2차 - 오늘 이미 할 일');
-    assert.equal(await page.locator('#todoUnifiedList [data-kind][data-id="pt"] .tu-title').textContent(), '포트폴리오 2차 - 오늘 이미 할 일');
+    assert.equal(await page.locator('#todoUnifiedList .sv-card[data-id="pt"] .sv-open strong').textContent(), '오늘 이미 할 일');
+    assert.match(await page.locator('#todoUnifiedList .sv-card[data-id="pt"] .sv-open').textContent(), /포트폴리오 2차/);
     console.log(width, 'project rename reflected PASS');
 
     // 8) 긴 제목: 체크박스·⋯·버튼이 줄 밖으로 밀리지 않고 가로 넘침 없음
@@ -151,9 +153,9 @@ const todoRow = (page, id) => page.evaluate(id => ({ ...mockRows.tok_todos.find(
     await page.screenshot({ path: `test-results/project-home-block-${width}.png` });
     await page.locator('[data-col2tab="timeline"]').click();
     await page.evaluate(() => showPage('todos'));
-    for (const [p, ok] of await fits('#todoUnifiedList [data-kind][data-id="pl"]', ['input[type=checkbox]', '.tu-title', '.item-more'])) assert.equal(ok, true, 'todos long ' + p);
+    for (const [p, ok] of await fits('#todoUnifiedList .sv-card[data-id="pl"]', ['input[type=checkbox]', '.sv-open', '.item-more'])) assert.equal(ok, true, 'todos long ' + p);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    await page.locator('#todoUnifiedList [data-kind][data-id="pl"]').scrollIntoViewIfNeeded();
+    await page.locator('#todoUnifiedList .sv-card[data-id="pl"]').scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/project-todos-tab-${width}.png` });
     await openProject(page, 'p2');
     for (const [p, ok] of await fits('#projectDetail .proj-row[data-id="pl"]', ['input[type=checkbox]', '.proj-row-title', '.proj-today-state', '.proj-unlink'])) assert.equal(ok, true, 'detail long ' + p);
