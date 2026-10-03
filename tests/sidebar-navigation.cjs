@@ -10,7 +10,8 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  assert.deepEqual((await nav.allTextContents()).map(t=>t.trim()),['지금한칸','시간추적','일정','작업','목표','같이한칸','기록','설정']);
  assert.deepEqual(await side.locator('nav > *').evaluateAll(es=>es.map(e=>e.dataset.page||'divider')),['home','timer','divider','schedule','todos','work','divider','together','divider','records','settings']);
  assert.equal(await side.locator('.sidebar-divider').count(),3);assert.equal(await side.locator('.sidebar-footer .navitem').count(),0);
- await page.locator('#quickTaskInputSide').fill('폭 변경 중인 빠른 입력');
+ assert.equal(await side.locator('.sidebar-quickadd, #quickTaskInputSide, #quickAddBtnSide').count(),0);
+ await page.evaluate(()=>{document.getElementById('quickTaskInput').value='폭 변경 중인 빠른 입력';});
  await page.locator('.sidebar [data-page=todos]').click();await page.locator('#todoTopTabs [data-tab=someday]').click();await page.locator('#somedayInput').fill('보존할 담아두기');
  await page.locator('.page[data-page=todos] [data-work-page=habits]').click();
  assert.equal(await side.locator('.active').getAttribute('data-page'),'todos');assert.equal(await side.locator('[aria-current=page]').count(),1);
@@ -18,7 +19,7 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
   await page.setViewportSize({width,height});
   assert.equal(await side.isVisible(),width>760);assert.equal(await page.locator('.bottombar').isVisible(),width<=760);
   assert.equal(await page.locator('.page[data-page=habits]').isVisible(),true);
-  assert.equal(await page.locator('#quickTaskInputSide').inputValue(),'폭 변경 중인 빠른 입력');assert.equal(await page.locator('#quickTaskInput').inputValue(),'폭 변경 중인 빠른 입력');
+  assert.equal(await page.locator('#quickTaskInput').inputValue(),'폭 변경 중인 빠른 입력');
   assert.equal(await page.locator('#somedayInput').inputValue(),'보존할 담아두기');
   if(width>760){assert.equal((await side.boundingBox()).width,180);assert.equal(await side.locator('.active').count(),1);assert.equal(await page.locator('.page[data-page=habits] .desktop-only').isVisible(),true);}
   else{assert.equal(await page.locator('.bottombar .active').getAttribute('data-page'),'habits');assert.equal(await page.locator('.page[data-page=habits] h1.mobile-only').isVisible(),true);}
@@ -60,9 +61,9 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  await page.locator('#navMoreSheet [data-page=work]').click();assert(await page.locator('.page[data-page=work] .mobile-only').isVisible());assert.equal(await page.locator('#navMoreBtn').getAttribute('aria-expanded'),'false');assert(await page.locator('#navMoreBtn').evaluate(e=>e.classList.contains('active')));
  await page.screenshot({path:'test-results/sidebar-mobile-project.png'});
  await page.locator('.bottombar [data-page=todos]').click();await page.locator('.bottombar [data-page=habits]').click();
- await page.locator('#quickTaskInput').fill('모바일 오늘 할일');assert.equal(await page.locator('#quickTaskInputSide').inputValue(),'모바일 오늘 할일');
- await page.setViewportSize({width:1440,height:900});await page.locator('#quickAddBtnSide').click();await page.waitForFunction(()=>mockRows.tok_todos.some(t=>t.title==='모바일 오늘 할일'));
- assert.equal(await page.evaluate(()=>mockRows.tok_todos.find(t=>t.title==='모바일 오늘 할일').start_date),await page.evaluate(()=>todayStr()));assert.equal(await page.locator('#quickTaskInput').inputValue(),'');assert.equal(await page.locator('#quickTaskInputSide').inputValue(),'');
+ await page.locator('#quickTaskInput').fill('모바일 오늘 할일');
+ await page.locator('#quickAddBtn').click();await page.waitForFunction(()=>mockRows.tok_todos.some(t=>t.title==='모바일 오늘 할일'));
+ assert.equal(await page.evaluate(()=>mockRows.tok_todos.find(t=>t.title==='모바일 오늘 할일').start_date),await page.evaluate(()=>todayStr()));assert.equal(await page.locator('#quickTaskInput').inputValue(),'');await page.setViewportSize({width:1440,height:900});assert.equal(await page.locator('#quickTaskInputSide').count(),0);
  assert.deepEqual(await page.evaluate(()=>{const ids=[...document.querySelectorAll('[id]')].map(e=>e.id);return ids.filter((id,i)=>ids.indexOf(id)!==i);}),[]);
  assert.deepEqual(errors,[]);console.log('desktop menu / separators / keyboard / breakpoint / input preservation / themes / short window / mobile more / quick add / no navigation writes / unique IDs PASS');
  }finally{await browser.close();}

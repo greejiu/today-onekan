@@ -119,7 +119,6 @@
   .app-symbol{color:var(--accent-text);flex-shrink:0;}
   .brand-date{font-size:13px;color:var(--sub);white-space:nowrap;}
   /* 2026-09-20 — 결님 요청: 퀵 인풋(빠른 추가)은 모바일(사이드바 대신 하단바 쓰는 폭)에서만 상단바 아래
-     이 가로줄로 보여주고, 데스크톱(사이드바 있는 폭)에서는 사이드바 맨 위(.sidebar-quickadd)로 옮김.
      그래서 기본은 숨기고 ≤760px에서만 보이게 뒤집음(예전엔 항상 보였음). */
   .topbar-quickadd-row{display:none;position:fixed;top:64px;left:0;right:0;height:56px;box-sizing:border-box;background:var(--bg);border-bottom:1px solid var(--line);z-index:29;align-items:center;padding:0 20px;}
   .topbar-quickadd{flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 14px;max-width:480px;}
@@ -127,19 +126,8 @@
   .topbar-quickadd input::placeholder{color:var(--sub);}
   .topbar-quickadd button{flex-shrink:0;border:none;border-radius:999px;background:var(--accent);color:var(--accent-on);font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;}
   .topbar-quickadd button:active{transform:scale(.97);}
-  /* 사이드바용 퀵 인풋 — 사이드바 가로 폭(180px, 안쪽 패딩 12px씩 뺀 만큼)에 맞춰 인풋/버튼 모두 width:100%로
-     세로로 쌓음(가로로 나란히 놓기엔 폭이 좁아서). 사이드바 자체가 ≤760px에서 display:none이라 그때는
-     자동으로 같이 숨겨짐 — 따로 미디어쿼리 안 써도 됨. */
-  /* 2026-09-28 — 빠른 입력(한칸 추가)은 모든 탭에서 항상 보임(예전 '집' 전용 body.qa-on 조건 제거).
-     PC = 사이드바 맨 위, 모바일 = 상단바 바로 아래 고정 줄. 어느 탭에서 입력해도 '오늘 할일'로 저장.
-     --header-h = 고정 상단 영역 높이(스크롤 여백 계산에 씀) — 모바일은 상단바 64 + 입력줄 56 = 120px. */
+  /* 모바일 빠른 입력은 상단바 아래 고정 줄에서 오늘 할일로 저장한다. */
   :root{--header-h:64px;}
-  .sidebar-quickadd{display:block;margin-bottom:14px;flex-shrink:0;}
-  .sidebar-quickadd .qa-caption{display:block;font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.03em;padding:0 2px 6px;}
-  .sidebar-quickadd input{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:8px 10px;font-size:12.5px;color:var(--text);font-family:inherit;outline:none;margin-bottom:6px;}
-  .sidebar-quickadd input::placeholder{color:var(--sub);}
-  .sidebar-quickadd button{width:100%;border:none;border-radius:12px;background:var(--accent);color:var(--accent-on);font-size:12.5px;font-weight:700;padding:8px 0;cursor:pointer;font-family:inherit;}
-  .sidebar-quickadd button:active{transform:scale(.97);}
   @media (max-width:760px){
     .topbar{gap:8px;padding:0 14px;}
     .brand-logo{font-size:20px;}
@@ -885,9 +873,9 @@
   .navitem{min-height:40px;font-size:14px;}
   .navitem.active{background:var(--accent-soft);color:var(--accent-text);font-weight:600;box-shadow:none;}
   /* 주 버튼(추가·저장·적용): 강조색 바탕, 40px(모바일 44px), 모서리 12px */
-  :is(.sched-add-btn, .someday-add-row button, .inline-add-row button, .sched-empty button, .btn-primary, .font-apply-btn, #authBox button:not(.alt), .sidebar-quickadd button){
+  :is(.sched-add-btn, .someday-add-row button, .inline-add-row button, .sched-empty button, .btn-primary, .font-apply-btn, #authBox button:not(.alt)){
     min-height:40px;border-radius:var(--r-btn);border:1px solid var(--accent);background:var(--accent);color:var(--accent-on);font-size:14px;font-weight:600;padding:0 16px;cursor:pointer;white-space:nowrap;}
-  :is(.sched-add-btn, .someday-add-row button, .inline-add-row button, .sched-empty button, .btn-primary, .font-apply-btn, #authBox button:not(.alt), .sidebar-quickadd button):hover{background:color-mix(in srgb, var(--accent) 88%, var(--text));}
+  :is(.sched-add-btn, .someday-add-row button, .inline-add-row button, .sched-empty button, .btn-primary, .font-apply-btn, #authBox button:not(.alt)):hover{background:color-mix(in srgb, var(--accent) 88%, var(--text));}
   /* 보조 버튼(이번 달·오늘 이후로·취소·글꼴 불러오기 등): 카드색 바탕 + 얇은 테두리 */
   :is(.cal-today-btn, .sched-jump-btn, .btn-ghost, .font-btn:not(.font-apply-btn), .cal-day-add, .today-btn){
     min-height:40px;height:auto;border-radius:var(--r-btn);border:1px solid var(--line);background:var(--card);color:var(--text);font-size:13.5px;font-weight:600;padding:0 14px;cursor:pointer;white-space:nowrap;}
@@ -1409,11 +1397,6 @@
   </div>
   <div class="layout">
     <div class="sidebar">
-      <div class="sidebar-quickadd">
-        <label class="qa-caption" for="quickTaskInputSide">오늘 할일에 바로 추가</label>
-        <input id="quickTaskInputSide" type="text" placeholder="딱 한 가지만 적기" aria-label="한칸 추가 — 어느 탭에서든 오늘 할일로 저장돼요" autocomplete="off" />
-        <button type="button" id="quickAddBtnSide" title="오늘 할일로 저장">+ 한칸 추가</button>
-      </div>
       <nav class="sidebar-nav" aria-label="주 메뉴">
         <button type="button" class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> 지금한칸</button>
         <button type="button" class="navitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 시간추적</button>
@@ -5778,9 +5761,6 @@
   // 2026-09-20: 퀵 인풋 바 — 목업처럼 "부담없이 딱 한 가지만" 적고 엔터/버튼만 누르면 시트(모달) 없이
   // 바로 "오늘" 할일로 저장. 카테고리·시간 없이 제목만(td_title 시트와 같은 tok_todos insert 로직 재사용,
   // 시작일만 todayStr()로 고정). 저장 후 loadAll()로 1열 오늘 탭 등에 바로 반영됨.
-  // 2026-09-20 추가: 결님 요청으로 데스크톱(사이드바)엔 이 인풋을 사이드바 맨 위(quickTaskInputSide)로
-  // 옮기고, 모바일(하단바 폭)엔 기존 상단바 아래 줄(quickTaskInput)을 그대로 둠 — 두 인풋이 같은 저장
-  // 로직을 쓰도록 inputId 파라미터로 일반화(버튼 id는 "Btn"→"BtnSide" 대응 규칙으로 유추).
   // 2026-09-28: 모든 탭에서 보이므로 어느 탭에서 저장해도 '오늘 할일'로 저장되고, 지금 보는 탭은 그대로(이동 없음) —
   // 대신 짧은 알림으로 어디에 저장됐는지 알려줌. 저장 중 Enter 반복(한글 입력 확정 Enter 포함)으로 두 번 저장되지 않게 막음.
   let quickAddBusy = false;
@@ -5790,7 +5770,7 @@
     const title = input.value.trim();
     if (!title) { input.focus(); return; }
     quickAddBusy = true;
-    const btns = ["quickAddBtn", "quickAddBtnSide"].map(id => $(id)).filter(Boolean);
+    const btns = ["quickAddBtn"].map(id => $(id)).filter(Boolean);
     btns.forEach(b => { b.disabled = true; });
     let error;
     try {
@@ -5799,18 +5779,12 @@
     quickAddBusy = false;
     btns.forEach(b => { b.disabled = false; });
     if (error) { alert("저장하지 못했어요. 적은 내용은 그대로 있어요. (" + (error.message || error) + ")"); return; }
-    ["quickTaskInput", "quickTaskInputSide"].forEach(id => { if ($(id)) $(id).value = ""; });
+    input.value = "";
     await loadAll();
     showToast("오늘 할일에 추가했어요");
   }
-  // 모바일 상단 줄과 PC 사이드바 입력칸 내용을 맞춰서, 화면 폭이 바뀌어도 쓰던 제목이 유지되게
-  ["quickTaskInput", "quickTaskInputSide"].forEach((id, i, ids) => {
-    $(id)?.addEventListener("input", () => { const other = $(ids[1 - i]); if (other) other.value = $(id).value; });
-  });
   $("quickAddBtn")?.addEventListener("click", () => quickAddTodoToday("quickTaskInput"));
   $("quickTaskInput")?.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) quickAddTodoToday("quickTaskInput"); });
-  $("quickAddBtnSide")?.addEventListener("click", () => quickAddTodoToday("quickTaskInputSide"));
-  $("quickTaskInputSide")?.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) quickAddTodoToday("quickTaskInputSide"); });
 
   function renderTodosPage() {
     document.querySelectorAll("#todoTopTabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === todoTabView));
