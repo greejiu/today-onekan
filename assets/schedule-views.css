@@ -2,6 +2,21 @@
 
 .sv-allday{height:var(--all-height,90px);box-sizing:border-box;overflow:auto}.sv-allday .empty,.sv-block .empty{padding:12px 4px;margin:0;font-size:12px}.sv-board-column .empty{padding:16px 4px}
 
+[data-page=todos] [hidden],#todoDragPreview[hidden]{display:none!important}
+[data-page=todos] .iv-check{position:absolute;left:7px;top:7px;width:17px;height:17px;z-index:3;cursor:pointer}
+[data-page=todos] .sv-open,[data-page=todos] .sv-event-open{padding-left:31px}
+#todoCalGrid{grid-auto-rows:180px}
+[data-page=todos] .cal-layout{display:block}
+#todoCalGrid .sv-open span{overflow-wrap:anywhere}
+#todoCalGrid .cal-cell{min-height:0;overflow:auto;min-width:0}
+#todoCalGrid .cal-chip{display:block;white-space:normal;height:auto;flex:0 0 auto;margin:4px 0;max-width:100%;padding:0}
+#todoCalGrid .sv-open{padding:6px 22px 6px 29px;font-size:12px}
+#todoCalGrid .sv-open span{font-size:10px}
+.tv-date{display:flex;justify-content:space-between}.tv-date button{border:0;background:transparent;color:var(--text);min-height:28px;cursor:pointer}
+.tv-date button[aria-pressed=true]{color:var(--accent-text);font-weight:700}
+.iv-done .sv-open strong,.iv-done .sv-event-open{text-decoration:line-through;color:var(--sub)}
+@media(max-width:760px){#todoTopTabs{display:flex;overflow:auto}#todoTopTabs button{flex:1;white-space:nowrap}#todoCalGrid{min-width:670px}[data-page=todos] .cal-main{overflow:auto;max-width:100%}#todoCalGrid .cal-chip .iv-check{width:20px;height:20px}}
+
 @media(max-width:760px){.sched-month-bar .sched-month-title-wrap{flex:0 1 auto;min-width:0}.sched-month-title{font-size:13px;white-space:normal;max-width:100%;overflow-wrap:anywhere}.sched-title-row{flex-wrap:wrap}}
 
 @media(max-width:760px){.sv-toolbar .view-toggle{flex:1 1 100%;width:100%}.sv-toolbar .view-toggle button{white-space:nowrap}.sv-hour button{min-height:36px}}
