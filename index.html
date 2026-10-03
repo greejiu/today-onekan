@@ -1829,11 +1829,11 @@
         </section>
 
         <h2 class="section-label settings-group-title">사용 설정</h2>
-        <div class="section-label">그룹 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
+        <div class="section-label">태그 <span style="color:var(--sub);font-weight:400;">(할일·습관 공용)</span></div>
         <div class="hs-cat-list" id="settingsTagList"></div>
         <div class="field">
           <div style="display:flex;gap:6px;align-items:flex-end;">
-            <div style="flex:1;"><label>새 그룹</label><input id="settingsTagName" type="text" placeholder="예: 집안일" /></div>
+            <div style="flex:1;"><label>새 태그</label><input id="settingsTagName" type="text" placeholder="예: 집안일" /></div>
             <input id="settingsTagColor" type="color" value="#FF6B6B" class="color-native-input" />
             <button type="button" class="color-swatch-btn" data-for="settingsTagColor" title="색상 선택" style="background:#FF6B6B;"></button>
             <button class="btn-ghost" id="settingsTagAddBtn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
@@ -1979,7 +1979,7 @@
       <div class="cev-hint" id="td_date_hint">제목만 적고 저장해도 돼요. 시작일을 비우면 오늘로 저장돼요.</div>
       <div class="field split">
         <div><label for="td_time">시간 <span class="cev-opt">(선택)</span></label><select id="td_time"></select></div>
-        <div><label for="td_tag">그룹</label><select id="td_tag"></select></div>
+        <div><label for="td_tag">태그</label><select id="td_tag"></select></div>
       </div>
       <div class="field project-field" id="td_project_wrap" hidden><label for="td_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="td_project"></select></div>
       <div class="cal-ev-error" id="td_error" role="alert"></div>
@@ -2125,7 +2125,7 @@
       </div>
       <div class="field split">
         <div><label for="ha_duration">소요 시간(분)</label><input id="ha_duration" type="number" min="5" step="5" value="30" inputmode="numeric" /></div>
-        <div><label for="ha_category">그룹</label><select id="ha_category"></select></div>
+        <div><label for="ha_category">태그</label><select id="ha_category"></select></div>
       </div>
       <div class="field project-field" id="ha_project_wrap" hidden><label for="ha_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="ha_project"></select></div>
       <div class="cev-hint">이름만 적고 저장하면 오늘부터 매일 반복돼요. 요일 지정 등은 저장 후 습관 설정에서 바꿀 수 있어요.</div>
@@ -2180,13 +2180,13 @@
       <div><label>시작일(반복이 시작된 날)</label><input id="hs_start" type="date" /></div>
       <div><label>종료일(선택, 반복이 끝나는 날)</label><input id="hs_end" type="date" /></div>
     </div>
-    <div class="field"><label>그룹</label><select id="hs_category"></select></div>
+    <div class="field"><label>태그</label><select id="hs_category"></select></div>
     <div class="field project-field" id="hs_project_wrap" hidden><label for="hs_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="hs_project"></select></div>
-    <div class="hs-cat-manage-label">그룹 관리 (이름 수정 · 삭제)</div>
+    <div class="hs-cat-manage-label">태그 관리 (이름 수정 · 삭제)</div>
     <div class="hs-cat-list" id="hs_cat_list"></div>
     <div class="field">
       <div style="display:flex;gap:6px;align-items:flex-end;">
-        <div style="flex:1;"><label>새 그룹</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
+        <div style="flex:1;"><label>새 태그</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
         <input id="hs_newcat_color" type="color" value="#FF6B6B" class="color-native-input" />
         <button type="button" class="color-swatch-btn" data-for="hs_newcat_color" title="색상 선택" style="background:#FF6B6B;"></button>
         <button class="btn-ghost" id="hs_newcat_btn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
@@ -2205,7 +2205,7 @@
     <h2 id="sd_sheet_title">담아두기 수정</h2>
     <form id="sdForm" class="cal-ev-fields" novalidate>
       <div class="field"><label for="sd_title">제목</label><input id="sd_title" type="text" autocomplete="off" enterkeyhint="done" /></div>
-      <div class="field"><label for="sd_tag">그룹</label><select id="sd_tag"></select></div>
+      <div class="field"><label for="sd_tag">태그</label><select id="sd_tag"></select></div>
       <div class="cal-ev-error" id="sd_error" role="alert"></div>
     </form>
     <div class="sheet-actions">
@@ -3759,7 +3759,7 @@
   function assignableTagPool(pool, keepId = null) { return pool.filter(c => !c.is_archived || (keepId && c.id === keepId)); }
   // "기본" = 분류 없음(연결값 null) 전용 이름 — 같은 이름의 그룹·범주를 새로 만들거나 이름을 바꿔 겹치지 않게 막음(기존 행은 건드리지 않음)
   const isReservedCategoryName = (name) => name.trim() === "기본";
-  const RESERVED_CATEGORY_NAME_MSG = (noun) => `‘기본’은 ${noun}을 정하지 않은 항목에 쓰는 이름이라 새 ${noun} 이름으로 쓸 수 없어요.`.replace("범주을", "범주를");
+  const RESERVED_CATEGORY_NAME_MSG = (noun) => `‘기본’은 ${noun}을 정하지 않은 항목에 쓰는 이름이라 새 ${noun} 이름으로 쓸 수 없어요.`.replace("범주을", "범주를").replace("태그을", "태그를");
   function tagPickLabel(c) { return c.is_archived ? `${c.name} · 보관됨` : c.name; }
   // 새 그룹/범주·보관 해제 항목을 사용 중 목록 맨 아래에 두기 위한 다음 sort_order(보관된 행 포함 전체 최댓값 + 1)
   function nextCategorySortOrder(pool) { return pool.reduce((m, c) => Math.max(m, Number.isFinite(c.sort_order) ? c.sort_order : -1), -1) + 1; }
@@ -5811,7 +5811,7 @@
     const hiddenCount = () => chips.filter(c => c.hidden).length;
     const secondRowTop = rowTops[1];
     // 2026-09-28 버튼 글자는 "더 보기"만(숨은 개수 "+N" 표시 삭제). 개수는 읽기 도구용 aria-label에만 남김.
-    const setLabel = () => { moreBtn.textContent = "더 보기"; moreBtn.setAttribute("aria-label", `더 보기, 숨은 그룹 ${hiddenCount()}개`); };
+    const setLabel = () => { moreBtn.textContent = "더 보기"; moreBtn.setAttribute("aria-label", `더 보기, 숨은 태그 ${hiddenCount()}개`); };
     chips.forEach(c => { if (c.offsetTop > secondRowTop && !c.classList.contains("active")) c.hidden = true; });
     setLabel();
     // 선택 칩 또는 버튼이 아직 3번째 줄로 밀려나 있으면, 뒤에서부터(선택 칩·"전체" 제외) 하나씩 더 숨김
@@ -5856,7 +5856,7 @@
       ? rowsHtml + moreHtml + addSlotHtml(`data-somedayadd="1"`, false)
       : undone.length === 0
         ? addSlotHtml(`data-somedayadd="1"`, true)
-        : `<div class="agenda-empty-block">이 그룹의 항목이 없어요.</div>` + addSlotHtml(`data-somedayadd="1"`, false);
+        : `<div class="agenda-empty-block">이 태그의 항목이 없어요.</div>` + addSlotHtml(`data-somedayadd="1"`, false);
     document.querySelectorAll(".somedaysum-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
@@ -6428,13 +6428,13 @@
   });
   $("hs_newcat_btn").onclick = async () => {
     const name = $("hs_newcat_name").value.trim();
-    if (!name) { alert("그룹 이름을 입력해주세요."); return; }
-    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("그룹")); return; }
+    if (!name) { alert("태그 이름을 입력해주세요."); return; }
+    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("태그")); return; }
     const color = $("hs_newcat_color").value;
     const { data, error } = await sb.from("tok_habit_categories")
       .insert({ name, color, sort_order: nextCategorySortOrder(habitCategories) })
       .select().single();
-    if (error) { alert("그룹 추가 실패: " + error.message); return; }
+    if (error) { alert("태그 추가 실패: " + error.message); return; }
     habitCategories.push(data);
     populateHabitCategorySelect(data.id);
     renderHabitCategoryList();
@@ -6513,7 +6513,7 @@
         ${moreBtnHtml(item.title)}
       </div>
     `;
-    }).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 그룹의 항목이 없어요." : "담아둔 일이 없어요."}</div>`;
+    }).join("") : `<div class="agenda-empty-block">${somedayTabFilterTag ? "이 태그의 항목이 없어요." : "담아둔 일이 없어요."}</div>`;
     document.querySelectorAll(".someday-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
@@ -6638,7 +6638,7 @@
     const item = somedayItems.find(x => x.id === id);
     if (!item) return;
     somedayMoveState = { id, saving: false, opener: activeOpener() };
-    $("sm_desc").textContent = `‘${item.title}’을(를) 담아두기에서 빼서 고른 날짜의 할일로 옮겨요. 제목·그룹은 그대로이고, 완료 표시는 새로 시작해요.`;
+    $("sm_desc").textContent = `‘${item.title}’을(를) 담아두기에서 빼서 고른 날짜의 할일로 옮겨요. 제목·태그는 그대로이고, 완료 표시는 새로 시작해요.`;
     $("sm_date").value = todayStr();
     $("sm_error").textContent = "";
     setSomedayMoveBusy(false);
@@ -7545,13 +7545,13 @@
   // 정렬/그룹화 select 두 개를 채우고 onChange 연결(공용) — allowDateGroup=false면 "날짜별" 옵션은 뺌(습관·언젠가처럼 날짜 개념이 약한 목록용).
   function renderSortGroupControls(sortSelEl, groupSelEl, settings, allowDateGroup, onChange) {
     if (!sortSelEl.dataset.filled) {
-      sortSelEl.innerHTML = `<option value="created">정렬: 없음(등록일순)</option><option value="date_desc">날짜 최신순</option><option value="date_asc">날짜 오래된순</option><option value="group">그룹순</option>`;
+      sortSelEl.innerHTML = `<option value="created">정렬: 없음(등록일순)</option><option value="date_desc">날짜 최신순</option><option value="date_asc">날짜 오래된순</option><option value="group">태그순</option>`;
       sortSelEl.dataset.filled = "1";
     }
     sortSelEl.value = settings.sort;
     sortSelEl.onchange = () => { settings.sort = sortSelEl.value; onChange(); };
     if (!groupSelEl.dataset.filled) {
-      groupSelEl.innerHTML = `<option value="none">그룹화: 안 함</option>${allowDateGroup ? `<option value="date">날짜별</option>` : ""}<option value="group">그룹별</option>`;
+      groupSelEl.innerHTML = `<option value="none">그룹화: 안 함</option>${allowDateGroup ? `<option value="date">날짜별</option>` : ""}<option value="group">태그별</option>`;
       groupSelEl.dataset.filled = "1";
     }
     groupSelEl.value = settings.group;
@@ -7605,7 +7605,7 @@
         <div class="block-tag">${t.start_minute != null ? minutesToHHMM(t.start_minute) : "시간 없음"} · ${t.duration_minutes || 30}분 · ${repeatText}${windowText}${catChip}</div>
       </div>
       <button class="historybtn icon-btn" data-id="${t.id}" title="기록 보기" aria-label="${escapeHtml(t.name)} 기록 보기">${ICON_HISTORY_SVG}</button>
-      <button class="settingsbtn icon-btn" data-id="${t.id}" title="반복·그룹 설정" aria-label="${escapeHtml(t.name)} 반복·그룹 설정">${ICON_SLIDERS_SVG}</button>
+      <button class="settingsbtn icon-btn" data-id="${t.id}" title="반복·태그 설정" aria-label="${escapeHtml(t.name)} 반복·태그 설정">${ICON_SLIDERS_SVG}</button>
       ${actionBtn}
       <button class="del" data-id="${t.id}">삭제</button>
       ${moreBtnHtml(t.name)}
@@ -7819,14 +7819,14 @@
       entries.push(...habitStatusEntries(item, date));
       sep();
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openHabitSheet(item) });
-      entries.push(groupEntry("그룹 변경"));
+      entries.push(groupEntry("태그 변경"));
       entries.push(dupEntry);
       sep();
       entries.push({ label: "습관 삭제", icon: "trash", danger: true, run: () => deleteHabitWithConfirm(id) });
     } else if (kind === "todo") {
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openTodoSheet(item) });
       entries.push({ label: "날짜 변경", icon: "date", window: true, run: () => openItemDateSheet("todo", id) });
-      entries.push(groupEntry("그룹 변경"));
+      entries.push(groupEntry("태그 변경"));
       entries.push(dupEntry);
       sep();
       entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteTodoWithConfirm(id) });
@@ -7840,7 +7840,7 @@
     } else if (kind === "someday") {
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openSomedaySheet(id) });
       entries.push({ label: "날짜 정해서 할일로 옮기기", icon: "move", window: true, run: () => openSomedayMoveSheet(id) });
-      entries.push(groupEntry("그룹 변경"));
+      entries.push(groupEntry("태그 변경"));
       sep();
       entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteSomedayWithConfirm(id) });
     }
@@ -8352,7 +8352,7 @@
   // 설정 목록과 일정 범주 편집창이 같은 검증·저장·메모리 갱신을 사용한다.
   async function saveManagedCategory(pool, table, id, patch) {
     const cat = pool.find(c => c.id === id), userId = appSymbolUserId;
-    const noun = table === 'tok_event_categories' ? '범주' : '그룹';
+    const noun = table === 'tok_event_categories' ? '범주' : '태그';
     if (!cat || cat.is_archived) return { ok: false, error: new Error('사용 중인 ' + noun + '만 수정할 수 있어요.') };
     if ('name' in patch) {
       patch = { ...patch, name: patch.name.trim() };
@@ -8373,8 +8373,8 @@
     const host = $(hostId);
     if (!host) return;
     const isEvent = table === "tok_event_categories";
-    const noun = isEvent ? "범주" : "그룹";
-    const nounObj = isEvent ? "범주를" : "그룹을", nounSubj = isEvent ? "범주가" : "그룹이", nounTopic = isEvent ? "범주는" : "그룹은"; // 받침에 맞춘 조사
+    const noun = isEvent ? "범주" : "태그";
+    const nounObj = isEvent ? "범주를" : "태그를", nounSubj = isEvent ? "범주가" : "태그가", nounTopic = isEvent ? "범주는" : "태그는"; // 받침에 맞춘 조사
     const noneLabel = "기본";
     const defaultField = isEvent ? "default_event_color" : "default_tag_color";
     const defaultColor = daySettings[defaultField] || "#c7c2d6";
@@ -8628,11 +8628,11 @@
   }
   $("settingsTagAddBtn").onclick = async () => {
     const name = $("settingsTagName").value.trim();
-    if (!name) { alert("그룹 이름을 입력해주세요."); return; }
-    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("그룹")); return; }
+    if (!name) { alert("태그 이름을 입력해주세요."); return; }
+    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("태그")); return; }
     const color = $("settingsTagColor").value;
     const { data, error } = await sb.from("tok_habit_categories").insert({ name, color, sort_order: nextCategorySortOrder(habitCategories) }).select().single();
-    if (error) { alert("그룹 추가 실패: " + error.message); return; }
+    if (error) { alert("태그 추가 실패: " + error.message); return; }
     habitCategories.push(data);
     $("settingsTagName").value = "";
     renderSettingsTagLists();
