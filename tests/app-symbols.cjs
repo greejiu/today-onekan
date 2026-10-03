@@ -43,7 +43,9 @@ const html=fs.readFileSync('index.html','utf8');new(require('node:vm').Script)(h
   await page.locator('.symbol-picker').screenshot({path:`test-results/symbols-${theme}.png`});
  }
  for(const width of [390,320]){await page.setViewportSize({width,height:844});const bounds=await page.locator('.symbol-grid').evaluate(e=>({width:e.clientWidth,scroll:e.scrollWidth,items:[...e.children].map(n=>n.getBoundingClientRect().right)}));assert(bounds.scroll<=bounds.width);assert(bounds.items.every(x=>x<=width));await page.locator('.symbol-picker').screenshot({path:`test-results/symbols-${width}.png`});}
- const original=require('node:child_process').execFileSync('git',['show','origin/main:index.html'],{encoding:'utf8'});assert.equal(html.match(/<link rel="icon"[^>]*>/)[0],original.match(/<link rel="icon"[^>]*>/)[0]);
- assert.deepEqual(errors,[]);console.log('PASS: all four symbols, immediate rendering, reload, default/unknown, account isolation, stale requests, failure rollback, keyboard, six themes (contrast >=3), mobile grid, unchanged favicon.');
+ assert.equal(await page.locator('link[rel="icon"]').getAttribute('href'),'assets/symbol-hankan.svg?v=20261003');
+ const favicon=fs.readFileSync('assets/symbol-hankan.svg','utf8').match(/<svg[^>]*>([\s\S]*)<\/svg>/)[1];
+ assert.equal(favicon,html.match(/<symbol id="symbol-hankan"[^>]*>([\s\S]*?)<\/symbol>/)[1]);
+ assert.deepEqual(errors,[]);console.log('PASS: all four symbols, immediate rendering, reload, default/unknown, account isolation, stale requests, failure rollback, keyboard, six themes (contrast >=3), mobile grid, fixed favicon matches symbol 1.');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
