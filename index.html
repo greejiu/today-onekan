@@ -747,6 +747,7 @@
   .todo-row{display:flex;align-items:center;gap:8px;padding:12px 4px;border-bottom:1px solid var(--line);}
   .todo-row:last-child{border-bottom:none;}
   .todo-row .info{flex:1;min-width:0;}
+  .habit-project-label{font-size:12px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
   .todo-row .name{font-size:14px;}
   .todo-row .block-tag{font-size:11px;color:var(--sub);}
   .todo-row.inactive .name{color:var(--sub);}
@@ -1155,7 +1156,7 @@
   .cev-switch-row{margin:0 0 6px;}
   .cev-switch{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:0 2px;font-size:14.5px;color:var(--text);cursor:pointer;}
   .cev-switch input{position:absolute;right:2px;top:50%;width:44px;height:26px;margin:-13px 0 0;opacity:0;cursor:pointer;}
-  .cev-track{position:relative;flex:none;width:44px;height:26px;border-radius:var(--r-pill);background:color-mix(in srgb, var(--text) 20%, var(--card));transition:background .15s;}
+  .cev-track{position:relative;flex:none;width:44px;height:26px;border-radius:var(--r-pill);background:color-mix(in srgb, var(--text) 20%, var(--card));transition:background .15s;pointer-events:none;}
   .cev-track::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s;}
   .cev-switch input:checked + .cev-track{background:var(--accent);}
   .cev-switch input:checked + .cev-track::after{transform:translateX(18px);}
@@ -1414,6 +1415,18 @@
     .share-opts{gap:5px;}
     .share-opt{gap:5px;padding:0 9px 0 8px;font-size:12.5px;}
   }
+  .period-fields{margin:10px 0;}
+  .period-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:10px 0;}
+  .period-row>div{min-width:0;}
+  .period-row input{box-sizing:border-box;min-width:0;width:100%;max-width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:12px;font:inherit;font-size:14px;background:var(--card);color:var(--text);min-height:44px;}
+  .period-fields.all-day .period-row{grid-template-columns:minmax(0,1fr);}
+  .period-row label{display:block;margin-bottom:5px;font-size:12px;color:var(--sub);}
+  [data-theme="black"] .period-row input{color-scheme:dark;}
+  .todo-date-badge{white-space:normal;max-width:46%;overflow-wrap:anywhere;}
+  .period-fields .cev-switch-row{margin-bottom:8px;}
+  .period-fields [hidden],#td_repeat_dates[hidden],#idt_repeat_dates[hidden],#td_repeat_days_row[hidden]{display:none!important;}
+  .period-undated{display:flex;gap:8px;align-items:center;font-size:13px;}
+  .period-undated input{width:auto;}
 </style>
 </head>
 <body>
@@ -1987,15 +2000,17 @@
     <h2 id="todoSheetTitle">할일 추가</h2>
     <form id="todoForm" class="cal-ev-fields" novalidate>
       <div class="field"><label for="td_title">제목</label><input id="td_title" type="text" placeholder="예: 은행 다녀오기" autocomplete="off" enterkeyhint="done" /></div>
-      <div class="field split">
-        <div><label for="td_start">시작일</label><input id="td_start" type="date" aria-describedby="td_date_hint" /></div>
-        <div><label for="td_end">종료일 <span class="cev-opt">(선택)</span></label><input id="td_end" type="date" aria-describedby="td_date_hint" /></div>
+<div class="period-fields" id="td_period">
+        <div class="cev-switch-row"><label class="cev-switch" for="td_allday"><span class="cev-switch-label">종일</span><input id="td_allday" type="checkbox" role="switch" checked /><span class="cev-track" aria-hidden="true"></span></label></div>
+        <div class="period-row"><div><label for="td_start">시작일</label><input id="td_start" type="date" /></div><div data-period-time><label for="td_time">시작시간</label><input id="td_time" type="time" /></div></div>
+        <div class="period-row"><div><label for="td_end">종료일</label><input id="td_end" type="date" /></div><div data-period-time><label for="td_endtime">종료시간</label><input id="td_endtime" type="time" /></div></div>
+        <div class="cev-hint" id="td_period_hint"></div>
       </div>
-      <div class="cev-hint" id="td_date_hint">제목만 적고 저장해도 돼요. 시작일을 비우면 오늘로 저장돼요.</div>
-      <div class="field split">
-        <div><label for="td_time">시간 <span class="cev-opt">(선택)</span></label><select id="td_time"></select></div>
-        <div><label for="td_tag">범주</label><select id="td_tag"></select></div>
-      </div>
+      <label class="period-undated"><input id="td_undated" type="checkbox" /> 날짜 없음 · 담아두기</label>
+      <div class="field"><label for="td_tag">범주</label><select id="td_tag"></select></div>
+      <div class="field split"><div><label for="td_repeat_unit">반복</label><select id="td_repeat_unit"><option value="">반복 없음</option><option value="day">일마다</option><option value="week">주마다</option><option value="month">개월마다</option></select></div><div id="td_repeat_interval_wrap"><label for="td_repeat_interval">주기</label><input id="td_repeat_interval" type="number" min="1" value="1" /></div></div>
+      <div id="td_repeat_days_row" class="field" hidden><label>반복 요일</label><div class="weekday-picker"><label><input type="checkbox" value="0" />일</label><label><input type="checkbox" value="1" />월</label><label><input type="checkbox" value="2" />화</label><label><input type="checkbox" value="3" />수</label><label><input type="checkbox" value="4" />목</label><label><input type="checkbox" value="5" />금</label><label><input type="checkbox" value="6" />토</label></div></div>
+      <div id="td_repeat_dates" class="field split"><div><label for="td_repeat_start">반복 시작일</label><input id="td_repeat_start" type="date" /></div><div><label for="td_repeat_end">반복 종료일 (선택)</label><input id="td_repeat_end" type="date" /></div></div>
       <div class="field project-field" id="td_project_wrap" hidden><label for="td_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="td_project"></select></div>
       <div class="cal-ev-error" id="td_error" role="alert"></div>
     </form>
@@ -2020,27 +2035,13 @@
         <input id="cev_title" type="text" placeholder="어떤 일정인가요?" autocomplete="off" enterkeyhint="done" aria-required="true" aria-describedby="cev_title_err" />
         <div class="cev-field-error" id="cev_title_err"></div>
       </div>
-      <div class="field">
-        <label for="cev_date">날짜</label>
-        <input id="cev_date" type="date" aria-describedby="cev_date_err" />
-        <div class="cev-field-error" id="cev_date_err"></div>
+<div class="period-fields" id="cev_period">
+        <div class="cev-switch-row"><label class="cev-switch" for="cev_allday"><span class="cev-switch-label">종일</span><input id="cev_allday" type="checkbox" role="switch" checked /><span class="cev-track" aria-hidden="true"></span></label></div>
+        <div class="period-row"><div><label for="cev_date">시작일</label><input id="cev_date" type="date" /></div><div data-period-time><label for="cev_time">시작시간</label><input id="cev_time" type="time" /></div></div>
+        <div class="period-row"><div><label for="cev_end">종료일</label><input id="cev_end" type="date" /></div><div data-period-time><label for="cev_endtime">종료시간</label><input id="cev_endtime" type="time" /></div></div>
+        <div class="cev-hint" id="cev_period_hint"></div>
       </div>
-      <div class="cev-switch-row">
-        <label class="cev-switch" for="cev_multi"><span class="cev-switch-label">여러 날</span><input id="cev_multi" type="checkbox" role="switch" aria-controls="cev_end_wrap" /><span class="cev-track" aria-hidden="true"></span></label>
-      </div>
-      <div class="field" id="cev_end_wrap" hidden>
-        <label for="cev_end">종료일</label>
-        <input id="cev_end" type="date" aria-describedby="cev_end_err" />
-        <div class="cev-field-error" id="cev_end_err"></div>
-      </div>
-      <div class="cev-switch-row">
-        <label class="cev-switch" for="cev_allday"><span class="cev-switch-label">종일</span><input id="cev_allday" type="checkbox" role="switch" aria-controls="cev_time_wrap" /><span class="cev-track" aria-hidden="true"></span></label>
-      </div>
-      <div class="field" id="cev_time_wrap" hidden>
-        <label for="cev_time">시간</label>
-        <input id="cev_time" type="time" aria-describedby="cev_time_err" />
-        <div class="cev-field-error" id="cev_time_err"></div>
-      </div>
+      <div hidden><span id="cev_date_err"></span><span id="cev_end_err"></span><span id="cev_time_err"></span></div>
       <fieldset class="field cev-cat-field">
         <legend>그룹 <span class="cev-opt">(선택)</span></legend>
         <div class="cev-cat-list" id="cev_category"></div>
@@ -2123,10 +2124,13 @@
     <h2 id="habitAddTitle">습관 추가</h2>
     <form id="habitAddForm" class="cal-ev-fields" novalidate>
       <div class="field"><label for="ha_name">이름</label><input id="ha_name" type="text" placeholder="예: 물 한 컵 마시기" autocomplete="off" enterkeyhint="done" /></div>
-      <div class="field split">
-        <div><label for="ha_start">시작일</label><input id="ha_start" type="date" /></div>
-        <div><label for="ha_time">시간 <span class="cev-opt">(선택)</span></label><input id="ha_time" type="time" /></div>
+<div class="period-fields" id="ha_period">
+        <div class="cev-switch-row"><label class="cev-switch" for="ha_allday"><span class="cev-switch-label">종일</span><input id="ha_allday" type="checkbox" role="switch" checked /><span class="cev-track" aria-hidden="true"></span></label></div>
+        <div class="period-row"><div><label for="ha_start">시작일</label><input id="ha_start" type="date" /></div><div data-period-time><label for="ha_time">시작시간</label><input id="ha_time" type="time" /></div></div>
+        <div class="period-row"><div><label for="ha_end">종료일</label><input id="ha_end" type="date" /></div><div data-period-time><label for="ha_endtime">종료시간</label><input id="ha_endtime" type="time" /></div></div>
+        <div class="cev-hint" id="ha_period_hint"></div>
       </div>
+      <div class="field split"><div><label for="ha_repeat_start">반복 시작일</label><input id="ha_repeat_start" type="date" /></div><div><label for="ha_repeat_end">반복 종료일 (선택)</label><input id="ha_repeat_end" type="date" /></div></div>
       <div class="field split">
         <div>
           <label for="ha_repeat_unit">반복</label>
@@ -2139,7 +2143,7 @@
         <div><label for="ha_repeat_interval">주기(숫자)</label><input id="ha_repeat_interval" type="number" min="1" value="1" inputmode="numeric" /></div>
       </div>
       <div class="field split">
-        <div><label for="ha_duration">소요 시간(분)</label><input id="ha_duration" type="number" min="5" step="5" value="30" inputmode="numeric" /></div>
+
         <div><label for="ha_category">범주</label><select id="ha_category"></select></div>
       </div>
       <div class="field project-field" id="ha_project_wrap" hidden><label for="ha_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="ha_project"></select></div>
@@ -2159,10 +2163,13 @@
     <h2 id="hs_sheet_title">습관 수정</h2>
     <!-- 2026-09-27: 항목 메뉴 "수정" = 전체 설정창 — 이름·시간·소요 시간도 여기서 바꿀 수 있게 함(반복·그룹·기간은 기존 그대로) -->
     <div class="field"><label for="hs_name">이름</label><input id="hs_name" type="text" autocomplete="off" /></div>
-    <div class="field split">
-      <div><label for="hs_time">시간 <span class="cev-opt">(선택)</span></label><input id="hs_time" type="time" /></div>
-      <div><label for="hs_duration">소요 시간(분)</label><input id="hs_duration" type="number" min="5" step="5" inputmode="numeric" /></div>
-    </div>
+<div class="period-fields" id="hs_period">
+        <div class="cev-switch-row"><label class="cev-switch" for="hs_allday"><span class="cev-switch-label">종일</span><input id="hs_allday" type="checkbox" role="switch" checked /><span class="cev-track" aria-hidden="true"></span></label></div>
+        <div class="period-row"><div><label for="hs_occ_start">시작일</label><input id="hs_occ_start" type="date" /></div><div data-period-time><label for="hs_time">시작시간</label><input id="hs_time" type="time" /></div></div>
+        <div class="period-row"><div><label for="hs_occ_end">종료일</label><input id="hs_occ_end" type="date" /></div><div data-period-time><label for="hs_endtime">종료시간</label><input id="hs_endtime" type="time" /></div></div>
+        <div class="cev-hint" id="hs_period_hint"></div>
+      </div>
+    <div id="hs_error" class="cal-ev-error" role="alert"></div>
     <div class="cev-hint" style="margin:-4px 0 10px;">시간을 바꿔도 이미 완료한 기록의 시간은 그대로예요.</div>
     <div class="field split">
       <div>
@@ -2192,8 +2199,8 @@
       </div>
     </div>
     <div class="field split">
-      <div><label>시작일(반복이 시작된 날)</label><input id="hs_start" type="date" /></div>
-      <div><label>종료일(선택, 반복이 끝나는 날)</label><input id="hs_end" type="date" /></div>
+      <div><label>반복 시작일</label><input id="hs_start" type="date" /></div>
+      <div><label>반복 종료일 (선택)</label><input id="hs_end" type="date" /></div>
     </div>
     <div class="field"><label>범주</label><select id="hs_category"></select></div>
     <div class="field project-field" id="hs_project_wrap" hidden><label for="hs_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="hs_project"></select></div>
@@ -2251,11 +2258,13 @@
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="idt_title">
     <h2 id="idt_title">날짜 변경</h2>
     <div class="cev-hint" id="idt_hint" style="margin:-6px 2px 10px;" hidden></div>
-    <div class="field split" id="idt_date_row" style="display:none;">
-      <div><label id="idt_date_label">날짜</label><input id="idt_date" type="date" /></div>
-      <div id="idt_end_wrap" style="display:none;"><label>종료 날짜(선택)</label><input id="idt_end" type="date" /></div>
-    </div>
-    <div class="field"><label>시간(선택)</label><input id="idt_time" type="time" /></div>
+<div class="period-fields" id="idt_period">
+        <div class="cev-switch-row"><label class="cev-switch" for="idt_allday"><span class="cev-switch-label">종일</span><input id="idt_allday" type="checkbox" role="switch" checked /><span class="cev-track" aria-hidden="true"></span></label></div>
+        <div class="period-row"><div><label for="idt_date">시작일</label><input id="idt_date" type="date" /></div><div data-period-time><label for="idt_time">시작시간</label><input id="idt_time" type="time" /></div></div>
+        <div class="period-row"><div><label for="idt_occ_end">종료일</label><input id="idt_occ_end" type="date" /></div><div data-period-time><label for="idt_endtime">종료시간</label><input id="idt_endtime" type="time" /></div></div>
+        <div class="cev-hint" id="idt_period_hint"></div>
+      </div>
+    <div class="field split" id="idt_repeat_dates"><div><label for="idt_repeat_start">반복 시작일</label><input id="idt_repeat_start" type="date" /></div><div><label for="idt_end">반복 종료일 (선택)</label><input id="idt_end" type="date" /></div></div><div id="idt_error" class="cal-ev-error" role="alert"></div>
     <div class="field split" id="idt_repeat_row" style="display:none;">
       <div>
         <label>반복</label>
@@ -2318,6 +2327,96 @@
 <link rel="stylesheet" href="assets/classification.css">
 <script src="assets/classification.js"></script>
 <script>
+// Local civil dates and wall-clock minutes. No UTC serialization or display fallback writes.
+(function (root) {
+  const dateIndex = date => { const [y,m,d] = date.split('-').map(Number); return Date.UTC(y,m-1,d)/86400000; };
+  const days = (a,b) => dateIndex(b)-dateIndex(a);
+  const addDays = (date,n) => { const [y,m,d]=date.split('-').map(Number); const t=new Date(y,m-1,d); t.setDate(t.getDate()+n); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`; };
+  const minutes = time => time ? Number(time.slice(0,2))*60+Number(time.slice(3,5)) : null;
+  const time = n => `${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
+  function plus(date,clock,n) { const total=minutes(clock)+n, offset=Math.floor(total/1440); return {date:addDays(date,offset),time:time(total-offset*1440)}; }
+  function read(kind,row) {
+    const startDate=(kind==='event'?row.event_date:kind==='habit'?(row.occurrence_start_date||row.start_date):row.start_date)||'';
+    const startTime=kind==='habit'?(row.start_minute==null?'':time(row.start_minute)):(row[kind==='event'?'event_time':'todo_time']||'').slice(0,5);
+    const allDay=row.all_day==null?!startTime:row.all_day;
+    let endDate=(kind==='event'?row.end_date:row.occurrence_end_date)||'';
+    if (!endDate && kind==='todo' && !row.repeat_unit) endDate=row.end_date||'';
+    let endTime=(row.end_time||'').slice(0,5);
+    if (!allDay && !endTime && startDate && startTime && row.duration_minutes>0) {
+      const end=plus(startDate,startTime,row.duration_minutes);
+      endDate=endDate||end.date; endTime=end.time;
+    }
+    return {allDay,startDate,endDate:endDate||(allDay?startDate:''),startTime:allDay?'':startTime,endTime:allDay?'':endTime};
+  }
+  // Interface for future range callers: {startDate,endDate,startTime,endTime,allDay,durationMinutes}.
+  // Legacy date/time/startMinute callers are accepted; only an explicit time context proposes an end.
+  function defaults(context,today,defaultDuration=30) {
+    const c=context||{}, startDate=c.startDate||c.date||today;
+    const startTime=String(c.startTime||c.time||(c.startMinute==null?'':time(c.startMinute))).slice(0,5);
+    const allDay=c.allDay==null?!startTime:c.allDay;
+    let endDate=c.endDate||startDate,endTime=String(c.endTime||'').slice(0,5);
+    if (!allDay && startTime && !endTime) { const end=plus(startDate,startTime,c.durationMinutes>0?c.durationMinutes:defaultDuration); endDate=c.endDate||end.date; endTime=end.time; }
+    return {allDay,startDate,endDate,startTime:allDay?'':startTime,endTime:allDay?'':endTime};
+  }
+  function validate(p,allowUndated=false) {
+    if (allowUndated && !p.startDate && !p.endDate && p.allDay) return '';
+    if (!p.startDate || !p.endDate) return '시작일과 종료일을 입력해주세요.';
+    if (p.endDate<p.startDate) return '종료일은 시작일보다 빠를 수 없어요.';
+    if (!p.allDay) {
+      if (!p.startTime || !p.endTime) return '시작시간과 종료시간을 모두 입력해주세요.';
+      if (duration(p)<=0) return '종료 날짜·시각은 시작보다 뒤여야 해요.';
+    }
+    return '';
+  }
+  const duration = p => days(p.startDate,p.endDate)*1440+minutes(p.endTime)-minutes(p.startTime);
+  function patch(kind,p) {
+    const result={all_day:p.allDay,end_time:p.allDay?null:p.endTime+':00',duration_minutes:p.allDay?null:duration(p)};
+    result[kind==='event'?'event_date':kind==='habit'?'occurrence_start_date':'start_date']=p.startDate||null;
+    result[kind==='event'?'end_date':'occurrence_end_date']=p.endDate||null;
+    result[kind==='habit'?'start_minute':kind==='event'?'event_time':'todo_time']=p.allDay?null:kind==='habit'?minutes(p.startTime):p.startTime+':00';
+    return result;
+  }
+  function shift(kind,row,date,startMinute) {
+    const p=read(kind,row), delta=p.startDate?days(p.startDate,date):0;
+    const moved={...p,startDate:date,endDate:p.endDate?addDays(p.endDate,delta):p.allDay?date:''};
+    if (startMinute!=null) {
+      const length=p.allDay?Math.max(30,(p.startDate&&p.endDate?days(p.startDate,p.endDate):0)*1440+30):p.endTime?duration(p):row.duration_minutes;
+      moved.allDay=false; moved.startTime=time(startMinute);
+      if (length>0) { const end=plus(date,moved.startTime,length); moved.endDate=end.date; moved.endTime=end.time; }
+    }
+    if (!validate(moved,kind==='todo') && row.all_day!=null) return patch(kind,moved);
+    // Legacy row: translate only actual stored fields, never manufacture a missing end or duration.
+    const result={[kind==='event'?'event_date':kind==='habit'?'occurrence_start_date':'start_date']:date};
+    const endKey=kind==='event'?'end_date':'occurrence_end_date';
+    if (row[endKey]) result[endKey]=addDays(row[endKey],delta);
+    if (kind==='todo' && !row.repeat_unit && row.end_date) result.end_date=addDays(row.end_date,delta);
+    if (startMinute!=null) {
+      result[kind==='habit'?'start_minute':kind==='event'?'event_time':'todo_time']=kind==='habit'?startMinute:time(startMinute)+':00';
+      if (row.end_time && moved.endTime) result.end_time=moved.endTime+':00';
+    }
+    return result;
+  }
+  function overlap(kind,row,date) {
+    const p=read(kind,row); if (!p.startDate) return false;
+    if (p.allDay) return p.startDate<=date && date<=p.endDate;
+    if (!p.endDate || !p.endTime) return p.startDate===date || (kind==='event' && row.end_date && p.startDate<=date && date<=row.end_date);
+    return p.startDate<=date && (date<p.endDate || date===p.endDate && minutes(p.endTime)>0);
+  }
+  function clip(kind,row,date) {
+    const p=read(kind,row); if (p.allDay || !overlap(kind,row,date)) return null;
+    const start=p.startDate===date?minutes(p.startTime):0;
+    const end=p.endTime?(p.endDate===date?minutes(p.endTime):1440):Math.min(1440,start+(row.duration_minutes||30));
+    return {start_minute:start,duration_minutes:end-start}; // fallback is presentation only
+  }
+  function label(kind,row) {
+    const p=read(kind,row); if (!p.startDate) return '날짜 없음';
+    if (p.allDay) return `${p.startDate}${p.endDate!==p.startDate?' ~ '+p.endDate:''} · 종일`;
+    return `${p.startDate} ${p.startTime}${p.endTime?' → '+p.endDate+' '+p.endTime:' · 종료 미지정'}`;
+  }
+  root.OnekanPeriod={days,addDays,minutes,time,plus,read,defaults,validate,duration,patch,shift,overlap,clip,label};
+  if (typeof module!=='undefined') module.exports=root.OnekanPeriod;
+})(typeof window==='undefined'?globalThis:window);
+
   // ── Supabase 설정 (그리지우 프로젝트, tok_ 접두사 테이블 사용) ──
   const SUPABASE_URL = "https://mmpsyajgyufdxmmnxqba.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_odr6eVpfut1PbfGcG9vDYQ_pKEVFggA";
@@ -3254,7 +3353,7 @@
       { data: pauseData, error: e13 },
     ] = await Promise.all([
       sb.from("tok_habits").select("*").order("start_minute", { nullsFirst: false }).order("created_at"),
-      sb.from("tok_habit_logs").select("habit_id, done_date, start_minute, duration_minutes"),
+      sb.from("tok_habit_logs").select("*"),
       sb.from("tok_events").select("*").order("event_date").order("event_time"),
       sb.from("tok_someday").select("*").order("created_at"),
       sb.from("tok_time_blocks").select("*").order("sort_order"),
@@ -3324,7 +3423,8 @@
     const { data: linked, error: findErr } = await sb.from("tok_todos").select("id").eq("repeat_source_id", todo.id).limit(1);
     if (findErr) return { ok: false, error: findErr };
     if (linked && linked.length) return { ok: true };
-    const nextStart = nextRepeatDateStr(todo.start_date, todo.repeat_unit, todo.repeat_interval, todo.repeat_days);
+    let nextStart = nextRepeatDateStr(todo.start_date, todo.repeat_unit, todo.repeat_interval, todo.repeat_days);
+    while(todo.repeat_start_date && nextStart<todo.repeat_start_date) nextStart=nextRepeatDateStr(nextStart,todo.repeat_unit,todo.repeat_interval,todo.repeat_days);
     // 종료일(반복이 끝나는 날, 선택)을 넘어서면 다음 회차를 만들지 않고 반복을 그만둠. 종료일 자체는 그대로 다음 회차에도 이어서 넘겨줌.
     if (todo.end_date && nextStart > todo.end_date) return { ok: true };
     // repeat_chain_id: 같은 반복 체인끼리 묶는 연결고리(2026-09-13, 7-2단계 신규) — 부모가 이미 갖고 있으면 그대로
@@ -3339,8 +3439,8 @@
       if (!confirm(`이 반복 할일 뒤에 이미 회차가 있어요(${dates}).\n예전에 만든 회차라 이 회차와의 연결을 확인할 수 없어요.\n\n다음 회차를 새로 하나 더 만들까요?\n(취소 = 만들지 않음)`)) return { ok: true };
     }
     const nextRow = {
-      title: todo.title, start_date: nextStart, end_date: todo.end_date || null,
-      todo_time: todo.todo_time || null, duration_minutes: todo.duration_minutes || null,
+      title: todo.title, ...copyPeriodFields(todo), ...OnekanPeriod.shift("todo",todo,nextStart), end_date: todo.end_date || null,
+      todo_time: todo.todo_time || null, duration_minutes: todo.duration_minutes ?? null,
       tag_id: todo.tag_id || null, repeat_unit: todo.repeat_unit, repeat_interval: todo.repeat_interval, repeat_days: todo.repeat_days || null,
       repeat_chain_id: chainId, repeat_source_id: todo.id,
     };
@@ -3390,16 +3490,15 @@
     for (const e of eventList) {
       if (!e.repeat_unit) continue;
       // 기간(여러 날) 일정이면 시작~종료 간격(spanDays)을 유지한 채로 다음 회차를 계산(할일 반복과 동일 방식).
-      const spanDays = e.end_date && e.end_date !== e.event_date
-        ? Math.round((new Date(e.end_date + "T00:00:00") - new Date(e.event_date + "T00:00:00")) / 86400000)
-        : 0;
+      const end=OnekanPeriod.read("event",e).endDate||e.event_date;
+      const spanDays=daysBetween(e.event_date,end);
       if (addDaysStr(e.event_date, spanDays) >= today) continue; // 아직 기간 중이거나 미래면 그대로 둠
       let next = e.event_date, guard = 0;
       while (addDaysStr(next, spanDays) < today && guard < 1000) { next = nextRepeatDateStr(next, e.repeat_unit, e.repeat_interval); guard++; }
       if (next !== e.event_date) {
-        const nextEnd = spanDays ? addDaysStr(next, spanDays) : null;
-        const { error } = await sb.from("tok_events").update({ event_date: next, end_date: nextEnd }).eq("id", e.id);
-        if (!error) { e.event_date = next; e.end_date = nextEnd; }
+        const patch=OnekanPeriod.shift("event",e,next);
+        const { error }=await sb.from("tok_events").update(patch).eq("id",e.id);
+        if(!error) Object.assign(e,patch);
       }
     }
   }
@@ -3476,23 +3575,72 @@
   $("homeHabitBannerYes").onclick = () => dismissBannerToday("tok_habitBannerDismissed", $("homeHabitBanner"));
   $("homeHabitBannerClose").onclick = () => dismissBannerToday("tok_habitBannerDismissed", $("homeHabitBanner"));
 
-  function addDaysStr(dateStr, delta) {
-    // toISOString()으로 변환하면 한국 시간(UTC+9)에서 날짜가 하루 어긋나므로 로컬 필드로 직접 조립
-    const dt = new Date(dateStr + "T00:00:00");
-    dt.setDate(dt.getDate() + delta);
-    const y = dt.getFullYear();
-    const m = String(dt.getMonth() + 1).padStart(2, "0");
-    const day = String(dt.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
+  function addDaysStr(dateStr,delta) { return OnekanPeriod.addDays(dateStr,delta); }
+  function hhmmToMinutes(clock) { return OnekanPeriod.minutes(clock); }
+  // Shared editor adapter: a clean snapshot allows legacy title/memo edits without adding time values.
+  const periodForms = {};
+  const periodConfig = {td:['td_start','td_end','td_time'],cev:['cev_date','cev_end','cev_time'],ha:['ha_start','ha_end','ha_time'],hs:['hs_occ_start','hs_occ_end','hs_time'],idt:['idt_date','idt_occ_end','idt_time']};
+  function periodFormValue(prefix) {
+    const [a,b,c]=periodConfig[prefix], undated=prefix==='td' && $('td_undated').checked;
+    return {allDay:undated||$(prefix+'_allday').checked,startDate:undated?'':$(a).value,endDate:undated?'':$(b).value,startTime:undated||$(prefix+'_allday').checked?'':$(c).value,endTime:undated||$(prefix+'_allday').checked?'':$(prefix+'_endtime').value};
   }
-  function hhmmToMinutes(hhmm) {
-    const [h, m] = hhmm.split(":").map(Number);
-    return h * 60 + (m || 0);
+  function syncPeriodForm(prefix) {
+    const p=periodFormValue(prefix), undated=prefix==='td' && $('td_undated').checked;
+    $(prefix+'_period').classList.toggle('all-day',p.allDay);
+    const legacy=periodForms[prefix]?.row&&!p.allDay&&!p.endTime;
+    $(prefix+'_period_hint').textContent=legacy?'기존 항목 · 종료 미지정. 기간을 바꾸려면 종료를 입력해주세요.':p.allDay?'종료일은 마지막으로 포함되는 날짜예요.':'종료 날짜·시각을 시작보다 뒤로 입력해주세요.';
+    $(prefix+'_period').querySelectorAll('[data-period-time]').forEach(el=>el.hidden=p.allDay);
+    $(prefix+'_period').querySelectorAll('.period-row').forEach(el=>el.hidden=undated);
+  }
+  function openPeriodForm(prefix,kind,row,context) {
+    const p=row?OnekanPeriod.read(kind,row):OnekanPeriod.defaults(context,todayStr());
+    const [a,b,c]=periodConfig[prefix];
+    $(prefix+'_allday').checked=p.allDay; $(a).value=p.startDate; $(b).value=p.endDate; $(c).value=p.startTime; $(prefix+'_endtime').value=p.endTime;
+    if(prefix==='td') $('td_undated').checked=!!row&&!p.startDate;
+    periodForms[prefix]={kind,row,lastStart:p.startDate,snapshot:JSON.stringify(periodFormValue(prefix))};
+    $(prefix+'_period_hint').textContent=row&&!p.allDay&&!p.endTime?'기존 항목 · 종료 미지정. 기간을 바꾸려면 종료를 입력해주세요.':'종일 종료일은 마지막으로 포함되는 날짜예요.';
+    syncPeriodForm(prefix);
+  }
+  function savePeriodForm(prefix) {
+    const state=periodForms[prefix], p=periodFormValue(prefix);
+    if(state.row && JSON.stringify(p)===state.snapshot) return {patch:{}};
+    const error=OnekanPeriod.validate(p,state.kind==='todo');
+    return error?{error}:{patch:OnekanPeriod.patch(state.kind,p)};
+  }
+  Object.keys(periodConfig).forEach(prefix=>{
+    $(prefix+'_allday').addEventListener('change',()=>syncPeriodForm(prefix));
+    const [start,end]=periodConfig[prefix];
+    $(start).addEventListener('change',()=>{
+      const state=periodForms[prefix], date=$(start).value;
+      if(state?.lastStart && date && $(end).value) $(end).value=addDaysStr($(end).value,daysBetween(state.lastStart,date));
+      if(state)state.lastStart=date;
+    });
+  });
+  $('td_undated').addEventListener('change',()=>syncPeriodForm('td'));
+  const periodLabel = (kind,row) => OnekanPeriod.label(kind,row);
+  // Resolve continuation rows to the original start-date occurrence; saved historic log dates stay literal.
+  function habitPeriodRow(habit,occurrence) {
+    const base=OnekanPeriod.read('habit',habit), delta=OnekanPeriod.days(base.startDate,occurrence);
+    return {...habit,occurrence_start_date:occurrence,occurrence_end_date:base.endDate?addDaysStr(base.endDate,delta):null};
+  }
+  function habitPeriodOccurrences(habit,date) {
+    const base=OnekanPeriod.read('habit',habit);
+    if (!base.startDate) return [];
+    const span=base.endDate?Math.max(0,OnekanPeriod.days(base.startDate,base.endDate)):0;
+    const out=[];
+    for(let n=span;n>=0;n--) {
+      const occ=addDaysStr(date,-n);
+      if(occ<(habit.start_date||base.startDate)||habit.end_date&&occ>habit.end_date) continue;
+      if(habit.repeat_unit && habitOccurrenceOnOrBefore(habit,occ)!==occ) continue;
+      if(!habit.repeat_unit && occ!==base.startDate) continue;
+      const row=habitPeriodRow(habit,occ);
+      if(OnekanPeriod.overlap('habit',row,date)) out.push({date:occ,row});
+    }
+    return out;
   }
   // "YYYY-MM-DD" 두 날짜 사이의 일수 차(from~to, to가 더 미래면 양수) — 습관 밀린 일수 표시용.
   function daysBetween(fromStr, toStr) {
-    const a = new Date(fromStr + "T00:00:00"), b = new Date(toStr + "T00:00:00");
-    return Math.round((b - a) / 86400000);
+    return OnekanPeriod.days(fromStr, toStr);
   }
 
   let homeAgendaDate = todayStr();
@@ -3563,7 +3711,7 @@
     return habit.is_active ? "active" : "archived";
   }
   function habitEffectiveStartDate(habit) {
-    let latest = habit.start_date || (habit.created_at ? habit.created_at.slice(0, 10) : null);
+    let latest = habit.occurrence_start_date && habit.occurrence_start_date>habit.start_date ? habit.occurrence_start_date : habit.start_date || (habit.created_at ? habit.created_at.slice(0, 10) : null);
     for (const p of habitPauses) {
       if (p.habit_id === habit.id && p.resumed_at && (!latest || p.resumed_at > latest)) latest = p.resumed_at;
     }
@@ -3813,11 +3961,17 @@
 
   // 습관 체크를 "오늘"이 아닌 다른 날짜(과거·미래)에도 할 수 있게 일반화한 버전.
   async function toggleHabitForDate(taskId, checked, dateStr) {
+    if (checked && habitDoneOn(taskId,dateStr)) return true;
     if (checked) {
       // 체크하는 순간의 습관 시간을 그대로 기록에 남김(나중에 습관 시간을 바꿔도 이미 완료한 날짜엔 영향 없게).
       const t = tasks.find(x => x.id === taskId);
       const snap = { start_minute: t?.start_minute ?? null, duration_minutes: t?.duration_minutes ?? null };
+      if(t?.all_day!=null) {
+        const period=OnekanPeriod.read('habit',t);
+        snap.occurrence_end_date=addDaysStr(dateStr,daysBetween(period.startDate,period.endDate));
+      }
       const { error } = await sb.from("tok_habit_logs").insert({ habit_id: taskId, done_date: dateStr, ...snap });
+      if(error?.code==='23505') {await loadAll();return true;}
       if (error) {
         if (/habit_skipped/.test(error.message || "")) {
           alert("이 날은 건너뛴 날이에요. 완료로 바꾸려면 먼저 메뉴에서 '건너뛰기 취소'를 눌러 주세요.");
@@ -3825,7 +3979,7 @@
         } else alert("체크 실패: " + error.message);
         return false;
       }
-      habitLogs.push({ habit_id: taskId, done_date: dateStr, ...snap });
+      if(!habitDoneOn(taskId,dateStr)) habitLogs.push({ habit_id: taskId, done_date: dateStr, ...snap });
       playCompleteSound(); // 습관도 할일(상위)과 동일하게 완료 효과음 — 습관은 하위 개념 없이 그 자체로 하나의 완료라 긴 쪽으로 통일
     } else {
       const { error } = await sb.from("tok_habit_logs").delete().eq("habit_id", taskId).eq("done_date", dateStr);
@@ -4028,7 +4182,7 @@
       return true;
     });
   }
-  // 오늘로 = 같은 행의 시작일만 오늘로, 시간은 비워서 종일로. 나머지(제목·그룹·소요 시간·연결 등)는 건드리지 않음.
+  // 오늘로 = 같은 행의 실제 기간을 오늘로 평행 이동. 완료·연결·기록은 그대로 유지.
   function moveLeftoverTodoToToday(id) {
     return runLeftoverAction(id, "today", async () => {
       if (!(await saveTodoToToday(id))) return false;
@@ -4037,12 +4191,13 @@
     });
   }
   // 할일 "오늘로" 공용 저장(남아 있는 할일 '오늘로'·프로젝트 상세 '오늘하기') — 새 행을 만들지 않고 같은 행의
-  // start_date만 오늘로, todo_time은 비워서 종일로. 성공하면 { before, after }(실행 취소용으로 바뀐 칸의 전·후 값),
+  // 시작과 끝을 함께 오늘로 이동. 성공하면 { before, after }(실행 취소용 전·후 값),
   // 실패하면 알림 후 null.
   async function saveTodoToToday(id) {
     const td = todos.find(x => x.id === id);
-    const before = td ? { start_date: td.start_date ?? null, todo_time: td.todo_time ?? null } : null;
-    const after = { start_date: todayStr(), todo_time: null };
+    if(!td) return null;
+    const after=OnekanPeriod.shift('todo',td,todayStr());
+    const before=Object.fromEntries(Object.keys(after).map(k=>[k,td[k]??null]));
     const { data, error } = await sb.from("tok_todos").update(after).eq("id", id).select("id");
     if (error || !data || !data.length) {
       alert("오늘로 옮기지 못했어요: " + (error ? error.message : "할일을 찾지 못했어요.") + "\n다시 시도해 주세요.");
@@ -4079,35 +4234,13 @@
     let totalCount = 0;
     const colsHtml = [];
     for (const dateStr of dates) {
-      const overdueUntimed = overdueTodosForToday(dateStr).filter(td => !td.todo_time);
-      const dayTodos = [...todos.filter(td => td.start_date === dateStr && !td.todo_time), ...overdueUntimed];
-      const dayUntimedEvents = events.filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr && !e.event_time);
-      const doneSet = await fetchLogsForDate(dateStr);
-      if (version !== homeRenderVersion.allDay) return;
-      const untimedHabits = tasks.filter(t => t.is_active && t.start_minute == null && isHabitDueOnDate(t, dateStr, doneSet.has(t.id)));
-
-      const rows = [
-        ...dayUntimedEvents.map(e => `
-          <div class="${rowCls}" data-id="${e.id}" data-kind="event" data-date="${dateStr}"${menuAttrs("event", e.id, dateStr)}${tlStyle ? ` style="${itemTagBgStyle("event", e.category_id)}"` : ""}>
-            ${tlStyle ? leadBox : eventDotHtml(e.category_id)}
-            <span class="agenda-title">${escapeHtml(e.title)}</span>
-            ${moreBtnHtml(e.title)}
-          </div>`),
-        ...untimedHabits.map(t => `
-          <div class="${rowCls} ${doneSet.has(t.id) ? "done" : ""}${skippedCls("habit", t.id, dateStr)}" data-id="${t.id}" data-kind="habit" data-date="${dateStr}"${menuAttrs("habit", t.id, dateStr)}${tlStyle ? ` style="${itemTagBgStyle("habit", t.category_id)}"` : ""}>
-            ${habitLeadHtml(t.id, dateStr, doneSet.has(t.id), "ag-habit-check")}
-            <span class="agenda-title">${escapeHtml(t.name)}</span>
-            ${skipChipHtml("habit", t.id, dateStr)}
-            ${moreBtnHtml(t.name)}
-          </div>`),
-        ...dayTodos.map(td => `
-          <div class="${rowCls} ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo" data-date="${dateStr}"${menuAttrs("todo", td.id, dateStr)}${tlStyle ? ` style="${itemTagBgStyle("todo", td.tag_id)}"` : ""}>
-            <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="agenda-todo-check" />
-            <span class="agenda-title">${titleWithProjectHtml(td.title, todoProjectName(td))}</span>
-            ${td.start_date !== dateStr ? `<span class="habit-due-chip due-overdue">${daysBetween(td.start_date, dateStr)}일 지남</span>` : ""}
-            ${moreBtnHtml(td.title)}
-          </div>`),
-      ];
+      const items=await todayAllDayItems(dateStr);
+      if(version!==homeRenderVersion.allDay)return;
+      const rows=items.map(it=>{
+        const occ=it.occurrence_date||dateStr;
+        const lead=it.kind==='habit'?habitLeadHtml(it.id,occ,it.done,'ag-habit-check'):it.kind==='todo'?`<input type="checkbox" ${it.done?'checked':''} data-id="${it.id}" class="agenda-todo-check" />`:tlStyle?leadBox:eventDotHtml(it.cat_id);
+        return `<div class="${rowCls} ${it.done?'done':''}${skippedCls(it.kind,it.id,occ)}" data-id="${it.id}" data-kind="${it.kind}" data-date="${dateStr}"${menuAttrs(it.kind,it.id,occ)}${tlStyle?` style="${itemTagBgStyle(it.kind,it.cat_id)}"`:''} title="${escapeHtml(it.period_label||'')}">${lead}<span class="agenda-title">${titleWithProjectHtml(it.name,it.proj)}</span>${it.overdue?`<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>`:''}${skipChipHtml(it.kind,it.id,occ)}${moreBtnHtml(it.name)}</div>`;
+      });
       totalCount += rows.length;
       // 비어있을 땐 안내문구 자체가 곧 클릭해서 추가하는 빈칸(안내문+추가버튼 따로 안 두고 하나로 합침),
       // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙여서 더 추가할 수 있게 함.
@@ -4221,12 +4354,12 @@
         let error;
         if (kind === "habit") {
           ({ error } = await sb.from("tok_habits").insert({
-            name, start_date: dateStr, repeat_unit: "day", repeat_interval: 1,
+            name, start_date:dateStr,...OnekanPeriod.patch("habit",OnekanPeriod.defaults({startDate:dateStr},todayStr())),repeat_unit:"day",repeat_interval:1,
           }));
         } else if (kind === "event") {
-          ({ error } = await sb.from("tok_events").insert({ title: name, event_date: dateStr }));
+          ({ error } = await sb.from("tok_events").insert({title:name,...OnekanPeriod.patch("event",OnekanPeriod.defaults({startDate:dateStr},todayStr()))}));
         } else {
-          ({ error } = await sb.from("tok_todos").insert({ title: name, start_date: dateStr, todo_time: null }));
+          ({ error } = await sb.from("tok_todos").insert({title:name,...OnekanPeriod.patch("todo",OnekanPeriod.defaults({startDate:dateStr},todayStr()))}));
         }
         if (error) { alert("저장 실패: " + error.message); return false; }
         await loadAll();
@@ -4319,6 +4452,17 @@
   // kind: "habit" | "event" | "todo" | "someday"(아직 날짜 없는 언젠가 항목) 소스를 zone으로 옮김.
   // 습관은 날짜 개념이 없어 오늘(하루종일/시간) 두 zone만 적용되고 나머지는 무시(아무 일도 안 일어남).
   // 언젠가⇄할일은 테이블 자체가 달라서(tok_someday ↔ tok_todos) 새로 만들고 지우는 방식으로 옮김.
+  function periodDropPatch(kind,item,targetDate,startMinute,sourceDate) {
+    const base=OnekanPeriod.read(kind,item);
+    const offset=sourceDate&&base.startDate?daysBetween(base.startDate,sourceDate):0;
+    const date=offset?addDaysStr(targetDate,-offset):targetDate;
+    if(startMinute!=null && offset>0 && !base.allDay) {
+      const clip=OnekanPeriod.clip(kind,item,sourceDate);
+      const shifted=OnekanPeriod.plus(date,base.startTime,startMinute-(clip?.start_minute||0));
+      return OnekanPeriod.shift(kind,item,shifted.date,OnekanPeriod.minutes(shifted.time));
+    }
+    return OnekanPeriod.shift(kind,item,date,startMinute);
+  }
   async function moveItemToZone(kind, id, zoneObj) {
     if (!zoneObj) return;
     const zone = zoneObj.zone;
@@ -4326,23 +4470,16 @@
     // "오늘 보는 날짜" 하나가 아니라 이 date를 씀. 혹시 없으면(옛 호출 등) homeAgendaDate로 안전하게 대체.
     const targetDate = zoneObj.date || homeAgendaDate;
     if (kind === "habit") {
-      if (zone === "today-allday") {
-        const { error } = await sb.from("tok_habits").update({ start_minute: null }).eq("id", id);
-        if (error) { alert("이동 실패: " + error.message); return; }
-      } else if (zone === "today-timed") {
-        const { error } = await sb.from("tok_habits").update({ start_minute: zoneObj.startMinute }).eq("id", id);
-        if (error) { alert("이동 실패: " + error.message); return; }
-      } else {
-        return; // 습관은 언젠가/다가오는 계획 날짜로는 옮길 수 없음(매일 반복이라 날짜 소속이 아님)
-      }
+      if(zone!=='today-timed') return;
+      const item=tasks.find(t=>t.id===id);if(!item)return;
+      const base=OnekanPeriod.read('habit',item);
+      const patch=periodDropPatch('habit',item,base.startDate,zoneObj.startMinute,null);
+      const {error}=await sb.from('tok_habits').update(patch).eq('id',id);
+      if(error) {alert('이동 실패: '+error.message);return;}
     } else if (kind === "event") {
       if (zone === "someday") return; // 일정은 고정 스케줄 개념이라 언젠가로는 전환하지 않음
-      // 어디로 옮기든 특정 하루/시간으로 콕 집어 놓는 동작이라, 기간(여러 날) 일정이었다면 하루짜리로 되돌림(할일 이동과 동일 규칙).
-      // "today-*" zone은 실제 오늘 날짜가 아니라 드롭한 열의 날짜(targetDate)를 뜻함
-      // (다른 날짜로 넘겨서 보다가 그 안에서 드래그해도 오늘로 튕기던 버그, 2026-09-06 결님 제보로 수정 — 8-3단계에서 열별 날짜로 재일반화).
-      const patch = zone === "planday" ? { event_date: zoneObj.date, end_date: null }
-        : zone === "today-allday" ? { event_date: targetDate, end_date: null, event_time: null }
-        : { event_date: targetDate, end_date: null, event_time: minutesToHHMM(zoneObj.startMinute) + ":00" };
+      const item=events.find(e=>e.id===id);if(!item)return;
+      const patch=periodDropPatch('event',item,targetDate,zone==='today-timed'?zoneObj.startMinute:null,zoneObj.sourceDate);
       const { error } = await sb.from("tok_events").update(patch).eq("id", id);
       if (error) { alert("이동 실패: " + error.message); return; }
     } else if (kind === "todo") {
@@ -4355,11 +4492,8 @@
         const { error: delErr } = await sb.from("tok_todos").delete().eq("id", id);
         if (delErr) { alert("이동 실패: " + delErr.message); return; }
       } else {
-        // 시작일은 "이 회차가 놓인 날"이라 드래그하면 그대로 바뀌지만, 종료일은 반복이 끝나는 날(선택)이라 드래그와 무관 — 건드리지 않음.
-        // "today-*" zone은 실제 오늘 날짜가 아니라 드롭한 열의 날짜(targetDate)를 뜻함.
-        const patch = zone === "planday" ? { start_date: zoneObj.date }
-          : zone === "today-allday" ? { start_date: targetDate, todo_time: null }
-          : { start_date: targetDate, todo_time: minutesToHHMM(zoneObj.startMinute) + ":00" };
+        const item=todos.find(t=>t.id===id);if(!item)return;
+        const patch=periodDropPatch('todo',item,targetDate,zone==='today-timed'?zoneObj.startMinute:null,zoneObj.sourceDate);
         const { error } = await sb.from("tok_todos").update(patch).eq("id", id);
         if (error) { alert("이동 실패: " + error.message); return; }
       }
@@ -4371,6 +4505,7 @@
       if (zone === "planday") patch.start_date = zoneObj.date;
       else if (zone === "today-allday") patch.start_date = targetDate;
       else { patch.start_date = targetDate; patch.todo_time = minutesToHHMM(zoneObj.startMinute) + ":00"; }
+      Object.assign(patch,OnekanPeriod.patch('todo',OnekanPeriod.defaults({startDate:patch.start_date,startTime:patch.todo_time},todayStr())));
       const { error: insErr } = await sb.from("tok_todos").insert(patch);
       if (insErr) { alert("이동 실패: " + insErr.message); return; }
       const { error: delErr } = await sb.from("tok_someday").delete().eq("id", id);
@@ -4420,7 +4555,7 @@
         // 8-6단계 버그 수정: 여러 날짜 열이 나란히 있는 지금은 "하루종일" 존이 열마다 따로 있으므로,
         // zone 문자열만 보고 무조건 무시하면 다른 날짜 열로 옮기는 드래그가 씹힘 — 같은 날짜일 때만 무시.
         if (drop.zone === "today-allday" && drop.date === srcDate) return; // 같은 날 하루종일이라 놓아도 변화 없음
-        await moveItemToZone(kind, id, drop);
+        await moveItemToZone(kind,id,{...drop,sourceDate:srcDate});
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
@@ -4433,34 +4568,31 @@
 
   // 선택한 날짜의 "시간 있는" 항목만 모음: 습관(반복주기상 이 날짜에 차례인 것만) + 시간 있는 일정 + 시간 지정된 할일.
   // 시간 없는 할일은 하루종일에만 나옴.
+  function habitItemsForDate(dateStr,allDay) {
+    const items=[];
+    for(const h of tasks) {
+      const saved=habitLogs.filter(l=>l.habit_id===h.id).map(log=>({date:log.done_date,log,row:{...h,occurrence_start_date:log.done_date,occurrence_end_date:log.occurrence_end_date||null,all_day:log.start_minute==null,start_minute:log.start_minute,duration_minutes:log.duration_minutes,end_time:null}})).filter(o=>OnekanPeriod.overlap('habit',o.row,dateStr));
+      let occurrences=h.is_active?(h.all_day==null&&!h.repeat_unit?[]:habitPeriodOccurrences(h,dateStr)):[];
+      if(!occurrences.length && h.is_active && (h.all_day==null||h.repeat_unit) && isHabitDueOnDate(h,dateStr,false)) occurrences=[{date:dateStr,row:habitPeriodRow(h,dateStr),overdue:true}];
+      for(const o of saved) { const index=occurrences.findIndex(x=>x.date===o.date); if(index>=0)occurrences[index]=o;else occurrences.push(o); }
+      for(const o of occurrences) {
+        const log=o.log||habitLogs.find(l=>l.habit_id===h.id&&l.done_date===o.date);
+        const row=o.row;
+        const p=OnekanPeriod.read('habit',row);
+        if(p.allDay!==allDay) continue;
+        const clip=allDay?{start_minute:null,duration_minutes:null}:OnekanPeriod.clip('habit',row,dateStr);
+        if(!clip)continue;
+        items.push({kind:'habit',id:h.id,name:h.name,...clip,done:!!log,cat_id:h.category_id,occurrence_date:o.date,period_label:periodLabel('habit',row)});
+      }
+    }
+    return items;
+  }
   async function timedItemsForDate(dateStr) {
-    const doneSet = await fetchLogsForDate(dateStr);
-    const active = tasks.filter(t => t.is_active && t.start_minute != null && isHabitDueOnDate(t, dateStr, doneSet.has(t.id)));
-    const habitItems = active.map(t => {
-      // 이미 완료된 날짜는 그때 남겨둔 시간 스냅샷을 그대로 씀(습관 시간을 나중에 바꿔도 지난 완료 기록엔 영향 없게).
-      // 아직 체크 안 한 날짜(오늘 미완료·미래)는 스냅샷이 없으니 지금 습관에 설정된 시간을 그대로 보여줌.
-      const log = habitLogs.find(r => r.habit_id === t.id && r.done_date === dateStr);
-      const start_minute = log?.start_minute ?? t.start_minute;
-      const duration_minutes = log?.duration_minutes ?? t.duration_minutes ?? 30;
-      return {
-        kind: "habit", id: t.id, name: t.name,
-        start_minute, duration_minutes,
-        done: doneSet.has(t.id), cat_id: t.category_id,
-      };
-    });
-    const dayEvents = events.filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr && e.event_time);
-    const eventItems = dayEvents.map(e => ({
-      kind: "event", id: e.id, name: e.title,
-      start_minute: hhmmToMinutes(e.event_time), duration_minutes: e.duration_minutes || 30, done: false, cat_id: e.category_id,
-    }));
-    const overdueTimed = overdueTodosForToday(dateStr).filter(td => td.todo_time);
-    const dayTimedTodos = [...todos.filter(td => td.todo_time && td.start_date === dateStr), ...overdueTimed];
-    const todoItems = dayTimedTodos.map(td => ({
-      kind: "todo", id: td.id, name: td.title, proj: todoProjectName(td),
-      start_minute: hhmmToMinutes(td.todo_time.slice(0, 5)), duration_minutes: td.duration_minutes || 30, done: td.is_done, cat_id: td.tag_id,
-      overdue: td.start_date !== dateStr ? daysBetween(td.start_date, dateStr) : null,
-    }));
-    return [...habitItems, ...eventItems, ...todoItems].sort((a, b) => a.start_minute - b.start_minute);
+    const eventItems=events.filter(e=>!OnekanPeriod.read('event',e).allDay&&OnekanPeriod.overlap('event',e,dateStr)).map(e=>({kind:'event',id:e.id,name:e.title,...OnekanPeriod.clip('event',e,dateStr),done:false,cat_id:e.category_id,period_label:periodLabel('event',e)}));
+    const direct=todos.filter(t=>!OnekanPeriod.read('todo',t).allDay&&OnekanPeriod.overlap('todo',t,dateStr));
+    const overdue=overdueTodosForToday(dateStr).filter(t=>!OnekanPeriod.read('todo',t).allDay&&!direct.some(x=>x.id===t.id));
+    const todoItems=[...direct,...overdue].map(t=>({kind:'todo',id:t.id,name:t.title,proj:todoProjectName(t),...(OnekanPeriod.clip('todo',t,dateStr)||{start_minute:OnekanPeriod.minutes(t.todo_time),duration_minutes:t.duration_minutes||30}),done:t.is_done,cat_id:t.tag_id,period_label:periodLabel('todo',t),overdue:direct.includes(t)?null:daysBetween(t.start_date,dateStr)}));
+    return [...habitItemsForDate(dateStr,false),...eventItems,...todoItems].filter(i=>i.duration_minutes>0).sort((a,b)=>a.start_minute-b.start_minute);
   }
 
   // 8-3단계: homeAgendaDate 하루가 아니라 agendaWindowDates()가 계산한 N일을 나란히(열) 그림.
@@ -4520,19 +4652,19 @@
 
   function agendaItemRowHtml(it, dateStr) {
     const lead = it.kind === "habit"
-      ? habitLeadHtml(it.id, dateStr, it.done, "ag-habit-check")
+      ? habitLeadHtml(it.id, it.occurrence_date||dateStr, it.done, "ag-habit-check")
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id); // 일정은 체크박스 자리에 범주색 동그라미로 대신 표시
     // 타임블럭은 배경색 대신 그룹/범주 색으로 구분(타임라인은 반대로 배경색을 계속 씀). 2026-09-28: 할일·습관은
     // 제목 글자를 그룹색으로(groupTitleHtml), 일정은 앞 동그라미(eventDotHtml)가 범주색이라 제목은 기본색.
     // 항목마다 카드처럼 보여서 공간을 너무 차지한다고 해서, 다가오는 계획 목록과 똑같이 카드 없는 플랫한 한 줄로 변경.
-    return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, dateStr)}>
+    return `<div class="plan-row ag-block-row ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, it.occurrence_date||dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, it.occurrence_date||dateStr)}>
       ${DRAG_HANDLE_SVG}
       ${lead}
       ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name, it.proj)}
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
-      ${skipChipHtml(it.kind, it.id, dateStr)}
+      ${skipChipHtml(it.kind, it.id, it.occurrence_date||dateStr)}
       ${it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
       ${moreBtnHtml(it.name)}
     </div>`;
@@ -4595,7 +4727,7 @@
           let error;
           if (kind === "habit") {
             ({ error } = await sb.from("tok_habits").insert({
-              name, start_date: dateStr, start_minute: startMinute, duration_minutes: 30,
+              name, start_date:dateStr,...OnekanPeriod.patch("habit",OnekanPeriod.defaults({startDate:dateStr,startMinute,durationMinutes:30},todayStr())),
               repeat_unit: "day", repeat_interval: 1,
             }));
           } else {
@@ -4604,7 +4736,7 @@
             const timeField = kind === "event" ? "event_time" : "todo_time";
             ({ error } = await sb.from(table).insert({
               title: name, [dateField]: dateStr,
-              [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: 30,
+              ...OnekanPeriod.patch(kind,OnekanPeriod.defaults({startDate:dateStr,startMinute,durationMinutes:30},todayStr())),
             }));
           }
           if (error) { alert("저장 실패: " + error.message); return false; }
@@ -4708,7 +4840,7 @@
         curTarget = null;
         if (!wasMoved) { startAgendaItemInlineEdit(el, id, kind, rerender); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
-        await moveItemToZone(kind, id, drop);
+        await moveItemToZone(kind,id,drop?{...drop,sourceDate:el.closest('[data-date]')?.dataset.date}:null);
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
@@ -4730,15 +4862,12 @@
   // 시간 없는(하루종일) 항목을 timedItemsForDate와 같은 모양으로 변환 — renderAgendaAllDay의 수집 로직과 동일한
   // 소스(할일/일정/습관)를 그대로 씀.
   async function todayAllDayItems(dateStr) {
-    const overdueUntimed = overdueTodosForToday(dateStr).filter(td => !td.todo_time);
-    const dayTodos = [...todos.filter(td => td.start_date === dateStr && !td.todo_time), ...overdueUntimed];
-    const dayUntimedEvents = events.filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr && !e.event_time);
-    const doneSet = await fetchLogsForDate(dateStr);
-    const untimedHabits = tasks.filter(t => t.is_active && t.start_minute == null && isHabitDueOnDate(t, dateStr, doneSet.has(t.id)));
+    const direct=todos.filter(t=>OnekanPeriod.read('todo',t).allDay&&OnekanPeriod.overlap('todo',t,dateStr));
+    const overdue=overdueTodosForToday(dateStr).filter(t=>OnekanPeriod.read('todo',t).allDay&&!direct.some(x=>x.id===t.id));
     return [
-      ...dayUntimedEvents.map(e => ({ kind: "event", id: e.id, name: e.title, start_minute: null, duration_minutes: null, done: false, cat_id: e.category_id })),
-      ...untimedHabits.map(t => ({ kind: "habit", id: t.id, name: t.name, start_minute: null, duration_minutes: null, done: doneSet.has(t.id), cat_id: t.category_id })),
-      ...dayTodos.map(td => ({ kind: "todo", id: td.id, name: td.title, proj: todoProjectName(td), start_minute: null, duration_minutes: null, done: td.is_done, cat_id: td.tag_id, overdue: td.start_date !== dateStr ? daysBetween(td.start_date, dateStr) : null })),
+      ...events.filter(e=>OnekanPeriod.read('event',e).allDay&&OnekanPeriod.overlap('event',e,dateStr)).map(e=>({kind:'event',id:e.id,name:e.title,start_minute:null,duration_minutes:null,done:false,cat_id:e.category_id,period_label:periodLabel('event',e)})),
+      ...habitItemsForDate(dateStr,true),
+      ...[...direct,...overdue].map(t=>({kind:'todo',id:t.id,name:t.title,proj:todoProjectName(t),start_minute:null,duration_minutes:null,done:t.is_done,cat_id:t.tag_id,period_label:periodLabel('todo',t),overdue:direct.includes(t)?null:daysBetween(t.start_date,dateStr)})),
     ];
   }
 
@@ -4752,16 +4881,16 @@
   // 4단계에서 그대로 붙일 수 있음).
   function homeTodayRowHtml(it, dateStr) {
     const lead = it.kind === "habit"
-      ? habitLeadHtml(it.id, dateStr, it.done, "ag-habit-check")
+      ? habitLeadHtml(it.id, it.occurrence_date||dateStr, it.done, "ag-habit-check")
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id);
-    return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, dateStr)}>
+    return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, it.occurrence_date||dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, it.occurrence_date||dateStr)}>
       ${DRAG_HANDLE_SVG}
       ${lead}
       ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name, it.proj)}
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
-      ${skipChipHtml(it.kind, it.id, dateStr)}
+      ${skipChipHtml(it.kind, it.id, it.occurrence_date||dateStr)}
       ${it.start_minute != null && it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
       ${moreBtnHtml(it.name)}
     </div>`;
@@ -4837,7 +4966,7 @@
           return;
         }
         const drop = homeDropZone(e.clientX, e.clientY);
-        await moveItemToZone(kind, id, drop);
+        await moveItemToZone(kind,id,drop?{...drop,sourceDate:row.closest('[data-date]')?.dataset.date}:null);
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
@@ -4896,11 +5025,11 @@
       onCommit: async (kind, name) => {
         let error;
         if (kind === "habit") {
-          ({ error } = await sb.from("tok_habits").insert({ name, start_date: dateStr, repeat_unit: "day", repeat_interval: 1 }));
+          ({ error } = await sb.from("tok_habits").insert({ name, start_date:dateStr,...OnekanPeriod.patch("habit",OnekanPeriod.defaults({startDate:dateStr},todayStr())),repeat_unit:"day",repeat_interval:1 }));
         } else if (kind === "event") {
-          ({ error } = await sb.from("tok_events").insert({ title: name, event_date: dateStr }));
+          ({ error } = await sb.from("tok_events").insert({title:name,...OnekanPeriod.patch("event",OnekanPeriod.defaults({startDate:dateStr},todayStr()))}));
         } else {
-          ({ error } = await sb.from("tok_todos").insert({ title: name, start_date: dateStr, todo_time: null }));
+          ({ error } = await sb.from("tok_todos").insert({title:name,...OnekanPeriod.patch("todo",OnekanPeriod.defaults({startDate:dateStr},todayStr()))}));
         }
         if (error) { alert("저장 실패: " + error.message); return false; }
         await loadAll();
@@ -4966,9 +5095,9 @@
       const titleLines = Math.max(1, Math.floor((height - 6 + 2) / (12 * 1.3)));
       const widthPct = 100 / colCount;
       const leftPct = widthPct * col;
-      itemsHtml += `<div class="ag-tl-task ${it.kind} ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, dateStr)} data-start="${it.start_minute}" data-duration="${it.duration_minutes}" style="top:${top}px;height:${height}px;left:${leftPct}%;width:calc(${widthPct}% - 4px);${itemTagBgStyle(it.kind, it.cat_id)}">
+      itemsHtml += `<div class="ag-tl-task ${it.kind} ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, it.occurrence_date||dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, it.occurrence_date||dateStr)} data-period-label="${escapeHtml(it.period_label||'')}" title="${escapeHtml(it.period_label||'')}" data-occurrence="${it.occurrence_date||''}" data-start="${it.start_minute}" data-duration="${it.duration_minutes}" style="top:${top}px;height:${height}px;left:${leftPct}%;width:calc(${widthPct}% - 4px);${itemTagBgStyle(it.kind, it.cat_id)}">
         ${it.kind === "habit"
-          ? habitLeadHtml(it.id, dateStr, it.done, "ag-habit-check")
+          ? habitLeadHtml(it.id, it.occurrence_date||dateStr, it.done, "ag-habit-check")
           : it.kind === "todo"
           ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
           : eventDotHtml(it.cat_id, 8, 14)}
@@ -5034,7 +5163,7 @@
 
   // 오늘 열 타임라인의 습관·일정 항목 드래그(습관탭 attachTimelineItemDrag와 동일 UX, 습관+일정 공용으로 일반화):
   // - 짧게 클릭 → 이름 수정, 0.3초 이상 누르다 움직이면 이동, 끝 8px 구역은 바로 드래그하면 시간(길이) 조절.
-  // - 단, 일정은 duration 개념이 없어(시작 시각만 있음) 조절 없이 이동만 지원.
+  // - 겹치는 날짜의 일부 구간은 이동만 지원하며, 원본 전체 기간을 같은 차이만큼 이동.
   // 8-3단계: containerEl/dateStr 추가 — 이 열(날짜)로 조회 범위를 좁히고(중복 리스너 방지),
   // "이동" 중 다른 날짜 열의 타임라인 위로 올라가면(자기 열 제외) 그 열+그 위치의 시각으로 옮기는 크로스데이 드래그를 지원.
   function attachAgendaTimelineItemDrag(minM, containerEl, dateStr) {
@@ -5045,7 +5174,9 @@
       const kind = task.dataset.kind;
       const origStart = parseInt(task.dataset.start, 10);
       const origDuration = parseInt(task.dataset.duration, 10);
-      const resizable = true; // 습관/할일/일정 전부 드래그로 길이(소요시간) 조절 가능
+      const original=agendaItemById(kind,id), originalPeriod=OnekanPeriod.read(kind,original);
+      const fullDuration=originalPeriod.endTime?OnekanPeriod.duration(originalPeriod):null;
+      const resizable=fullDuration==null||fullDuration===origDuration; // clipped continuation has no editable endpoint here
 
       let dragKind = null, startY = 0, moved = false, cancelled = false, pressed = false, edgeAtStart = null, isMouse = false;
       let longPressTimer = null;
@@ -5203,25 +5334,23 @@
         }
         if (!moved) return;
         if (dropZone) {
-          await moveItemToZone(kind, id, dropZone);
+          await moveItemToZone(kind, id, {...dropZone,sourceDate:dateStr});
           return;
         }
-        if (kind === "habit") {
-          const { error } = await sb.from("tok_habits").update({
-            start_minute: pendingStart, duration_minutes: pendingDuration,
-          }).eq("id", id);
-          if (error) { alert((k === "move" ? "이동" : "시간 조절") + " 실패: " + error.message); }
-        } else if (kind === "todo") {
-          const { error } = await sb.from("tok_todos").update({
-            todo_time: minutesToHHMM(pendingStart) + ":00", duration_minutes: pendingDuration,
-          }).eq("id", id);
-          if (error) { alert((k === "move" ? "이동" : "시간 조절") + " 실패: " + error.message); }
-        } else {
-          const { error } = await sb.from("tok_events").update({
-            event_time: minutesToHHMM(pendingStart) + ":00", duration_minutes: pendingDuration,
-          }).eq("id", id);
-          if (error) { alert((k === "move" ? "이동" : "시간 조절") + " 실패: " + error.message); }
+        const item=agendaItemById(kind,id); if(!item)return;
+        const base=OnekanPeriod.read(kind,item);
+        const shifted=OnekanPeriod.plus(base.startDate,base.startTime,pendingStart-origStart);
+        const targetDate=shifted.date;
+        let patch=OnekanPeriod.shift(kind,item,targetDate,OnekanPeriod.minutes(shifted.time));
+        if(k!=='move') {
+          const originalClip=OnekanPeriod.clip(kind,item,dateStr);
+          if(base.endTime && originalClip && (originalClip.duration_minutes!==OnekanPeriod.duration(base))) {await loadAll();return;}
+          const end=OnekanPeriod.plus(targetDate,minutesToHHMM(pendingStart),pendingDuration);
+          patch=OnekanPeriod.patch(kind,{allDay:false,startDate:targetDate,startTime:minutesToHHMM(pendingStart),endDate:end.date,endTime:end.time});
         }
+        const table=kind==='habit'?'tok_habits':kind==='todo'?'tok_todos':'tok_events';
+        const {error}=await sb.from(table).update(patch).eq('id',id);
+        if(error) alert('시간 변경 실패: '+error.message);
         await loadAll();
       };
       task.addEventListener("pointerup", finish);
@@ -5336,7 +5465,7 @@
       let error;
       if (kind === "habit") {
         ({ error } = await sb.from("tok_habits").insert({
-          name, start_date: dateStr, start_minute: startMinute, duration_minutes: durationMinutes,
+          name, start_date:dateStr,...OnekanPeriod.patch("habit",OnekanPeriod.defaults({startDate:dateStr,startMinute,durationMinutes},todayStr())),
           repeat_unit: "day", repeat_interval: 1,
         }));
       } else {
@@ -5345,7 +5474,7 @@
         const timeField = kind === "event" ? "event_time" : "todo_time";
         ({ error } = await sb.from(table).insert({
           title: name, [dateField]: dateStr,
-          [timeField]: minutesToHHMM(startMinute) + ":00", duration_minutes: durationMinutes,
+          ...OnekanPeriod.patch(kind,OnekanPeriod.defaults({startDate:dateStr,startMinute,durationMinutes},todayStr())),
         }));
       }
       if (error) { alert("저장 실패: " + error.message); done = false; return; }
@@ -5478,6 +5607,15 @@
   // 미래에 여러 개를 미리 만들어두지 않고, 한 번에 딱 하나의 예정일만 존재함(habitNextDueAfter).
   // 반복 없음으로 설정한 습관만 예전처럼 매일 다 뜸.
   // 빈 날짜도 칸이 남아있어 드래그로 그 날짜에 할일을 추가할 수 있음(습관·일정은 표시만 — 드래그 이동은 다음 단계).
+  function upcomingHabitPeriods(active,date,nextDates) {
+    return active.flatMap(h=>{
+      if(h.all_day==null) {
+        if(h.start_date&&date<h.start_date||h.end_date&&date>h.end_date)return [];
+        return !h.repeat_unit||nextDates.get(h.id)===date?[{...h,_occurrenceDate:date}]:[];
+      }
+      return habitPeriodOccurrences(h,date).filter(o=>!h.repeat_unit||o.date===nextDates.get(h.id)||o.date<date).map(o=>({...h,_occurrenceDate:o.date,_periodRow:o.row}));
+    });
+  }
   async function renderPlanUpcomingBoard() {
     // 8-2단계: 집 화면에서 "다가오는 계획" 보드를 없앰 → #planUpcomingBoard가 더 이상 없으므로 조용히 종료.
     // (함수/호출부 자체는 남겨둠 — 다른 곳에서 부르는 코드가 많아 지우는 것보다 no-op이 안전함)
@@ -5496,25 +5634,21 @@
     const habitNextDate = new Map(active.map(t => [t.id, t.repeat_unit ? habitNextDueAfter(t, todayStr()) : null]));
 
     $("planUpcomingBoard").innerHTML = days.map((dateStr, idx) => {
-      const dayTodos = todos.filter(td => td.start_date === dateStr);
-      const dayEvents = events.filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr).sort((a, b) => (a.event_time || "").localeCompare(b.event_time || ""));
+      const dayTodos = todos.filter(td => OnekanPeriod.overlap("todo",td,dateStr));
+      const dayEvents = events.filter(e => OnekanPeriod.overlap("event",e,dateStr)).sort((a, b) => (a.event_time || "").localeCompare(b.event_time || ""));
       const doneSet = logsByDate[dateStr];
-      const dayHabits = active.filter(t => {
-        if (t.start_date && dateStr < t.start_date) return false;
-        if (t.end_date && dateStr > t.end_date) return false;
-        return !t.repeat_unit || habitNextDate.get(t.id) === dateStr;
-      });
+      const dayHabits=upcomingHabitPeriods(active,dateStr,habitNextDate);
 
       const habitHtml = dayHabits.map(t => `
-        <div class="plan-row habit planup-drag-row ${doneSet.has(t.id) ? "done" : ""}" data-id="${t.id}" data-kind="habit">
-          <input type="checkbox" ${doneSet.has(t.id) ? "checked" : ""} data-id="${t.id}" data-date="${dateStr}" class="planup-habit-check" />
+        <div class="plan-row habit planup-drag-row ${habitDoneOn(t.id,t._occurrenceDate||dateStr) ? "done" : ""}" data-id="${t.id}" data-kind="habit">
+          <input type="checkbox" ${habitDoneOn(t.id,t._occurrenceDate||dateStr) ? "checked" : ""} data-id="${t.id}" data-date="${t._occurrenceDate||dateStr}" class="planup-habit-check" />
           <span class="plan-todo-title">${escapeHtml(t.name)}</span>
         </div>`).join("");
       const eventHtml = dayEvents.map(e => {
         const isRange = e.end_date && e.end_date !== e.event_date;
         return `<div class="plan-row ${isRange ? "" : "planup-drag-row"}" data-id="${e.id}" data-kind="event">
           <span class="plan-todo-title">${escapeHtml(e.title)}</span>
-          ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : e.event_time ? `<span class="plan-time">${e.event_time.slice(0, 5)}</span>` : ""}
+          <span class="plan-time">${escapeHtml(periodLabel("event",e))}</span>
         </div>`;
       }).join("");
       const todoHtml = dayTodos.map(td => {
@@ -5523,7 +5657,7 @@
         <div class="plan-row todo planup-drag-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="planup-todo-check" />
           <span class="plan-todo-title planup-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
-          ${td.todo_time ? `<span class="plan-time">${td.todo_time.slice(0, 5)}</span>` : ""}
+          <span class="plan-time">${escapeHtml(periodLabel("todo",td))}</span>
         </div>`;
       }).join("");
       const bodyHtml = habitHtml + eventHtml + todoHtml;
@@ -5608,7 +5742,7 @@
           return;
         }
         const drop = homeDropZone(e.clientX, e.clientY);
-        await moveItemToZone(kind, id, drop);
+        await moveItemToZone(kind,id,drop?{...drop,sourceDate:row.closest('[data-date]')?.dataset.date}:null);
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", (e) => {
@@ -5711,14 +5845,10 @@
 
     let html = "";
     days.forEach(dateStr => {
-      const dayTodos = todos.filter(td => td.start_date === dateStr);
-      const dayEvents = events.filter(e => e.event_date <= dateStr && (e.end_date || e.event_date) >= dateStr).sort((a, b) => (a.event_time || "").localeCompare(b.event_time || ""));
+      const dayTodos = todos.filter(td => OnekanPeriod.overlap("todo",td,dateStr));
+      const dayEvents = events.filter(e => OnekanPeriod.overlap("event",e,dateStr)).sort((a, b) => (a.event_time || "").localeCompare(b.event_time || ""));
       const doneSet = logsByDate[dateStr];
-      const dayHabits = active.filter(t => {
-        if (t.start_date && dateStr < t.start_date) return false;
-        if (t.end_date && dateStr > t.end_date) return false;
-        return !t.repeat_unit || habitNextDate.get(t.id) === dateStr;
-      });
+      const dayHabits=upcomingHabitPeriods(active,dateStr,habitNextDate);
       const count = dayHabits.length + dayEvents.length + dayTodos.length;
       // 2026-09-20 — 결님 요청: 앞으로 7일을 전부 보여주고(전엔 항목 없는 날은 통째로 건너뜀),
       // 빈 날은 하루종일·타임블럭·언젠가와 같은 "일정 없음. 눌러서 추가" 빈칸(block-add-row)으로 보여줘서
@@ -5727,11 +5857,11 @@
 
       const habitHtml = dayHabits.map(t => {
         return `
-        <div class="plan-row habit home1-flat-row${doneSet.has(t.id) ? " done" : ""}${skippedCls("habit", t.id, dateStr)}" data-id="${t.id}" data-kind="habit"${menuAttrs("habit", t.id, dateStr)}>
+        <div class="plan-row habit home1-flat-row${habitDoneOn(t.id,t._occurrenceDate||dateStr) ? " done" : ""}${skippedCls("habit", t.id, t._occurrenceDate||dateStr)}" data-id="${t.id}" data-kind="habit"${menuAttrs("habit", t.id, t._occurrenceDate||dateStr)}>
           ${DRAG_HANDLE_SVG}
-          ${habitLeadHtml(t.id, dateStr, doneSet.has(t.id), "upcoming-habit-check")}
+          ${habitLeadHtml(t.id, t._occurrenceDate||dateStr, habitDoneOn(t.id,t._occurrenceDate||dateStr), "upcoming-habit-check")}
           ${groupTitleHtml("plan-todo-title", "habit", t.category_id, t.name)}
-          ${skipChipHtml("habit", t.id, dateStr)}
+          ${skipChipHtml("habit", t.id, t._occurrenceDate||dateStr)}
           ${moreBtnHtml(t.name)}
         </div>`;
       }).join("");
@@ -5741,7 +5871,7 @@
           ${DRAG_HANDLE_SVG}
           ${eventDotHtml(e.category_id, 10, 20)}
           <span class="plan-todo-title">${escapeHtml(e.title)}</span>
-          ${isRange ? `<span class="plan-range-tag">~${formatDateShort(e.end_date)}</span>` : e.event_time ? `<span class="plan-time">${e.event_time.slice(0, 5)}</span>` : ""}
+          <span class="plan-time">${escapeHtml(periodLabel("event",e))}</span>
           ${moreBtnHtml(e.title)}
         </div>`;
       }).join("");
@@ -5751,7 +5881,7 @@
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
           ${groupTitleHtml("plan-todo-title planup-todo-title", "todo", td.tag_id, td.title)}
-          ${td.todo_time ? `<span class="plan-time">${td.todo_time.slice(0, 5)}</span>` : ""}
+          <span class="plan-time">${escapeHtml(periodLabel("todo",td))}</span>
           ${moreBtnHtml(td.title)}
         </div>`;
       }).join("");
@@ -5810,12 +5940,12 @@
         let error;
         if (kind === "habit") {
           ({ error } = await sb.from("tok_habits").insert({
-            name, start_date: dateStr, repeat_unit: "day", repeat_interval: 1,
+            name, start_date:dateStr,...OnekanPeriod.patch("habit",OnekanPeriod.defaults({startDate:dateStr},todayStr())),repeat_unit:"day",repeat_interval:1,
           }));
         } else if (kind === "event") {
-          ({ error } = await sb.from("tok_events").insert({ title: name, event_date: dateStr }));
+          ({ error } = await sb.from("tok_events").insert({title:name,...OnekanPeriod.patch("event",OnekanPeriod.defaults({startDate:dateStr},todayStr()))}));
         } else {
-          ({ error } = await sb.from("tok_todos").insert({ title: name, start_date: dateStr, todo_time: null }));
+          ({ error } = await sb.from("tok_todos").insert({title:name,...OnekanPeriod.patch("todo",OnekanPeriod.defaults({startDate:dateStr},todayStr()))}));
         }
         if (error) { alert("저장 실패: " + error.message); return false; }
         await loadAll();
@@ -6154,7 +6284,7 @@
     btns.forEach(b => { b.disabled = true; });
     let error;
     try {
-      ({ error } = await sb.from("tok_todos").insert({ title, start_date: todayStr(), end_date: null, todo_time: null, ...(currentPage==="todos"&&classification?.isReady()?{group_id:classification.defaultGroup("todo")}: {}) }));
+      ({ error } = await sb.from("tok_todos").insert({title,...(currentPage==="todos"&&classification?.isReady()?{group_id:classification.defaultGroup("todo")}: {}),...OnekanPeriod.patch("todo",OnekanPeriod.defaults(null,todayStr()))}));
     } catch (err) { error = err; }
     quickAddBusy = false;
     btns.forEach(b => { b.disabled = false; });
@@ -6193,7 +6323,7 @@
 
   function renderTodoUnifiedRow(item) {
     const isTodo = item._kind === "todo";
-    const dateBadge = isTodo && item.start_date ? `<span class="todo-date-badge">${formatDateShort(item.start_date)}</span>` : "";
+    const dateBadge = isTodo ? `<span class="todo-date-badge" title="${escapeHtml(periodLabel("todo",item))}">${escapeHtml(periodLabel("todo",item))}</span>` : "";
     // 반복 할일만 기록(달력+통계) 보기 버튼 노출(2026-09-13, 7-2단계) — 습관 탭 🗓와 같은 모달 재사용.
     const historyBtn = isTodo && item.repeat_unit ? `<button class="historybtn icon-btn tu-history" title="기록 보기" aria-label="기록 보기">${ICON_HISTORY_SVG}</button>` : "";
     return `
@@ -6306,10 +6436,10 @@
       if (!title) { row.remove(); if (!body.children.length) onEmpty(); return; }
       done = true;
       const { error } = kind === "event"
-        ? await sb.from("tok_events").insert({ title, event_date: startDate, end_date: endDate })
+        ? await sb.from("tok_events").insert({title,...OnekanPeriod.patch("event",OnekanPeriod.defaults({startDate,endDate},todayStr()))})
         : kind === "habit"
-        ? await sb.from("tok_habits").insert({ name: title, start_date: startDate, repeat_unit: "day", repeat_interval: 1 })
-        : await sb.from("tok_todos").insert({ title, start_date: startDate, end_date: endDate });
+        ? await sb.from("tok_habits").insert({name:title,start_date:startDate,...OnekanPeriod.patch("habit",OnekanPeriod.defaults({startDate,endDate},todayStr())),repeat_unit:"day",repeat_interval:1})
+        : await sb.from("tok_todos").insert({title,...OnekanPeriod.patch("todo",OnekanPeriod.defaults({startDate,endDate},todayStr()))});
       if (error) { alert("저장 실패: " + error.message); done = false; return; }
       await loadAll();
       if (reopen && containerId) {
@@ -6329,18 +6459,6 @@
   // 2026-09-27: 일정·습관 추가 창과 같은 저장 규칙 — [저장]/[취소]로만, 제목만 있으면 저장(시작일 비우면 오늘),
   // 빈 제목·중복 저장 방지, 실패하면 입력값 유지. prefill(날짜·시간·그룹)이 있으면 기본값으로 넣고 창 제목에 날짜 표시.
   let todoSheetState = { saving: false, opener: null };
-  // 2026-09-28 할일 시간 입력은 30분 단위(09:00, 09:30 …) 선택. 기존에 저장된 30분 단위가 아닌 시간(예: 09:15)은
-  // 반올림하지 않고 그 값 그대로 목록에 한 줄 더 넣어서(“09:15 · 저장된 시간”) 선택된 채로 보여줌 → 저장해도 안 바뀜.
-  const TIME_INPUT_STEP_MIN = 30, TODO_DEFAULT_DURATION_MIN = 30;
-  function fillHalfHourTimeSelect(sel, current) {
-    const cur = current ? current.slice(0, 5) : "";
-    const times = [];
-    for (let m = 0; m < 1440; m += TIME_INPUT_STEP_MIN) times.push(minutesToHHMM(m));
-    const offGrid = cur && !times.includes(cur);
-    if (offGrid) { times.push(cur); times.sort(); }
-    sel.innerHTML = `<option value="">시간 미지정</option>` + times.map(t => `<option value="${t}">${t}${offGrid && t === cur ? " · 저장된 시간" : ""}</option>`).join("");
-    sel.value = cur;
-  }
   function todoSheetTitleFor(dateStr) {
     if (!dateStr) return "할일 추가";
     return (dateStr.slice(0, 4) !== todayStr().slice(0, 4) ? `${dateStr.slice(0, 4)}년 ` : "") + `${calDateLabel(dateStr, false)}에 할일 추가`;
@@ -6356,9 +6474,14 @@
     const start = existing ? existing.start_date : (prefill?.startDate || todayStr());
     $("todoSheetTitle").textContent = existing ? "할일 수정" : todoSheetTitleFor(start);
     $("td_title").value = existing ? existing.title : "";
-    $("td_start").value = start || "";
-    $("td_end").value = existing ? (existing.end_date || "") : (prefill?.endDate || "");
-    fillHalfHourTimeSelect($("td_time"), existing ? (existing.todo_time ? existing.todo_time.slice(0, 5) : "") : (prefill?.time || ""));
+    openPeriodForm('td','todo',existing,prefill);
+    $('td_repeat_start').value=existing?(existing.repeat_start_date||existing.start_date||''):start||'';
+    $('td_repeat_end').value=existing?.repeat_unit?(existing.end_date||''):'';
+    preserveRepeatOption($('td_repeat_unit'),existing?.repeat_unit);
+    $('td_repeat_unit').value=existing?.repeat_unit||'';
+    $('td_repeat_interval').value=existing?.repeat_interval||1;
+    setRepeatDaysChecked($('td_repeat_days_row'),existing?.repeat_days);
+    syncTodoRepeatForm();
     classification?.prepare("todo","td",existing);
     populateTodoTagSelect(existing ? (existing.tag_id || null) : (prefill?.tagId || null));
     fillProjectSelect($("td_project"), $("td_project_wrap"), existing ? (existing.project_id || null) : (prefill?.projectId || null));
@@ -6371,6 +6494,14 @@
     fitCalEventSheetToViewport();
     $("td_title").focus();
   }
+  function syncTodoRepeatForm() {
+    const unit=$('td_repeat_unit').value;
+    $('td_repeat_dates').hidden=!unit;
+    $('td_repeat_days_row').hidden=unit!=='week';
+    toggleRepeatUiFor('td',unit);
+  }
+  $('td_repeat_unit').addEventListener('change',syncTodoRepeatForm);
+  $('td_repeat_days_row').addEventListener('change',syncTodoRepeatForm);
   function closeTodoSheet() {
     if (todoSheetState.saving) return;
     $("todoSheetBg").classList.remove("open");
@@ -6385,14 +6516,20 @@
   $("todoSaveBtn").onclick = async () => {
     if (todoSheetState.saving) return; // 저장 중 중복 제출 방지
     const title = $("td_title").value.trim();
-    const start_date = $("td_start").value || todayStr();
-    const end_date = $("td_end").value || null;
-    const todo_time = $("td_time").value ? $("td_time").value + ":00" : null;
+    const period = savePeriodForm("td");
     const existingTodo = $("todoSheetBg").dataset.editId ? todos.find(x => x.id === $("todoSheetBg").dataset.editId) : null;
     const tag_id = $("td_tag").value || null;
     const showErr = (msg, el) => { $("td_error").textContent = msg; el?.focus(); };
     if (!title) { showErr("할일 제목을 입력해주세요.", $("td_title")); return; }
-    if (end_date && end_date < start_date) { showErr("종료일은 시작일보다 빠를 수 없어요.", $("td_end")); return; }
+    if (period.error) { showErr(period.error); return; }
+    const repeat_unit=$('td_repeat_unit').value||null;
+    const checkedDays=repeat_unit==='week'?getRepeatDaysChecked($('td_repeat_days_row')):[];
+    const repeat_days=checkedDays.length?checkedDays:null;
+    const repeat_interval=repeat_unit?(repeat_days?1:Math.max(1,parseInt($('td_repeat_interval').value,10)||1)):null;
+    const repeatStart=$('td_repeat_start').value||null, repeatEnd=$('td_repeat_end').value||null;
+    if(repeat_unit && (!$('td_start').value || $('td_undated').checked || !repeatStart)) {showErr('반복 할일의 시작일을 입력해주세요.');return;}
+    if(repeatEnd && repeatStart && repeatEnd<repeatStart) {showErr('반복 종료일은 반복 시작일보다 빠를 수 없어요.');return;}
+
     const editId = $("todoSheetBg").dataset.editId;
     todoSheetState.saving = true;
     $("td_error").textContent = "";
@@ -6400,12 +6537,21 @@
     $("todoSaveBtn").textContent = "저장 중…";
     let error;
     try {
-      // 새 할일: 시간을 정하면 소요시간 30분(시간 미지정이면 null). 수정: 소요시간은 사용자가 정한 값 그대로 두고,
-      // 시간 없던 할일에 처음 시간을 넣었는데 소요시간이 비어 있을 때만 30분을 채움(기존 값은 바꾸지 않음).
-      const patch = { title, start_date, end_date, todo_time, tag_id, ...classification?.patch("todo","td",existingTodo) };
-      if (projectsReady) patch.project_id = $("td_project").value || null; // DB에 프로젝트가 없으면(마이그레이션 전) 보내지 않음
-      if (!editId) patch.duration_minutes = todo_time ? TODO_DEFAULT_DURATION_MIN : null;
-      else if (todo_time && existingTodo && !existingTodo.todo_time && existingTodo.duration_minutes == null) patch.duration_minutes = TODO_DEFAULT_DURATION_MIN;
+      const patch = { title, ...period.patch, tag_id, ...classification?.patch("todo","td",existingTodo) };
+      if (projectsReady) patch.project_id = $('td_project').value || null;
+      const repeatChanged=!repeatFieldsEqual({unit:existingTodo?.repeat_unit,interval:existingTodo?.repeat_interval,days:existingTodo?.repeat_days},{unit:repeat_unit,interval:repeat_interval,days:repeat_days});
+      if(!existingTodo||repeatChanged) {patch.repeat_unit=repeat_unit;patch.repeat_interval=repeat_interval;patch.repeat_days=repeat_days;}
+      if(existingTodo && !!existingTodo.repeat_unit!==!!repeat_unit) {
+        const actual=periodFormValue('td'), error=OnekanPeriod.validate(actual);
+        if(error) {todoSheetState.saving=false;$('todoSaveBtn').disabled=false;$('todoSaveBtn').textContent='저장';showErr(error);return;}
+        Object.assign(patch,OnekanPeriod.patch('todo',actual));
+      }
+      if(!repeat_unit && 'occurrence_end_date' in period.patch) patch.end_date=period.patch.occurrence_end_date;
+      if(repeat_unit || existingTodo?.repeat_unit) {
+        if(!existingTodo||repeatStart!==(existingTodo.repeat_start_date||existingTodo.start_date||null))patch.repeat_start_date=repeatStart;
+        if(!existingTodo||repeatEnd!==(existingTodo.end_date||null))patch.end_date=repeatEnd;
+        if(editId && repeat_unit && !existingTodo.repeat_chain_id) patch.repeat_chain_id=editId;
+      }
       ({ error } = editId
         ? await sb.from("tok_todos").update(patch).eq("id", editId)
         : await sb.from("tok_todos").insert(patch));
@@ -6442,6 +6588,9 @@
   // "주마다"를 고르면 요일 체크박스가 같이 뜨고, 하나 이상 고르면 그 요일 기준(주기 입력 무시,
   // 항상 1주 간격)으로 반복 — 요일을 안 고르면 기존처럼 시작일 요일 기준 N주마다.
   // kind가 "event"(일정)면 요일 선택 UI 자체를 숨김 — 요일 지정 반복은 일정 제외, 할일·습관 전용(결님 확정 범위).
+  function preserveRepeatOption(select,value) {
+    if(value && ![...select.options].some(o=>o.value===value))select.add(new Option(value==='weekday'?'평일마다 (기존)':value==='custom_days'?'지정 요일 (기존)':value,value));
+  }
   function populateRepeatUnitSelect(selectEl, kind) {
     if (!selectEl) return;
     selectEl.dataset.allowDays = (kind === "todo" || kind === "habit") ? "1" : "0";
@@ -6504,8 +6653,9 @@
     habitSheetOpener = activeOpener();
     $("habitSheetBg").dataset.editId = habit.id;
     $("hs_name").value = habit.name || "";
-    $("hs_time").value = habit.start_minute != null ? minutesToHHMM(habit.start_minute) : "";
-    $("hs_duration").value = habit.duration_minutes || 30;
+    openPeriodForm('hs','habit',habit);
+    $('hs_error').textContent='';
+    preserveRepeatOption($('hs_repeat_unit'),habit.repeat_unit);
     $("hs_repeat_unit").value = habit.repeat_unit || "";
     $("hs_repeat_interval").value = habit.repeat_interval || 1;
     setRepeatDaysChecked($("hs_repeat_days_row"), habit.repeat_days);
@@ -6521,6 +6671,7 @@
     $("hs_name").focus();
   }
   function closeHabitSheet() {
+    if(habitEditSaving)return;
     $("habitSheetBg").classList.remove("open");
     const o = habitSheetOpener;
     habitSheetOpener = null;
@@ -6554,7 +6705,9 @@
       rerenderCategoryViews();
     }, true);
   }
+  let habitEditSaving=false;
   $("habitSheetSaveBtn").onclick = async () => {
+    if(habitEditSaving)return;
     const editId = $("habitSheetBg").dataset.editId;
     if (!editId) return;
     const repeat_unit = $("hs_repeat_unit").value || null;
@@ -6565,8 +6718,8 @@
     const category_id = $("hs_category").value || null;
     const name = $("hs_name").value.trim();
     if (!name) { alert("습관 이름을 입력해주세요."); $("hs_name").focus(); return; }
-    const start_minute = $("hs_time").value ? hhmmToMinutes($("hs_time").value) : null;
-    const duration_minutes = Math.max(5, parseInt($("hs_duration").value, 10) || 30);
+    const period=savePeriodForm('hs');
+    if(period.error) {$('hs_error').textContent=period.error;return;}
     const start_date = $("hs_start").value;
     if (!start_date) { alert("시작일을 입력해주세요."); return; }
     const end_date = $("hs_end").value || null;
@@ -6580,7 +6733,8 @@
     );
     let classificationPatch;
     try { classificationPatch=classification?.patch("habit","hs",habit); } catch(error) { alert(error.message); return; }
-    const patch = { name, start_minute, duration_minutes, repeat_unit, repeat_interval, repeat_days, category_id, start_date, end_date, ...classificationPatch };
+    const patch = { name, ...period.patch, category_id, start_date, end_date, ...classificationPatch };
+    if(changed) Object.assign(patch,{repeat_unit,repeat_interval,repeat_days});
     if (projectsReady) patch.project_id = $("hs_project").value || null; // 마이그레이션 전이면 보내지 않음
     if (changed) {
       const msg = repeat_unit
@@ -6589,8 +6743,10 @@
       if (!confirm(msg)) return;
       patch.cycle_changed_at = todayStr();
     }
-    const { error } = await sb.from("tok_habits").update(patch).eq("id", editId);
-    if (error) { alert("저장 실패: " + error.message); return; }
+    habitEditSaving=true;$('habitSheetSaveBtn').disabled=true;
+    let error;try {({error}=await sb.from('tok_habits').update(patch).eq('id',editId));} catch(err){error=err;}
+    habitEditSaving=false;$('habitSheetSaveBtn').disabled=false;
+    if(error) {$('hs_error').textContent='저장하지 못했어요. 입력은 그대로 있어요. ('+(error.message||error)+')';return;}
     closeHabitSheet();
     await loadAll();
   };
@@ -6818,7 +6974,7 @@
   // 2026-09-27 목록 개편: 조회 월(calCursor, 캘린더와 공유) 안의 일정만 날짜 오름차순으로 보여줌.
   // 여러 날 일정은 "기간이 조회 월과 하루라도 겹치면" 포함하고, 조회 월 안의 날짜들만 펼침(시작일부터 366일 제한 없음).
   // 지난 일정도 숨기지 않음(날짜 제목만 옅게), 같은 날 일정은 카드 하나에 모음.
-  const evEndDate = (e) => (e.end_date && e.end_date > e.event_date) ? e.end_date : e.event_date;
+  const evEndDate = e => { const p=OnekanPeriod.read('event',e); const end=p.endDate||e.event_date; return !p.allDay && p.endTime==='00:00' && end>e.event_date?addDaysStr(end,-1):end; };
   // 종일 먼저, 시간 지정은 시간순(같으면 불러온 순서 유지)
   function eventTimeSort(a, b) {
     const at = a.event_time || "", bt = b.event_time || "";
@@ -6890,7 +7046,7 @@
             const phase = !isRange ? "" : d === e.event_date ? "시작" : d === end ? "마지막 날" : "진행 중";
             return `
             <div class="event-row sched-row" data-id="${e.id}"${menuAttrs("event", e.id, d)}>
-              <div class="t">${e.event_time ? e.event_time.slice(0, 5) : "종일"}</div>
+              <div class="t">${escapeHtml(periodLabel("event",e))}</div>
               <button type="button" class="sched-open" data-id="${e.id}">
                 <span class="title">${cat ? eventCategoryDotHtml(cat) : ""}${escapeHtml(e.title)}</span>
                 ${isRange ? `<span class="sched-meta"><span class="sched-phase">${phase}</span><span>${calRangeLabel(e)}</span></span>` : ""}
@@ -7004,18 +7160,7 @@
   // ── 일정 상세(2026-09-28 재구성) ──
   // 순서: 작은 범주 표시 → 제목 → 날짜·시간 → 반복·메모. 없는 정보는 자리도 만들지 않음.
   let evDetail = { id: null, opener: null, busy: false };
-  function eventWhenLabel(e) {
-    const thisYear = todayStr().slice(0, 4);
-    const end = evEndDate(e);
-    const withYear = e.event_date.slice(0, 4) !== thisYear || end.slice(0, 4) !== thisYear; // 기간 양끝 연도 표시를 맞춤
-    const full = (d) => (withYear ? `${d.slice(0, 4)}년 ` : "") + calDateLabel(d);
-    const when = e.event_time ? e.event_time.slice(0, 5) : "종일";
-    if (end > e.event_date) {
-      const days = Math.round((new Date(end + "T00:00:00") - new Date(e.event_date + "T00:00:00")) / 86400000) + 1;
-      return `${full(e.event_date)} ~ ${full(end)} (${days}일) · ${when}`;
-    }
-    return `${full(e.event_date)} · ${when}`;
-  }
+  function eventWhenLabel(e) { return periodLabel("event",e); }
   function eventRepeatLabel(e) {
     if (!e.repeat_unit) return "";
     const n = e.repeat_interval || 1;
@@ -7375,7 +7520,7 @@
       const isRange = isMultiDayEvent(e);
       const color = itemTagColor("event", e.category_id); // 범주 없음 = 범주 "기본" 색(설정), 달력 막대와 같은 값
       return `<div class="cal-day-row"${menuAttrs("event", e.id, d)}><button type="button" class="cal-day-item" data-id="${e.id}">
-          <span class="cal-day-time">${e.event_time ? e.event_time.slice(0, 5) : "종일"}</span>
+          <span class="cal-day-time">${escapeHtml(periodLabel("event",e))}</span>
           <span class="dot"${color ? ` style="--chip-c:${color};"` : ""} aria-hidden="true"></span>
           <span class="cal-day-body">
             <span class="cal-day-item-title">${escapeHtml(e.title)}</span>
@@ -7396,14 +7541,9 @@
   const cevCategoryValue = () => $("cev_category").querySelector("input:checked")?.value || "";
   // 변경 여부 비교용 — 꺼진 스위치 뒤에 숨은 칸(종료일·시간)은 비교에서 뺌
   function cevFormState() {
-    const multi = $("cev_multi").checked, allDay = $("cev_allday").checked;
-    return JSON.stringify([$("cev_title").value, $("cev_date").value, multi, multi ? $("cev_end").value : "", allDay, allDay ? "" : $("cev_time").value, cevCategoryValue(), $("cev_shared_category_id")?.value || "", $("cev_memo").value]);
+    return JSON.stringify([$('cev_title').value,periodFormValue('cev'),cevCategoryValue(),$('cev_shared_category_id')?.value||'',$('cev_memo').value]);
   }
-  function syncCevFields() {
-    $("cev_end_wrap").hidden = !$("cev_multi").checked;
-    $("cev_time_wrap").hidden = $("cev_allday").checked;
-    $("cev_end").min = $("cev_date").value || "";
-  }
+  function syncCevFields() { syncPeriodForm('cev'); }
   function setCevMemoOpen(open) {
     $("cev_memo_wrap").hidden = !open;
     $("cev_memo_toggle").hidden = open;
@@ -7423,21 +7563,14 @@
   }
   // endDate(새 일정만): 달력 드래그로 고른 기간의 마지막 날 — 시작일보다 뒤면 "여러 날"을 켜고 종료일을 채움.
   // keepMonth: 저장 후 보던 달을 유지(드래그로 화면에 보이는 이전·다음 달 칸을 골랐을 때 달이 넘어가지 않게).
-  function openEventEditor({ mode = "add", id = null, date = null, endDate = null, opener = null, keepMonth = false } = {}) {
+  function openEventEditor({ mode = "add", id = null, date = null, startDate = null, endDate = null, startTime = null, endTime = null, time = null, startMinute = null, durationMinutes = null, allDay = null, opener = null, keepMonth = false } = {}) {
     const ev = mode === "edit" ? events.find(x => x.id === id) : null;
     if (mode === "edit" && !ev) return;
     calEvSheet = { mode, id: ev ? ev.id : null, saving: false, opener: opener || null, snapshot: "", keepMonth: !ev && keepMonth };
     renderCevCategories(ev ? (ev.category_id || null) : classification?.defaultGroup("event"));
+    $('cev_title').value=ev?ev.title:'';
+    openPeriodForm('cev','event',ev,{startDate:startDate||date,endDate,startTime:startTime||time,endTime,startMinute,durationMinutes,allDay});
     classification?.prepare("event","cev",ev);
-    const startVal = ev ? ev.event_date : (date || todayStr());
-    const rangeEnd = !ev && endDate && endDate > startVal ? endDate : "";
-    const multi = ev ? isMultiDayEvent(ev) : !!rangeEnd;
-    $("cev_title").value = ev ? ev.title : "";
-    $("cev_date").value = startVal;
-    $("cev_multi").checked = multi;
-    $("cev_end").value = ev ? (multi ? evEndDate(ev) : "") : rangeEnd;
-    $("cev_allday").checked = ev ? !ev.event_time : true; // 새 일정은 종일이 기본
-    $("cev_time").value = ev && ev.event_time ? ev.event_time.slice(0, 5) : "";
     $("cev_memo").value = ev ? (ev.memo || "") : "";
     setCevMemoOpen(!!(ev && ev.memo));
     syncCevFields();
@@ -7470,20 +7603,10 @@
     if (calEvSheet.saving) return; // 저장 중 중복 제출 방지
     clearCevErrors();
     const title = $("cev_title").value.trim();
-    const event_date = $("cev_date").value;
-    const multi = $("cev_multi").checked, allDay = $("cev_allday").checked;
-    const endVal = multi ? $("cev_end").value : "";
-    const time = allDay ? "" : $("cev_time").value;
-    let firstBad = null;
-    const bad = (key, msg) => { $(key + "_err").textContent = msg; $(key).setAttribute("aria-invalid", "true"); firstBad = firstBad || $(key); };
-    if (!title) bad("cev_title", "일정 제목을 적어주세요.");
-    if (!event_date) bad("cev_date", "날짜를 선택해주세요.");
-    if (multi && !endVal) bad("cev_end", "종료일을 선택해주세요.");
-    else if (multi && event_date && endVal < event_date) bad("cev_end", "종료일이 시작일보다 빨라요.");
-    if (!allDay && !time) bad("cev_time", "시간을 선택해주세요.");
-    if (firstBad) { firstBad.focus(); return; }
-    // 기존 데이터 규칙: 하루 일정은 end_date 비움(null), 종일은 event_time 비움(null), 시간은 "HH:MM:00"
-    const end_date = multi && endVal > event_date ? endVal : null;
+    const event_date=$('cev_date').value, end_date=$('cev_end').value;
+    const period=savePeriodForm('cev');
+    if(!title) { $('cev_title_err').textContent='일정 제목을 적어주세요.';$('cev_title').focus();return; }
+    if(period.error) {$('cev_error').textContent=period.error;return;}
     const category_id = cevCategoryValue() || null;
     const memoRaw = $("cev_memo").value;
     const isAdd = calEvSheet.mode !== "edit";
@@ -7491,17 +7614,13 @@
     let classificationPatch;
     try { classificationPatch=classification?.patch("event","cev",isAdd?null:events.find(x=>x.id===calEvSheet.id)); } catch(error) { $("cev_error").textContent=error.message; return; }
     if (isAdd) {
-      payload = { ...classificationPatch, title, event_date, end_date, event_time: time ? time + ":00" : null, category_id, memo: memoRaw.trim() || null };
+      payload = { ...classificationPatch, title, ...period.patch, category_id, memo: memoRaw.trim() || null };
     } else {
       const ev = events.find(x => x.id === calEvSheet.id);
       if (!ev) { $("cev_error").textContent = "이 일정을 찾을 수 없어요. 다른 기기에서 삭제됐을 수 있어요."; return; }
       payload = { ...classificationPatch };
       if (title !== ev.title) payload.title = title;
-      if (event_date !== ev.event_date) payload.event_date = event_date;
-      const origEnd = isMultiDayEvent(ev) ? ev.end_date : null;
-      if (end_date !== origEnd || (!end_date && ev.end_date && ev.end_date !== event_date)) payload.end_date = end_date;
-      const origTime = ev.event_time ? ev.event_time.slice(0, 5) : "";
-      if (time !== origTime) payload.event_time = time ? time + ":00" : null;
+      Object.assign(payload,period.patch);
       if (category_id !== (ev.category_id || null)) payload.category_id = category_id;
       if (memoRaw !== (ev.memo || "")) payload.memo = memoRaw.trim() || null;
       if (!Object.keys(payload).length) { hideCalEventSheet(); restoreScheduleFocus(calEvSheet.opener, calEvSheet.id); return; } // 바뀐 게 없으면 요청 없이 닫기
@@ -7543,12 +7662,7 @@
   $("cev_save").onclick = saveCalEvent;
   $("cev_cancel").onclick = requestCloseCalEventSheet;
   $("calEvForm").onsubmit = (e) => e.preventDefault(); // 제목에서 Enter를 눌러도 저장하지 않음
-  $("cev_multi").addEventListener("change", () => {
-    if ($("cev_multi").checked && !$("cev_end").value && $("cev_date").value) $("cev_end").value = addDaysStr($("cev_date").value, 1);
-    syncCevFields();
-  });
-  $("cev_allday").addEventListener("change", syncCevFields);
-  $("cev_date").addEventListener("change", syncCevFields);
+  $('cev_date').addEventListener('change',syncCevFields);
   $("cev_memo_toggle").onclick = () => { setCevMemoOpen(true); $("cev_memo").focus(); };
   $("calEventSheetBg").addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.preventDefault(); requestCloseCalEventSheet(); return; }
@@ -7686,6 +7800,8 @@
     const repeatText = repeatSummaryText(t.repeat_unit, t.repeat_interval, t.repeat_days);
     // 2026-09-28: 그룹색은 습관 이름 글자에(아래 .name), 그룹 이름은 옅은 회색 범주로 유지(색 점은 없앰)
     const catChip = cat ? `<span class="habit-cat-chip">${escapeHtml(cat.name)}</span>` : "";
+    const projectName = projectsReady && t.project_id ? projectById(t.project_id)?.name : null;
+    const projectLabel = projectName ? `<div class="habit-project-label" title="${escapeHtml(projectName)}">${escapeHtml(projectName)}</div>` : "";
     // 시작일이 아직 안 왔거나 종료일이 있을 때만 기간을 같이 보여줌(평범하게 계속 진행 중인 습관은 굳이 안 보여줘서 안 복잡하게).
     const windowText = t.end_date ? ` · ~${formatDateShort(t.end_date)}까지`
       : (t.start_date && t.start_date > todayS) ? ` · ${formatDateShort(t.start_date)}부터 시작` : "";
@@ -7713,7 +7829,8 @@
     <div class="todo-row ${habitsTabView === "active" ? "" : "inactive"}" data-id="${t.id}"${menuAttrs("habit", t.id)}>
       <div class="info">
         <div class="name">${groupTitleHtml("habit-name", "habit", t.category_id, t.name)}${dueChip}</div>
-        <div class="block-tag">${t.start_minute != null ? minutesToHHMM(t.start_minute) : "시간 없음"} · ${t.duration_minutes || 30}분 · ${repeatText}${windowText}${catChip}${classification?.badge("habit",t) || ""}</div>
+        ${projectLabel}
+        <div class="block-tag">${escapeHtml(periodLabel("habit",t))} · ${repeatText}${windowText}${catChip}${classification?.badge("habit",t) || ""}</div>
       </div>
       <button class="historybtn icon-btn" data-id="${t.id}" title="기록 보기" aria-label="${escapeHtml(t.name)} 기록 보기">${ICON_HISTORY_SVG}</button>
       <button class="settingsbtn icon-btn" data-id="${t.id}" title="반복·범주 설정" aria-label="${escapeHtml(t.name)} 반복·범주 설정">${ICON_SLIDERS_SVG}</button>
@@ -7823,11 +7940,11 @@
   function openHabitAddSheet(opener, prefill) {
     habitAddState = { saving: false, opener: opener || null };
     $("ha_name").value = "";
-    $("ha_start").value = prefill?.startDate || todayStr();
-    $("ha_time").value = prefill?.time || "";
+    openPeriodForm('ha','habit',null,prefill);
+    $('ha_repeat_start').value=$('ha_start').value;
+    $('ha_repeat_end').value='';
     $("ha_repeat_unit").value = "day";
     $("ha_repeat_interval").value = 1;
-    $("ha_duration").value = 30;
     $("ha_category").innerHTML = `<option value="">기본</option>` +
       assignableTagPool(habitCategories, null).map(c => `<option value="${c.id}">${escapeHtml(tagPickLabel(c))}</option>`).join("");
     $("ha_category").value = prefill?.categoryId || "";
@@ -7852,14 +7969,17 @@
     const name = $("ha_name").value.trim();
     const showErr = (msg, el) => { $("ha_error").textContent = msg; el?.focus(); };
     if (!name) { showErr("습관 이름을 입력해주세요.", $("ha_name")); return; }
-    const timeVal = $("ha_time").value;
+    const period=savePeriodForm('ha');
+    if(period.error) {showErr(period.error);return;}
+    const repeatStart=$('ha_repeat_start').value, repeatEnd=$('ha_repeat_end').value||null;
+    if(!repeatStart || repeatEnd && repeatEnd<repeatStart) {showErr('반복 시작일·종료일을 확인해주세요.');return;}
+
     const row = {
       name, sort_order: tasks.length,
-      start_minute: timeVal ? hhmmToMinutes(timeVal) : null,
-      duration_minutes: parseInt($("ha_duration").value, 10) || 30,
+      ...period.patch,
       repeat_unit: $("ha_repeat_unit").value || "day",
       repeat_interval: Math.max(1, parseInt($("ha_repeat_interval").value, 10) || 1),
-      start_date: $("ha_start").value || todayStr(),
+      start_date: repeatStart, end_date:repeatEnd,
       category_id: $("ha_category").value || null,
     };
     try { Object.assign(row,classification?.patch("habit","ha")); } catch(error) { showErr(error.message); return; }
@@ -8090,32 +8210,32 @@
   }
 
   // 오른쪽 클릭 메뉴 "복제" — 같은 종류로 항목 하나를 그대로 복사해서 새로 만듦(제목에 "(사본)" 붙여 구분).
+  function copyPeriodFields(row) {
+    return Object.fromEntries(['all_day','occurrence_start_date','occurrence_end_date','end_time','repeat_start_date'].filter(k=>k in row).map(k=>[k,row[k]]));
+  }
   async function duplicateAgendaItem(kind, id) {
     const item = agendaItemById(kind, id);
     if (!item) return false;
     let error;
     if (kind === "habit") {
       ({ error } = await sb.from("tok_habits").insert({
-        ...classification?.inherited("habit",item),
-        name: (item.name || "이름 없는 습관") + " (사본)", category_id: item.category_id || null,
+        ...classification?.inherited("habit",item), ...copyPeriodFields(item), name: (item.name || "이름 없는 습관") + " (사본)", category_id: item.category_id || null,
         repeat_unit: item.repeat_unit, repeat_interval: item.repeat_interval, repeat_days: item.repeat_days || null,
         start_date: item.start_date || todayStr(), end_date: item.end_date || null,
-        start_minute: item.start_minute, duration_minutes: item.duration_minutes || 30,
+        start_minute: item.start_minute, duration_minutes: item.duration_minutes ?? null,
         ...(item.project_id ? { project_id: item.project_id } : {}), // 2026-09-29 복제본도 같은 프로젝트에 연결
       }));
     } else if (kind === "todo") {
       ({ error } = await sb.from("tok_todos").insert({
-        ...classification?.inherited("todo",item),
-        title: (item.title || "이름 없는 할일") + " (사본)", start_date: item.start_date, end_date: item.end_date || null,
-        todo_time: item.todo_time || null, duration_minutes: item.duration_minutes || null,
+        ...classification?.inherited("todo",item), ...copyPeriodFields(item), title: (item.title || "이름 없는 할일") + " (사본)", start_date: item.start_date, end_date: item.end_date || null,
+        todo_time: item.todo_time || null, duration_minutes: item.duration_minutes ?? null,
         tag_id: item.tag_id || null, repeat_unit: item.repeat_unit, repeat_interval: item.repeat_interval, repeat_days: item.repeat_days || null,
         ...(item.project_id ? { project_id: item.project_id } : {}),
       }));
     } else {
       ({ error } = await sb.from("tok_events").insert({
-        ...classification?.inherited("event",item),
-        title: (item.title || "이름 없는 일정") + " (사본)", event_date: item.event_date, end_date: item.end_date || null,
-        event_time: item.event_time || null, duration_minutes: item.duration_minutes || null, memo: item.memo || null, category_id: item.category_id || null,
+        ...classification?.inherited("event",item), ...copyPeriodFields(item), title: (item.title || "이름 없는 일정") + " (사본)", event_date: item.event_date, end_date: item.end_date || null,
+        event_time: item.event_time || null, duration_minutes: item.duration_minutes ?? null, memo: item.memo || null, category_id: item.category_id || null,
         repeat_unit: item.repeat_unit, repeat_interval: item.repeat_interval,
       }));
     }
@@ -8298,11 +8418,11 @@
       x, y, viaTouch,
     });
   }
-  function openAddWindowFor(kind, dateStr) {
-    const opener = activeOpener();
-    if (kind === "event") openEventEditor({ mode: "add", date: dateStr, opener });
-    else if (kind === "todo") openTodoSheet(null, { startDate: dateStr });
-    else openHabitAddSheet(opener, { startDate: dateStr });
+  function openAddWindowFor(kind, context) {
+    const opener=activeOpener(), range=typeof context==="string"?{startDate:context}:context||{};
+    if(kind==="event") openEventEditor({mode:"add",...range,opener});
+    else if(kind==="todo") openTodoSheet(null,range);
+    else openHabitAddSheet(opener,range);
   }
 
   // 문서 전체 위임 — 화면마다 따로 연결하지 않으므로 다시 그려도 메뉴 동작이 달라지지 않음.
@@ -8358,7 +8478,7 @@
     showAddKindMenu(e.clientX, e.clientY, (kind) => openAddWindowFor(kind, dateStr));
   });
 
-  // 날짜/시간/반복 변경 시트: 습관은 날짜 개념이 없어 시간+반복만, 할일·일정은 날짜(+할일은 종료일)+시간만 보여줌
+  // 날짜/시간/반복 변경 시트: 공통 회차 기간과 별도의 반복 기간을 표시.
   function openItemDateSheet(kind, id) {
     const item = agendaItemById(kind, id);
     if (!item) return;
@@ -8375,38 +8495,24 @@
       : "";
     $("idt_hint").textContent = hint;
     $("idt_hint").hidden = !hint;
-    $("idt_date_row").style.display = "flex"; // 습관·할일·일정 전부 시작/종료일 있음
-    $("idt_end_wrap").style.display = "block";
-    $("idt_repeat_row").style.display = "flex"; // 습관·할일·일정 전부 반복 설정 가능
-    // 할일/일정: 시작일=반복이 시작된 날(필수), 종료일=반복이 끝나는 날(선택). 습관도 2026-09-06부터 동일.
-    // 일정만 예외로 시작/종료일이 "지속시간,날짜"(한 회차가 며칠짜리인지)를 의미(반복해도 그 길이가 유지됨).
-    $("idt_date_label").textContent = "시작 날짜";
-    $("idt_date").value = "";
-    $("idt_end").value = "";
-    $("idt_time").value = "";
+    openPeriodForm('idt',kind,item);
+    $('idt_repeat_dates').hidden=kind==='event';
+    $('idt_repeat_start').value=kind==='habit'?item.start_date:(item.repeat_start_date||item.start_date||'');
+    $('idt_end').value=kind==='event'?'':(item.repeat_unit||kind==='habit'?item.end_date||'':'');
+    $('idt_error').textContent='';
+    $('idt_repeat_row').style.display='flex';
     populateRepeatUnitSelect($("idt_repeat_unit"), kind);
+    preserveRepeatOption($('idt_repeat_unit'),item.repeat_unit);
     $("idt_repeat_unit").value = item.repeat_unit || "";
     $("idt_repeat_interval").value = item.repeat_interval || 1;
     setRepeatDaysChecked($("idt_repeat_days_row"), item.repeat_days);
     toggleRepeatUiFor("idt", item.repeat_unit || "");
-    if (kind === "todo") {
-      $("idt_date").value = item.start_date || "";
-      $("idt_end").value = item.end_date || "";
-      $("idt_time").value = item.todo_time ? item.todo_time.slice(0, 5) : "";
-    } else if (kind === "event") {
-      $("idt_date").value = item.event_date || "";
-      $("idt_end").value = item.end_date || "";
-      $("idt_time").value = item.event_time ? item.event_time.slice(0, 5) : "";
-    } else {
-      $("idt_date").value = item.start_date || todayStr();
-      $("idt_end").value = item.end_date || "";
-      $("idt_time").value = item.start_minute != null ? minutesToHHMM(item.start_minute) : "";
-    }
     bg.classList.add("open");
     $("idt_date").focus();
   }
   let itemDateSheetOpener = null;
   function closeItemDateSheet() {
+    if(itemDateSaving)return;
     $("itemDateSheetBg").classList.remove("open");
     const o = itemDateSheetOpener;
     itemDateSheetOpener = null;
@@ -8417,42 +8523,40 @@
     if (e.key === "Escape") { e.preventDefault(); closeItemDateSheet(); return; }
     trapFocusIn($("itemDateSheetBg").querySelector(".sheet"), e);
   });
+  let itemDateSaving=false;
   $("idt_save").onclick = async () => {
+    if(itemDateSaving)return;
     const bg = $("itemDateSheetBg");
     const kind = bg.dataset.kind, id = bg.dataset.editId;
     if (!id) return;
-    const timeVal = $("idt_time").value;
     const repeat_unit = $("idt_repeat_unit").value || null;
     // "주마다" + 요일을 하나 이상 고르면 그 요일 기준(주기 입력 무시, 1주 고정), 안 고르면 기존처럼 주기(숫자) 사용.
     // 일정(event)은 요일 지정 반복 대상이 아니라서 repeatDaysAllowedFor로 걸러짐(항상 빈 배열 → null).
     const idtDaysChecked = (repeat_unit === "week" && repeatDaysAllowedFor("idt")) ? getRepeatDaysChecked($("idt_repeat_days_row")) : [];
     const repeat_days = idtDaysChecked.length ? idtDaysChecked : null;
     const repeat_interval = repeat_unit ? (repeat_days ? 1 : (parseInt($("idt_repeat_interval").value, 10) || 1)) : null;
-    let patch = {};
-    if (kind === "todo") {
-      const startVal = $("idt_date").value;
-      if (!startVal) { alert("시작 날짜를 입력해주세요."); return; }
-      patch = { start_date: startVal, end_date: $("idt_end").value || null, todo_time: timeVal ? timeVal + ":00" : null, repeat_unit, repeat_interval, repeat_days };
-      // 반복이 없던 할일에 여기서 새로 반복을 켜면, 이 할일 자신을 체인의 시작점으로 삼음(2026-09-13, 7-2단계).
-      const currentTodo = todos.find(t => t.id === id);
-      if (repeat_unit && currentTodo && !currentTodo.repeat_chain_id) patch.repeat_chain_id = id;
-    } else if (kind === "event") {
-      const dateVal = $("idt_date").value;
-      if (!dateVal) { alert("날짜를 입력해주세요."); return; }
-      const endVal = $("idt_end").value || null;
-      if (endVal && endVal < dateVal) { alert("종료 날짜는 시작 날짜보다 빠를 수 없어요."); return; }
-      patch = { event_date: dateVal, end_date: endVal, event_time: timeVal ? timeVal + ":00" : null, repeat_unit, repeat_interval };
-    } else {
-      const startVal = $("idt_date").value;
-      if (!startVal) { alert("시작 날짜를 입력해주세요."); return; }
-      const endVal = $("idt_end").value || null;
-      if (endVal && endVal < startVal) { alert("종료 날짜는 시작 날짜보다 빠를 수 없어요."); return; }
-      if (!timeVal) { alert("시간을 입력해주세요."); return; }
-      patch = { start_date: startVal, end_date: endVal, start_minute: hhmmToMinutes(timeVal), repeat_unit, repeat_interval, repeat_days };
+    const period=savePeriodForm('idt');
+    if(period.error) {$('idt_error').textContent=period.error;return;}
+    const current=agendaItemById(kind,id);
+    const patch={...period.patch};
+    const repeatChanged=!repeatFieldsEqual({unit:current.repeat_unit,interval:current.repeat_interval,days:current.repeat_days},{unit:repeat_unit,interval:repeat_interval,days:repeat_days});
+    if(repeatChanged) Object.assign(patch,{repeat_unit,repeat_interval,...(kind==='event'?{}:{repeat_days})});
+    if(kind==='todo' && !!current.repeat_unit!==!!repeat_unit) {
+      const actual=periodFormValue('idt'), error=OnekanPeriod.validate(actual);
+      if(error) {$('idt_error').textContent=error;return;}
+      Object.assign(patch,OnekanPeriod.patch('todo',actual));
+    }
+    if(kind!=='event') {
+      const repeatStart=$('idt_repeat_start').value||null, repeatEnd=$('idt_end').value||null;
+      if(repeatEnd && repeatStart && repeatEnd<repeatStart) {$('idt_error').textContent='반복 종료일을 확인해주세요.';return;}
+      if(kind==='habit') {if(!repeatStart) {$('idt_error').textContent='반복 시작일을 입력해주세요.';return;} patch.start_date=repeatStart;patch.end_date=repeatEnd;}
+      else {patch.repeat_start_date=repeatStart;if(repeat_unit||current.repeat_unit)patch.end_date=repeatEnd;else if('occurrence_end_date' in period.patch)patch.end_date=period.patch.occurrence_end_date;if(repeat_unit&&!current.repeat_chain_id) patch.repeat_chain_id=id;}
     }
     const table = kind === "habit" ? "tok_habits" : kind === "todo" ? "tok_todos" : "tok_events";
-    const { error } = await sb.from(table).update(patch).eq("id", id);
-    if (error) { alert("저장 실패: " + error.message); return; }
+    itemDateSaving=true;$('idt_save').disabled=true;
+    let error;try {({error}=await sb.from(table).update(patch).eq('id',id));} catch(err){error=err;}
+    itemDateSaving=false;$('idt_save').disabled=false;
+    if(error) {$('idt_error').textContent='저장하지 못했어요. 입력은 그대로 있어요. ('+(error.message||error)+')';return;}
     closeItemDateSheet();
     await loadAll();
   };
@@ -9027,7 +9131,7 @@
     let data = null, error = null;
     try {
       let q = sb.from("tok_todos").update(before).eq("id", id).eq("start_date", after.start_date).eq("is_done", false);
-      q = after.todo_time == null ? q.is("todo_time", null) : q.eq("todo_time", after.todo_time);
+      for(const [field,value] of Object.entries(after)) if(field!=='start_date') q=value==null?q.is(field,null):q.eq(field,value);
       ({ data, error } = await q.select("id"));
     } catch (err) { error = err; }
     projTodayBusy.delete(id);
