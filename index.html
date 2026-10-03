@@ -143,6 +143,39 @@
   .layout{display:flex;min-height:100vh;padding-top:64px;}
   .sidebar{width:180px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);padding:20px 12px;position:sticky;top:64px;height:calc(100vh - 64px);box-shadow:2px 0 16px rgba(150,130,200,.06);display:flex;flex-direction:column;overflow-y:auto;min-height:0;}
   .sidebar-nav{flex-shrink:0;}
+  .sidebar.schedule-sidebar{overflow:hidden;}
+  .schedule-side-nav{display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto;}
+  .schedule-side-nav > .schedule-cat-host{min-height:112px;}
+  #mainSidebarNav[hidden], #scheduleSidebarNav[hidden]{display:none;}
+  .schedule-side-nav > .navitem, .schedule-side-nav > .sidebar-divider{flex-shrink:0;}
+  .schedule-cat-host, .schedule-cat-panel{display:flex;flex-direction:column;flex:1;min-height:0;}
+  .schedule-cat-list{overflow-y:auto;min-height:0;overscroll-behavior:contain;}
+  .schedule-cat-list[hidden]{display:none;}
+  .schedule-cat-heading{flex-shrink:0;display:block;width:100%;padding:10px 8px;border:0;background:none;color:var(--text);text-align:left;font-weight:600;cursor:pointer;}
+  .schedule-cat-row{display:flex;align-items:center;gap:4px;min-width:0;padding:5px 0;}
+  .schedule-cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .schedule-cat-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;}
+  .schedule-cat-label small{display:block;color:var(--sub);font-size:10px;}
+  .schedule-cat-row button{display:flex;align-items:center;justify-content:center;width:28px;height:32px;flex-shrink:0;padding:0;border:0;border-radius:8px;background:none;color:var(--sub);cursor:pointer;}
+  .schedule-cat-row .schedule-cat-eye[aria-pressed="true"]{color:var(--text);}
+  .schedule-cat-row .schedule-cat-eye[aria-pressed="false"]{background:var(--accent-soft);}
+  .schedule-cat-more{opacity:0;}
+  .schedule-cat-row:hover .schedule-cat-more, .schedule-cat-row:focus-within .schedule-cat-more{opacity:1;}
+  .schedule-cat-row button:hover{background:var(--accent-soft);}
+  :is(.schedule-cat-heading,.schedule-cat-row button):focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .schedule-sidebar .sidebar-footer{flex-shrink:0;}
+  .schedule-filter-sheet{display:flex;flex-direction:column;max-height:80vh;}
+  .schedule-filter-sheet h2{flex-shrink:0;}
+  .schedule-filter-sheet .sheet-actions{flex-shrink:0;}
+  .schedule-category-edit-bg{z-index:45 !important;}
+  @media (min-width:761px){#scheduleModeToggle{display:none;}}
+  @media (max-width:760px){
+    #scheduleCategoryMobileBtn{margin-left:auto;padding:8px 10px;}
+    .schedule-filter-sheet .schedule-cat-row{padding:6px 4px;}
+    .schedule-filter-sheet .schedule-cat-label{font-size:14px;}
+    .schedule-filter-sheet .schedule-cat-row button{width:40px;height:40px;}
+    .schedule-filter-sheet .schedule-cat-more{opacity:1;}
+  }
   .sidebar .navitem{width:100%;border:0;background:none;font-family:inherit;text-align:left;line-height:1.4;}
   .sidebar .navitem:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
   .sidebar .sidebar-divider{height:1px;border:0;background:var(--line);margin:8px 0 12px;}
@@ -1397,18 +1430,30 @@
   </div>
   <div class="layout">
     <div class="sidebar">
-      <nav class="sidebar-nav" aria-label="주 메뉴">
+      <nav class="sidebar-nav" id="mainSidebarNav" aria-label="주 메뉴">
         <button type="button" class="navitem" data-page="home"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> 지금한칸</button>
-        <button type="button" class="navitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 시간추적</button>
         <hr class="sidebar-divider" />
         <button type="button" class="navitem" data-page="schedule"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> 일정</button>
         <button type="button" class="navitem" data-page="todos"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> 작업</button>
         <button type="button" class="navitem" data-page="work"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> 목표</button>
         <hr class="sidebar-divider" />
+        <button type="button" class="navitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 시간추적</button>
         <button type="button" class="navitem" data-page="together"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 5 5v3"/></svg> 같이한칸</button>
         <hr class="sidebar-divider" />
         <button type="button" class="navitem" data-page="records"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 기록</button>
         <button type="button" class="navitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> 설정</button>
+      </nav>
+      <nav id="scheduleSidebarNav" class="schedule-side-nav" aria-label="일정 메뉴" hidden>
+        <button type="button" class="navitem" id="scheduleSidebarBack">← 뒤로가기</button>
+        <button type="button" class="navitem active" data-schedule-mode="calendar" aria-pressed="true">달력</button>
+        <button type="button" class="navitem" data-schedule-mode="list" aria-pressed="false">목록</button>
+        <hr class="sidebar-divider" />
+        <div id="scheduleCategoryDesktopHost" class="schedule-cat-host">
+          <section id="scheduleCategoryPanel" class="schedule-cat-panel" aria-label="일정 범주">
+            <button type="button" id="scheduleCategoryCollapse" class="schedule-cat-heading" aria-expanded="true" aria-controls="scheduleCategoryList">▾ 범주</button>
+            <div id="scheduleCategoryList" class="schedule-cat-list"></div>
+          </section>
+        </div>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-user" id="sidebarUserEmail"></div>
@@ -1535,6 +1580,7 @@
         <div class="sched-top">
           <div class="sched-title-row">
             <h1 class="page-title sched-page-title">일정</h1>
+            <button type="button" id="scheduleCategoryMobileBtn" class="mobile-only sched-add-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="scheduleFilterBg">범주</button>
             <div class="view-toggle" id="scheduleModeToggle" role="group" aria-label="일정 보기 방식">
               <button type="button" id="scheduleModeCalendarBtn" class="active" aria-pressed="true">달력</button>
               <button type="button" id="scheduleModeListBtn" aria-pressed="false">목록</button>
@@ -1998,6 +2044,23 @@
   </div>
 </div>
 
+<!-- 모바일과 데스크톱은 하나의 범주 목록을 공유한다. 폭 변경 시 목록 노드만 이동한다. -->
+<div class="sheet-bg cal-ev-sheet-bg schedule-filter-bg" id="scheduleFilterBg">
+  <div class="sheet schedule-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="scheduleFilterTitle">
+    <h2 id="scheduleFilterTitle">일정 범주</h2>
+    <div id="scheduleCategoryMobileHost" class="schedule-cat-host"></div>
+    <div class="sheet-actions"><button type="button" class="btn-ghost" id="scheduleFilterClose">닫기</button></div>
+  </div>
+</div>
+<div class="sheet-bg cal-ev-sheet-bg add-sheet schedule-category-edit-bg" id="scheduleCategoryEditBg">
+  <form class="sheet" id="scheduleCategoryEditForm" role="dialog" aria-modal="true" aria-labelledby="scheduleCategoryEditTitle">
+    <h2 id="scheduleCategoryEditTitle">범주 수정</h2>
+    <div class="field"><label for="scheduleCategoryEditName">이름</label><input id="scheduleCategoryEditName" type="text" required /></div>
+    <div class="field"><label for="scheduleCategoryEditColor">색상</label><input id="scheduleCategoryEditColor" type="color" /></div>
+    <p id="scheduleCategoryEditError" class="cal-ev-error" role="alert"></p>
+    <div class="sheet-actions"><button type="button" class="btn-ghost" id="scheduleCategoryEditCancel">취소</button><button type="submit" class="btn-primary" id="scheduleCategoryEditSave">저장</button></div>
+  </form>
+</div>
 <!-- 일정 상세 — 2026-09-28 내용 중심으로 재구성: 작은 범주 → 제목 → 날짜·시간 → 반복·메모(없는 정보는 자리도 안 만듦).
      상단 ⋯(반복·날짜 설정/복제/삭제)·닫기, 하단 [수정] 하나. 모바일=내용만큼 높아지는 하단 창, PC=440px 팝업. -->
 <div class="sheet-bg cal-ev-sheet-bg evd-bg" id="evDetailBg">
@@ -2367,6 +2430,7 @@
   function bindAppSymbolUser(userId) {
     if (appSymbolUserId === userId) return;
     appSymbolUserId = userId;
+    bindScheduleFilterUser(userId);
     appSymbolEpoch++;
     appSymbolRevision++;
     appSymbolValue = appSymbolSaved = 'hankan';
@@ -2744,6 +2808,203 @@
   let currentPage = "home";
   // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가). 메모 기능은 2026-09-12에 완전히 제거함(scheduleSubView도 함께 삭제).
   let scheduleMode = "calendar"; // "calendar" | "list" — 2026-09-26: 첫 화면은 캘린더(앱 사용 중 바꾼 보기는 탭을 오가도 유지, 새로고침하면 다시 캘린더)
+  // 일정 화면의 표시 설정만 저장한다. events 원본과 다른 화면은 필터링하지 않는다.
+  let scheduleSidebarOpen = false, scheduleFilterUser = null, scheduleDataUser = null;
+  let scheduleHiddenCategories = new Set(), scheduleCategoriesCollapsed = false;
+  let scheduleCategoryEditor = null;
+  const scheduleFilterKey = () => 'tok_schedule_categories:' + scheduleFilterUser;
+  const scheduleCategoryKey = event => event.category_id && eventCategories.some(c => c.id === event.category_id) ? event.category_id : 'default';
+  function scheduleEventVisible(event) {
+    return !scheduleHiddenCategories.has(scheduleCategoryKey(event));
+  }
+  function scheduleFilteredEmptyText() {
+    return scheduleHiddenCategories.size ? '선택한 범주에 표시할 일정이 없어요' : '등록된 일정이 없어요';
+  }
+  function bindScheduleFilterUser(userId) {
+    if (scheduleFilterUser === userId) return;
+    scheduleFilterUser = userId;
+    scheduleDataUser = null;
+    scheduleHiddenCategories = new Set();
+    scheduleCategoriesCollapsed = false;
+    try {
+      const stored = userId ? JSON.parse(localStorage.getItem(scheduleFilterKey())) : null;
+      if (Array.isArray(stored?.hidden)) scheduleHiddenCategories = new Set(stored.hidden.filter(id => typeof id === 'string'));
+      scheduleCategoriesCollapsed = stored?.collapsed === true;
+    } catch (_) {}
+    closeScheduleFilter(false);
+    closeScheduleCategoryEditor(false);
+    setScheduleSidebar(false);
+    renderScheduleCategories();
+  }
+  function saveScheduleFilter() {
+    if (!scheduleFilterUser) return;
+    try { localStorage.setItem(scheduleFilterKey(), JSON.stringify({ hidden: [...scheduleHiddenCategories], collapsed: scheduleCategoriesCollapsed })); } catch (_) {}
+  }
+  function setScheduleSidebar(open) {
+    scheduleSidebarOpen = !!open;
+    $('mainSidebarNav').hidden = scheduleSidebarOpen;
+    $('scheduleSidebarNav').hidden = !scheduleSidebarOpen;
+    document.querySelector('.sidebar').classList.toggle('schedule-sidebar', scheduleSidebarOpen);
+    syncScheduleModeButtons();
+  }
+  function syncScheduleModeButtons() {
+    document.querySelectorAll('[data-schedule-mode]').forEach(button => {
+      const selected = button.dataset.scheduleMode === scheduleMode;
+      button.classList.toggle('active', selected && scheduleSidebarOpen);
+      button.setAttribute('aria-pressed', String(selected));
+    });
+  }
+  function renderScheduleCategories() {
+    const list = $('scheduleCategoryList');
+    const ready = scheduleFilterUser && scheduleDataUser === scheduleFilterUser;
+    const focus = list.contains(document.activeElement) ? { id: document.activeElement.closest('[data-schedule-cat]')?.dataset.scheduleCat, eye: document.activeElement.classList.contains('schedule-cat-eye') } : null;
+    const scroll = list.scrollTop;
+    const active = ready ? eventCategories.filter(c => !c.is_archived) : [];
+    const archived = ready ? eventCategories.filter(c => c.is_archived && events.some(e => e.category_id === c.id)) : [];
+    if (ready) {
+      const valid = new Set(['default', ...eventCategories.map(c => c.id)]);
+      scheduleHiddenCategories = new Set([...scheduleHiddenCategories].filter(id => valid.has(id)));
+    }
+    const categories = ready ? [{ id: 'default', name: '기본', color: daySettings.default_event_color || '#c7c2d6' }, ...active, ...archived] : [];
+    const eyeSvg = on => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>' + (on ? '' : '<path d="M3 3l18 18"/>') + '</svg>';
+    list.innerHTML = categories.map(c => {
+      const visible = !scheduleHiddenCategories.has(c.id);
+      return `<div class="schedule-cat-row" data-schedule-cat="${escapeHtml(c.id)}">
+        <span class="schedule-cat-dot" style="background:${escapeHtml(c.color || '#9a8cf0')}" aria-hidden="true"></span>
+        <span class="schedule-cat-label" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}${c.is_archived ? '<small>보관됨</small>' : ''}</span>
+        <button type="button" class="schedule-cat-more" aria-label="${escapeHtml(c.name)} 범주 메뉴" aria-haspopup="menu">⋯</button>
+        <button type="button" class="schedule-cat-eye" aria-label="${escapeHtml(c.name)} 일정 ${visible ? '숨기기' : '표시하기'}" aria-pressed="${visible}">${eyeSvg(visible)}</button>
+      </div>`;
+    }).join('');
+    list.scrollTop = scroll;
+    $('scheduleCategoryCollapse').textContent = (scheduleCategoriesCollapsed ? '▸' : '▾') + ' 범주';
+    $('scheduleCategoryCollapse').setAttribute('aria-expanded', String(!scheduleCategoriesCollapsed));
+    list.hidden = scheduleCategoriesCollapsed;
+    $('scheduleCategoryMobileBtn').textContent = scheduleHiddenCategories.size ? '범주 · 필터 중' : '범주';
+    if (focus) [...list.children].find(row => row.dataset.scheduleCat === focus.id)?.querySelector(focus.eye ? '.schedule-cat-eye' : '.schedule-cat-more')?.focus({ preventScroll: true });
+  }
+  function refreshScheduleFilterViews() {
+    const scroll = window.scrollY;
+    renderScheduleCategories();
+    renderSchedule();
+    renderScheduleCalendar();
+    window.scrollTo(0, scroll);
+  }
+  $('scheduleSidebarBack').onclick = () => {
+    setScheduleSidebar(false);
+    document.querySelector('#mainSidebarNav [data-page="schedule"]').focus({ preventScroll: true });
+  };
+  document.querySelectorAll('[data-schedule-mode]').forEach(button => { button.onclick = () => showScheduleMode(button.dataset.scheduleMode); });
+  $('scheduleCategoryCollapse').onclick = () => {
+    scheduleCategoriesCollapsed = !scheduleCategoriesCollapsed;
+    saveScheduleFilter();
+    renderScheduleCategories();
+  };
+  $('scheduleCategoryList').addEventListener('click', event => {
+    const row = event.target.closest('[data-schedule-cat]');
+    if (!row) return;
+    if (event.target.closest('.schedule-cat-eye')) {
+      event.stopPropagation();
+      const id = row.dataset.scheduleCat;
+      if (scheduleHiddenCategories.has(id)) scheduleHiddenCategories.delete(id); else scheduleHiddenCategories.add(id);
+      saveScheduleFilter();
+      refreshScheduleFilterViews();
+    } else if (event.target.closest('.schedule-cat-more')) {
+      event.stopPropagation();
+      openScheduleCategoryMenu(row, row.querySelector('.schedule-cat-more'));
+    }
+  });
+  $('scheduleCategoryList').addEventListener('contextmenu', event => {
+    const row = event.target.closest('[data-schedule-cat]');
+    if (!row || event.target.closest('.schedule-cat-eye')) return;
+    event.preventDefault(); event.stopPropagation();
+    openScheduleCategoryMenu(row, row.querySelector('.schedule-cat-more'), event.clientX, event.clientY);
+  });
+  function openScheduleCategoryMenu(row, opener, x = null, y = null) {
+    const id = row.dataset.scheduleCat, cat = eventCategories.find(c => c.id === id);
+    // 기존 보관 목록은 이름·색상 편집을 허용하지 않는다.
+    openMenuShell({ title: cat?.name || '기본', opener, x, y, entries: cat?.is_archived
+      ? [{ note: '보관된 범주는 설정에서 다시 사용한 뒤 수정할 수 있어요.' }]
+      : [{ label: '범주 수정', icon: 'edit', window: true, run: () => openScheduleCategoryEditor(id, opener) }] });
+  }
+  function closeScheduleFilter(restore = true) {
+    const open = $('scheduleFilterBg').classList.contains('open');
+    $('scheduleFilterBg').classList.remove('open');
+    $('scheduleCategoryMobileBtn').setAttribute('aria-expanded', 'false');
+    if (open && restore && $('scheduleCategoryMobileBtn').getClientRects().length) $('scheduleCategoryMobileBtn').focus({ preventScroll: true });
+  }
+  $('scheduleCategoryMobileBtn').onclick = () => {
+    renderScheduleCategories();
+    $('scheduleFilterBg').classList.add('open');
+    $('scheduleCategoryMobileBtn').setAttribute('aria-expanded', 'true');
+    $('scheduleCategoryCollapse').focus();
+  };
+  $('scheduleFilterClose').onclick = () => closeScheduleFilter();
+  $('scheduleFilterBg').addEventListener('click', event => { if (event.target === $('scheduleFilterBg')) closeScheduleFilter(); });
+  $('scheduleFilterBg').addEventListener('keydown', event => {
+    if (event.key === 'Escape') { event.preventDefault(); closeScheduleFilter(); }
+    else trapFocusIn($('scheduleFilterBg').querySelector('.sheet'), event);
+  });
+  const scheduleSidebarMq = window.matchMedia('(max-width:760px)');
+  function placeScheduleCategoryPanel() {
+    const panel = $('scheduleCategoryPanel'), focused = panel.contains(document.activeElement) ? document.activeElement : null;
+    const host = $(scheduleSidebarMq.matches ? 'scheduleCategoryMobileHost' : 'scheduleCategoryDesktopHost');
+    host.append(panel);
+    if (!scheduleSidebarMq.matches) closeScheduleFilter(false);
+    if (focused) {
+      if (focused.getClientRects().length) focused.focus({ preventScroll: true });
+      else if (scheduleSidebarMq.matches && currentPage === 'schedule') $('scheduleCategoryMobileBtn').focus({ preventScroll: true });
+    }
+  }
+  scheduleSidebarMq.addEventListener('change', placeScheduleCategoryPanel);
+  placeScheduleCategoryPanel();
+  function openScheduleCategoryEditor(id, opener) {
+    if (!scheduleFilterUser || scheduleDataUser !== scheduleFilterUser) return;
+    const cat = eventCategories.find(c => c.id === id);
+    if (id !== 'default' && (!cat || cat.is_archived)) return;
+    scheduleCategoryEditor = { id, opener, userId: scheduleFilterUser, saving: false };
+    $('scheduleCategoryEditName').value = cat?.name || '기본';
+    $('scheduleCategoryEditName').readOnly = id === 'default';
+    $('scheduleCategoryEditColor').value = cat?.color || (id === 'default' ? daySettings.default_event_color : null) || '#c7c2d6';
+    $('scheduleCategoryEditError').textContent = '';
+    $('scheduleCategoryEditSave').disabled = false;
+    $('scheduleCategoryEditBg').classList.add('open');
+    $(id === 'default' ? 'scheduleCategoryEditColor' : 'scheduleCategoryEditName').focus();
+  }
+  function closeScheduleCategoryEditor(restore = true) {
+    if (scheduleCategoryEditor?.saving && restore) return;
+    const editor = scheduleCategoryEditor;
+    scheduleCategoryEditor = null;
+    $('scheduleCategoryEditBg').classList.remove('open');
+    if (!restore || !editor) return;
+    const row = [...$('scheduleCategoryList').children].find(row => row.dataset.scheduleCat === editor.id);
+    const candidates = [row?.querySelector('.schedule-cat-more'), editor.opener, $('scheduleCategoryMobileBtn'), document.querySelector('#scheduleSidebarNav [data-schedule-mode="' + scheduleMode + '"]'), document.querySelector('#mainSidebarNav [data-page="schedule"]')];
+    candidates.find(target => target?.isConnected && target.getClientRects().length)?.focus({ preventScroll: true });
+  }
+  $('scheduleCategoryEditCancel').onclick = () => closeScheduleCategoryEditor();
+  $('scheduleCategoryEditBg').addEventListener('click', event => { if (event.target === $('scheduleCategoryEditBg')) closeScheduleCategoryEditor(); });
+  $('scheduleCategoryEditBg').addEventListener('keydown', event => {
+    if (event.key === 'Escape') { event.preventDefault(); closeScheduleCategoryEditor(); }
+    else trapFocusIn($('scheduleCategoryEditForm'), event);
+  });
+  $('scheduleCategoryEditForm').onsubmit = async event => {
+    event.preventDefault();
+    const editor = scheduleCategoryEditor;
+    if (!editor || editor.saving || editor.userId !== scheduleFilterUser) return;
+    editor.saving = true;
+    $('scheduleCategoryEditSave').disabled = true;
+    const color = $('scheduleCategoryEditColor').value, name = $('scheduleCategoryEditName').value.trim();
+    let result;
+    if (editor.id === 'default') result = await saveDefaultCategoryColor('default_event_color', color);
+    else result = await saveManagedCategory(eventCategories, 'tok_event_categories', editor.id, { name, color });
+    if (editor !== scheduleCategoryEditor || editor.userId !== scheduleFilterUser) return;
+    editor.saving = false;
+    $('scheduleCategoryEditSave').disabled = false;
+    if (!result.ok) { $('scheduleCategoryEditError').textContent = '저장하지 못했어요. ' + (result.error?.message || result.error); return; }
+    rerenderCategoryViews();
+    renderSettingsTagLists();
+    closeScheduleCategoryEditor();
+  };
   let calCursor = todayStr().slice(0, 7) + "-01"; // 캘린더가 보여주는 달의 1일
   let calExpanded = new Set(); // "+N개 더"를 눌러서 다 펼친 날짜(dateStr) — 달 이동/모드 전환 시 초기화(PC 전용)
   let calSelected = todayStr(); // 2026-09-26 모바일 캘린더에서 선택한 날짜(첫 진입 = 오늘). 추가·수정·삭제 후에도 유지
@@ -2804,7 +3065,16 @@
 
   // ── 네비게이션 ──
   document.querySelectorAll(".navitem[data-page]").forEach(el => {
-    el.onclick = () => { closeNavMore(false); showPage(el.dataset.page); };
+    el.onclick = () => {
+      closeNavMore(false);
+      if (el.closest('#mainSidebarNav') && el.dataset.page === 'schedule') {
+        if (currentPage !== 'schedule') showPage('schedule');
+        setScheduleSidebar(true);
+        document.querySelector('#scheduleSidebarNav [data-schedule-mode="' + scheduleMode + '"]').focus({ preventScroll: true });
+        return;
+      }
+      showPage(el.dataset.page);
+    };
   });
   // 2026-09-29 모바일 더보기(하단 메뉴 5번째 칸): 작업·시간 추적·기록·설정으로 가는 보조 메뉴
   document.querySelectorAll("[data-work-page]").forEach(el => {
@@ -2833,6 +3103,8 @@
     const prevPage = currentPage;
     if (prevPage === "schedule" && page !== "schedule") scheduleScrollY = window.scrollY;
     currentPage = page;
+    if (page !== 'schedule') { setScheduleSidebar(false); closeScheduleFilter(false); }
+    else if (prevPage !== 'schedule') setScheduleSidebar(true);
     // 빠른 입력(한칸 추가)은 모든 탭에서 항상 보임(2026-09-28). 입력 중이던 제목은 탭을 옮겨도 그대로, 탭 이동만으로는 저장하지 않음.
     document.querySelectorAll(".navitem[data-page]").forEach(el => {
       const active = el.dataset.page === page || (el.closest(".sidebar") && el.dataset.page === "todos" && page === "habits");
@@ -2869,6 +3141,7 @@
 
   // ── 데이터 로드 ──
   async function loadAll() {
+    const scheduleLoadUser = appSymbolUserId;
     lastLoadAllAt = Date.now();
     const [
       { data: taskData, error: e1 },
@@ -2912,6 +3185,7 @@
     } catch (err) { projectsReady = false; projects = []; identities = []; }
     const firstError = e1 || e2 || e3 || e5 || e6 || e7 || e8 || e10 || e12 || e13;
     if (firstError) { alert("불러오기 실패: " + firstError.message); return; }
+    if (scheduleLoadUser !== appSymbolUserId) return;
     tasks = taskData || [];
     habitLogs = logData || []; // 전체 완료 이력(반복주기의 "마지막 완료일" 계산용)
     habitPauses = pauseData || []; // 보관/재개 이력(습관별로 여러 번 쌓일 수 있음)
@@ -2922,8 +3196,10 @@
     todos = todoData || [];
     habitCategories = habitCatData || [];
     eventCategories = eventCatData || [];
+    scheduleDataUser = scheduleLoadUser;
     if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute, default_tag_color: settingsData.default_tag_color || null, default_event_color: settingsData.default_event_color || null }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00, 기본색 없음) 유지
     await advancePastRepeatingEvents(events); // 반복 설정된 일정 중 날짜 지난 것은 다음 회차로 자동 이동
+    renderScheduleCategories();
     renderHome();
     renderSchedule();
     if (scheduleMode === "calendar") renderScheduleCalendar();
@@ -3502,12 +3778,15 @@
   // 20260928000000에서 컬럼 추가. 이제 바꿀 칸 하나만 보냄(다른 설정값을 화면 값으로 덮어쓰지 않게). 저장된 행을 다시 받아
   // 실제 DB 값으로 daySettings를 갱신 → 새로고침 후와 같은 값. 실패하면 { ok:false }(호출부가 색상 선택 UI를 이전 값으로 되돌림).
   async function saveDefaultCategoryColor(field, color) {
+    const expectedUser = appSymbolUserId;
     let data, error;
     try {
       const { data: u } = await sb.auth.getUser();
       if (!u?.user) throw new Error("로그인 정보가 없어요. 다시 로그인해 주세요.");
+      if (u.user.id !== expectedUser || appSymbolUserId !== expectedUser) throw new Error('계정이 변경됐어요.');
       ({ data, error } = await sb.from("tok_settings").upsert({ user_id: u.user.id, [field]: color }, { onConflict: "user_id" }).select().single());
     } catch (err) { error = err; }
+    if (appSymbolUserId !== expectedUser) return { ok: false, error: new Error('계정이 변경됐어요.') };
     if (error || !data || data[field] !== color) return { ok: false, error: error || new Error("저장된 값을 확인하지 못했어요.") };
     daySettings = { ...daySettings, [field]: data[field] || null };
     return { ok: true };
@@ -6447,7 +6726,7 @@
   }
   function schedMonthEvents() {
     const { ms, me } = schedMonthInfo();
-    return events.filter(e => e.event_date <= me && evEndDate(e) >= ms);
+    return events.filter(e => scheduleEventVisible(e) && e.event_date <= me && evEndDate(e) >= ms);
   }
   // 목록 상단 [+ 일정 추가] 기본 시작일: 이번 달이면 오늘, 다른 달이면 조회 월 1일
   function schedDefaultAddDate() {
@@ -6483,7 +6762,7 @@
       : `<span class="sched-jump-note">이번 달 남은 일정이 없어요</span>`;
     $("schedJumpBtn")?.addEventListener("click", (e) => schedScrollToDate(e.currentTarget.dataset.date, { focus: true }));
     $("scheduleEmpty").style.display = monthEvents.length ? "none" : "block";
-    $("scheduleEmpty").innerHTML = monthEvents.length ? "" : `${escapeHtml(label)}에는 등록된 일정이 없어요<br/><button type="button" id="schedEmptyAddBtn">일정 추가</button>`;
+    $("scheduleEmpty").innerHTML = monthEvents.length ? "" : `${scheduleHiddenCategories.size ? scheduleFilteredEmptyText() : escapeHtml(label) + '에는 등록된 일정이 없어요'}<br/><button type="button" id="schedEmptyAddBtn">일정 추가</button>`;
     $("schedEmptyAddBtn")?.addEventListener("click", (e) => openEventEditor({ mode: "add", date: schedDefaultAddDate(), opener: e.currentTarget }));
 
     $("scheduleList").innerHTML = dates.map(d => {
@@ -6725,6 +7004,7 @@
   // 일정 탭 "달력↔목록" 보기 전환(2026-09-07 추가). 조회 월(calCursor)·선택 날짜는 두 보기가 공유 — 전환해도 그대로.
   function showScheduleMode(mode) {
     scheduleMode = mode;
+    syncScheduleModeButtons();
     $("scheduleModeListBtn").classList.toggle("active", mode === "list");
     $("scheduleModeCalendarBtn").classList.toggle("active", mode === "calendar");
     $("scheduleModeListBtn").setAttribute("aria-pressed", String(mode === "list"));
@@ -6760,7 +7040,7 @@
   // 그 날짜에 걸친 일정(여러 날 일정은 기간 안의 모든 날짜에 포함) — 종일 먼저, 시간 지정은 시간순.
   // 달력 칸과 선택한 날짜 목록이 모두 이 함수 하나를 씀(같은 데이터).
   function calEventsOn(dateStr) {
-    return events.filter(e => e.event_date <= dateStr && evEndDate(e) >= dateStr).sort(eventTimeSort);
+    return events.filter(e => scheduleEventVisible(e) && e.event_date <= dateStr && evEndDate(e) >= dateStr).sort(eventTimeSort);
   }
   // 조회 월 이동(목록·달력 공통): 이번 달이면 오늘, 다른 달이면 그 달 1일을 선택. 목록은 새 달의 처음부터 보이게 맨 위로.
   function schedGoToMonth(monthStart) {
@@ -6853,7 +7133,7 @@
       const week = cells.slice(w * 7, w * 7 + 7);
       const ws = week[0], we = week[6];
       const laneOf = new Map(), laneEnd = [];
-      events.filter(e => isMultiDayEvent(e) && e.event_date <= we && evEndDate(e) >= ws)
+      events.filter(e => scheduleEventVisible(e) && isMultiDayEvent(e) && e.event_date <= we && evEndDate(e) >= ws)
         .sort((a, b) => a.event_date.localeCompare(b.event_date) || evEndDate(b).localeCompare(evEndDate(a)))
         .forEach(e => {
           const s = e.event_date > ws ? e.event_date : ws;
@@ -6982,7 +7262,7 @@
     $("calDayCount").textContent = list.length ? `${list.length}개` : "";
     $("calDayAddBtn").setAttribute("aria-label", `${calDateLabel(d)}에 일정 추가`);
     $("scheduleCalendarMode").classList.toggle("day-empty", !list.length);
-    $("calDayList").innerHTML = !list.length ? `<p class="cal-day-empty">등록된 일정이 없어요</p>` : list.map(e => {
+    $("calDayList").innerHTML = !list.length ? `<p class="cal-day-empty">${scheduleFilteredEmptyText()}</p>` : list.map(e => {
       const cat = eventCategoryOf(e);
       const isRange = isMultiDayEvent(e);
       const color = itemTagColor("event", e.category_id); // 범주 없음 = 범주 "기본" 색(설정), 달력 막대와 같은 값
@@ -8069,6 +8349,26 @@
   // 보관됨 줄은 이름·색상 표시 + "다시 사용" + "완전 삭제"(일반 화면에선 삭제 대신 보관이 기본 동작).
   // 보관해도 행은 그대로라 기존 항목 연결·이름·색 표시는 유지됨. 탭 상태는 목록(hostId)별로 기억.
   const categoryManageView = {};
+  // 설정 목록과 일정 범주 편집창이 같은 검증·저장·메모리 갱신을 사용한다.
+  async function saveManagedCategory(pool, table, id, patch) {
+    const cat = pool.find(c => c.id === id), userId = appSymbolUserId;
+    const noun = table === 'tok_event_categories' ? '범주' : '그룹';
+    if (!cat || cat.is_archived) return { ok: false, error: new Error('사용 중인 ' + noun + '만 수정할 수 있어요.') };
+    if ('name' in patch) {
+      patch = { ...patch, name: patch.name.trim() };
+      if (!patch.name) return { ok: false, error: new Error('이름을 입력해주세요.') };
+      if (isReservedCategoryName(patch.name)) return { ok: false, error: new Error(RESERVED_CATEGORY_NAME_MSG(noun)) };
+    }
+    const changed = Object.fromEntries(Object.entries(patch).filter(([key, value]) => cat[key] !== value));
+    if (!Object.keys(changed).length) return { ok: true };
+    try {
+      const { error } = await sb.from(table).update(changed).eq('id', id);
+      if (error) return { ok: false, error };
+      if (userId !== appSymbolUserId) return { ok: false, error: new Error('계정이 변경됐어요.') };
+      Object.assign(cat, changed);
+      return { ok: true };
+    } catch (error) { return { ok: false, error }; }
+  }
   function renderCategoryManageList(hostId, pool, table, onSaved, withDefaultRow = false) {
     const host = $(hostId);
     if (!host) return;
@@ -8220,7 +8520,7 @@
         const cat = pool.find(c => c.id === id);
         const prev = cat ? (cat.color || "#9a8cf0") : color;
         if (color === prev) return;
-        const { error } = await sb.from(table).update({ color }).eq("id", id);
+        const { error } = await saveManagedCategory(pool, table, id, { color });
         if (error) { revertColor(inp, swatchBtn, prev); alert("색상을 저장하지 못했어요. 이전 색으로 되돌렸어요. (" + error.message + ")"); return; }
         if (cat) cat.color = color;
         onSaved?.();
@@ -8234,7 +8534,7 @@
         if (!name) { inp.value = cat ? cat.name : ""; return; }
         if (cat && cat.name === name) return;
         if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG(noun)); inp.value = cat ? cat.name : ""; return; }
-        const { error } = await sb.from(table).update({ name }).eq("id", id);
+        const { error } = await saveManagedCategory(pool, table, id, { name });
         if (error) { alert("이름 변경 실패: " + error.message); return; }
         if (cat) cat.name = name;
         onSaved?.();
@@ -8314,6 +8614,7 @@
   }
   // 그룹·범주 이름/색이 바뀌면 그 색을 쓰는 모든 화면(집·일정·할일·습관)을 다시 그림 — 설정 목록 자체는 다시 그리지 않음(입력 중 포커스 유지)
   function rerenderCategoryViews() {
+    renderScheduleCategories();
     renderHome();
     renderSchedule();
     if (scheduleMode === "calendar") renderScheduleCalendar();
@@ -8321,6 +8622,7 @@
     renderTodo();
   }
   function renderSettingsTagLists() {
+    renderScheduleCategories();
     renderCategoryManageList("settingsTagList", habitCategories, "tok_habit_categories", rerenderCategoryViews, true);
     renderCategoryManageList("settingsEventCatList", eventCategories, "tok_event_categories", rerenderCategoryViews, true);
   }
