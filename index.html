@@ -1427,6 +1427,10 @@
   .period-fields [hidden],#td_repeat_dates[hidden],#idt_repeat_dates[hidden],#td_repeat_days_row[hidden]{display:none!important;}
   .period-undated{display:flex;gap:8px;align-items:center;font-size:13px;}
   .period-undated input{width:auto;}
+  .goal-sidebar-heading{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}.goal-sidebar-heading h2{flex:1;}
+  .work-layout{display:block;}.work-side[hidden],.work-detail[hidden]{display:none!important;}
+  .work-detail .proj-back{display:inline-block;}.work-side{max-width:850px;}.work-identities{margin-top:20px;}.goal-mobile-nav{margin-bottom:12px;}
+  @media(min-width:761px){.iv-controls>.iv-view-tabs{display:none!important;}}
 </style>
 </head>
 <body>
@@ -1482,7 +1486,7 @@
       </nav>
       <nav id="dedicatedSidebarNav" class="dedicated-side-nav" aria-label="전용 메뉴" hidden>
         <button type="button" class="navitem" id="sidebarAllMenuBtn">← 전체 메뉴</button>
-        <h2 id="sidebarPageTitle" class="sidebar-page-title"></h2>
+        <div class="goal-sidebar-heading"><h2 id="sidebarPageTitle" class="sidebar-page-title"></h2><button type="button" id="goalSidebarAdd" class="btn-ghost" aria-label="목표 추가" hidden>＋</button></div>
       <section id="scheduleSidebarNav" class="schedule-side-nav" aria-label="일정 하위 메뉴" hidden>
         <button type="button" class="navitem active" data-schedule-mode="calendar" aria-pressed="true">달력</button>
         <button type="button" class="navitem" data-schedule-mode="list" aria-pressed="false">목록</button>
@@ -1808,10 +1812,10 @@
            할일·습관은 복제하지 않고 project_id로 같은 행을 가리킴(할일·습관·지금 한칸과 같은 항목). -->
       <div class="page" data-page="work" style="display:none;">
         <div class="tab-add-bar">
-          <h1 class="page-title" style="margin:0;"><span class="desktop-only">목표</span><span class="mobile-only">작업</span></h1>
-          <button type="button" class="sched-add-btn" id="projAddBtn">+ 프로젝트</button>
+          <h1 class="page-title" style="margin:0;">목표</h1>
+          <button type="button" class="sched-add-btn" id="projAddBtn">+ 목표</button>
         </div>
-        <p class="work-path">정체성(선택) → 프로젝트 → 하위 프로젝트(선택) → 할일·습관</p>
+        <div class="mobile-only goal-mobile-nav"><label>목표 페이지 <select id="goalMobileState"><option value="active">진행중</option><option value="ended">종료</option><option value="archived">보관</option></select></label></div><p id="goalCompatibility" class="work-muted" hidden>목표 상태 저장소 업데이트 전입니다. 기존 프로젝트와 항목은 계속 사용할 수 있어요.</p>
         <div class="card work-not-ready" id="workNotReady" hidden>
           <p class="simple-empty-title">프로젝트 기능을 쓰려면 데이터 저장소 업데이트가 필요해요</p>
           <p class="simple-empty-sub">아직 서버에 프로젝트 저장 공간이 없어요. 기존 할일·습관·일정은 그대로 쓸 수 있어요.</p>
@@ -1820,14 +1824,14 @@
         <div class="work-layout" id="workLayout">
           <div class="work-side">
             <div class="work-list" id="projectList"></div>
-            <section class="work-identities" aria-labelledby="identityHeading">
+            <details class="work-identities" aria-labelledby="identityHeading"><summary>정체성 관리</summary>
               <h2 class="section-label" id="identityHeading">정체성 <span class="work-muted">(선택 · 상위 프로젝트에 연결)</span></h2>
               <div id="identityList"></div>
               <div class="work-inline-add">
                 <input id="identityNameInput" type="text" placeholder="예: 그림 잘 그리는 사람" aria-label="새 정체성 이름" autocomplete="off" />
                 <button type="button" class="btn-ghost" id="identityAddBtn">추가</button>
               </div>
-            </section>
+            </details>
           </div>
           <div class="work-detail" id="projectDetail"></div>
         </div>
@@ -1947,7 +1951,7 @@
   <div class="nav-more-bg" id="navMoreBg" hidden>
     <div class="nav-more-sheet" id="navMoreSheet" role="menu" aria-label="더보기 메뉴">
       <div class="navitem" role="menuitem" data-page="together"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 5 5v3"/></svg> 같이 한칸</div>
-      <div class="navitem" role="menuitem" data-page="work"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> 작업</div>
+      <div class="navitem" role="menuitem" data-page="work"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> 목표</div>
       <div class="navitem" role="menuitem" data-page="timer"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14.5 15.5"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg> 추적</div>
       <div class="navitem" role="menuitem" data-page="records"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 기록</div>
       <div class="navitem" role="menuitem" data-page="settings"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> 설정</div>
@@ -2994,6 +2998,7 @@
   function bindScheduleFilterUser(userId) {
     if (scheduleFilterUser === userId) return;
     classification?.bind();
+    bindGoalUser(userId);
     scheduleFilterUser = userId;
     scheduleDataUser = null;
     scheduleHiddenCategories = new Set();
@@ -3038,10 +3043,13 @@
     const focusKey = focused?.dataset.sidebarTab ? ['sidebar-tab', focused.dataset.sidebarTab]
       : focused?.dataset.togetherSection ? ['together-section', focused.dataset.togetherSection] : null;
     $('sidebarPageTitle').textContent = config?.title || '';
+    $('goalSidebarAdd').hidden=currentPage!=='work'||!projectsReady;
     $('dedicatedSidebarNav').setAttribute('aria-label', (config?.title || '') + ' 메뉴');
     $('scheduleSidebarNav').hidden = currentPage !== 'schedule';
     if (config?.tabs) {
       host.innerHTML = [...$(config.tabs).querySelectorAll('button')].map(button => `<button type="button" class="navitem${button.classList.contains('active') ? ' active' : ''}" data-sidebar-tab="${button.dataset.tab}" aria-pressed="${button.classList.contains('active')}">${escapeHtml(button.textContent)}</button>${currentPage==='todos'&&button.dataset.tab==='board'?'<hr class="sidebar-divider">':''}`).join('');
+    } else if (currentPage === 'work') {
+      host.innerHTML = goalSidebarHtml();
     } else if (currentPage === 'together') {
       host.innerHTML = Object.entries(togetherSections).map(([key, value]) => `<button type="button" class="navitem${togetherSection === key ? ' active' : ''}" data-together-section="${key}" aria-pressed="${togetherSection === key}">${value[0]}</button>`).join('');
     } else {
@@ -3066,7 +3074,10 @@
   $('pageSidebarItems').addEventListener('click', event => {
     const button = event.target.closest('button');
     if (!button) return;
-    if (button.dataset.sidebarTab) {
+    if(button.dataset.goalState) { selectGoalState(button.dataset.goalState); }
+    else if(button.dataset.goalId) { selectGoal(button.dataset.goalId); }
+    else if(button.hasAttribute('data-goal-add')) { openProjectSheet({opener:button}); }
+    else if (button.dataset.sidebarTab) {
       const tab = button.dataset.sidebarTab;
       $(sidebarPages[currentPage].tabs).querySelector('[data-tab="' + tab + '"]').click();
       syncPageSidebar();
@@ -3437,10 +3448,11 @@
         sb.from("tok_projects").select("*").order("sort_order").order("created_at"),
         sb.from("tok_identities").select("*").order("sort_order").order("created_at"),
       ]);
+      if(scheduleLoadUser !== appSymbolUserId) return;
       projectsReady = !ep && !ei;
       projects = projectsReady ? (projData || []) : [];
       identities = projectsReady ? (idData || []) : [];
-    } catch (err) { projectsReady = false; projects = []; identities = []; }
+    } catch (err) { if(scheduleLoadUser!==appSymbolUserId)return;projectsReady = false; projects = []; identities = []; }
     const firstError = e1 || e2 || e3 || e5 || e6 || e7 || e8 || e10 || e12 || e13;
     if (firstError) { alert("불러오기 실패: " + firstError.message); return; }
     if (scheduleLoadUser !== appSymbolUserId) return;
@@ -8965,8 +8977,49 @@
 
   // ── 작업(프로젝트) 탭 — 2026-09-29 1차 ──
   // 구조: 정체성(선택) → 프로젝트 → 하위 프로젝트(선택, 2단계까지) → 할일·습관(project_id로 같은 행을 가리킴, 복제 없음).
-  // 삭제·보관·완료율·자동 완료는 후속 설계라 이번엔 만들지 않음. 연결 해제 = project_id만 비움(원본·기록 그대로).
-  let workSelectedId = null;
+  // 최상위 목표의 진행 상태·보관만 관리. 자동 종료·삭제 없음. 연결 해제 = project_id만 비움(원본·기록 그대로).
+  let workSelectedId = null, goalState = 'active', goalOwner = null, goalScroll = 0;
+  const goalBusy = new Set();
+  const goalKey = () => 'tok_goals:' + goalOwner;
+  function bindGoalUser(owner) {
+    if(owner === goalOwner)return;
+    saveGoalPrefs();
+    goalOwner=owner;workSelectedId=null;goalState='active';goalScroll=0;goalBusy.clear();projects=[];identities=[];projectsReady=false;
+    closeProjectLink();projectSheet.saving=false;closeProjectSheet();
+    try { const p=JSON.parse(localStorage.getItem(goalKey()));if(['active','ended','archived'].includes(p?.state))goalState=p.state;if(typeof p?.selected==='string')workSelectedId=p.selected;goalScroll=Math.max(0,Number(p?.scroll)||0); }catch(_){}
+    $('projectList').innerHTML='';$('projectDetail').innerHTML='';if(currentPage==='work')renderWork();syncPageSidebar();
+  }
+  function saveGoalPrefs(){if(goalOwner)try{localStorage.setItem(goalKey(),JSON.stringify({state:goalState,selected:workSelectedId,scroll:goalScroll}));}catch(_){} }
+  const goalRoot = p => p?.parent_id ? projectById(p.parent_id) : p;
+  const goalCanAdd = p => {const r=goalRoot(p);return !!r&&!r.is_archived&&(r.lifecycle_state||'active')==='active';};
+  const goalLabel = p => p?.is_archived?'보관 · '+(p.lifecycle_state==='ended'?'종료':'진행중'):(p?.lifecycle_state==='ended'?'종료':'진행중');
+  const goalInState = p => goalState==='archived'?!!p.is_archived:!p.is_archived&&(p.lifecycle_state||'active')===goalState;
+  const goalStatusReady = () => projectsReady && projects.every(p=>'lifecycle_state' in p && 'is_archived' in p);
+  function goalSidebarHtml(){return ['active','ended','archived'].map(k=>'<button type="button" class="navitem'+(!workSelectedId&&goalState===k?' active':'')+'" data-goal-state="'+k+'" aria-pressed="'+(!workSelectedId&&goalState===k)+'">'+({active:'진행중',ended:'종료',archived:'보관'}[k])+'</button>').join('')+'<hr class="sidebar-divider">'+topProjects().filter(goalInState).map(p=>'<button type="button" class="navitem'+(goalRoot(projectById(workSelectedId))?.id===p.id?' active':'')+'" data-goal-id="'+p.id+'" aria-current="'+(goalRoot(projectById(workSelectedId))?.id===p.id)+'">'+escapeHtml(p.name)+'</button>').join('');}
+  function selectGoalState(state){if(!['active','ended','archived'].includes(state))return;goalState=state;workSelectedId=null;goalScroll=0;saveGoalPrefs();renderWork();window.scrollTo(0,0);}
+  function selectGoal(id){if(!projectById(id))return;if(!workSelectedId)goalScroll=window.scrollY;workSelectedId=id;saveGoalPrefs();renderWork();window.scrollTo(0,0);$('projectDetail').querySelector('.proj-title')?.focus({preventScroll:true});}
+  function backToGoalList(){workSelectedId=null;saveGoalPrefs();renderWork();window.scrollTo(0,goalScroll);$('projectList').querySelector('button')?.focus({preventScroll:true});}
+  async function changeGoalState(id,action){
+    if(!['end','resume','archive','restore'].includes(action))return;
+    const p=projectById(id),owner=goalOwner;if(!p||p.parent_id||goalBusy.has(id)||!goalStatusReady())return;
+    const patch=action==='archive'?{is_archived:true}:action==='restore'?{is_archived:false}:{lifecycle_state:action==='end'?'ended':'active'};
+    goalBusy.add(id);renderWork();
+    const confirmed=await askConfirm({title:({end:'목표를 종료할까요?',resume:'다시 진행할까요?',archive:'목표를 보관할까요?',restore:'목표를 복원할까요?'})[action],message:'연결된 할일·습관, 하위 프로젝트와 기록은 그대로 유지됩니다.',okText:'변경',cancelText:'취소'});
+    if(owner!==goalOwner)return;
+    if(!confirmed){goalBusy.delete(id);renderWork();$('projectDetail').querySelector('[data-goal-action]')?.focus({preventScroll:true});return;}
+    let result;
+    try {let q=sb.from('tok_projects').update(patch).eq('id',id).eq('user_id',owner);for(const k of ['lifecycle_state','is_archived'])q=q.eq(k,p[k]);result=await q.select().single();}catch(error){result={error};}
+    if(owner!==goalOwner)return;goalBusy.delete(id);
+    if(result.error||!result.data){alert('상태를 저장하지 못했어요. 기존 상태는 유지됩니다. '+(result.error?.message||'다시 불러온 뒤 시도해 주세요.'));renderWork();$('projectDetail').querySelector('[data-goal-action]')?.focus({preventScroll:true});return;}
+    Object.assign(p,result.data);saveGoalPrefs();renderWork();renderHome();renderTodosPage();renderTodo();allViews?.render();$('projectDetail').querySelector('[data-goal-action]')?.focus({preventScroll:true});
+  }
+  $('goalMobileState').onchange=e=>selectGoalState(e.target.value);
+  $('goalSidebarAdd').onclick=e=>openProjectSheet({opener:e.currentTarget});
+  matchMedia('(max-width:760px)').addEventListener('change',()=>{
+    if(currentPage!=='work')return;
+    if(document.activeElement?.getClientRects().length===0){const target=workSelectedId?$('projBackBtn'):matchMedia('(max-width:760px)').matches?$('goalMobileState'):$('pageSidebarItems').querySelector('[data-goal-state="'+goalState+'"]');target?.focus({preventScroll:true});}
+  });
+
   const projectById = (id) => projects.find(p => p.id === id) || null;
   const identityById = (id) => identities.find(i => i.id === id) || null;
   const projectChildren = (id) => projects.filter(p => p.parent_id === id);
@@ -8984,9 +9037,11 @@
     if (!projectsReady) { sel.innerHTML = ""; return; }
     const opts = [`<option value="">없음</option>`];
     topProjects().forEach(p => {
+      if(!goalCanAdd(p))return;
       opts.push(`<option value="${p.id}">${escapeHtml(p.name)}</option>`);
       projectChildren(p.id).forEach(c => opts.push(`<option value="${c.id}">└ ${escapeHtml(c.name)}</option>`));
     });
+    if(currentId&&projectById(currentId)&&!goalCanAdd(projectById(currentId)))opts.push(`<option value="${escapeHtml(currentId)}">${escapeHtml(projectPathLabel(projectById(currentId)))} · ${goalLabel(goalRoot(projectById(currentId)))} · 현재 연결</option>`);
     if (currentId && !projectById(currentId)) opts.push(`<option value="${escapeHtml(currentId)}">(찾을 수 없는 프로젝트)</option>`);
     sel.innerHTML = opts.join("");
     sel.value = currentId || "";
@@ -9001,9 +9056,12 @@
     if (!projectsReady) return;
     if (workSelectedId && !projectById(workSelectedId)) workSelectedId = null;
     page.classList.toggle("work-has-selection", !!workSelectedId);
-    renderProjectList();
-    renderIdentityList();
-    renderProjectDetail();
+    $('goalMobileState').value=goalState;
+    $('goalCompatibility').hidden=goalStatusReady();
+    $('projAddBtn').hidden=!!workSelectedId;
+    $('projectList').parentElement.hidden=!!workSelectedId;
+    $('projectDetail').hidden=!workSelectedId;
+    saveGoalPrefs();renderProjectList();renderIdentityList();renderProjectDetail();syncPageSidebar();
   }
 
   function projectItemHtml(p, isChild) {
@@ -9016,20 +9074,20 @@
   }
   function renderProjectList() {
     const host = $("projectList");
-    const tops = topProjects();
+    const tops = topProjects().filter(goalInState);
     if (!tops.length) {
-      host.innerHTML = `<div class="card proj-empty"><p class="simple-empty-title">아직 프로젝트가 없어요</p>
-        <p class="simple-empty-sub">프로젝트를 만들고 그 안에 할일·습관을 담아 보세요.</p>
-        <button type="button" class="sched-add-btn" id="projEmptyAddBtn">+ 프로젝트 추가</button></div>`;
+      host.innerHTML = `<div class="card proj-empty"><p class="simple-empty-title">이 목록에 목표가 없어요</p>
+        <p class="simple-empty-sub">목표를 만들고 할일·습관을 연결해 보세요.</p>
+        <button type="button" class="sched-add-btn" id="projEmptyAddBtn">+ 목표 추가</button></div>`;
+      $("projEmptyAddBtn").hidden=goalState!=='active';
       $("projEmptyAddBtn").onclick = (e) => openProjectSheet({ mode: "add", opener: e.currentTarget });
       return;
     }
-    host.innerHTML = `<ul class="proj-tree">${tops.map(p => {
-      const kids = projectChildren(p.id);
-      return `<li>${projectItemHtml(p, false)}${kids.length ? `<ul class="proj-children">${kids.map(c => `<li>${projectItemHtml(c, true)}</li>`).join("")}</ul>` : ""}</li>`;
+    host.innerHTML = `<h2 class="section-label">${({active:"진행중",ended:"종료",archived:"보관"})[goalState]} 목표</h2><ul class="proj-tree">${tops.map(p => {
+      return `<li>${projectItemHtml(p, false)}</li>`;
     }).join("")}</ul>`;
     host.querySelectorAll(".proj-item[data-proj]").forEach(btn => {
-      btn.onclick = () => { workSelectedId = btn.dataset.proj; renderWork(); $("projectDetail").querySelector(".proj-title")?.focus?.({ preventScroll: false }); };
+      btn.onclick = () => selectGoal(btn.dataset.proj);
     });
   }
 
@@ -9080,9 +9138,7 @@
     return `<button type="button" class="proj-today" data-today-todo="${t.id}" aria-label="${escapeHtml(t.title)} 오늘 하기"${busy ? " disabled" : ""}>${busy ? "담는 중…" : "오늘하기"}</button>`;
   }
   function projectTodoRowHtml(t) {
-    const date = t.start_date ? formatDateShort(t.start_date) : "";
-    const time = t.todo_time ? t.todo_time.slice(0, 5) : "";
-    const meta = [date, time, t.repeat_unit ? "반복" : ""].filter(Boolean).join(" · ");
+    const meta = [periodLabel("todo",t), t.repeat_unit ? "반복" : ""].filter(Boolean).join(" · ");
     return `<div class="proj-row${t.is_done ? " done" : ""}" data-kind="todo" data-id="${t.id}">
       <input type="checkbox" class="proj-todo-check" data-id="${t.id}" ${t.is_done ? "checked" : ""} aria-label="${escapeHtml(t.title)} 완료" />
       <button type="button" class="proj-row-title" data-open-todo="${t.id}">${escapeHtml(t.title)}</button>
@@ -9137,13 +9193,13 @@
     return true;
   }
   function projectHabitRowHtml(h) {
-    const state = !h.is_active ? "보관" : (h.end_date && h.end_date < todayStr() ? "종료" : "");
+    const state = !h.is_active ? "보관" : (h.end_date && h.end_date < todayStr() ? "종료" : "진행중");
     const meta = [repeatSummaryText(h.repeat_unit, h.repeat_interval, h.repeat_days), state].filter(Boolean).join(" · ");
     return `<div class="proj-row" data-kind="habit" data-id="${h.id}">
       <span class="proj-row-lead" aria-hidden="true">↻</span>
       <button type="button" class="proj-row-title" data-open-habit="${h.id}">${escapeHtml(h.name)}</button>
       <span class="proj-row-meta">${escapeHtml(meta)}</span>
-      <button type="button" class="proj-unlink" data-unlink-kind="habit" data-id="${h.id}">연결 해제</button>
+      <button type="button" class="btn-ghost" data-project-habit-history="${h.id}">기록</button><button type="button" class="proj-unlink" data-unlink-kind="habit" data-id="${h.id}">연결 해제</button>
     </div>`;
   }
   function renderProjectDetail() {
@@ -9159,33 +9215,37 @@
     const ts = projectTodos(p.id);
     const undone = ts.filter(t => !t.is_done).sort((a, b) => (a.start_date || "").localeCompare(b.start_date || "") || (a.todo_time || "").localeCompare(b.todo_time || ""));
     const done = ts.filter(t => t.is_done).sort((a, b) => (b.completed_date || b.start_date || "").localeCompare(a.completed_date || a.start_date || ""));
-    const hs = projectHabits(p.id);
+    const hs = projectHabits(p.id), root=goalRoot(p), canAdd=goalCanAdd(p);
     host.innerHTML = `<div class="card proj-detail">
-      <button type="button" class="proj-back" id="projBackBtn">‹ 프로젝트 목록</button>
+      <button type="button" class="proj-back" id="projBackBtn">← 목록으로</button>
       ${parent ? `<button type="button" class="proj-crumb" data-proj="${parent.id}">${escapeHtml(parent.name)} ›</button>` : ""}
       <h2 class="proj-title" tabindex="-1">${escapeHtml(p.name)}</h2>
       ${ident ? `<p class="proj-identity">정체성 · ${escapeHtml(ident.name)}</p>` : ""}
       ${p.description ? `<p class="proj-desc">${escapeHtml(p.description)}</p>` : ""}
+      <p class="work-muted">${parent?'상위 목표 · ':''}${goalLabel(root)} · 직접 연결 미완료 ${undone.length} / 완료 ${done.length} · 습관 ${hs.length} · 하위 프로젝트 ${kids.length}</p>
+      ${canAdd?'':'<p class="work-muted">새 항목을 추가·연결하려면 목표를 '+(root.is_archived?'복원':'다시 진행')+'해주세요.</p>'}
       <div class="proj-actions">
+        ${!parent&&goalStatusReady()?`<button type="button" class="btn-ghost" data-goal-action="${p.is_archived?'restore':p.lifecycle_state==='ended'?'resume':'end'}" ${goalBusy.has(p.id)?'disabled':''}>${p.is_archived?'복원':p.lifecycle_state==='ended'?'다시 진행':'종료'}</button>${!p.is_archived?'<button type="button" class="btn-ghost" data-goal-action="archive" '+(goalBusy.has(p.id)?'disabled':'')+'>보관</button>':''}`:''}
         <button type="button" class="btn-ghost" id="projEditBtn">수정</button>
-        ${parent ? "" : `<button type="button" class="btn-ghost" id="projAddChildBtn">+ 하위 프로젝트</button>`}
+        ${parent || !canAdd ? "" : `<button type="button" class="btn-ghost" id="projAddChildBtn">+ 하위 프로젝트</button>`}
       </div>
       ${kids.length ? `<section class="proj-section"><h3 class="proj-section-title">하위 프로젝트 <span class="work-muted">${kids.length}</span></h3>
         <div class="proj-kids">${kids.map(c => projectItemHtml(c, true)).join("")}</div></section>` : ""}
       <section class="proj-section">
         <div class="proj-section-head"><h3 class="proj-section-title">할일 <span class="work-muted">${undone.length}</span></h3>
-          <div class="proj-section-btns"><button type="button" class="btn-ghost" id="projNewTodoBtn">+ 새 할일</button><button type="button" class="btn-ghost" id="projLinkTodoBtn">기존 할일 연결</button></div></div>
+          <div class="proj-section-btns"><button type="button" class="btn-ghost" id="projNewTodoBtn" ${canAdd?"":"hidden"}>+ 새 할일</button><button type="button" class="btn-ghost" id="projLinkTodoBtn" ${canAdd?"":"hidden"}>기존 할일 연결</button></div></div>
         ${undone.length ? undone.map(projectTodoRowHtml).join("") : `<p class="proj-none">연결된 할일이 없어요.</p>`}
         ${done.length ? `<details class="proj-done"><summary>완료한 할일 ${done.length}</summary>${done.map(projectTodoRowHtml).join("")}</details>` : ""}
       </section>
       <section class="proj-section">
         <div class="proj-section-head"><h3 class="proj-section-title">습관 <span class="work-muted">${hs.length}</span></h3>
-          <div class="proj-section-btns"><button type="button" class="btn-ghost" id="projNewHabitBtn">+ 새 습관</button><button type="button" class="btn-ghost" id="projLinkHabitBtn">기존 습관 연결</button></div></div>
+          <div class="proj-section-btns"><button type="button" class="btn-ghost" id="projNewHabitBtn" ${canAdd?"":"hidden"}>+ 새 습관</button><button type="button" class="btn-ghost" id="projLinkHabitBtn" ${canAdd?"":"hidden"}>기존 습관 연결</button></div></div>
         ${hs.length ? hs.map(projectHabitRowHtml).join("") : `<p class="proj-none">연결된 습관이 없어요.</p>`}
       </section>
     </div>`;
-    $("projBackBtn").onclick = () => { workSelectedId = null; renderWork(); $("projectList").querySelector(".proj-item")?.focus(); };
-    host.querySelectorAll("[data-proj]").forEach(b => { b.onclick = () => { workSelectedId = b.dataset.proj; renderWork(); }; });
+    $("projBackBtn").onclick = backToGoalList;
+    host.querySelectorAll("[data-goal-action]").forEach(b=>b.onclick=()=>changeGoalState(p.id,b.dataset.goalAction));
+    host.querySelectorAll("[data-proj]").forEach(b => { b.onclick = () => selectGoal(b.dataset.proj); });
     $("projEditBtn").onclick = (e) => openProjectSheet({ mode: "edit", id: p.id, opener: e.currentTarget });
     $("projAddChildBtn") && ($("projAddChildBtn").onclick = (e) => openProjectSheet({ mode: "add", parentId: p.id, opener: e.currentTarget }));
     // 새 항목은 기존 할일·습관 추가 창을 그대로 쓰고 이 프로젝트만 미리 골라 둠(날짜는 창의 기존 규칙대로)
@@ -9195,6 +9255,7 @@
     $("projLinkHabitBtn").onclick = (e) => openProjectLink("habit", p.id, e.currentTarget);
     host.querySelectorAll("[data-open-todo]").forEach(b => { b.onclick = () => openTodoSheet(todos.find(t => t.id === b.dataset.openTodo)); });
     host.querySelectorAll("[data-open-habit]").forEach(b => { b.onclick = () => openHabitSheet(tasks.find(h => h.id === b.dataset.openHabit)); });
+    host.querySelectorAll("[data-project-habit-history]").forEach(b=>b.onclick=()=>openHabitHistory(b.dataset.projectHabitHistory));
     host.querySelectorAll(".proj-todo-check").forEach(cb => {
       cb.onchange = async () => {
         cb.disabled = true;
@@ -9208,19 +9269,25 @@
 
   // 할일·습관의 프로젝트 연결/해제 — project_id 한 칸만 바꿈(항목·완료 기록·날짜는 그대로). val=null이면 해제.
   async function setItemProject(kind, id, val) {
+    const rowBefore=(kind==='habit'?tasks:todos).find(x=>x.id===id),owner=appSymbolUserId;
+    if(val&&rowBefore?.project_id!==val&&!goalCanAdd(projectById(val))){alert('진행중·미보관 목표에만 새로 연결할 수 있어요.');return false;}
     const table = kind === "habit" ? "tok_habits" : "tok_todos";
-    const { error } = await sb.from(table).update({ project_id: val }).eq("id", id);
+    if(!rowBefore)return false;
+    let result;try{result=await sb.from(table).update({ project_id: val }).eq("id",id).eq("user_id",owner).select("id");}catch(error){result={error};}
+    const error=result.error||(!result.data?.length?{message:'연결할 항목이 없거나 접근할 수 없어요.'}:null);
+    if(owner!==appSymbolUserId)return false;
     if (error) { alert((val ? "연결" : "연결 해제") + "하지 못했어요. (" + error.message + ")"); return false; }
     const row = (kind === "habit" ? tasks : todos).find(x => x.id === id);
     if (row) row.project_id = val;
     showToast(val ? "프로젝트에 연결했어요" : "연결을 해제했어요 · 항목은 그대로 있어요");
-    renderWork();
+    renderWork();renderHome();renderTodosPage();renderTodo();allViews?.render();
     return true;
   }
 
   // 기존 할일·습관 연결 창 — 다른 프로젝트에 이미 연결된 항목은 옮길지 한 번 물어봄(직접 연결은 프로젝트 하나).
   let projectLinkState = { kind: "todo", projectId: null, opener: null };
   function openProjectLink(kind, projectId, opener) {
+    if(!goalCanAdd(projectById(projectId)))return;
     projectLinkState = { kind, projectId, opener: opener || null };
     $("projectLinkTitle").textContent = kind === "habit" ? "기존 습관 연결" : "기존 할일 연결";
     $("pl_search").value = "";
@@ -9282,8 +9349,9 @@
     const p = mode === "edit" ? projectById(id) : null;
     if (mode === "edit" && !p) return;
     const parent = p ? (p.parent_id ? projectById(p.parent_id) : null) : (parentId ? projectById(parentId) : null);
+    if(mode==='add'&&parent&&!goalCanAdd(parent))return;
     projectSheet = { mode, id: p ? p.id : null, parentId: p ? (p.parent_id || null) : (parentId || null), saving: false, opener };
-    $("projectSheetTitle").textContent = mode === "edit" ? "프로젝트 수정" : (parent ? "하위 프로젝트 추가" : "프로젝트 추가");
+    $("projectSheetTitle").textContent = mode === "edit" ? (parent?"하위 프로젝트 수정":"목표 수정") : (parent ? "하위 프로젝트 추가" : "목표 추가");
     $("pj_parent_note").hidden = !parent;
     $("pj_parent_note").textContent = parent ? `상위 프로젝트: ${parent.name}` : "";
     $("pj_name").value = p ? p.name : "";
@@ -9312,6 +9380,7 @@
     if (!name) { $("pj_error").textContent = "프로젝트 이름을 적어주세요."; $("pj_name").focus(); return; }
     const description = $("pj_desc").value.trim() || null;
     const identity_id = projectSheet.parentId ? null : ($("pj_identity").value || null);
+    const saveOwner=appSymbolUserId;
     projectSheet.saving = true;
     $("pj_save").disabled = true; $("pj_save").textContent = "저장 중…";
     let data, error;
@@ -9320,6 +9389,7 @@
         ? await sb.from("tok_projects").update({ name, description, identity_id }).eq("id", projectSheet.id).select().single()
         : await sb.from("tok_projects").insert({ name, description, identity_id, parent_id: projectSheet.parentId, sort_order: nextSortOrder(projects) }).select().single());
     } catch (err) { error = err; }
+    if(saveOwner!==appSymbolUserId)return;
     projectSheet.saving = false;
     $("pj_save").disabled = false; $("pj_save").textContent = "저장";
     if (error) {

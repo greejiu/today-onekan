@@ -18,11 +18,11 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  assert.equal(await page.locator('[data-work-page],.work-page-switch,.desktop-work-heading').count(),0);
  await go('todos');await check('todos');
  await page.screenshot({path:'test-results/direct-todos-1366.png'});
- await page.locator('#todoTopTabs [data-tab=someday]').click();await page.locator('#somedayInput').fill('보존할 입력');
+ await page.locator('#pageSidebarItems [data-sidebar-tab=someday]:visible, #todoTopTabs [data-tab=someday]:visible').click();await page.locator('#somedayInput').fill('보존할 입력');
  await go('habits');await check('habits');await page.screenshot({path:'test-results/direct-habits-1366.png'});
  await page.locator('#habitsTabRow [data-tab=archived]').click();await go('todos');
  assert(await page.locator('#todoSomedayView').isVisible());assert.equal(await page.locator('#somedayInput').inputValue(),'보존할 입력');
- await page.locator('#todoTopTabs [data-tab=list]').click();await page.locator('#todoQuickAddBtn').click();await page.locator('#td_title').fill('할일 작성 중');
+ await page.locator('#pageSidebarItems [data-sidebar-tab=list]:visible, #todoTopTabs [data-tab=list]:visible').click();await page.locator('#todoQuickAddBtn').click();await page.locator('#td_title').fill('할일 작성 중');
  for(const width of [760,761,390,1366]){await page.setViewportSize({width,height:768});await check('todos');assert.equal(await page.locator('#td_title').inputValue(),'할일 작성 중');}
  await page.keyboard.press('Escape');await go('habits');assert(await page.locator('#habitsTabRow [data-tab=archived]').evaluate(e=>e.classList.contains('active')));
  await page.locator('#habitAddBtn').click();await page.locator('#ha_name').fill('습관 작성 중');
