@@ -1001,6 +1001,13 @@
   :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) .inline-add-input{font-size:15px;padding:4px 8px;}
   :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) :is(.plan-time, .plan-range-tag){font-size:12px;line-height:1.5;margin-top:3px;color:var(--sub);font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
   :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) .habit-due-chip{font-size:11px;margin:3px 0 0;flex-shrink:0;}
+  /* Upcoming periods sit below the title so long dates cannot squeeze it out. */
+  #homeUpcomingList .home1-flat-row{display:grid;grid-template-columns:14px 20px minmax(0,1fr) auto;column-gap:10px;row-gap:2px;}
+  #homeUpcomingList .home1-flat-row > .drag-handle-dots{grid-column:1;grid-row:1;}
+  #homeUpcomingList .home1-flat-row > :is(input[type=checkbox],.agenda-event-dot-wrap,.habit-skip-mark){grid-column:2;grid-row:1;}
+  #homeUpcomingList .home1-flat-row > .plan-todo-title{grid-column:3;grid-row:1;}
+  #homeUpcomingList .home1-flat-row > :is(.plan-time,.habit-due-chip){grid-column:3;grid-row:2;min-width:0;max-width:100%;margin-top:0;white-space:normal;overflow-wrap:anywhere;justify-self:start;}
+  #homeUpcomingList .home1-flat-row > .item-more{grid-column:4;grid-row:1;}
   /* 목록 보조 정보(날짜 제목·건수·빈칸 안내·더보기) 12~13px */
   .home2-grid .ag-section-head .label{font-size:13px;font-weight:700;}
   .home2-grid .ag-section-head .count{font-size:12px;color:var(--sub);background:color-mix(in srgb, var(--text) 6%, var(--card));}
