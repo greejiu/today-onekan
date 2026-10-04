@@ -116,7 +116,7 @@
  #scheduleCalendarMode.schedule-panels #scheduleAgendaOpen:not([hidden]){display:block;grid-column:2;grid-row:1}
  #calGrid .cal-date-button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;margin:-4px 0 0 -4px;padding:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}
  #calGrid .cal-date-button:focus-visible{outline:2px solid var(--accent);border-radius:8px}
- #scheduleModeToggle .schedule-simple-views{display:none!important}
+
  .schedule-sidebar .goal-sidebar-heading{display:none}
 }
 /* Schedule week uses one axis and seven flexible lanes. */
@@ -143,3 +143,7 @@
 .iv-page .schedule-week-fit .add-slot{min-width:0;overflow:hidden;font-size:10px}
 .iv-page .schedule-week-fit .sv-allday .agenda-title{white-space:nowrap;text-overflow:ellipsis}
 .iv-page .schedule-week-fit .sv-allday .add-slot{padding:4px 0!important;min-height:28px!important;white-space:nowrap}
+
+/* Schedule view selection belongs to the page header at every width. */
+#scheduleModeToggle{display:flex!important}
+#scheduleSidebarNav{display:none!important}
