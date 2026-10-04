@@ -29,7 +29,7 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  await go('todos');assert.equal(await page.locator('#todoSomedayView').isVisible(),true);
  await page.locator('.sidebar [data-page=home]').focus();await page.keyboard.press('Enter');assert.equal(await side.locator('[data-page].active').getAttribute('data-page'),'home');
  await page.keyboard.press('Tab');await page.keyboard.press('Space');assert.equal(await side.locator('[data-page].active').getAttribute('data-page'),'all');
- assert.notEqual(await page.locator('#sidebarAllMenuBtn').evaluate(e=>getComputedStyle(e).outlineStyle),'none');
+ assert.notEqual(await page.locator('#pageSidebarItems [data-sidebar-tab=calendar]').evaluate(e=>getComputedStyle(e).outlineStyle),'none');
  for(const target of ['home','all','community','timer','schedule','todos','habits','work','together','records','settings']){await go(target);assert.equal(await side.locator('[data-page].active').count(),1);assert.equal(await side.locator('[aria-current=page]').getAttribute('data-page'),target);}
  // Calendar/list selection and scroll survive navigation through the new sidebar.
  await go('schedule');
