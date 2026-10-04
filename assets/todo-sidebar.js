@@ -26,6 +26,7 @@ window.createOnekanTodoSidebar = api => {
  more.onclick=()=>{if(popup.matches(':popover-open'))popup.hidePopover();else{const r=more.getBoundingClientRect();popup.style.left=(r.right+8)+'px';popup.style.top=Math.max(8,Math.min(r.top,innerHeight-420))+'px';popup.showPopover();popup.querySelector('button')?.focus();}};
  popup.addEventListener('toggle',()=>more.setAttribute('aria-expanded',String(popup.matches(':popover-open'))));
  popup.addEventListener('keydown',e=>{if(e.key==='Escape'){popup.hidePopover();more.focus({preventScroll:true});e.preventDefault();}});
+ const moreLabel=document.createElement('span');moreLabel.className='todo-rail-label';moreLabel.textContent='더보기';more.append(moreLabel);
  sidebar.prepend(rail);
  const homeEntry=document.querySelector('#sidebarHomeNav button').cloneNode(true);homeEntry.removeAttribute('id');homeEntry.onclick=()=>api.navigate('home');document.getElementById('mainSidebarNav').prepend(homeEntry);
  const feedback=document.createElement('p');feedback.id='todoGroupMoveStatus';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');document.getElementById('dedicatedSidebarNav').append(feedback);
@@ -33,7 +34,7 @@ window.createOnekanTodoSidebar = api => {
  let drag=null,busy=false,suppressed=0,owner=api.user();
  const enabled=()=>desktop.matches&&!collapsed&&api.page()==='todos'&&api.dedicated();
  function clear(){drag?.source.classList.remove('todo-group-dragging');document.querySelectorAll('.todo-group-target').forEach(el=>el.classList.remove('todo-group-target'));ghost.hidden=true;drag=null;}
- function sync(){sidebar.classList.add('todo-rail');sidebar.classList.toggle('rail-collapsed',collapsed);sidebar.classList.toggle('todo-details',api.page()==='todos');rail.hidden=!desktop.matches;toggle.textContent=collapsed?'→':'←';toggle.title=collapsed?'전체 메뉴 펼치기':'사이드바 접기';toggle.setAttribute('aria-label',toggle.title);toggle.setAttribute('aria-expanded',String(!collapsed));more.classList.toggle('active',!['home','all','schedule','todos','habits'].includes(api.page()));feedback.hidden=api.page()!=='todos';if(popup.matches(':popover-open'))popup.hidePopover();if(!enabled())clear();if(owner!==api.user()){owner=api.user();clear();feedback.textContent='';}}
+ function sync(){sidebar.classList.add('todo-rail');sidebar.classList.toggle('rail-collapsed',collapsed);sidebar.classList.toggle('rail-details',api.dedicated()&&!collapsed);sidebar.classList.toggle('todo-details',api.page()==='todos');rail.hidden=!desktop.matches;toggle.textContent=collapsed?'→':'←';toggle.title=collapsed?'전체 메뉴 펼치기':'사이드바 접기';toggle.setAttribute('aria-label',toggle.title);toggle.setAttribute('aria-expanded',String(!collapsed));more.classList.toggle('active',!['home','all','schedule','todos','habits'].includes(api.page()));feedback.hidden=api.page()!=='todos';if(popup.matches(':popover-open'))popup.hidePopover();if(!enabled())clear();if(owner!==api.user()){owner=api.user();clear();feedback.textContent='';}}
  function target(x,y){
   const button=document.elementFromPoint(x,y)?.closest('#classificationSideHost [data-group-select]');
   if(!button||button.dataset.groupSelect==='all')return null;
