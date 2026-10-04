@@ -8,7 +8,7 @@ const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
  const source=await response.text(),normalize=s=>s.replace(/\r\n/g,'\n');
  assert.equal(normalize(source),normalize(fs.readFileSync('index.html','utf8')),'served HTML must match the reviewed commit');
  const assetResults=[];
- for(const file of ['assets/together.js','assets/together.css','assets/classification.js','assets/classification.css','assets/schedule-views.js','assets/item-views.js','assets/todo-views.js','assets/habit-views.js','assets/agenda-markup.js','assets/calendar-ui.js','assets/all-views.js','assets/schedule-views.css']){
+ for(const file of ['assets/tracking.js','assets/tracking.css','assets/together.js','assets/together.css','assets/classification.js','assets/classification.css','assets/schedule-views.js','assets/item-views.js','assets/todo-views.js','assets/habit-views.js','assets/agenda-markup.js','assets/calendar-ui.js','assets/all-views.js','assets/schedule-views.css']){
   const r=await fetch(url+file+'?period='+sha);assert.equal(r.status,200);const text=await r.text();assert.equal(normalize(text),normalize(fs.readFileSync(file,'utf8')));assetResults.push(file+' matched');
  }
  const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
@@ -18,7 +18,7 @@ const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
   await page.route(url+'**',route=>{
    const pathname=new URL(route.request().url()).pathname.replace('/today-onekan/','');
    if(!pathname)return route.fulfill({contentType:'text/html',body:source});
-   if(['assets/together.js','assets/together.css','assets/classification.js','assets/classification.css','assets/schedule-views.js','assets/item-views.js','assets/todo-views.js','assets/habit-views.js','assets/agenda-markup.js','assets/calendar-ui.js','assets/all-views.js','assets/schedule-views.css','assets/cheese-drawing.png'].includes(pathname))return route.fulfill({contentType:pathname.endsWith('.js')?'application/javascript':pathname.endsWith('.css')?'text/css':'image/png',body:fs.readFileSync(pathname)});
+   if(['assets/tracking.js','assets/tracking.css','assets/together.js','assets/together.css','assets/classification.js','assets/classification.css','assets/schedule-views.js','assets/item-views.js','assets/todo-views.js','assets/habit-views.js','assets/agenda-markup.js','assets/calendar-ui.js','assets/all-views.js','assets/schedule-views.css','assets/cheese-drawing.png'].includes(pathname))return route.fulfill({contentType:pathname.endsWith('.js')?'application/javascript':pathname.endsWith('.css')?'text/css':'image/png',body:fs.readFileSync(pathname)});
    return route.abort();
   });
   await page.goto(url+'?period='+sha);await page.waitForSelector('.upcoming-day');fs.mkdirSync('test-results',{recursive:true});

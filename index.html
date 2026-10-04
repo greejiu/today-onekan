@@ -1432,6 +1432,7 @@
   .work-detail .proj-back{display:inline-block;}.work-side{max-width:850px;}.work-identities{margin-top:20px;}.goal-mobile-nav{margin-bottom:12px;}
   @media(min-width:761px){.iv-controls>.iv-view-tabs{display:none!important;}}
 </style>
+<link rel="stylesheet" href="assets/tracking.css">
 </head>
 <body>
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false"><defs><symbol id="symbol-hankan" viewBox="0 0 32 32"><path d="M18.5 4H10a6 6 0 0 0-6 6v12a6 6 0 0 0 6 6h12a6 6 0 0 0 6-6v-7.5" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><rect x="22" y="2.25" width="7.75" height="7.75" rx="2" fill="currentColor"/></symbol><symbol id="symbol-cheese" viewBox="0 0 32 32"><path fill="currentColor" fill-rule="evenodd" d="M4.8 7.6C5.5 1.1 7.6.6 11.9 6h8.2c4.3-5.4 6.4-4.9 7.1 1.6 1.4 1.6 1.8 3 1.8 4.6v11.3a5.5 5.5 0 0 1-5.5 5.5h-15A5.5 5.5 0 0 1 3 23.5V12.2c0-1.6.4-3 1.8-4.6Zm16.4 12.6a1.2 1.2 0 0 0-1.2 1.2v3.2a1.2 1.2 0 0 0 1.2 1.2h3.2a1.2 1.2 0 0 0 1.2-1.2v-3.2a1.2 1.2 0 0 0-1.2-1.2h-3.2Z"/></symbol><symbol id="symbol-step" viewBox="0 0 32 32"><g fill="currentColor"><rect x="2.5" y="20.5" width="8.5" height="8.5" rx="2"/><rect x="11.75" y="11.75" width="8.5" height="8.5" rx="2"/><rect x="21" y="3" width="8.5" height="8.5" rx="2"/></g></symbol><symbol id="symbol-check" viewBox="0 0 32 32"><path fill="currentColor" d="M11 3h11c3.6 0 6.4 1 6.4 3.6 0 1.2-.9 2.1-2.6 2.5-2.2.5-3.5 1.2-5.3 3L15 17.6c-.9.9-1.7.8-2.6-.1l-2.2-2.2c-1.5-1.5-3.4-1.6-4.7-.2-1.4 1.5-1.2 3.5.2 4.9l4.4 4.3c2.4 2.4 5.7 2.4 8.3-.2l8-8c1.8-1.8 3.1-1.7 3.1 1.5V22c0 5-2.5 7.5-7.5 7.5H10c-5 0-7.5-2.5-7.5-7.5V11C2.5 5.5 5 3 11 3Z"/></symbol></defs></svg>
@@ -1799,14 +1800,7 @@
         </div>
       </div>
 
-      <!-- 2026-09-29 시간 추적: 현재 코드에는 실행 타이머가 없음 → 1차는 화면 틀과 빈 상태만(동작하지 않는 시작 버튼 없음) -->
-      <div class="page" data-page="timer" style="display:none;">
-        <h1 class="page-title">추적</h1>
-        <div class="card simple-empty">
-          <p class="simple-empty-title">아직 시간 추적 기능이 준비 중이에요</p>
-          <p class="simple-empty-sub">할일에 쓴 시간을 재는 타이머는 다음 단계에서 이 화면에 추가돼요. 지금은 할일·습관 체크로 기록이 남아요.</p>
-        </div>
-      </div>
+      <div class="page" data-page="timer" style="display:none;"></div>
 
       <!-- 2026-09-29 작업: 정체성(선택) → 프로젝트 → 하위 프로젝트(선택) → 할일·습관.
            할일·습관은 복제하지 않고 project_id로 같은 행을 가리킴(할일·습관·지금 한칸과 같은 항목). -->
@@ -2379,6 +2373,7 @@
 <script src="assets/todo-views.js"></script>
 <script src="assets/habit-views.js"></script>
 <script src="assets/all-views.js"></script>
+<script src="assets/tracking.js"></script>
 <script>
 // Local civil dates and wall-clock minutes. No UTC serialization or display fallback writes.
 (function (root) {
@@ -2980,6 +2975,7 @@
   let todoViews = null;
   let habitViews = null;
   let allViews = null;
+  let tracking = null;
   // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가). 메모 기능은 2026-09-12에 완전히 제거함(scheduleSubView도 함께 삭제).
   let scheduleMode = "calendar"; // "calendar" | "list" — 2026-09-26: 첫 화면은 캘린더(앱 사용 중 바꾼 보기는 탭을 오가도 유지, 새로고침하면 다시 캘린더)
   // 일정 화면의 표시 설정만 저장한다. events 원본과 다른 화면은 필터링하지 않는다.
@@ -2999,6 +2995,7 @@
     if (scheduleFilterUser === userId) return;
     classification?.bind();
     bindGoalUser(userId);
+    tracking?.bind(userId);
     scheduleFilterUser = userId;
     scheduleDataUser = null;
     scheduleHiddenCategories = new Set();
@@ -3025,7 +3022,7 @@
     todos: { title: '할일', tabs: 'todoTopTabs' },
     habits: { title: '습관', tabs: 'habitViewTabs' },
     work: { title: '목표', anchors: [['projectList','프로젝트'],['identityHeading','정체성']] },
-    timer: { title: '추적', preparing: '시간 추적 · 준비 중' },
+    timer: { title: '추적' },
     records: { title: '기록', anchors: [['recDayHeading','날짜별 기록'],['recItemHeading','항목별 기록']] },
     together: { title: '같이한칸' },
     community: { title: '커뮤니티', preparing: '전체 공개 공간 · 준비 중' },
@@ -3041,13 +3038,16 @@
     const config = sidebarPages[currentPage], host = $('pageSidebarItems');
     const focused = host.contains(document.activeElement) ? document.activeElement : null;
     const focusKey = focused?.dataset.sidebarTab ? ['sidebar-tab', focused.dataset.sidebarTab]
-      : focused?.dataset.togetherSection ? ['together-section', focused.dataset.togetherSection] : null;
+      : focused?.dataset.togetherSection ? ['together-section', focused.dataset.togetherSection]
+      : focused?.dataset.trackingView ? ['tracking-view', focused.dataset.trackingView] : null;
     $('sidebarPageTitle').textContent = config?.title || '';
     $('goalSidebarAdd').hidden=currentPage!=='work'||!projectsReady;
     $('dedicatedSidebarNav').setAttribute('aria-label', (config?.title || '') + ' 메뉴');
     $('scheduleSidebarNav').hidden = currentPage !== 'schedule';
     if (config?.tabs) {
       host.innerHTML = [...$(config.tabs).querySelectorAll('button')].map(button => `<button type="button" class="navitem${button.classList.contains('active') ? ' active' : ''}" data-sidebar-tab="${button.dataset.tab}" aria-pressed="${button.classList.contains('active')}">${escapeHtml(button.textContent)}</button>${currentPage==='todos'&&button.dataset.tab==='board'?'<hr class="sidebar-divider">':''}`).join('');
+    } else if (currentPage === 'timer') {
+      host.innerHTML = tracking?.sidebar() || '';
     } else if (currentPage === 'work') {
       host.innerHTML = goalSidebarHtml();
     } else if (currentPage === 'together') {
@@ -3074,7 +3074,8 @@
   $('pageSidebarItems').addEventListener('click', event => {
     const button = event.target.closest('button');
     if (!button) return;
-    if(button.dataset.goalState) { selectGoalState(button.dataset.goalState); }
+    if(button.dataset.trackingView) { tracking?.select(button.dataset.trackingView); }
+    else if(button.dataset.goalState) { selectGoalState(button.dataset.goalState); }
     else if(button.dataset.goalId) { selectGoal(button.dataset.goalId); }
     else if(button.hasAttribute('data-goal-add')) { openProjectSheet({opener:button}); }
     else if (button.dataset.sidebarTab) {
@@ -3372,6 +3373,8 @@
     document.querySelectorAll(".page").forEach(el => el.style.display = el.dataset.page === page ? "block" : "none");
     if (page === "all") allViews?.render();
     if (page === "work") renderWork();
+    tracking?.render();
+    if(page === "timer") tracking?.refresh();
     if (page === "records") renderRecords();
     // 숨겨진 입력창에 포커스가 남으면(모바일 키보드가 열린 채) 해제
     const ae = document.activeElement;
@@ -3480,6 +3483,7 @@
     renderSchedule();
     if (scheduleMode === "calendar") renderScheduleCalendar();
     renderTodosPage();
+    tracking?.render();
     renderTodo();
     renderSettingsTagLists();
     renderSettingsDaySettings();
@@ -8051,6 +8055,7 @@
       sep();
       entries.push({ label: "습관 삭제", icon: "trash", danger: true, run: () => deleteHabitWithConfirm(id) });
     } else if (kind === "todo") {
+      entries.push({ label: "타이머 시작", icon: "time", run: () => tracking?.start(id) });
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openTodoSheet(item) });
       entries.push({ label: "날짜 변경", icon: "date", window: true, run: () => openItemDateSheet("todo", id) });
       entries.push(groupEntry("범주 변경"));
@@ -10037,6 +10042,7 @@
     choose:(context,onSelect)=>showAddKindMenu(context.opener?.getBoundingClientRect?.().left||innerWidth/2,context.opener?.getBoundingClientRect?.().bottom||150,kind=>onSelect(kind)),
     done:setTodoDone,reload:loadAll,refresh:()=>{renderHome();renderTodosPage();renderTodo();if(currentPage==='work')renderWork();},sidebar:syncPageSidebar
   });
+  tracking=window.createOnekanTracking({sb,user:()=>appSymbolUserId,page:()=>currentPage,todos:()=>todos,groups:()=>classification.groups(),categories:()=>habitCategories,projects:()=>projects,escape:escapeHtml,today:todayStr,addDays:OnekanPeriod.addDays,navigate:()=>showPage("timer"),sidebar:syncPageSidebar});
   boot();
 </script>
 </body>
