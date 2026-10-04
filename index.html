@@ -1775,12 +1775,28 @@
             <button type="button" data-tab="archived">보관</button>
             <button type="button" data-tab="ended">종료</button>
           </div>
-          <div class="someday-toolbar">
-            <select id="habitSortSelect" class="someday-sort-select"></select>
-            <select id="habitGroupSelect" class="someday-sort-select"></select>
-          </div>
-          <div id="todoList"></div>
-          <div id="todoEmpty" class="empty" style="display:none;">표시할 습관이 없어요.</div>
+          <div class="view-toggle" id="habitViewTabs" aria-label="습관 보기"><button type="button" data-tab="calendar">달력</button><button type="button" data-tab="list" class="active">목록</button><button type="button" data-tab="board">보드</button></div>
+          <div class="sv-toolbar" id="habitDateNav"><button id="habitPrevBtn" type="button" aria-label="이전 기간">‹</button><span id="habitMonthLabel"></span><button id="habitNextBtn" type="button" aria-label="다음 기간">›</button><button id="habitTodayBtn" type="button">오늘</button></div>
+          <label id="habitStatusWrap">회차 표시 <select id="habitStatus"><option value="all">전체</option><option value="open">예정</option><option value="done">완료 기록</option><option value="skipped">건너뜀 기록</option></select></label>
+          <p id="habitOccurrenceNotice" class="sv-status"></p><div id="habitOverdueNotice" class="sv-status"></div>
+        <div id="habitCalendarOptions" class="sv-toolbar">
+          <div class="view-toggle" role="group" aria-label="달력 기간"><button type="button" data-sv-span="day">1일</button><button type="button" data-sv-span="four">4일</button><button type="button" data-sv-span="month" class="active">한달</button></div>
+          <div id="habitTimeFormat" class="view-toggle" role="group" aria-label="시간 표시" hidden><button type="button" data-sv-format="timeline">타임라인</button><button type="button" data-sv-format="blocks">시간블럭</button></div>
+          <label>기준 날짜 <input type="date" id="habitAnchor" /></label>
+        </div>
+        <div id="habitCollectionOptions" class="sv-toolbar" hidden>
+          <span>습관 원본을 한 번씩 표시합니다</span><span hidden><input id="habitRangeStart" type="date"><input id="habitRangeEnd" type="date"><button id="habitRangeApply">조회</button></span>
+          <label>정렬 <select id="habitSort"><option value="date">다음 예정일순</option><option value="name">이름순</option></select></label>
+          <label id="habitListGroupWrap">그룹화 <select id="habitGroup"><option value="none">없음</option><option value="group">그룹별</option><option value="category">범주별</option><option value="project">프로젝트별</option></select></label>
+          <label id="habitBoardOptions" hidden>열 기준 <select id="habitBoardBy"><option value="group">그룹별</option><option value="category">범주별</option><option value="project">프로젝트별</option></select></label>
+        </div>
+        <p id="habitRangeLabel" class="sv-status"></p><p id="habitSaveStatus" class="sv-status" role="status" aria-live="polite"></p>
+            <p id="habitUndatedNotice" class="sv-status"></p>
+            <span id="habitMonthCount" class="sched-count"></span><div id="habitJumpRow"></div>
+            <div id="habitCollection"><div id="todoList"></div><div id="habitBoard" class="sv-board" hidden></div><p id="todoEmpty" class="empty"></p></div>
+            <div id="habitCalendarMode" hidden><div id="habitTimeView" hidden><div id="habitTimeScroll" class="sv-time-scroll"><div id="habitTimeDays" class="sv-time-days"></div></div></div><div class="cal-layout"><div class="cal-main"><div class="cal-weekday-row" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div id="habitCalGrid" class="cal-grid" aria-label="습관 월간 달력"></div></div></div></div>
+          <select id="habitSortSelect" hidden></select><select id="habitGroupSelect" hidden></select>
+
         </div>
       </div>
 
@@ -2198,6 +2214,7 @@
         <div class="period-row"><div><label for="hs_occ_end">종료일</label><input id="hs_occ_end" type="date" /></div><div data-period-time><label for="hs_endtime">종료시간</label><input id="hs_endtime" type="time" /></div></div>
         <div class="cev-hint" id="hs_period_hint"></div>
       </div>
+    <p class="sv-status">기간·반복 설정은 원본 습관의 앞으로의 회차에 적용됩니다. 이미 저장한 완료 기록의 시각은 유지됩니다. 특정 회차만 옮기는 기능은 아직 지원하지 않습니다.</p>
     <div id="hs_error" class="cal-ev-error" role="alert"></div>
     <div class="cev-hint" style="margin:-4px 0 10px;">시간을 바꿔도 이미 완료한 기록의 시간은 그대로예요.</div>
     <div class="field split">
@@ -2359,6 +2376,7 @@
 <script src="assets/item-views.js"></script>
 <script src="assets/schedule-views.js"></script>
 <script src="assets/todo-views.js"></script>
+<script src="assets/habit-views.js"></script>
 <script>
 // Local civil dates and wall-clock minutes. No UTC serialization or display fallback writes.
 (function (root) {
@@ -2958,6 +2976,7 @@
   let classification = null;
   let scheduleViews = null;
   let todoViews = null;
+  let habitViews = null;
   // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가). 메모 기능은 2026-09-12에 완전히 제거함(scheduleSubView도 함께 삭제).
   let scheduleMode = "calendar"; // "calendar" | "list" — 2026-09-26: 첫 화면은 캘린더(앱 사용 중 바꾼 보기는 탭을 오가도 유지, 새로고침하면 다시 캘린더)
   // 일정 화면의 표시 설정만 저장한다. events 원본과 다른 화면은 필터링하지 않는다.
@@ -3000,7 +3019,7 @@
     all: { title: '모두', preparing: '달력·목록·보드 · 준비 중' },
     schedule: { title: '일정' },
     todos: { title: '할일', tabs: 'todoTopTabs' },
-    habits: { title: '습관', tabs: 'habitsTabRow' },
+    habits: { title: '습관', tabs: 'habitViewTabs' },
     work: { title: '목표', anchors: [['projectList','프로젝트'],['identityHeading','정체성']] },
     timer: { title: '추적', preparing: '시간 추적 · 준비 중' },
     records: { title: '기록', anchors: [['recDayHeading','날짜별 기록'],['recItemHeading','항목별 기록']] },
@@ -3064,7 +3083,7 @@
   const sidebarTabObserver = new MutationObserver(() => {
     if (sidebarPages[currentPage]?.tabs) syncPageSidebar();
   });
-  ['todoTopTabs','habitsTabRow'].forEach(id => sidebarTabObserver.observe($(id), { subtree: true, attributes: true, attributeFilter: ['class'] }));
+  ['todoTopTabs','habitViewTabs'].forEach(id => sidebarTabObserver.observe($(id), { subtree: true, attributes: true, attributeFilter: ['class'] }));
   function selectTogetherSection(section, loaded = false) {
     if (!togetherSections[section]) return;
     togetherSection = section;
@@ -3324,6 +3343,7 @@
     const prevPage = currentPage;
     if(page!=="schedule")scheduleViews?.cancel();
     if(page!=="todos")todoViews?.cancel();
+    if(page!=="habits")habitViews?.cancel();
     if (prevPage === "schedule" && page !== "schedule") scheduleScrollY = window.scrollY;
     currentPage = page;
     if (page !== 'schedule') closeScheduleFilter(false);
@@ -3436,6 +3456,7 @@
     await classification?.load();
     scheduleViews?.bind();
     todoViews?.bind();
+    habitViews?.bind();
     if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute, default_tag_color: settingsData.default_tag_color || null, default_event_color: settingsData.default_event_color || null }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00, 기본색 없음) 유지
     await advancePastRepeatingEvents(events); // 반복 설정된 일정 중 날짜 지난 것은 다음 회차로 자동 이동
     renderScheduleCategories();
@@ -4002,6 +4023,7 @@
 
   // 습관 체크를 "오늘"이 아닌 다른 날짜(과거·미래)에도 할 수 있게 일반화한 버전.
   async function toggleHabitForDate(taskId, checked, dateStr) {
+    const statusOwner=appSymbolUserId;
     if (checked && habitDoneOn(taskId,dateStr)) return true;
     if (checked) {
       // 체크하는 순간의 습관 시간을 그대로 기록에 남김(나중에 습관 시간을 바꿔도 이미 완료한 날짜엔 영향 없게).
@@ -4012,6 +4034,7 @@
         snap.occurrence_end_date=addDaysStr(dateStr,daysBetween(period.startDate,period.endDate));
       }
       const { error } = await sb.from("tok_habit_logs").insert({ habit_id: taskId, done_date: dateStr, ...snap });
+      if(statusOwner!==appSymbolUserId)return false;
       if(error?.code==='23505') {await loadAll();return true;}
       if (error) {
         if (/habit_skipped/.test(error.message || "")) {
@@ -4024,6 +4047,7 @@
       playCompleteSound(); // 습관도 할일(상위)과 동일하게 완료 효과음 — 습관은 하위 개념 없이 그 자체로 하나의 완료라 긴 쪽으로 통일
     } else {
       const { error } = await sb.from("tok_habit_logs").delete().eq("habit_id", taskId).eq("done_date", dateStr);
+      if(statusOwner!==appSymbolUserId)return false;
       if (error) { alert("체크 해제 실패: " + error.message); return false; }
       habitLogs = habitLogs.filter(r => !(r.habit_id === taskId && r.done_date === dateStr));
     }
@@ -6719,6 +6743,7 @@
     const o = habitSheetOpener;
     habitSheetOpener = null;
     if (o && document.body.contains(o) && o.getClientRects().length) o.focus({ preventScroll: true });
+    else if(currentPage==="habits") document.querySelector('#habitViewTabs [data-tab="'+habitViews?.state().mode+'"]')?.focus({preventScroll:true});
   }
   $("habitSheetCancelBtn").onclick = closeHabitSheet;
   $("habitSheetBg").addEventListener("keydown", (e) => {
@@ -7805,6 +7830,7 @@
   document.querySelectorAll("#habitsTabRow button").forEach(btn => {
     btn.onclick = () => {
       habitsTabView = btn.dataset.tab;
+      if(habitViews){habitViews.option('lifecycle',habitsTabView);return;}
       document.querySelectorAll("#habitsTabRow button").forEach(b => b.classList.toggle("active", b === btn));
       renderTodo();
     };
@@ -7856,6 +7882,7 @@
   `;
   }
   function renderTodo() {
+    if(habitViews){habitViews.render();return;}
     const todayS = todayStr();
     const visible = tasks.filter(t => habitLifecycleState(t, todayS) === habitsTabView && (!classification || classification.matches("habit",t)));
     const settings = habitListSettings[habitsTabView];
@@ -7870,19 +7897,22 @@
       : "종료된 습관이 없어요.";
     $("todoEmpty").style.display = "none"; // 빈 상태는 renderSections가 #todoList 안에 직접 그려줌
     renderSections($("todoList"), sections, renderHabitRow, emptyText);
-    document.querySelectorAll("#todoList .historybtn").forEach(btn => {
+    wireHabitRows($("todoList"));
+  }
+  function wireHabitRows(host) {
+    host.querySelectorAll(".historybtn").forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
         openHabitHistory(btn.dataset.id);
       };
     });
-    document.querySelectorAll("#todoList .settingsbtn").forEach(btn => {
+    host.querySelectorAll(".settingsbtn").forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
         openHabitSheet(tasks.find(t => t.id === btn.dataset.id));
       };
     });
-    document.querySelectorAll("#todoList .togglebtn").forEach(btn => {
+    host.querySelectorAll(".togglebtn").forEach(btn => {
       btn.onclick = async () => {
         const id = btn.dataset.id;
         const t = tasks.find(x => x.id === id);
@@ -7913,12 +7943,12 @@
         await loadAll();
       };
     });
-    document.querySelectorAll("#todoList .del").forEach(btn => {
+    host.querySelectorAll(".del").forEach(btn => {
       btn.onclick = () => deleteHabitWithConfirm(btn.dataset.id); // 메뉴의 "습관 삭제"와 같은 확인창(지워지는 기록 범위 안내)
     });
 
     // 클릭 → 이름 인라인 수정
-    document.querySelectorAll("#todoList .name").forEach(nameEl => {
+    host.querySelectorAll(".name").forEach(nameEl => {
       nameEl.onclick = () => {
         const id = nameEl.closest(".todo-row").dataset.id;
         const current = nameEl.textContent;
@@ -8136,6 +8166,7 @@
   // (반복 설정과 다른 날짜 기록은 건드리지 않음). 같은 습관·날짜는 저장 중 다시 누를 수 없음.
   const habitStatusBusy = new Set();
   async function setHabitDayStatus(habitId, dateStr, action) {
+    const statusOwner=appSymbolUserId;
     const key = habitId + "|" + dateStr;
     if (habitStatusBusy.has(key)) return false;
     habitStatusBusy.add(key);
@@ -8145,6 +8176,7 @@
         ok = await toggleHabitForDate(habitId, action === "done", dateStr);
       } else if (action === "skip") {
         const { error } = await sb.from("tok_habit_skips").insert({ habit_id: habitId, skip_date: dateStr });
+        if(statusOwner!==appSymbolUserId)return false;
         if (error && error.code !== "23505") { // 23505 = 이미 건너뜀(다른 기기 등) → 결과는 같으니 성공으로 봄
           if (/habit_already_done/.test(error.message || "")) {
             alert("이 날은 이미 완료로 기록돼 있어서 건너뛸 수 없어요. 화면을 새로 불러올게요.");
@@ -8156,6 +8188,7 @@
         }
       } else if (action === "unskip") {
         const { error } = await sb.from("tok_habit_skips").delete().eq("habit_id", habitId).eq("skip_date", dateStr);
+        if(statusOwner!==appSymbolUserId)return false;
         if (error) alert("건너뛰기 취소 실패: " + error.message);
         else { habitSkips = habitSkips.filter(r => !(r.habit_id === habitId && r.skip_date === dateStr)); ok = true; }
       }
@@ -8164,7 +8197,7 @@
     } finally {
       habitStatusBusy.delete(key);
     }
-    if (ok) {
+    if (ok && statusOwner===appSymbolUserId) {
       renderHome();
       renderTodo();
       if ($("habitHistoryBg").classList.contains("open") && hhKind === "habit" && hhTask && hhTask.id === habitId) renderHabitHistory();
@@ -8448,7 +8481,7 @@
     document.addEventListener(type, (e) => { if (e.target.closest?.(".item-more")) e.stopPropagation(); }, true);
   });
   document.addEventListener("click", (e) => {
-    if(scheduleViews?.consumeClick(e)||todoViews?.consumeClick(e))return;
+    if(scheduleViews?.consumeClick(e)||todoViews?.consumeClick(e)||habitViews?.consumeClick(e))return;
     const btn = e.target.closest?.(".item-more");
     if (!btn) return;
     e.preventDefault();
@@ -9949,7 +9982,7 @@
     sb, user:()=>appSymbolUserId, page:()=>currentPage, escape:escapeHtml,
     categories:()=>habitCategories,eventGroups:()=>eventCategories,
     reload:loadAll, refresh:rerenderCategoryViews,
-    calendarRefresh:()=>{renderScheduleCalendar();renderTodosPage();},
+    calendarRefresh:()=>{renderScheduleCalendar();renderTodosPage();renderTodo();},
     categoryList:host=>renderCategoryManageList(host,habitCategories,'tok_habit_categories',()=>{rerenderCategoryViews();classification.render();},false,false),
     menu:openMenuShell,alert,trap:trapFocusIn,reserved:isReservedCategoryName
   });
@@ -9969,6 +10002,19 @@
     add:context=>openTodoSheet(null,context),edit:id=>openTodoSheet(todos.find(t=>t.id===id)),done:setTodoDone,
     reload:loadAll,refresh:()=>{renderHome();renderTodosPage();if(currentPage==='work')renderWork();},someday:renderSomeday,sidebar:syncPageSidebar,
     projectName:todoProjectName,groupBadge:e=>classification.badge('todo',e)
+  });
+  habitViews = window.createOnekanHabitViews({
+    period:OnekanPeriod,sb,user:()=>appSymbolUserId,page:()=>currentPage,today:todayStr,rows:()=>tasks,
+    logs:()=>habitLogs,skips:()=>habitSkips,pauses:()=>habitPauses,periodRow:habitPeriodRow,occurrences:habitOccurrencesInRange,
+    effectiveStart:habitEffectiveStartDate,lifecycle:habitLifecycleState,nextDue:habitNextDueAfter,overdue:habitOverdueDays,
+    resolved:habitResolvedSinceOccurrence,blockReason:habitStatusBlockReason,status:setHabitDayStatus,canSkip:()=>habitSkipsReady,
+    groups:()=>classification.groups().filter(g=>g.kind==='habit'),categories:()=>habitCategories,projects:()=>projects,blocks:()=>timeBlocks,
+    matches:e=>classification.matches('habit',e),visible:e=>classification.matches('habit',e)&&classification.calendarVisible(e,'habit'),
+    color:e=>itemTagColor('habit',e.category_id),escape:escapeHtml,dateLabel:calDateLabel,
+    menuAttrs:(id,date)=>menuAttrs('habit',id,date),edit:id=>openHabitSheet(tasks.find(h=>h.id===id)),
+    add:context=>openHabitAddSheet(context.opener,context),sidebar:syncPageSidebar,
+    sourceCard:renderHabitRow,wireSource:wireHabitRows,setLifecycle:value=>{habitsTabView=value;},
+    refresh:()=>{renderHome();renderTodo();if(currentPage==='work')renderWork();},repeatText:h=>repeatSummaryText(h.repeat_unit,h.repeat_interval,h.repeat_days)
   });
   boot();
 </script>

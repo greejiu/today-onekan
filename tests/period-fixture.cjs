@@ -8,6 +8,7 @@ async function fixture(page) {
    let op='select',values,filters=[],single=false,limit=null;
    const q=new Proxy({}, {get(_,key){
     if(key==='then')return async resolve=>{
+     const delay=window.mockDelay;window.mockDelay=0;if(delay)await new Promise(r=>setTimeout(r,delay));
      if(mockFailure&&op!=='select'){const error={message:mockFailure};mockFailure=null;resolve({error,data:null});return;}
      const rows=mockRows[table]||=[]; const match=r=>filters.every(([type,k,v])=>type==='in'?v.includes(r[k]):type==='gte'?r[k]>=v:type==='lte'?r[k]<=v:r[k]===v);
      let data=rows.filter(match);

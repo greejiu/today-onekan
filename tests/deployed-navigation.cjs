@@ -8,7 +8,7 @@ const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
  const source=await response.text(),normalize=s=>s.replace(/\r\n/g,'\n');
  assert.equal(normalize(source),normalize(fs.readFileSync('index.html','utf8')),'served HTML must match the reviewed commit');
  const assetResults=[];
- for(const file of ['assets/together.js','assets/together.css','assets/classification.js','assets/classification.css','assets/schedule-views.js','assets/item-views.js','assets/todo-views.js','assets/schedule-views.css']){
+ for(const file of ['assets/together.js','assets/together.css','assets/classification.js','assets/classification.css','assets/schedule-views.js','assets/item-views.js','assets/todo-views.js','assets/habit-views.js','assets/schedule-views.css']){
   const r=await fetch(url+file+'?period='+sha);assert.equal(r.status,200);const text=await r.text();assert.equal(normalize(text),normalize(fs.readFileSync(file,'utf8')));assetResults.push(file+' matched');
  }
  const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
@@ -18,7 +18,7 @@ const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
   await page.route(url+'**',route=>{
    const pathname=new URL(route.request().url()).pathname.replace('/today-onekan/','');
    if(!pathname)return route.fulfill({contentType:'text/html',body:source});
-   if(['assets/together.js','assets/together.css','assets/classification.js','assets/classification.css','assets/schedule-views.js','assets/item-views.js','assets/todo-views.js','assets/schedule-views.css','assets/cheese-drawing.png'].includes(pathname))return route.fulfill({contentType:pathname.endsWith('.js')?'application/javascript':pathname.endsWith('.css')?'text/css':'image/png',body:fs.readFileSync(pathname)});
+   if(['assets/together.js','assets/together.css','assets/classification.js','assets/classification.css','assets/schedule-views.js','assets/item-views.js','assets/todo-views.js','assets/habit-views.js','assets/schedule-views.css','assets/cheese-drawing.png'].includes(pathname))return route.fulfill({contentType:pathname.endsWith('.js')?'application/javascript':pathname.endsWith('.css')?'text/css':'image/png',body:fs.readFileSync(pathname)});
    return route.abort();
   });
   await page.goto(url+'?period='+sha);await page.waitForSelector('.upcoming-day');fs.mkdirSync('test-results',{recursive:true});
@@ -48,9 +48,14 @@ const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
   for(const mode of ['list','board','someday']){await page.locator('#todoTopTabs [data-tab='+mode+']').click();assert(await page.locator(mode==='someday'?'#todoSomedayView':mode==='board'?'#todoBoard':'#todoUnifiedList').isVisible());await page.screenshot({path:'test-results/deployed-todo-'+mode+'.png'});}
   await page.locator('#todoTopTabs [data-tab=calendar]').click();for(const span of ['day','four','month']){await page.locator('#todoCalendarOptions [data-sv-span='+span+']').click();await page.screenshot({path:'test-results/deployed-todo-'+span+'.png'});}
   await page.locator('#todoCalendarOptions [data-sv-span=four]').click();await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'test-results/deployed-todo-mobile.png'});
+  await page.setViewportSize({width:1440,height:900});await page.evaluate(()=>showPage('habits'));
+  for(const mode of ['list','board']){await page.locator('#habitViewTabs [data-tab='+mode+']').click();assert(await page.locator(mode==='list'?'#todoList':'#habitBoard').isVisible());await page.screenshot({path:'test-results/deployed-habit-'+mode+'.png'});}
+  await page.locator('#habitsTabRow [data-tab=archived]').click();await page.screenshot({path:'test-results/deployed-habit-archived.png'});await page.locator('#habitsTabRow [data-tab=active]').click();
+  await page.locator('#habitViewTabs [data-tab=calendar]').click();for(const span of ['day','four','month']){await page.locator('#habitCalendarOptions [data-sv-span='+span+']').click();await page.screenshot({path:'test-results/deployed-habit-'+span+'.png'});}
+  await page.locator('#habitCalendarOptions [data-sv-span=four]').click();await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'test-results/deployed-habit-mobile.png'});
   assert.deepEqual(await page.evaluate(()=>{const ids=[...document.querySelectorAll('[id]')].map(e=>e.id);return ids.filter((id,i)=>ids.indexOf(id)!==i);}),[]);
   assert.equal(await page.evaluate(()=>mockWrites.length),0);assert.deepEqual(errors,[]);
-  const proof={url,sha,httpStatus:response.status,htmlSHA256:crypto.createHash('sha256').update(normalize(source)).digest('hex'),assets:assetResults,browser:'deployed URL and served HTML; isolated auth/data; desktop/mobile major entrypoints, schedule and todo day/four/month/list/board plus separate someday, and all three overnight period forms; no writes or page errors'};
+  const proof={url,sha,httpStatus:response.status,htmlSHA256:crypto.createHash('sha256').update(normalize(source)).digest('hex'),assets:assetResults,browser:'deployed URL and served HTML; isolated auth/data; desktop/mobile major entrypoints, schedule, todo and habit day/four/month/list/board plus habit archived and separate someday, and all three overnight period forms; no writes or page errors'};
   fs.writeFileSync('test-results/deployment-verification.json',JSON.stringify(proof,null,2));console.log(JSON.stringify(proof,null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

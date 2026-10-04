@@ -41,8 +41,8 @@ const { fixture } = require('./home-layout.cjs');
       await page.locator('#sd_tag').selectOption('g1'); await page.locator('#sd_save').click();
       await page.waitForFunction(() => mockRows.tok_someday[0].tag_id === 'g1');
       await page.evaluate(() => showPage('habits'));
-      const sorting = await page.locator('#habitSortSelect').textContent(), grouping = await page.locator('#habitGroupSelect').textContent();
-      assert.match(sorting, /범주순/); assert.match(grouping, /그룹화: 안 함/); assert.match(grouping, /범주별/); assert(!grouping.includes('그룹별'));
+      const sorting = await page.locator('#habitSort').textContent(), grouping = await page.locator('#habitGroup').textContent();
+      assert.match(sorting, /다음 예정일순/); assert.match(grouping, /없음/); assert.match(grouping, /범주별/); assert(grouping.includes('그룹별'));
       assert.match(await page.locator('#todoList .settingsbtn').first().getAttribute('aria-label'), /반복·범주 설정/);
       for (const [kind, id] of [['todo','t0'], ['habit','h1'], ['someday','s0']]) {
         if (kind === 'habit') {

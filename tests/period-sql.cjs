@@ -50,6 +50,15 @@ const A='00000000-0000-0000-0000-000000000001',B='00000000-0000-0000-0000-000000
   await assert.rejects(as(null,'select * from tok_events'),/permission denied/);
   await as(A,"insert into tok_habit_logs(habit_id,done_date,start_minute,duration_minutes) values($1,'2026-10-03',1380,120)",[h]);await assert.rejects(as(A,"insert into tok_habit_logs(habit_id,done_date) values($1,'2026-10-03')",[h]),/unique constraint/);
   await assert.rejects(as(A,"insert into tok_habit_skips(habit_id,skip_date) values($1,'2026-10-03')",[h]),/habit_already_done/);
+  await as(A,"insert into tok_habit_skips(habit_id,skip_date) values($1,'2026-10-04')",[h]);
+  await assert.rejects(as(A,"insert into tok_habit_logs(habit_id,done_date) values($1,'2026-10-04')",[h]),/habit_skipped/);
+  await assert.rejects(as(A,"insert into tok_habit_skips(habit_id,skip_date) values($1,'2026-10-04')",[h]),/unique constraint/);
+  assert.equal((await as(B,'select * from tok_habit_logs where habit_id=$1',[h])).rows.length,0);
+  assert.equal((await as(B,'delete from tok_habit_logs where habit_id=$1 returning id',[h])).rows.length,0);
+  await assert.rejects(as(B,"insert into tok_habit_skips(habit_id,skip_date) values($1,'2026-10-05')",[h]),/row-level security/);
+  await as(A,"delete from tok_habit_skips where habit_id=$1 and skip_date='2026-10-04'",[h]);
+  await as(A,"insert into tok_habit_logs(habit_id,done_date) values($1,'2026-10-04')",[h]);
+  await as(A,"delete from tok_habit_logs where habit_id=$1 and done_date='2026-10-04'",[h]);
   const g=(await as(A,"insert into tok_item_groups(kind,name) values('todo','회사') returning id")).rows[0].id;
   const c=(await as(A,"insert into tok_habit_categories(name) values('행정') returning id")).rows[0].id;
   const p=(await as(A,"insert into tok_projects(name) values('목표') returning id")).rows[0].id;
