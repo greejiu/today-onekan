@@ -3074,7 +3074,7 @@
     }
     if (focusKey) host.querySelector('[data-' + focusKey[0] + '="' + focusKey[1] + '"]')?.focus({ preventScroll: true });
     classification?.render();
-    if(currentPage==='all')allViews?.sidebarTypes();
+    allViews?.sidebarTypes();
     syncScheduleModeButtons();
   }
   function setSidebarMode(dedicated) {

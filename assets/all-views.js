@@ -33,9 +33,9 @@ window.createOnekanAllViews = api => {
  function add(context){engine.cancel();const owner=api.user();api.choose(context,kind=>{if(api.page()==='all'&&owner===api.user())api.add(kind,context);});}
  function selectDate(value){date=value;engine.remember();render();}
  function sidebarTypes(){
-  if(api.page()!=='all')return;const nav=$('pageSidebarItems');if(!nav)return;
+  const existing=$('allSidebarTypes');if(existing)existing.hidden=api.page()!=='all';if(api.page()!=='all')return;const nav=$('dedicatedSidebarNav');if(!nav)return;
   let box=$('allSidebarTypes');if(!box){box=document.createElement('div');box.id='allSidebarTypes';nav.append(box);}
-  const focus=document.activeElement?.dataset.allType,state=engine.state();box.innerHTML='<hr class="sidebar-divider">'+types.map(t=>'<button type="button" class="navitem all-type-eye" data-all-type="'+t.id+'" aria-pressed="'+state['show_'+t.id]+'" aria-label="'+t.name+' '+(state['show_'+t.id]?'숨기기':'표시')+'"><span>'+t.name+'</span><span aria-hidden="true">'+OnekanCalendarUI.eye(state['show_'+t.id])+'</span></button>').join('');
+  box.hidden=false;const focus=box.contains(document.activeElement)?document.activeElement?.dataset.allType:null,state=engine.state();box.innerHTML='<hr class="sidebar-divider">'+types.map(t=>'<button type="button" class="navitem all-type-eye" data-all-type="'+t.id+'" aria-pressed="'+state['show_'+t.id]+'" aria-label="'+t.name+' '+(state['show_'+t.id]?'숨기기':'표시')+'"><span>'+t.name+'</span><span aria-hidden="true">'+OnekanCalendarUI.eye(state['show_'+t.id])+'</span></button>').join('');
   box.querySelectorAll('button').forEach(b=>b.onclick=()=>engine.option('show_'+b.dataset.allType,!engine.state()['show_'+b.dataset.allType]));if(focus)box.querySelector('[data-all-type="'+focus+'"]')?.focus({preventScroll:true});
  }
  function render(){
@@ -43,7 +43,7 @@ window.createOnekanAllViews = api => {
   for(const b of $('allViewTabs').querySelectorAll('button[data-tab]')){b.classList.toggle('active',b.dataset.tab===mode);b.setAttribute('aria-pressed',String(b.dataset.tab===mode));}
   $('allCollection').hidden=mode==='calendar';$('allCalendarMode').hidden=mode!=='calendar';$('allList').hidden=mode==='board';$('allBoard').hidden=mode!=='board';$('allUndatedWrap').hidden=mode==='calendar';$('allUndated').checked=state.undated;$('allTodoStatus').value=state.completion;$('allHabitStatus').value=state.status;
   $('allMonthCount').hidden=mode==='calendar';$('allJumpRow').hidden=mode==='calendar';$('allMonthLabel').textContent=state.span==='month'?Number(date.slice(0,4))+'년 '+Number(date.slice(5,7))+'월':engine.range().start+' ~ '+engine.range().end;
-  const focus=document.activeElement?.dataset.allType;
+  const focus=$('allTypes').contains(document.activeElement)?document.activeElement?.dataset.allType:null;
   $('allTypes').innerHTML=types.map(t=>'<button type="button" data-all-type="'+t.id+'" aria-pressed="'+state['show_'+t.id]+'" class="'+(state['show_'+t.id]?'active':'')+'">'+t.name+' '+OnekanCalendarUI.eye(state['show_'+t.id])+'</button>').join('');
   $('allTypes').querySelectorAll('button').forEach(b=>b.onclick=()=>engine.option('show_'+b.dataset.allType,!engine.state()['show_'+b.dataset.allType]));if(focus)$('allTypes').querySelector('[data-all-type="'+focus+'"]')?.focus({preventScroll:true});
   const hidden=types.every(t=>!state['show_'+t.id]);$('allNotice').innerHTML=hidden?'표시할 종류를 선택해주세요':'';

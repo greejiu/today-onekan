@@ -10,3 +10,4 @@
 .classification-manage-bg{z-index:50;}.classification-manage-bg .sheet{max-height:85vh;overflow-y:auto;}.classification-manage-bg .field input[type=color]{width:60px;height:38px;padding:2px;}.classification-manage-bg #classificationManageError{color:var(--danger,#c44);font-size:13px;}
 .classification-mobile{display:none;}.classification-groups[hidden]{display:none;}
 @media(max-width:760px){.classification-mobile:not([hidden]){display:flex;flex-wrap:wrap;align-items:end;gap:6px;margin-bottom:12px;}.classification-mobile label{flex:1;min-width:100px;font-size:12px;color:var(--sub);}.classification-mobile select{width:100%;min-width:0;}.classification-mobile button{padding:9px 10px;}.classification-manage-bg .sheet{max-width:100%;}.classification-mobile-groups .classification-row{margin-bottom:8px;}.classification-mobile-groups button{font:inherit;min-width:44px;}}
+#classificationSideHost[hidden]{display:none!important}
