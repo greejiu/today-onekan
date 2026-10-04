@@ -33,6 +33,20 @@
   panel.querySelector('#scheduleAgendaClose').onclick=()=>{closed=true;renderPanel();reopen.focus({preventScroll:true});};
   reopen.onclick=()=>{closed=false;renderPanel();panel.querySelector('#scheduleAgendaClose').focus({preventScroll:true});};
   const onMonthDate=date=>{closed=false;pendingDate=date;api.selectDate(date);};
+  function fitWeek(){
+   const host=document.getElementById('scheduleTimeDays');host.classList.toggle('schedule-week-fit',view()==='week');
+   if(view()!=='week')return;
+   host.style.gridTemplateColumns='repeat(7,minmax(0,1fr))';
+   const days=[...host.querySelectorAll('.sv-day')];
+   days.forEach(day=>{const b=day.querySelector('[data-sv-select]'),d=day.dataset.svDate;b.setAttribute('aria-label',api.dateLabel(d));b.textContent=Number(d.slice(5,7))+'/'+Number(d.slice(8))+' '+['일','월','화','수','목','금','토'][new Date(d+'T12:00:00').getDay()];day.querySelector('.sv-allday .label').textContent='종일';day.querySelectorAll('.sv-allday .add-slot').forEach(add=>{add.textContent='＋';add.setAttribute('aria-label',api.dateLabel(d)+' 종일 일정 추가');});});
+   host.style.removeProperty('--all-height');host.style.setProperty('--all-height',Math.max(70,...days.map(d=>d.querySelector('.sv-allday').scrollHeight))+'px');
+   const grid=days[0]?.querySelector('.ag-tl-grid');if(!grid)return;
+   const axis=grid.cloneNode(false);axis.classList.add('schedule-week-axis');axis.setAttribute('aria-hidden','true');
+   grid.querySelectorAll('.tl-row-label').forEach(label=>axis.append(label.cloneNode(true)));
+   host.querySelectorAll('.sv-day .tl-row-label').forEach(label=>label.remove());
+   host.append(axis);axis.style.top=(grid.getBoundingClientRect().top-host.getBoundingClientRect().top)+'px';
+   document.getElementById('scheduleTimeScroll').scrollLeft=0;
+  }
   desktop.addEventListener('change',()=>{if(api.page()==='schedule')api.render();});
   engine=root.createOnekanItemViews({...api,normalizeState,singleMonthAdd:true,onMonthDate,
    date:()=>{const date=api.date();return view()==='week'?api.period.addDays(date,-new Date(date+'T12:00:00').getDay()):date;},
@@ -54,6 +68,6 @@
   }
   document.querySelectorAll('#scheduleGroup option[value="category"],#scheduleBoardBy option[value="category"]').forEach(el=>el.remove());
   const style=document.createElement('style');style.textContent='#scheduleCalendarOptions{display:none!important}#scheduleModeToggle .schedule-simple-views{display:flex;gap:4px}';document.head.append(style);
-  sync();return {...engine,calendar:()=>{const result=engine.calendar();renderPanel();return result;},collection:()=>{engine.collection();renderPanel();},selectView,currentView:view,focusTarget:()=>document.querySelector('#scheduleSidebarNav [data-schedule-view="'+view()+'"]')};
+  sync();return {...engine,calendar:()=>{const result=engine.calendar();renderPanel();fitWeek();return result;},collection:()=>{engine.collection();renderPanel();},selectView,currentView:view,focusTarget:()=>document.querySelector('#scheduleSidebarNav [data-schedule-view="'+view()+'"]')};
  };
 })(typeof window==='undefined'?globalThis:window);
