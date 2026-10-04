@@ -42,7 +42,7 @@ window.createOnekanAllViews = api => {
   if(!engine)return;cache=null;const state=engine.state();
   for(const b of $('allViewTabs').querySelectorAll('button')){b.classList.toggle('active',b.dataset.tab===mode);b.setAttribute('aria-pressed',String(b.dataset.tab===mode));}
   $('allCollection').hidden=mode==='calendar';$('allCalendarMode').hidden=mode!=='calendar';$('allList').hidden=mode==='board';$('allBoard').hidden=mode!=='board';$('allUndatedWrap').hidden=mode==='calendar';$('allUndated').checked=state.undated;$('allTodoStatus').value=state.completion;$('allHabitStatus').value=state.status;
-  $('allMonthCount').hidden=mode==='calendar';$('allJumpRow').hidden=mode==='calendar';$('allMonthLabel').textContent=state.span==='month'?date.slice(0,7):engine.range().start+' ~ '+engine.range().end;
+  $('allMonthCount').hidden=mode==='calendar';$('allJumpRow').hidden=mode==='calendar';$('allMonthLabel').textContent=state.span==='month'?Number(date.slice(0,4))+'년 '+Number(date.slice(5,7))+'월':engine.range().start+' ~ '+engine.range().end;
   const focus=document.activeElement?.dataset.allType;
   $('allTypes').innerHTML=types.map(t=>'<button type="button" data-all-type="'+t.id+'" aria-pressed="'+state['show_'+t.id]+'" class="'+(state['show_'+t.id]?'active':'')+'">'+t.name+' '+OnekanCalendarUI.eye(state['show_'+t.id])+'</button>').join('');
   $('allTypes').querySelectorAll('button').forEach(b=>b.onclick=()=>engine.option('show_'+b.dataset.allType,!engine.state()['show_'+b.dataset.allType]));if(focus)$('allTypes').querySelector('[data-all-type="'+focus+'"]')?.focus({preventScroll:true});

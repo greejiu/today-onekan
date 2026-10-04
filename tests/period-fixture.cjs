@@ -1,6 +1,6 @@
 const {fixture:base}=require('./home-layout.cjs');
-async function fixture(page) {
- await base(page);
+async function fixture(page, source) {
+ await base(page,source);
  await page.evaluate(()=>{
   window.mockRows={tok_todos:[],tok_events:[],tok_habits:[],tok_someday:[],tok_habit_logs:[],tok_habit_skips:[],tok_habit_pauses:[],tok_projects:[],tok_identities:[],tok_time_blocks:[],tok_habit_categories:[],tok_event_categories:[]};
   window.mockWrites=[];window.mockFailure=null;window.mockCounter=0;
