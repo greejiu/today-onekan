@@ -33,6 +33,19 @@ const A='00000000-0000-0000-0000-000000000001',B='00000000-0000-0000-0000-000000
   const policies=JSON.stringify((await db.query("select tablename,policyname,qual,with_check from pg_policies order by tablename,policyname")).rows);
   const baseline=JSON.stringify((await db.query("select 'events' kind,to_jsonb(e) row from tok_events e union all select 'todos',to_jsonb(t) from tok_todos t union all select 'habits',to_jsonb(h) from tok_habits h union all select 'logs',to_jsonb(l)-'occurrence_end_date' from tok_habit_logs l union all select 'skips',to_jsonb(s) from tok_habit_skips s union all select 'pauses',to_jsonb(p) from tok_habit_pauses p order by kind")).rows);
   await db.exec(fs.readFileSync('supabase/migrations/'+migration,'utf8'));
+  // Execute the actual client move patch against Postgres, including the
+  // pre-existing end_date >= start_date constraint that UI mocks omit.
+  const sandbox={module:{exports:{}}};
+  const periodCode=fs.readFileSync('index.html','utf8').match(/<script>\s*([\s\S]*?\}\)\(typeof window==='undefined'\?globalThis:window\);)/)[1];
+  require('node:vm').runInNewContext(periodCode,sandbox);
+  const period=sandbox.module.exports;
+  const ordinary=(await as(A,"insert into tok_todos(title,start_date,end_date,occurrence_end_date,all_day) values('move regression','2026-10-01','2026-10-03','2026-10-03',true) returning id,start_date::text,end_date::text,occurrence_end_date::text,all_day")).rows[0];
+  await assert.rejects(as(A,"update tok_todos set start_date='2026-10-06',occurrence_end_date='2026-10-08' where id=$1",[ordinary.id]),/tok_todos_date_order/);
+  const movePatch=period.shift('todo',ordinary,'2026-10-06');
+  await as(A,'update tok_todos set start_date=$1,end_date=$2,occurrence_end_date=$3 where id=$4',[movePatch.start_date,movePatch.end_date,movePatch.occurrence_end_date,ordinary.id]);
+  const stored=(await as(A,'select start_date::text,end_date::text,occurrence_end_date::text from tok_todos where id=$1',[ordinary.id])).rows[0];
+  assert.deepEqual(stored,{start_date:'2026-10-06',end_date:'2026-10-08',occurrence_end_date:'2026-10-08'});
+  await as(A,'delete from tok_todos where id=$1',[ordinary.id]);
   assert.equal(JSON.stringify((await db.query("select tablename,policyname,qual,with_check from pg_policies order by tablename,policyname")).rows),policies);
   const legacyRows=(await db.query("select 'events' kind,to_jsonb(e)-'all_day'-'end_time' row from tok_events e union all select 'todos',to_jsonb(t)-'all_day'-'end_time'-'occurrence_end_date'-'repeat_start_date' from tok_todos t union all select 'habits',to_jsonb(h)-'all_day'-'end_time'-'occurrence_start_date'-'occurrence_end_date' from tok_habits h union all select 'logs',to_jsonb(l)-'occurrence_end_date' from tok_habit_logs l union all select 'skips',to_jsonb(s) from tok_habit_skips s union all select 'pauses',to_jsonb(p) from tok_habit_pauses p order by kind")).rows;assert.equal(JSON.stringify(legacyRows),baseline);
   await as(A,"update tok_events set title='only title' where id=$1",[e]);assert.equal((await as(A,'select duration_minutes,all_day,end_time from tok_events where id=$1',[e])).rows[0].duration_minutes,null);

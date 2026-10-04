@@ -2432,7 +2432,14 @@
       moved.allDay=false; moved.startTime=time(startMinute);
       if (length>0) { const end=plus(date,moved.startTime,length); moved.endDate=end.date; moved.endTime=end.time; }
     }
-    if (!validate(moved,kind==='todo') && row.all_day!=null) return patch(kind,moved);
+    if (!validate(moved,kind==='todo') && row.all_day!=null) {
+      const result=patch(kind,moved);
+      // Non-repeating todos can still store the occurrence end in end_date.
+      // Move it atomically too: the existing database date-order constraint
+      // rejects a new start after that stale end. Repeating bounds stay fixed.
+      if (kind==='todo' && !row.repeat_unit && row.end_date!=null) result.end_date=result.occurrence_end_date;
+      return result;
+    }
     // Legacy row: translate only actual stored fields, never manufacture a missing end or duration.
     const result={[kind==='event'?'event_date':kind==='habit'?'occurrence_start_date':'start_date']:date};
     const endKey=kind==='event'?'end_date':'occurrence_end_date';
