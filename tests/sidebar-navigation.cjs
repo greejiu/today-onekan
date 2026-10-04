@@ -13,7 +13,7 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  assert.equal(await side.locator('#mainSidebarNav .sidebar-divider').count(),3);assert.equal(await side.locator('.sidebar-footer .navitem').count(),0);
  assert.equal(await side.locator('.sidebar-quickadd, #quickTaskInputSide, #quickAddBtnSide').count(),0);
  await page.evaluate(()=>{document.getElementById('quickTaskInput').value='폭 변경 중인 빠른 입력';});
- await go('todos');await page.locator('#todoTopTabs [data-tab=someday]').click();await page.locator('#somedayInput').fill('보존할 담아두기');
+ await go('todos');await page.locator('#pageSidebarItems [data-sidebar-tab=someday]:visible, #todoTopTabs [data-tab=someday]:visible').click();await page.locator('#somedayInput').fill('보존할 담아두기');
  await go('habits');
  assert.equal(await side.locator('[data-page].active').getAttribute('data-page'),'habits');assert.equal(await side.locator('[aria-current=page]').count(),1);
  for(const [width,height] of [[1366,768],[1440,900],[761,768],[760,768],[390,844],[1440,900]]){
@@ -44,7 +44,7 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  await go('work');await page.locator('#projectList [data-proj=p1]').click();
  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>workSelectedId),'p1');
  await page.setViewportSize({width:1440,height:900});assert.equal(await page.evaluate(()=>workSelectedId),'p1');
- assert.equal(await page.locator('.page[data-page=work] h1 .desktop-only').textContent(),'목표');
+ assert.equal(await page.locator('.page[data-page=work] h1').textContent(),'목표');
  assert.equal(await page.evaluate(()=>mockWrites.length),0,'navigation never writes');
  await page.locator('#sidebarAllMenuBtn').click();await page.setViewportSize({width:1440,height:320});await page.locator('#mainSidebarNav [data-page=settings]').scrollIntoViewIfNeeded();
  const logout=await page.locator('#logoutBtn').boundingBox();assert(logout.y>=64&&logout.y+logout.height<=320);assert(await page.locator('#mainSidebarNav').evaluate(e=>e.scrollTop>0));
@@ -58,7 +58,7 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  }
  await page.setViewportSize({width:390,height:844});
  assert.deepEqual((await page.locator('.bottombar .navitem').allTextContents()).map(t=>t.trim()),['지금 한칸','일정','할일','습관','더보기']);
- await page.locator('#navMoreBtn').click();assert.deepEqual((await page.locator('#navMoreSheet .navitem').allTextContents()).map(t=>t.trim()),['같이 한칸','작업','추적','기록','설정','모두','커뮤니티']);
+ await page.locator('#navMoreBtn').click();assert.deepEqual((await page.locator('#navMoreSheet .navitem').allTextContents()).map(t=>t.trim()),['같이 한칸','목표','추적','기록','설정','모두','커뮤니티']);
  await page.locator('#navMoreSheet [data-page=work]').click();assert(await page.locator('.page[data-page=work] .mobile-only').isVisible());assert.equal(await page.locator('#navMoreBtn').getAttribute('aria-expanded'),'false');assert(await page.locator('#navMoreBtn').evaluate(e=>e.classList.contains('active')));
  await page.screenshot({path:'test-results/sidebar-mobile-project.png'});
  await page.locator('.bottombar [data-page=todos]').click();await page.locator('.bottombar [data-page=habits]').click();

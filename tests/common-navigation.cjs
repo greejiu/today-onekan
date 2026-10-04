@@ -16,9 +16,9 @@ const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
   await main.locator('[data-page='+page+']').click();assert(await dedicated.isVisible());assert.equal(await p.locator('.page[data-page='+page+']').innerHTML(),body);
  }
  await go('todos');await p.locator('#pageSidebarItems [data-sidebar-tab=someday]').click();await p.locator('#somedayInput').fill('담아두기 작성 중');await back();assert.equal(await p.locator('#somedayInput').inputValue(),'담아두기 작성 중');await main.locator('[data-page=todos]').click();assert(await p.locator('#todoSomedayView').isVisible());
- await p.locator('#todoTopTabs [data-tab=list]').click();await p.waitForFunction(()=>document.querySelector('#pageSidebarItems [data-sidebar-tab=list]').classList.contains('active'));await p.screenshot({path:'test-results/navigation-todos.png'});
+ await p.locator('#pageSidebarItems [data-sidebar-tab=list]:visible, #todoTopTabs [data-tab=list]:visible').click();await p.waitForFunction(()=>document.querySelector('#pageSidebarItems [data-sidebar-tab=list]').classList.contains('active'));await p.screenshot({path:'test-results/navigation-todos.png'});
  await go('habits');await p.locator('#habitsTabRow [data-tab=archived]').click();assert(await p.locator('#habitsTabRow [data-tab=archived]').evaluate(e=>e.classList.contains('active')));
- await go('all');assert(await p.locator('#allViewTabs').isVisible());assert.equal(await p.locator('#allSidebarTypes [data-all-type]').count(),3);await p.screenshot({path:'test-results/navigation-all.png'});
+ await go('all');assert(!(await p.locator('#allViewTabs').isVisible()));assert.equal(await p.locator('#allSidebarTypes [data-all-type]').count(),3);await p.screenshot({path:'test-results/navigation-all.png'});
  await go('community');assert.equal(await p.locator('.page[data-page=community] :is(button,input)').count(),0);
  await go('together');for(const section of ['friends','guestbook','myroom']){await p.locator('#pageSidebarItems [data-together-section='+section+']').click();assert(await p.locator('#togetherPreparing').isVisible());assert(!(await p.locator('#togetherRoot').isVisible()));assert.match(await p.locator('#togetherPreparingText').textContent(),/준비/);}
  await p.screenshot({path:'test-results/navigation-together.png'});

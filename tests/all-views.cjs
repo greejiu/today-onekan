@@ -13,7 +13,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
   mockRows.tok_event_categories=[{id:'samegroup',name:'회사',color:'#447799'}];mockRows.tok_item_groups=[{id:'samegroup',kind:'todo',name:'회사'},{id:'samegroup',kind:'habit',name:'회사'}];mockRows.tok_habit_categories=[{id:'c',name:'공용 범주',color:'#9374ac'}];mockRows.tok_projects=[{id:'p',name:'목표',is_active:true}];mockRows.tok_someday=[{id:'someday',title:'통합에서 제외'}];mockRows.tok_time_blocks=[{id:'block',name:'오전',start_minute:540,end_minute:720}];
   await loadAll();showPage('all');allViews.selectDate('2026-10-04');mockWrites.length=0;
  });
- const writes=()=>p.evaluate(()=>mockWrites.length),view=mode=>p.locator('#allViewTabs [data-tab='+mode+']').click();
+ const writes=()=>p.evaluate(()=>mockWrites.length),view=mode=>p.locator('#pageSidebarItems [data-sidebar-tab='+mode+']:visible, #allViewTabs [data-tab='+mode+']:visible').click();
  assert.equal(await p.evaluate(()=>allViews.state().span),'month');assert.equal(await p.locator('#allSidebarTypes button').count(),3);assert.equal(await p.locator('#allTodoStatus').inputValue(),'open');
  const model=await p.evaluate(()=>allViews.displayRows());assert.equal(new Set(model.map(r=>r.id)).size,model.length);for(const k of ['event','todo','habit'])assert(model.some(r=>r.kind===k&&r.source_id==='same'));
  assert.equal(model.find(r=>r.record_id==='snapshot').duration_minutes,120);assert.equal(model.find(r=>r.record_id==='snapshot').start_minute,1380);assert.equal(model.find(r=>r.record_id==='old').duration_minutes,null);assert.equal(model.find(r=>r.record_id==='late-log').occurrence_date,null);assert(model.some(r=>r.kind==='habit'&&r.source_id==='ended'&&r.status==='skipped'));

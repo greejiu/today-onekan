@@ -24,7 +24,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
   mockRows.tok_item_groups=[{id:'g1',kind:'habit',name:'개인',color:'#718fc5'},{id:'g2',kind:'habit',name:'빈 그룹'},{id:'ga',kind:'habit',name:'보관 그룹',is_archived:true}];mockRows.tok_habit_categories=[{id:'c1',name:'건강',color:'#ad7cb5'}];mockRows.tok_projects=[{id:'p1',name:'기존 목표',is_active:true}];mockRows.tok_time_blocks=[{id:'block',title:'오전',start_minute:540,end_minute:720}];
   await loadAll();habitViews.selectDate('2026-10-04');showPage('habits');mockWrites.length=0;
  });
- const writes=()=>p.evaluate(()=>mockWrites.length),switchTo=m=>p.locator('#habitViewTabs [data-tab='+m+']').click();
+ const writes=()=>p.evaluate(()=>mockWrites.length),switchTo=m=>p.locator('#pageSidebarItems [data-sidebar-tab='+m+']:visible, #habitViewTabs [data-tab='+m+']:visible').click();
  assert.equal(await p.evaluate(()=>habitViews.state().mode),'list');assert.equal(await p.locator('#todoList .todo-row[data-id=night]').count(),1);assert.equal(await p.locator('#todoList .todo-row[data-id=arch]').count(),0);
  assert.deepEqual(await p.locator('#pageSidebarItems button').allTextContents(),['달력','목록','보드']);await p.screenshot({path:'test-results/habit-views/list.png'});
  await p.locator('#habitSort').selectOption('name');for(const group of ['group','category','project','none'])await p.locator('#habitGroup').selectOption(group);
