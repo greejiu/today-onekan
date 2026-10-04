@@ -33,9 +33,9 @@ const {chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs')
   await drop('list','all');assert.equal(await p.evaluate(()=>mockWrites.length),before);
   await p.evaluate(()=>mockFailure='test save failure');await drop('list','g2');await p.waitForFunction(()=>document.getElementById('todoGroupMoveStatus').textContent.includes('옮기지 못했어요'));assert.deepEqual(await get(),initial);
   await p.locator('#sidebarAllMenuBtn').click();assert.equal(await p.locator('#todoIconRail').isVisible(),true);assert.equal(await p.evaluate(()=>currentPage),'todos');
-  await p.locator('#mainSidebarNav [data-page=todos]').click();assert(await p.locator('#todoIconRail').isVisible());
+  await p.locator('#todoIconRail [data-page=todos]').click();assert(await p.locator('#todoIconRail').isVisible());
   await p.locator('#todoIconRail [data-page=schedule]').click();assert.equal(await p.evaluate(()=>currentPage),'schedule');assert.equal(await p.locator('#todoIconRail').isVisible(),true);
-  await p.evaluate(()=>showPage('home'));assert.equal(await p.locator('#todoIconRail').isVisible(),true);assert(await p.locator('#mainSidebarNav').isVisible());
+  await p.evaluate(()=>showPage('home'));assert.equal(await p.locator('#todoIconRail').isVisible(),true);assert(await p.locator('#todoIconRail .todo-rail-label').first().isVisible());
   await p.evaluate(()=>showPage('todos'));for(const width of [761,900,1150]){await p.setViewportSize({width,height:900});assert(await p.locator('#todoIconRail').isVisible());assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);}
   fs.mkdirSync('test-results/todo-sidebar',{recursive:true});await p.screenshot({path:'test-results/todo-sidebar/desktop.png'});
   await p.setViewportSize({width:390,height:844});assert.equal(await p.locator('.sidebar').isVisible(),false);assert(await p.locator('.bottombar').isVisible());assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);

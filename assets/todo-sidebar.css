@@ -12,7 +12,14 @@
 @media(min-width:761px){
  .page[data-page="todos"] #todoUnifiedView [data-menu-kind="todo"]{user-select:none;-webkit-user-select:none;}
  .sidebar.todo-rail{width:236px;padding:12px 8px;display:grid;grid-template-columns:44px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;column-gap:8px;}
- .sidebar.todo-rail #todoIconRail{grid-column:1;grid-row:1 / -1;border-right:1px solid var(--line);padding-right:3px;}
+ .sidebar.todo-rail #todoIconRail{grid-column:1;grid-row:1 / -1;border-right:1px solid transparent;padding-right:3px;}
+ .sidebar.todo-rail.rail-details #todoIconRail{border-right-color:var(--line);}
+ .sidebar.todo-rail:not(.rail-details):not(.rail-collapsed) #todoIconRail{grid-column:1 / -1;grid-row:1;}
+ .sidebar.todo-rail #todoIconRail .navitem{justify-content:flex-start;gap:12px;}
+ .sidebar.todo-rail #sidebarRailToggle{justify-content:center;width:40px;}
+ .sidebar.todo-rail:not(.rail-details):not(.rail-collapsed) .todo-rail-label{position:static;width:auto;height:auto;padding:0;margin:0;clip-path:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+ .sidebar.todo-rail:not(.rail-details):not(.rail-collapsed) #mainSidebarNav{display:none;}
+ .sidebar.todo-rail:not(.rail-details):not(.rail-collapsed) .sidebar-footer{grid-column:1 / -1;}
  .sidebar.todo-rail #sidebarHomeNav,.sidebar.todo-rail.todo-details .goal-sidebar-heading{display:none;}
  .sidebar.todo-rail #mainSidebarNav{grid-column:2;grid-row:1;}
  .sidebar.todo-rail #mainSidebarNav .nav-icon{display:none;}

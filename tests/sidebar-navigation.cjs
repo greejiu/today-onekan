@@ -7,7 +7,7 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  const page=await browser.newPage({viewport:{width:1440,height:900},timezoneId:'Asia/Seoul'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await fixture(page);fs.mkdirSync('test-results',{recursive:true});
  const side=page.locator('.sidebar');const nav=side.locator('#mainSidebarNav .navitem');
- const go=async target=>{if(target==='home')return page.locator('#todoIconRail [data-page=home]').click();if(await page.locator('#dedicatedSidebarNav').isVisible())await page.locator('#sidebarAllMenuBtn').click();await page.locator('#mainSidebarNav [data-page='+target+']').click();};
+ const go=async target=>{if(['home','all','schedule','todos','habits'].includes(target))return page.locator('#todoIconRail [data-page='+target+']').click();await page.locator('#sidebarRailMore').click();await page.locator('#sidebarRailMoreMenu [data-page='+target+']').click();};
  assert.deepEqual((await nav.allTextContents()).map(t=>t.trim()),['지금한칸','모두','일정','할일','습관','목표','추적','기록','같이한칸','커뮤니티','설정']);
  assert.deepEqual(await side.locator('#mainSidebarNav > *').evaluateAll(es=>es.map(e=>e.dataset.page||'divider')),['home','all','schedule','todos','habits','divider','work','timer','records','divider','together','community','divider','settings']);
  assert.equal(await side.locator('#mainSidebarNav .sidebar-divider').count(),3);assert.equal(await side.locator('.sidebar-footer .navitem').count(),0);
@@ -46,14 +46,14 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  await page.setViewportSize({width:1440,height:900});assert.equal(await page.evaluate(()=>workSelectedId),'p1');
  assert.equal(await page.locator('.page[data-page=work] h1').textContent(),'목표');
  assert.equal(await page.evaluate(()=>mockWrites.length),0,'navigation never writes');
- await page.locator('#sidebarAllMenuBtn').click();await page.setViewportSize({width:1440,height:320});await page.locator('#mainSidebarNav [data-page=settings]').scrollIntoViewIfNeeded();
- const logout=await page.locator('#logoutBtn').boundingBox();assert(logout.y>=64&&logout.y+logout.height<=320);assert(await page.locator('#mainSidebarNav').evaluate(e=>e.scrollTop>0));
+ await page.locator('#sidebarAllMenuBtn').click();await page.setViewportSize({width:1440,height:320});await page.locator('#sidebarRailMore').scrollIntoViewIfNeeded();
+ const logout=await page.locator('#logoutBtn').boundingBox();assert(logout.y>=64&&logout.y+logout.height<=320);assert(await page.locator('#todoIconRail').evaluate(e=>e.scrollTop>0));
  await page.screenshot({path:'test-results/sidebar-short-account.png'});
- await page.locator('#mainSidebarNav [data-page=settings]').scrollIntoViewIfNeeded();assert(await page.locator('#mainSidebarNav [data-page=settings]').isVisible());
+ await page.locator('#sidebarRailMore').scrollIntoViewIfNeeded();assert(await page.locator('#sidebarRailMore').isVisible());
  await page.setViewportSize({width:1440,height:900});await page.evaluate(()=>document.querySelector('.sidebar').scrollTop=0);
  for(const theme of ['white','black','cheese']){
   await page.evaluate(theme=>{applyTheme(theme);applyUserFont('Georgia');},theme);
-  const fits=await nav.evaluateAll(es=>es.every(e=>{const r=document.createRange();r.selectNodeContents(e);return r.getBoundingClientRect().right<=e.getBoundingClientRect().right-10&&e.scrollWidth<=e.clientWidth;}));assert(fits,theme);
+  const fits=await page.locator("#todoIconRail [data-page]").evaluateAll(es=>es.every(e=>{const r=document.createRange();r.selectNodeContents(e);return r.getBoundingClientRect().right<=e.getBoundingClientRect().right-10&&e.scrollWidth<=e.clientWidth;}));assert(fits,theme);
   await page.screenshot({path:`test-results/sidebar-theme-${theme}.png`});
  }
  await page.setViewportSize({width:390,height:844});
