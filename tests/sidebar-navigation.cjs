@@ -7,30 +7,30 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  const page=await browser.newPage({viewport:{width:1440,height:900},timezoneId:'Asia/Seoul'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await fixture(page);fs.mkdirSync('test-results',{recursive:true});
  const side=page.locator('.sidebar');const nav=side.locator('#mainSidebarNav .navitem');
- const go=async target=>{if(['home','all','schedule','todos','habits'].includes(target))return page.locator('#todoIconRail [data-page='+target+']').click();await page.locator('#sidebarRailMore').click();await page.locator('#sidebarRailMoreMenu [data-page='+target+']').click();};
- assert.deepEqual((await nav.allTextContents()).map(t=>t.trim()),['지금한칸','모두','일정','할일','습관','목표','추적','기록','같이한칸','커뮤니티','설정']);
- assert.deepEqual(await side.locator('#mainSidebarNav > *').evaluateAll(es=>es.map(e=>e.dataset.page||'divider')),['home','all','schedule','todos','habits','divider','work','timer','records','divider','together','community','divider','settings']);
- assert.equal(await side.locator('#mainSidebarNav .sidebar-divider').count(),3);assert.equal(await side.locator('.sidebar-footer .navitem').count(),0);
+ const go=async target=>{if(['home','schedule','todos','habits','records'].includes(target))return page.locator('#todoIconRail [data-page='+target+']').click();await page.locator('#sidebarRailMore').click();await page.locator('#sidebarRailMoreMenu [data-page='+target+']').click();};
+ assert.deepEqual((await nav.allTextContents()).map(t=>t.trim()),['지금한칸','일정','할일','습관','기록']);
+ assert.deepEqual(await side.locator('#mainSidebarNav > *').evaluateAll(es=>es.map(e=>e.dataset.page||'divider')),['home','schedule','todos','habits','records']);
+ assert.equal(await side.locator('#mainSidebarNav .sidebar-divider').count(),0);assert.equal(await side.locator('.sidebar-footer .navitem').count(),0);
  assert.equal(await side.locator('.sidebar-quickadd, #quickTaskInputSide, #quickAddBtnSide').count(),0);
  await page.evaluate(()=>{document.getElementById('quickTaskInput').value='폭 변경 중인 빠른 입력';});
  await go('todos');await page.locator('#pageSidebarItems [data-sidebar-tab=someday]:visible, #todoTopTabs [data-tab=someday]:visible').click();await page.locator('#somedayInput').fill('보존할 담아두기');
  await go('habits');
- assert.equal(await side.locator('#mainSidebarNav [data-page].active').getAttribute('data-page'),'habits');assert.equal(await side.locator('#mainSidebarNav [aria-current=page]').count(),1);
+ assert.equal(await page.locator('#todoIconRail [data-page].active,#sidebarRailMoreMenu [data-page].active').getAttribute('data-page'),'habits');assert.equal(await page.locator('#todoIconRail [aria-current=page],#sidebarRailMoreMenu [aria-current=page]').count(),1);
  for(const [width,height] of [[1366,768],[1440,900],[761,768],[760,768],[390,844],[1440,900]]){
   await page.setViewportSize({width,height});
   assert.equal(await side.isVisible(),width>760);assert.equal(await page.locator('.bottombar').isVisible(),width<=760);
   assert.equal(await page.locator('.page[data-page=habits]').isVisible(),true);
   assert.equal(await page.locator('#quickTaskInput').inputValue(),'폭 변경 중인 빠른 입력');
   assert.equal(await page.locator('#somedayInput').inputValue(),'보존할 담아두기');
-  if(width>760){assert.equal((await side.boundingBox()).width,236);assert.equal(await side.locator('#mainSidebarNav [data-page].active').count(),1);assert.equal(await page.locator('.page[data-page=habits] h1.page-title').isVisible(),true);}
+  if(width>760){assert.equal((await side.boundingBox()).width,236);assert.equal(await page.locator('#todoIconRail [data-page].active,#sidebarRailMoreMenu [data-page].active').count(),1);assert.equal(await page.locator('.page[data-page=habits] h1.page-title').isVisible(),true);}
   else{assert.equal(await page.locator('.bottombar .active').getAttribute('data-page'),'habits');assert.equal(await page.locator('.page[data-page=habits] h1.page-title').isVisible(),true);}
   await page.screenshot({path:`test-results/sidebar-${width}x${height}.png`});
  }
  await go('todos');assert.equal(await page.locator('#todoSomedayView').isVisible(),true);
- await page.locator('#sidebarHomeNav [data-page=home]:visible,#todoIconRail [data-page=home]:visible').focus();await page.keyboard.press('Enter');assert.equal(await side.locator('#mainSidebarNav [data-page].active').getAttribute('data-page'),'home');
- await page.keyboard.press('Tab');await page.keyboard.press('Space');assert.equal(await side.locator('#mainSidebarNav [data-page].active').getAttribute('data-page'),'all');
- assert.notEqual(await page.locator('#todoIconRail [data-page=all]').evaluate(e=>getComputedStyle(e).outlineStyle),'none');
- for(const target of ['home','all','community','timer','schedule','todos','habits','work','together','records','settings']){await go(target);assert.equal(await side.locator('#mainSidebarNav [data-page].active').count(),1);assert.equal(await side.locator('#mainSidebarNav [aria-current=page]').getAttribute('data-page'),target);}
+ await page.locator('#sidebarHomeNav [data-page=home]:visible,#todoIconRail [data-page=home]:visible').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#todoIconRail [data-page].active,#sidebarRailMoreMenu [data-page].active').getAttribute('data-page'),'home');
+ await page.keyboard.press('Tab');await page.keyboard.press('Space');assert.equal(await page.locator('#todoIconRail [data-page].active,#sidebarRailMoreMenu [data-page].active').getAttribute('data-page'),'schedule');
+ assert.notEqual(await page.locator('#todoIconRail [data-page=schedule]').evaluate(e=>getComputedStyle(e).outlineStyle),'none');
+ for(const target of ['home','all','community','timer','schedule','todos','habits','work','together','records','settings']){await go(target);assert.equal(await page.locator('#todoIconRail [data-page].active,#sidebarRailMoreMenu [data-page].active').count(),1);assert.equal(await page.locator('#todoIconRail [aria-current=page],#sidebarRailMoreMenu [aria-current=page]').getAttribute('data-page'),target);}
  // Calendar/list selection and scroll survive navigation through the new sidebar.
  await go('schedule');
  await page.locator('#scheduleModeToggle [data-schedule-view=list]').click();await page.evaluate(()=>window.scrollTo(0,200));
@@ -57,8 +57,8 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
   await page.screenshot({path:`test-results/sidebar-theme-${theme}.png`});
  }
  await page.setViewportSize({width:390,height:844});
- assert.deepEqual((await page.locator('.bottombar .navitem').allTextContents()).map(t=>t.trim()),['지금 한칸','일정','할일','습관','더보기']);
- await page.locator('#navMoreBtn').click();assert.deepEqual((await page.locator('#navMoreSheet .navitem').allTextContents()).map(t=>t.trim()),['같이 한칸','목표','추적','기록','설정','모두','커뮤니티']);
+ assert.deepEqual((await page.locator('.bottombar .navitem').allTextContents()).map(t=>t.trim()),['지금한칸','일정','할일','습관','기록','더보기']);
+ await page.locator('#navMoreBtn').click();assert.deepEqual((await page.locator('#navMoreSheet .navitem').allTextContents()).map(t=>t.trim()),['목표','추적','같이한칸','커뮤니티','모두','설정']);
  await page.locator('#navMoreSheet [data-page=work]').click();assert(await page.locator('.page[data-page=work] .mobile-only').isVisible());assert.equal(await page.locator('#navMoreBtn').getAttribute('aria-expanded'),'false');assert(await page.locator('#navMoreBtn').evaluate(e=>e.classList.contains('active')));
  await page.screenshot({path:'test-results/sidebar-mobile-project.png'});
  await page.locator('.bottombar [data-page=todos]').click();await page.locator('.bottombar [data-page=habits]').click();
