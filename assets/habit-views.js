@@ -90,7 +90,7 @@ window.createOnekanHabitViews = api => {
  }
  function selectDate(value){date=value;engine?.remember();render();}
  const preview=document.createElement('div');preview.id='habitDragPreview';preview.className='sv-drag-preview';preview.hidden=true;preview.innerHTML='<span id="habitDragText"></span><br><button type="button" id="habitDragCancel">취소 (Esc)</button>';document.body.append(preview);
- engine=window.createOnekanItemViews({...api,kind:'habit',pageName:'habits',table:'tok_habits',title:'습관',id,defaults:{mode:'list',group:'none',lifecycle:'active',status:'all'},allowMove:false,allowResize:false,preferenceOptions:{group:['none','group','category','project']},
+ engine=window.createOnekanItemViews({...api,kind:'habit',pageName:'habits',table:'tok_habits',title:'습관',id,defaults:{mode:'list',group:'none',lifecycle:'active',status:'all'},allowMove:false,allowResize:false,minLaneWidth:120,preferenceOptions:{group:['none','group','category','project']},
   date:()=>date,month,mode:()=>mode,setMode:v=>{mode=v;},restoreDate:v=>{date=/^\d{4}-\d{2}-\d{2}$/.test(v)?v:api.today();},changeMode:v=>{mode=v;render();api.sidebar();},render,selectDate,
   goMonth:n=>{const [y,m]=date.split('-').map(Number),d=new Date(y,m-1+n,1);selectDate(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01');},rows,accept,endDate,check,wire,detail,edit:detail,monthCalendar,
   collectionRows:state=>api.rows().filter(h=>api.matches(h)&&api.lifecycle(h,api.today())===state.lifecycle),
