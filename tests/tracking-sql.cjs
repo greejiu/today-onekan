@@ -1,0 +1,53 @@
+const fs=require('node:fs'),assert=require('node:assert/strict'),{PGlite}=require('@electric-sql/pglite');
+const A='00000000-0000-0000-0000-000000000001',B='00000000-0000-0000-0000-000000000002',T='00000000-0000-0000-0000-000000000010',TB='00000000-0000-0000-0000-000000000020';
+(async()=>{const db=new PGlite();try{
+await db.exec(`create schema auth;create role authenticated;create role anon;create table auth.users(id uuid primary key);insert into auth.users values('${A}'),('${B}');create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth to authenticated,anon;
+create table tok_todos(id uuid primary key,user_id uuid,title text,is_done boolean default false,start_date date,repeat_unit text,group_id uuid,tag_id uuid,project_id uuid);
+create table tok_item_groups(id uuid,user_id uuid,kind text,name text);create table tok_habit_categories(id uuid,user_id uuid,name text);create table tok_projects(id uuid,user_id uuid,name text);
+insert into tok_todos values('${T}','${A}','original',false,'2026-10-04','day',null,null,null),('${TB}','${B}','other',false,null,null,null,null,null);
+alter table tok_todos enable row level security;create policy own on tok_todos for all to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());grant select,update,delete on tok_todos to authenticated;`);
+const before=JSON.stringify((await db.query('select * from tok_todos order by id')).rows);
+await db.exec(fs.readFileSync('supabase/migrations/20261004080014_tok_stopwatch.sql','utf8'));
+const as=(u,sql,args=[])=>db.transaction(async tx=>{await tx.exec('set local role authenticated');await tx.query("select set_config('request.jwt.claim.sub',$1,true)",[u]);return (await tx.query(sql,args)).rows;});
+const uuid=()=>require('node:crypto').randomUUID();
+const request=async(u,args)=> (await as(u,'select tok_stopwatch_change($1,$2,$3,$4,$5,$6,$7) r',[args.request||uuid(),args.action,args.session||null,args.version??null,args.todo||null,args.tz||null,args.cut||null]))[0].r;
+const start={request:uuid(),action:'start',todo:T,tz:'Asia/Seoul'};
+let s=(await request(A,start)).session;assert.equal(s.state,'running');const id=s.id;
+assert.equal((await request(A,start)).session.id,id);assert.equal((await request(A,{action:'start',todo:T,tz:'Asia/Seoul'})).session.id,id);
+await assert.rejects(request(A,{action:'start',todo:TB,tz:'Asia/Seoul'}),/active_session_exists/);
+await assert.rejects(request(B,{action:'start',todo:T,tz:'Asia/Seoul'}),/todo_not_owned/);
+await assert.rejects(request(A,{...start,todo:TB}),/request_payload_mismatch/);
+await assert.rejects(request(A,{action:'pause',session:id,version:0}),/stale_session/);
+await assert.rejects(request(B,{action:'pause',session:id,version:1}),/session_not_owned/);
+await assert.rejects(request(A,{action:'pause',session:id,version:1,cut:'2099-01-01T00:00Z'}),/invalid_stop_time/);
+const pause={request:uuid(),action:'pause',session:id,version:1};s=(await request(A,pause)).session;assert.equal(s.state,'paused');assert.equal(s.version,2);
+assert.equal((await request(A,pause)).session.version,2);await assert.rejects(request(A,{action:'pause',session:id,version:2}),/invalid_transition/);
+s=(await request(A,{action:'resume',session:id,version:2})).session;assert.equal(s.version,3);
+const finish={request:uuid(),action:'finish',session:id,version:3};s=(await request(A,finish)).session;assert.equal(s.state,'finished');assert.equal((await request(A,finish)).session.id,id);
+await assert.rejects(request(A,{action:'finish',session:id,version:3}),/stale_session/);
+assert.equal((await db.query('select count(*)::int n from tok_stopwatch_intervals')).rows[0].n,2);
+assert.equal((await as(B,'select count(*)::int n from tok_stopwatch_sessions'))[0].n,0);
+await assert.rejects(as(A,"update tok_stopwatch_sessions set state='running'"),/permission denied/);
+await assert.rejects(as(A,'delete from tok_stopwatch_intervals'),/permission denied/);
+await assert.rejects(as(A,'select * from tok_stopwatch_requests'),/permission denied/);
+assert.equal(JSON.stringify((await db.query('select * from tok_todos order by id')).rows),before);
+await as(A,"update tok_todos set title='renamed',is_done=true where id=$1",[T]);await as(A,'delete from tok_todos where id=$1',[T]);assert.equal((await as(A,'select snapshot from tok_stopwatch_sessions'))[0].snapshot.title,'original');
+// Deterministic actual intervals, paused midnight gap and 00:00 exclusive boundary.
+await db.query("update tok_stopwatch_sessions set started_at='2026-10-03T14:00Z',ended_at='2026-10-03T16:00Z' where id=$1",[id]);
+await db.query('delete from tok_stopwatch_intervals where session_id=$1',[id]);
+await db.query("insert into tok_stopwatch_intervals(user_id,session_id,started_at,ended_at) values($1,$2,'2026-10-03T14:30Z','2026-10-03T15:00Z'),($1,$2,'2026-10-03T15:30Z','2026-10-03T16:00Z')",[A,id]);
+let report=(await as(A,"select tok_stopwatch_report('2026-10-03','2026-10-04') r"))[0].r;
+assert.deepEqual(report.map(r=>[r.day,Number(r.milliseconds)]),[['2026-10-03',1800000],['2026-10-04',1800000]]);assert.equal(report.reduce((n,r)=>n+Number(r.milliseconds),0),3600000);assert.equal(Number((await as(A,"select tok_stopwatch_today('2026-10-04') r"))[0].r[0].milliseconds),3600000);
+assert.equal((await as(B,"select tok_stopwatch_report('2026-10-03','2026-10-04') r"))[0].r.length,0);
+await assert.rejects(as(A,"select tok_stopwatch_report('2026-10-04','2026-10-03')"),/invalid_date_range/);
+// Longer saved interval is split, running time excluded.
+await db.query("insert into tok_todos(id,user_id,title) values($1,$2,'second')",[T,A]);
+const active=(await request(A,{action:'start',todo:T,tz:'UTC'})).session;
+assert.equal((await as(A,"select tok_stopwatch_report('2026-10-03','2026-10-04') r"))[0].r.length,2);
+await assert.rejects(request(A,{action:'start',todo:TB,tz:'UTC'}),/active_session_exists/);
+assert.equal((await as(A,'select tok_stopwatch_read() r'))[0].r.session.id,active.id);
+// Concurrent logical clients with same version: exactly one accepted; PGlite queues transactions.
+const outcomes=await Promise.allSettled([request(A,{action:'pause',session:active.id,version:1}),request(A,{action:'pause',session:active.id,version:1})]);assert.equal(outcomes.filter(r=>r.status==='fulfilled').length,1);assert.match(outcomes.find(r=>r.status==='rejected').reason.message,/stale_session/);
+await db.query("update tok_stopwatch_sessions set timezone='America/New_York',started_at='2026-03-08T05:00Z',ended_at='2026-03-09T04:00Z' where id=$1",[id]);await db.query('delete from tok_stopwatch_intervals where session_id=$1',[id]);await db.query("insert into tok_stopwatch_intervals(user_id,session_id,started_at,ended_at) values($1,$2,'2026-03-08T05:00Z','2026-03-09T04:00Z')",[A,id]);assert.equal(Number((await as(A,"select tok_stopwatch_report('2026-03-08','2026-03-08') r"))[0].r[0].milliseconds),23*3600000);
+console.log('PASS stopwatch SQL: owner isolation, direct-write denial, active uniqueness, CAS, idempotency, snapshots, source deletion, unchanged todo, paused/midnight allocation');
+}finally{await db.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

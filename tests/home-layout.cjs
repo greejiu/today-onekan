@@ -7,6 +7,7 @@ async function fixture(page, source = html) {
   await page.route('**/*', route => {
     const url = route.request().url();
     if (url === 'http://onekan.test/') return route.fulfill({ contentType:'text/html', body:source });
+    if (/\/assets\/tracking\.(js|css)$/.test(url)) return route.fulfill({contentType:url.endsWith('.js')?'application/javascript':'text/css',body:fs.readFileSync('assets/'+url.split('/').pop())});
     if (url.endsWith('/assets/cheese-drawing.png')) return route.fulfill({contentType:'image/png',body:fs.readFileSync('assets/cheese-drawing.png')});
     if (url.endsWith('/assets/item-views.js')) return route.fulfill({contentType:'application/javascript',body:source.includes('assets/agenda-markup.js')?fs.readFileSync('assets/item-views.js'):require('node:child_process').execFileSync('git',['show','06d0c62b75a4a23f26b5e5275d80836d0763094b:assets/item-views.js'])});
     if (url.endsWith('/assets/agenda-markup.js')) return route.fulfill({contentType:'application/javascript',body:fs.readFileSync('assets/agenda-markup.js')});

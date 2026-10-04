@@ -1,0 +1,11 @@
+const fs=require('node:fs'),{PGlite}=require('@electric-sql/pglite');
+const A='00000000-0000-0000-0000-000000000001',B='00000000-0000-0000-0000-000000000002',T='00000000-0000-0000-0000-000000000010',TB='00000000-0000-0000-0000-000000000020';
+module.exports=async()=>{const db=new PGlite();
+await db.exec(`create schema auth;create role authenticated;create role anon;create table auth.users(id uuid primary key);insert into auth.users values('${A}'),('${B}');create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth to authenticated,anon;
+create table tok_todos(id uuid primary key,user_id uuid,title text,is_done boolean default false,start_date date,repeat_unit text,group_id uuid,tag_id uuid,project_id uuid);
+create table tok_item_groups(id uuid,user_id uuid,kind text,name text);create table tok_habit_categories(id uuid,user_id uuid,name text);create table tok_projects(id uuid,user_id uuid,name text);
+insert into tok_todos values('${T}','${A}','original',false,'2026-10-04','day',null,null,null),('${TB}','${B}','other',false,null,null,null,null,null);
+alter table tok_todos enable row level security;create policy own on tok_todos for all to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());grant select,update,delete on tok_todos to authenticated;`);
+await db.exec(fs.readFileSync('supabase/migrations/20261004080014_tok_stopwatch.sql','utf8'));
+const as=(u,sql,args=[])=>db.transaction(async tx=>{await tx.exec('set local role authenticated');await tx.query("select set_config('request.jwt.claim.sub',$1,true)",[u]);return (await tx.query(sql,args)).rows;});
+return {db,as,A,B,T,TB};};
