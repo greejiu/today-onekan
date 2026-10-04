@@ -154,3 +154,7 @@
 @media(min-width:761px){.sidebar.view-sidebar #pageSidebarItems{display:none!important}}
 .iv-page .iv-view-tabs{justify-content:flex-start;overflow:visible;flex-wrap:wrap}
 .iv-page .iv-view-tabs button{flex:0 0 auto!important}
+#allSidebarTypes[hidden]{display:none!important}
+#allSidebarTypes{flex-shrink:0}
+#allSidebarTypes .all-type-eye{width:100%;gap:12px;text-align:left}
+@media(min-width:761px){#allTypes{display:none!important}}
