@@ -33,11 +33,11 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  for(const target of ['home','all','community','timer','schedule','todos','habits','work','together','records','settings']){await go(target);assert.equal(await side.locator('#mainSidebarNav [data-page].active').count(),1);assert.equal(await side.locator('#mainSidebarNav [aria-current=page]').getAttribute('data-page'),target);}
  // Calendar/list selection and scroll survive navigation through the new sidebar.
  await go('schedule');
- await page.locator('#scheduleSidebarNav [data-schedule-view=list]').click();await page.evaluate(()=>window.scrollTo(0,200));
+ await page.locator('#scheduleModeToggle [data-schedule-view=list]').click();await page.evaluate(()=>window.scrollTo(0,200));
  const scroll=await page.evaluate(()=>window.scrollY);
  await go('records');await go('schedule');
- assert.equal(await page.locator('#scheduleSidebarNav [data-schedule-view=list]').getAttribute('aria-pressed'),'true');assert.equal(await page.evaluate(()=>window.scrollY),scroll);
- await page.locator('#scheduleSidebarNav [data-schedule-view=month]').click();const selected=await page.evaluate(()=>calSelected);
+ assert.equal(await page.locator('#scheduleModeToggle [data-schedule-view=list]').getAttribute('aria-pressed'),'true');assert.equal(await page.evaluate(()=>window.scrollY),scroll);
+ await page.locator('#scheduleModeToggle [data-schedule-view=month]').click();const selected=await page.evaluate(()=>calSelected);
  await go('todos');await go('schedule');assert.equal(await page.evaluate(()=>calSelected),selected);
  // Keep the selected project while its title switches between desktop and mobile.
  await page.evaluate(async()=>{mockRows.tok_projects=[{id:'p1',name:'연결된 프로젝트',parent_id:null,sort_order:0}];await loadAll();});

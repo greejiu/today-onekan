@@ -60,6 +60,7 @@
   for(const selector of ['#scheduleModeToggle','#scheduleSidebarNav']){
    const host=document.querySelector(selector);
    host.querySelectorAll(':scope > button').forEach(b=>{b.hidden=true;b.style.display='none';b.tabIndex=-1;});
+   if(selector==='#scheduleSidebarNav')continue;
    const row=document.createElement('div');row.className='schedule-simple-views';
    for(const [value,label] of [['month','월'],['week','주'],['day','일'],['list','목록']]){
     const b=document.createElement('button');b.type='button';b.dataset.scheduleView=value;b.textContent=label;if(selector==='#scheduleSidebarNav')b.className='navitem';b.onclick=()=>selectView(value);row.append(b);
@@ -68,6 +69,6 @@
   }
   document.querySelectorAll('#scheduleGroup option[value="category"],#scheduleBoardBy option[value="category"]').forEach(el=>el.remove());
   const style=document.createElement('style');style.textContent='#scheduleCalendarOptions{display:none!important}#scheduleModeToggle .schedule-simple-views{display:flex;gap:4px}';document.head.append(style);
-  sync();return {...engine,calendar:()=>{const result=engine.calendar();renderPanel();fitWeek();return result;},collection:()=>{engine.collection();renderPanel();},selectView,currentView:view,focusTarget:()=>document.querySelector('#scheduleSidebarNav [data-schedule-view="'+view()+'"]')};
+  sync();return {...engine,calendar:()=>{const result=engine.calendar();renderPanel();fitWeek();return result;},collection:()=>{engine.collection();renderPanel();},selectView,currentView:view,focusTarget:()=>document.querySelector('#scheduleModeToggle [data-schedule-view="'+view()+'"]')};
  };
 })(typeof window==='undefined'?globalThis:window);

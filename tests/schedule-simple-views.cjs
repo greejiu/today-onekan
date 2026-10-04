@@ -4,13 +4,13 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright'),{fix
  await p.addInitScript(()=>localStorage.setItem('tok_schedule_views:test',JSON.stringify({mode:'board',span:'four',format:'blocks',group:'category',date:'2026-10-07'})));
  await fixture(p);await p.evaluate(async()=>{mockRows.tok_events=[{id:'e',user_id:'test',title:'기존 일정',category_id:'g',shared_category_id:'c',event_date:'2026-10-07',end_date:'2026-10-07',all_day:true}];mockRows.tok_event_categories=[{id:'g',name:'그룹'}];mockRows.tok_habit_categories=[{id:'c',name:'범주'}];await loadAll();showPage('schedule');});
  assert.equal(await p.evaluate(()=>scheduleViews.currentView()),'list');assert.equal(await p.evaluate(()=>scheduleViews.state().group),'date');
- const menu=p.locator('#scheduleSidebarNav [data-schedule-view]');assert.deepEqual(await menu.allTextContents(),['월','주','일','목록']);
+ const menu=p.locator('#scheduleModeToggle [data-schedule-view]');assert.deepEqual(await menu.allTextContents(),['월','주','일','목록']);
  assert.equal(await p.locator('#classificationSideHost [data-manage-categories]').count(),0);assert.equal(await p.locator('#scheduleGroup option[value=category]').count(),0);
  const before=await p.evaluate(()=>JSON.stringify(mockRows.tok_events));
- await p.locator('#scheduleSidebarNav [data-schedule-view=week]').click();assert.equal(await p.locator('#scheduleTimeDays .sv-day').count(),7);assert.equal(await p.locator('#scheduleTimeDays .sv-day').first().getAttribute('data-sv-date'),'2026-10-04');assert.equal(await p.locator('#scheduleCalendarOptions').isVisible(),false);
+ await p.locator('#scheduleModeToggle [data-schedule-view=week]').click();assert.equal(await p.locator('#scheduleTimeDays .sv-day').count(),7);assert.equal(await p.locator('#scheduleTimeDays .sv-day').first().getAttribute('data-sv-date'),'2026-10-04');assert.equal(await p.locator('#scheduleCalendarOptions').isVisible(),false);
  await p.locator('#calNextBtn').click();assert.equal(await p.locator('#scheduleTimeDays .sv-day').first().getAttribute('data-sv-date'),'2026-10-11');
- await p.locator('#scheduleSidebarNav [data-schedule-view=day]').click();assert.equal(await p.locator('#scheduleTimeDays .sv-day').count(),1);
- await p.locator('#scheduleSidebarNav [data-schedule-view=month]').click();assert(await p.locator('#calGrid').isVisible());assert.equal(await p.locator('#scheduleModeBoardBtn').isVisible(),false);
+ await p.locator('#scheduleModeToggle [data-schedule-view=day]').click();assert.equal(await p.locator('#scheduleTimeDays .sv-day').count(),1);
+ await p.locator('#scheduleModeToggle [data-schedule-view=month]').click();assert(await p.locator('#calGrid').isVisible());assert.equal(await p.locator('#scheduleModeBoardBtn').isVisible(),false);
  await p.evaluate(()=>openEventEditor({mode:'edit',id:'e'}));assert.equal(await p.locator('#cev_shared_category_id').count(),0);await p.locator('#cev_cancel').click();
  assert.equal(await p.evaluate(()=>JSON.stringify(mockRows.tok_events)),before);assert.equal(await p.evaluate(()=>mockWrites.length),0);
  await p.evaluate(()=>openEventEditor({mode:'edit',id:'e'}));await p.locator('#cev_title').fill('이름만 수정');await p.locator('#cev_save').click();await p.waitForFunction(()=>mockRows.tok_events[0].title==='이름만 수정');
