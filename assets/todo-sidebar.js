@@ -3,22 +3,37 @@ window.createOnekanTodoSidebar = api => {
  'use strict';
  const sidebar=document.querySelector('.sidebar'),host=document.querySelector('.page[data-page="todos"]'),desktop=matchMedia('(min-width:761px)');
  const rail=document.createElement('nav');rail.id='todoIconRail';rail.hidden=true;rail.setAttribute('aria-label','전체 공간 이동');
- for(const source of document.querySelectorAll('#sidebarHomeNav button[data-page],#mainSidebarNav>button[data-page],#mainSidebarNav>hr')){
+ for(const source of document.querySelectorAll('#sidebarHomeNav button[data-page],#mainSidebarNav>button[data-page]')){
+  if(!['home','all','schedule','todos','habits'].includes(source.dataset.page))continue;
   const button=source.cloneNode(true);button.removeAttribute('id');
   if(button.matches('button')){
    const label=source.textContent.trim(),icon=source.querySelector('svg')?.cloneNode(true),name=document.createElement('span');
    name.className='todo-rail-label';name.textContent=label;button.replaceChildren();if(icon){icon.setAttribute('aria-hidden','true');button.append(icon);}button.append(name);button.title=label;button.setAttribute('aria-label',label);
-   button.onclick=()=>{if(api.page()!==button.dataset.page)api.navigate(button.dataset.page);else api.expand(true);if(rail.hidden){const next=button.dataset.page==='home'?document.querySelector('#sidebarHomeNav button'):document.getElementById('sidebarAllMenuBtn');next?.focus({preventScroll:true});}};
+   button.onclick=()=>{if(api.page()!==button.dataset.page)api.navigate(button.dataset.page);else api.expand(true);button.focus({preventScroll:true});};
   }
   rail.append(button);
  }
+ let collapsed=false;
+ const toggle=document.createElement('button');toggle.type='button';toggle.id='sidebarRailToggle';toggle.className='navitem';toggle.setAttribute('aria-controls','mainSidebarNav dedicatedSidebarNav');
+ toggle.onclick=()=>{collapsed=!collapsed;if(!collapsed)api.expand(false);sync();toggle.focus({preventScroll:true});};rail.prepend(toggle);
+ const more=document.createElement('button');more.type='button';more.id='sidebarRailMore';more.className='navitem';more.title='더보기';more.setAttribute('aria-label','더보기');more.setAttribute('aria-expanded','false');more.innerHTML='<svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';rail.append(more);
+ const popup=document.createElement('div');popup.id='sidebarRailMoreMenu';popup.setAttribute('popover','auto');popup.setAttribute('aria-label','더보기 메뉴');
+ for(const source of document.querySelectorAll('#mainSidebarNav>button[data-page]')){
+  if(['all','schedule','todos','habits'].includes(source.dataset.page))continue;
+  const button=source.cloneNode(true);button.removeAttribute('id');button.onclick=()=>{popup.hidePopover();api.navigate(button.dataset.page);more.focus({preventScroll:true});};popup.append(button);
+ }
+ document.body.append(popup);more.setAttribute('aria-controls',popup.id);
+ more.onclick=()=>{if(popup.matches(':popover-open'))popup.hidePopover();else{const r=more.getBoundingClientRect();popup.style.left=(r.right+8)+'px';popup.style.top=Math.max(8,Math.min(r.top,innerHeight-420))+'px';popup.showPopover();popup.querySelector('button')?.focus();}};
+ popup.addEventListener('toggle',()=>more.setAttribute('aria-expanded',String(popup.matches(':popover-open'))));
+ popup.addEventListener('keydown',e=>{if(e.key==='Escape'){popup.hidePopover();more.focus({preventScroll:true});e.preventDefault();}});
  sidebar.prepend(rail);
+ const homeEntry=document.querySelector('#sidebarHomeNav button').cloneNode(true);homeEntry.removeAttribute('id');homeEntry.onclick=()=>api.navigate('home');document.getElementById('mainSidebarNav').prepend(homeEntry);
  const feedback=document.createElement('p');feedback.id='todoGroupMoveStatus';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');document.getElementById('dedicatedSidebarNav').append(feedback);
  const ghost=document.createElement('div');ghost.className='todo-group-ghost';ghost.hidden=true;document.body.append(ghost);
  let drag=null,busy=false,suppressed=0,owner=api.user();
- const enabled=()=>desktop.matches&&api.page()==='todos'&&api.dedicated();
+ const enabled=()=>desktop.matches&&!collapsed&&api.page()==='todos'&&api.dedicated();
  function clear(){drag?.source.classList.remove('todo-group-dragging');document.querySelectorAll('.todo-group-target').forEach(el=>el.classList.remove('todo-group-target'));ghost.hidden=true;drag=null;}
- function sync(){const active=api.page()==='todos'&&api.dedicated();sidebar.classList.toggle('todo-rail',active);rail.hidden=!active;feedback.hidden=api.page()!=='todos';if(!enabled())clear();if(owner!==api.user()){owner=api.user();clear();feedback.textContent='';}}
+ function sync(){sidebar.classList.add('todo-rail');sidebar.classList.toggle('rail-collapsed',collapsed);sidebar.classList.toggle('todo-details',api.page()==='todos');rail.hidden=!desktop.matches;toggle.textContent=collapsed?'→':'←';toggle.title=collapsed?'전체 메뉴 펼치기':'사이드바 접기';toggle.setAttribute('aria-label',toggle.title);toggle.setAttribute('aria-expanded',String(!collapsed));more.classList.toggle('active',!['home','all','schedule','todos','habits'].includes(api.page()));feedback.hidden=api.page()!=='todos';if(popup.matches(':popover-open'))popup.hidePopover();if(!enabled())clear();if(owner!==api.user()){owner=api.user();clear();feedback.textContent='';}}
  function target(x,y){
   const button=document.elementFromPoint(x,y)?.closest('#classificationSideHost [data-group-select]');
   if(!button||button.dataset.groupSelect==='all')return null;

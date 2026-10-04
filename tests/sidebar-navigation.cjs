@@ -6,38 +6,38 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  try{
  const page=await browser.newPage({viewport:{width:1440,height:900},timezoneId:'Asia/Seoul'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await fixture(page);fs.mkdirSync('test-results',{recursive:true});
- const side=page.locator('.sidebar');const nav=side.locator('#sidebarHomeNav .navitem,#mainSidebarNav .navitem');
- const go=async target=>{if(target==='home')return page.locator('#sidebarHomeNav button').click();if(await page.locator('#dedicatedSidebarNav').isVisible())await page.locator('#sidebarAllMenuBtn').click();await page.locator('#mainSidebarNav [data-page='+target+']').click();};
+ const side=page.locator('.sidebar');const nav=side.locator('#mainSidebarNav .navitem');
+ const go=async target=>{if(target==='home')return page.locator('#todoIconRail [data-page=home]').click();if(await page.locator('#dedicatedSidebarNav').isVisible())await page.locator('#sidebarAllMenuBtn').click();await page.locator('#mainSidebarNav [data-page='+target+']').click();};
  assert.deepEqual((await nav.allTextContents()).map(t=>t.trim()),['지금한칸','모두','일정','할일','습관','목표','추적','기록','같이한칸','커뮤니티','설정']);
- assert.deepEqual(await side.locator('#mainSidebarNav > *').evaluateAll(es=>es.map(e=>e.dataset.page||'divider')),['all','schedule','todos','habits','divider','work','timer','records','divider','together','community','divider','settings']);
+ assert.deepEqual(await side.locator('#mainSidebarNav > *').evaluateAll(es=>es.map(e=>e.dataset.page||'divider')),['home','all','schedule','todos','habits','divider','work','timer','records','divider','together','community','divider','settings']);
  assert.equal(await side.locator('#mainSidebarNav .sidebar-divider').count(),3);assert.equal(await side.locator('.sidebar-footer .navitem').count(),0);
  assert.equal(await side.locator('.sidebar-quickadd, #quickTaskInputSide, #quickAddBtnSide').count(),0);
  await page.evaluate(()=>{document.getElementById('quickTaskInput').value='폭 변경 중인 빠른 입력';});
  await go('todos');await page.locator('#pageSidebarItems [data-sidebar-tab=someday]:visible, #todoTopTabs [data-tab=someday]:visible').click();await page.locator('#somedayInput').fill('보존할 담아두기');
  await go('habits');
- assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [data-page].active').getAttribute('data-page'),'habits');assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [aria-current=page]').count(),1);
+ assert.equal(await side.locator('#mainSidebarNav [data-page].active').getAttribute('data-page'),'habits');assert.equal(await side.locator('#mainSidebarNav [aria-current=page]').count(),1);
  for(const [width,height] of [[1366,768],[1440,900],[761,768],[760,768],[390,844],[1440,900]]){
   await page.setViewportSize({width,height});
   assert.equal(await side.isVisible(),width>760);assert.equal(await page.locator('.bottombar').isVisible(),width<=760);
   assert.equal(await page.locator('.page[data-page=habits]').isVisible(),true);
   assert.equal(await page.locator('#quickTaskInput').inputValue(),'폭 변경 중인 빠른 입력');
   assert.equal(await page.locator('#somedayInput').inputValue(),'보존할 담아두기');
-  if(width>760){assert.equal((await side.boundingBox()).width,180);assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [data-page].active').count(),1);assert.equal(await page.locator('.page[data-page=habits] h1.page-title').isVisible(),true);}
+  if(width>760){assert.equal((await side.boundingBox()).width,236);assert.equal(await side.locator('#mainSidebarNav [data-page].active').count(),1);assert.equal(await page.locator('.page[data-page=habits] h1.page-title').isVisible(),true);}
   else{assert.equal(await page.locator('.bottombar .active').getAttribute('data-page'),'habits');assert.equal(await page.locator('.page[data-page=habits] h1.page-title').isVisible(),true);}
   await page.screenshot({path:`test-results/sidebar-${width}x${height}.png`});
  }
  await go('todos');assert.equal(await page.locator('#todoSomedayView').isVisible(),true);
- await page.locator('#sidebarHomeNav [data-page=home]:visible,#todoIconRail [data-page=home]:visible').focus();await page.keyboard.press('Enter');assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [data-page].active').getAttribute('data-page'),'home');
- await page.keyboard.press('Tab');await page.keyboard.press('Space');assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [data-page].active').getAttribute('data-page'),'all');
- assert.notEqual(await page.locator('#pageSidebarItems [data-sidebar-tab=calendar]').evaluate(e=>getComputedStyle(e).outlineStyle),'none');
- for(const target of ['home','all','community','timer','schedule','todos','habits','work','together','records','settings']){await go(target);assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [data-page].active').count(),1);assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [aria-current=page]').getAttribute('data-page'),target);}
+ await page.locator('#sidebarHomeNav [data-page=home]:visible,#todoIconRail [data-page=home]:visible').focus();await page.keyboard.press('Enter');assert.equal(await side.locator('#mainSidebarNav [data-page].active').getAttribute('data-page'),'home');
+ await page.keyboard.press('Tab');await page.keyboard.press('Space');assert.equal(await side.locator('#mainSidebarNav [data-page].active').getAttribute('data-page'),'all');
+ assert.notEqual(await page.locator('#todoIconRail [data-page=all]').evaluate(e=>getComputedStyle(e).outlineStyle),'none');
+ for(const target of ['home','all','community','timer','schedule','todos','habits','work','together','records','settings']){await go(target);assert.equal(await side.locator('#mainSidebarNav [data-page].active').count(),1);assert.equal(await side.locator('#mainSidebarNav [aria-current=page]').getAttribute('data-page'),target);}
  // Calendar/list selection and scroll survive navigation through the new sidebar.
  await go('schedule');
- await page.locator('#scheduleSidebarNav [data-schedule-mode=list]').click();await page.evaluate(()=>window.scrollTo(0,200));
+ await page.locator('#scheduleSidebarNav [data-schedule-view=list]').click();await page.evaluate(()=>window.scrollTo(0,200));
  const scroll=await page.evaluate(()=>window.scrollY);
  await go('records');await go('schedule');
- assert.equal(await page.locator('#scheduleModeListBtn').getAttribute('aria-pressed'),'true');assert.equal(await page.evaluate(()=>window.scrollY),scroll);
- await page.locator('#scheduleSidebarNav [data-schedule-mode=calendar]').click();const selected=await page.evaluate(()=>calSelected);
+ assert.equal(await page.locator('#scheduleSidebarNav [data-schedule-view=list]').getAttribute('aria-pressed'),'true');assert.equal(await page.evaluate(()=>window.scrollY),scroll);
+ await page.locator('#scheduleSidebarNav [data-schedule-view=month]').click();const selected=await page.evaluate(()=>calSelected);
  await go('todos');await go('schedule');assert.equal(await page.evaluate(()=>calSelected),selected);
  // Keep the selected project while its title switches between desktop and mobile.
  await page.evaluate(async()=>{mockRows.tok_projects=[{id:'p1',name:'연결된 프로젝트',parent_id:null,sort_order:0}];await loadAll();});
