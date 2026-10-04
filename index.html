@@ -3254,7 +3254,7 @@
     $('scheduleCategoryEditBg').classList.remove('open');
     if (!restore || !editor) return;
     const row = [...$('scheduleCategoryList').children].find(row => row.dataset.scheduleCat === editor.id);
-    const candidates = [row?.querySelector('.schedule-cat-more'), editor.opener, $('scheduleCategoryMobileBtn'), document.querySelector('#scheduleSidebarNav [data-schedule-mode="' + scheduleMode + '"]'), document.querySelector('#mainSidebarNav [data-page="schedule"]')];
+    const candidates = [row?.querySelector('.schedule-cat-more'), editor.opener, $('scheduleCategoryMobileBtn'), scheduleViews?.focusTarget?.(), document.querySelector('#mainSidebarNav [data-page="schedule"]')];
     candidates.find(target => target?.isConnected && target.getClientRects().length)?.focus({ preventScroll: true });
   }
   $('scheduleCategoryEditCancel').onclick = () => closeScheduleCategoryEditor();
@@ -3347,7 +3347,7 @@
       if (currentPage !== page) showPage(page);
       else setSidebarMode(page !== 'home');
       if (el.closest('.sidebar') && page !== 'home') {
-        const target = ($('scheduleSidebarNav').hidden ? $('pageSidebarItems').querySelector('button') : document.querySelector('#scheduleSidebarNav [data-schedule-mode="' + scheduleMode + '"]')) || $('sidebarAllMenuBtn');
+        const target = ($('scheduleSidebarNav').hidden ? $('pageSidebarItems').querySelector('button') : scheduleViews?.focusTarget?.()) || $('sidebarAllMenuBtn');
         target.focus({ preventScroll: true });
       }
     };
