@@ -40,7 +40,7 @@ window.createOnekanAllViews = api => {
  }
  function render(){
   if(!engine)return;cache=null;const state=engine.state();
-  for(const b of $('allViewTabs').querySelectorAll('button')){b.classList.toggle('active',b.dataset.tab===mode);b.setAttribute('aria-pressed',String(b.dataset.tab===mode));}
+  for(const b of $('allViewTabs').querySelectorAll('button[data-tab]')){b.classList.toggle('active',b.dataset.tab===mode);b.setAttribute('aria-pressed',String(b.dataset.tab===mode));}
   $('allCollection').hidden=mode==='calendar';$('allCalendarMode').hidden=mode!=='calendar';$('allList').hidden=mode==='board';$('allBoard').hidden=mode!=='board';$('allUndatedWrap').hidden=mode==='calendar';$('allUndated').checked=state.undated;$('allTodoStatus').value=state.completion;$('allHabitStatus').value=state.status;
   $('allMonthCount').hidden=mode==='calendar';$('allJumpRow').hidden=mode==='calendar';$('allMonthLabel').textContent=state.span==='month'?Number(date.slice(0,4))+'년 '+Number(date.slice(5,7))+'월':engine.range().start+' ~ '+engine.range().end;
   const focus=document.activeElement?.dataset.allType;
@@ -64,10 +64,10 @@ window.createOnekanAllViews = api => {
   adjustPatch:(r,patch)=>{if(r.kind==='todo'&&!r.repeat_unit&&r.end_date!=null)patch.end_date=patch.occurrence_end_date??r.end_date;},
   persist:(r,patch,user)=>api.sb.from(r.kind==='event'?'tok_events':'tok_todos').update(patch).eq('id',r.source_id).eq('user_id',user).select('id').single(),
   scrollDate:d=>host.querySelector('[data-date="'+d+'"]')?.scrollIntoView({block:'start'}),paintRange:(a,b)=>host.querySelectorAll('.cal-cell[data-date]').forEach(c=>c.classList.toggle('cal-range',c.dataset.date>=a&&c.dataset.date<=b)),clearRange:()=>host.querySelectorAll('.cal-range').forEach(c=>c.classList.remove('cal-range')),
-  focusTarget:()=>$('allViewTabs').querySelector('[data-tab="'+mode+'"]')
+  focusTarget:()=>$('allViewTabs').querySelector('[data-common-view].active')||$('allViewTabs').querySelector('[data-tab="'+mode+'"]')
  });
  $('allTodoStatus').onchange=e=>engine.option('completion',e.target.value);$('allHabitStatus').onchange=e=>engine.option('status',e.target.value);$('allUndated').onchange=e=>engine.option('undated',e.target.checked);
  $('allPrevBtn').onclick=()=>engine.navigate(-1);$('allNextBtn').onclick=()=>engine.navigate(1);$('allTodayBtn').onclick=()=>{engine.resetRange();selectDate(api.today());};
- $('allViewTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>engine.option('mode',b.dataset.tab));$('allAddBtn').onclick=e=>add({startDate:date,endDate:date,allDay:true,opener:e.currentTarget});
+ $('allViewTabs').querySelectorAll('button[data-tab]').forEach(b=>b.onclick=()=>engine.option('mode',b.dataset.tab));$('allAddBtn').onclick=e=>add({startDate:date,endDate:date,allDay:true,opener:e.currentTarget});
  return {...engine,render,selectDate,sidebarTypes,displayRows:rows};
 };

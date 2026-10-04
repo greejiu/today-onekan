@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),{chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs');
+(async()=>{const b=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{
+const p=await b.newPage({viewport:{width:1440,height:900}}),errors=[];p.on('pageerror',e=>errors.push(e.message));await fixture(p);
+for(const [page,prefix,tabs] of [['all','all','allViewTabs'],['todos','todo','todoTopTabs'],['habits','habit','habitViewTabs']]){
+ await p.evaluate(page=>showPage(page),page);const host=p.locator('#'+tabs);assert(await host.isVisible());assert.deepEqual(await host.locator('[data-common-view]').allTextContents(),['월','주','일','목록']);assert.equal(await p.locator('#pageSidebarItems').isVisible(),false);
+ await host.locator('[data-common-view=month]').click();assert(await p.locator('#'+prefix+'CalGrid').isVisible());await host.locator('[data-common-view=week]').click();assert.equal(await p.locator('#'+prefix+'TimeDays .sv-day').count(),7);assert.equal(await p.locator('#'+prefix+'TimeDays .schedule-week-axis').count(),1);assert.equal(await host.locator('[data-common-view=week]').getAttribute('aria-pressed'),'true');
+ for(const width of [1440,390]){await p.setViewportSize({width,height:900});assert(await host.isVisible());assert.equal(await p.locator('#'+prefix+'TimeScroll').evaluate(el=>el.scrollWidth<=el.clientWidth+1),true);}
+ await host.locator('[data-common-view=day]').click();assert.equal(await p.locator('#'+prefix+'TimeDays .sv-day').count(),1);await host.locator('[data-common-view=list]').click();assert.equal(await p.locator('#'+prefix+'CalendarMode').isVisible(),false);await host.locator('[data-tab=board]').click();assert(await p.locator('#'+prefix+'Board').isVisible());
+ if(page==='todos'){await host.locator('[data-tab=someday]').click();assert(await p.locator('#todoSomedayView').isVisible());await host.locator('[data-common-view=week]').click();assert.equal(await p.locator('#todoSomedayView').isVisible(),false);assert.equal(await p.locator('#todoTimeDays .sv-day').count(),7);}
+ await p.setViewportSize({width:1440,height:900});await p.screenshot({path:'test-results/shared-tabs-'+page+'.png'});
+}
+assert.equal(await p.evaluate(()=>mockWrites.length),0);assert.deepEqual(errors,[]);console.log('all/todo/habit shared top month/week/day/list, seven fit lanes, PC/mobile, board/someday preservation and zero navigation writes PASS');
+}finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
