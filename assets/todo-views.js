@@ -17,7 +17,7 @@ window.createOnekanTodoViews = api => {
   if(someday){api.someday();return;}
   const state=engine.state();$('todoCollection').hidden=mode==='calendar';$('todoCalendarMode').hidden=mode!=='calendar';$('todoUnifiedList').hidden=mode==='board';$('todoBoard').hidden=mode!=='board';$('todoUndatedWrap').hidden=mode==='calendar';$('todoCompletion').value=state.completion;$('todoUndated').checked=state.undated;
   $('todoMonthCount').hidden=mode==='calendar';$('todoJumpRow').hidden=mode==='calendar';
-  $('todoMonthLabel').textContent=state.span==='month'?date.slice(0,7):engine.range().start+' ~ '+engine.range().end;
+  $('todoMonthLabel').textContent=state.span==='month'?Number(date.slice(0,4))+'년 '+Number(date.slice(5,7))+'월':engine.range().start+' ~ '+engine.range().end;
   if(mode==='calendar')engine.calendar();else engine.collection();
   const count=api.rows().filter(row=>!row.start_date&&api.matches(row)&&accept(row,state)).length;
   $('todoUndatedNotice').innerHTML=mode==='calendar'&&count?'<button type="button" class="btn-ghost" id="todoShowUndated">날짜 없는 할일 '+count+'개 · 목록에서 보기</button>':'';

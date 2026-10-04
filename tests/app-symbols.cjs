@@ -14,7 +14,7 @@ const html=fs.readFileSync('index.html','utf8');new(require('node:vm').Script)(h
   }
   const row=rows.get(userId)||null;const ms=readDelay;readDelay=0;await new Promise(r=>setTimeout(r,ms));return {data:row,error:null};
  });
- await page.route('**/*',r=>r.request().url()==='http://symbols.test/'?r.fulfill({contentType:'text/html',body:html}):['classification.js','schedule-views.js','item-views.js','todo-views.js','habit-views.js','calendar-ui.js','all-views.js'].some(f=>r.request().url().endsWith('/assets/'+f))?r.fulfill({contentType:'application/javascript',body:fs.readFileSync('assets/'+r.request().url().split('/').pop(),'utf8')}):r.fulfill({body:'',status:200}));
+ await page.route('**/*',r=>r.request().url()==='http://symbols.test/'?r.fulfill({contentType:'text/html',body:html}):['classification.js','schedule-views.js','item-views.js','todo-views.js','habit-views.js','agenda-markup.js','calendar-ui.js','all-views.js'].some(f=>r.request().url().endsWith('/assets/'+f))?r.fulfill({contentType:'application/javascript',body:fs.readFileSync('assets/'+r.request().url().split('/').pop(),'utf8')}):r.fulfill({body:'',status:200}));
  await page.addInitScript(()=>{
   let user={id:localStorage.getItem('test_user')||'alice',email:'test@example.invalid'},callback;
   window.changeSymbolUser=id=>{user=id?{id,email:'test@example.invalid'}:null;localStorage.setItem('test_user',id||'');callback?.(id?'SIGNED_IN':'SIGNED_OUT',user?{user}:null);};

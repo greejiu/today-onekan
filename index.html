@@ -989,18 +989,18 @@
      - 제목 15px/1.5, var(--text)로 통일, 최대 2줄 말줄임(전체 제목은 클릭 → 기존 이름 수정 입력창에서 확인).
      - 그룹 색은 제목 글자색(.gc-title, groupTitleHtml — 2026-09-28 점 → 글자색). 완료는 취소선+보조 글자색 우선.
      - 타임라인 칸(.ag-tl-task)은 시간 길이로 높이가 정해지므로 여기 규칙이 전혀 적용되지 않음. */
-  .home2-grid :is(.home1-flat-row, .ag-block-row){display:flex;align-items:flex-start;gap:10px;min-height:44px;margin:0;padding:11px 6px;border-radius:10px;border-bottom:1px solid color-mix(in srgb, var(--line) 75%, transparent);font-size:15px;line-height:1.5;}
-  .home2-grid :is(.home1-flat-row, .ag-block-row):hover{background:color-mix(in srgb, var(--text) 3%, var(--card));}
-  .home2-grid :is(.home1-flat-row, .ag-block-row) > .drag-handle-dots{margin-top:4px;cursor:grab;}
-  .home2-grid :is(.home1-flat-row, .ag-block-row) > input[type=checkbox]{width:20px;height:20px;margin:1px 0 0;flex-shrink:0;}
-  .home2-grid :is(.home1-flat-row, .ag-block-row) > .agenda-event-dot-wrap{margin-top:1px;}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row){display:flex;align-items:flex-start;gap:10px;min-height:44px;margin:0;padding:11px 6px;border-radius:10px;border-bottom:1px solid color-mix(in srgb, var(--line) 75%, transparent);font-size:15px;line-height:1.5;}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row):hover{background:color-mix(in srgb, var(--text) 3%, var(--card));}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) > .drag-handle-dots{margin-top:4px;cursor:grab;}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) > input[type=checkbox]{width:20px;height:20px;margin:1px 0 0;flex-shrink:0;}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) > .agenda-event-dot-wrap{margin-top:1px;}
   [data-theme="black"] .home2-grid input[type=checkbox]{color-scheme:dark;} /* 검정 테마: 빈 체크박스가 흰 네모로 튀지 않게 */
-  .home2-grid :is(.home1-flat-row, .ag-block-row) :is(.agenda-title, .plan-todo-title){flex:1;min-width:0;font-size:15px;line-height:1.5;color:var(--text);white-space:normal;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}
-  .home2-grid :is(.home1-flat-row, .ag-block-row).done :is(.agenda-title, .plan-todo-title){color:var(--sub);text-decoration:line-through;}
-  .home2-grid :is(.home1-flat-row, .ag-block-row) .inline-add-wrap{align-self:center;}
-  .home2-grid :is(.home1-flat-row, .ag-block-row) .inline-add-input{font-size:15px;padding:4px 8px;}
-  .home2-grid :is(.home1-flat-row, .ag-block-row) :is(.plan-time, .plan-range-tag){font-size:12px;line-height:1.5;margin-top:3px;color:var(--sub);font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
-  .home2-grid :is(.home1-flat-row, .ag-block-row) .habit-due-chip{font-size:11px;margin:3px 0 0;flex-shrink:0;}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) :is(.agenda-title, .plan-todo-title){flex:1;min-width:0;font-size:15px;line-height:1.5;color:var(--text);white-space:normal;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row).done :is(.agenda-title, .plan-todo-title){color:var(--sub);text-decoration:line-through;}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) .inline-add-wrap{align-self:center;}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) .inline-add-input{font-size:15px;padding:4px 8px;}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) :is(.plan-time, .plan-range-tag){font-size:12px;line-height:1.5;margin-top:3px;color:var(--sub);font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
+  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) .habit-due-chip{font-size:11px;margin:3px 0 0;flex-shrink:0;}
   /* 목록 보조 정보(날짜 제목·건수·빈칸 안내·더보기) 12~13px */
   .home2-grid .ag-section-head .label{font-size:13px;font-weight:700;}
   .home2-grid .ag-section-head .count{font-size:12px;color:var(--sub);background:color-mix(in srgb, var(--text) 6%, var(--card));}
@@ -1014,10 +1014,10 @@
   .home2-grid .agenda-date-wrap{font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
   /* 타임라인 위 "하루종일": 제목 12px, 항목은 타임라인과 같은 배경색 구분을 유지하되 글씨만 13px로 */
   .home2-grid .ag-section-head.tl-style .label{font-size:12px;}
-  .home2-grid .ag-allday-row.tl-style{padding:5px 8px;margin-bottom:4px;border-radius:10px;gap:8px;}
-  .home2-grid .ag-allday-row.tl-style .agenda-title{font-size:13px;line-height:1.5;color:var(--text);}
-  .home2-grid .ag-allday-row.tl-style.done .agenda-title{color:var(--sub);}
-  .home2-grid .ag-allday-row.tl-style input[type=checkbox]{width:16px;height:16px;margin:0;}
+  :is(.home2-grid,.iv-page) .ag-allday-row.tl-style{padding:5px 8px;margin-bottom:4px;border-radius:10px;gap:8px;}
+  :is(.home2-grid,.iv-page) .ag-allday-row.tl-style .agenda-title{font-size:13px;line-height:1.5;color:var(--text);}
+  :is(.home2-grid,.iv-page) .ag-allday-row.tl-style.done .agenda-title{color:var(--sub);}
+  :is(.home2-grid,.iv-page) .ag-allday-row.tl-style input[type=checkbox]{width:16px;height:16px;margin:0;}
   /* 2026-09-27 남아 있는 할일 — 경고색 없이 기본 글자색 + 옅은 구분선. 줄: 체크박스 → 제목(최대 2줄) → 오늘로 → ⋯,
      원래 날짜는 제목 아래 보조 정보. 좁은 화면(≤480px)에선 날짜와 버튼을 제목 아래 한 줄로 내림. */
   .leftover-wrap[hidden]{display:none;}
@@ -2368,6 +2368,7 @@
 <link rel="stylesheet" href="assets/classification.css">
 <script src="assets/classification.js"></script>
 <link rel="stylesheet" href="assets/schedule-views.css">
+<script src="assets/agenda-markup.js"></script>
 <script src="assets/calendar-ui.js"></script>
 <script src="assets/item-views.js"></script>
 <script src="assets/schedule-views.js"></script>
@@ -4157,8 +4158,7 @@
   // 그룹/범주 색을 카드 배경으로 옅게 깔아줌(원색 그대로면 글자가 안 보여서 흰색과 섞어 파스텔톤으로), 그룹 없으면 흰 배경 고정
   function itemTagBgStyle(kind, catId) {
     const color = itemTagColor(kind, catId);
-    if (!color) return `background:var(--card);border-color:var(--line);`;
-    return `background:color-mix(in srgb, ${color} 24%, var(--card));border-color:color-mix(in srgb, ${color} 50%, var(--line));`;
+    return OnekanAgendaMarkup.colorStyle(color);
   }
   // 다가오는 계획 각 날짜 점 색상(장식용, 항목 있는 날만 색이 돌아가며 붙고 빈 날은 회색)
   const PLAN_DAY_DOTS = ["#4a90e2", "#f5a742", "#a56cf0", "#3fae6a", "#e2678a"];
@@ -4743,32 +4743,7 @@
   // "오늘" 탭의 시간블럭 뷰(#homeTodayBlockBody)에서도 그대로 재사용하기 위해, 두 콜백을 선택적으로 받아
   // 넘기지 않으면 기존 동작(renderAgendaTimed/#agendaTimeWrap 조회) 그대로 유지되도록 함(하위 호환).
   function renderAgendaBlocks(items, dateStr, containerEl, onRerender, getFreshContainer) {
-    let html = "";
-    if (timeBlocks.length) {
-      const covered = new Set();
-      timeBlocks.forEach(block => {
-        const inBlock = items.filter(it => it.start_minute >= block.start_minute && it.start_minute < block.end_minute);
-        inBlock.forEach(it => covered.add(it));
-        const bs = agBlockStyle(block.title);
-        html += `<div class="ag-section-head">
-          <span class="label"><span class="ag-dot" style="background:${bs.dot};"></span>${escapeHtml(block.title)} <span style="color:var(--sub);font-weight:400;">(${minutesToHHMM(block.start_minute)}~${endMinuteLabel(block.end_minute)})</span></span>
-        </div>`;
-        // 비어있을 땐 "일정 없음" 안내문구 자체가 곧 클릭해서 추가하는 빈칸(하루종일·언젠가와 동일 규칙),
-        // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙임.
-        // data-date: 이 블럭 카드가 어느 열(날짜) 소속인지(8-3단계, homeDropZone이 드롭 대상 날짜를 여기서 읽음).
-        html += inBlock.length
-          ? `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}">${inBlock.map(it => agendaItemRowHtml(it, dateStr)).join("")}${addSlotHtml(`data-block-start="${block.start_minute}"`, false)}</div>`
-          : `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}">${addSlotHtml(`data-block-start="${block.start_minute}"`, true)}</div>`;
-      });
-      const uncovered = items.filter(it => !covered.has(it));
-      if (uncovered.length) {
-        html += `<div class="ag-section-head"><span class="label">그 외 시간</span></div>`;
-        html += `<div class="agenda-flat">${uncovered.map(it => agendaItemRowHtml(it, dateStr)).join("")}</div>`;
-      }
-    } else if (items.length) {
-      html += `<div class="agenda-flat">${items.map(it => agendaItemRowHtml(it, dateStr)).join("")}</div>`;
-    }
-    containerEl.innerHTML = html || `<div class="empty" style="padding:20px 0;font-size:12px;">시간이 있는 항목이 없어요.</div>`;
+    containerEl.innerHTML=OnekanAgendaMarkup.blocks(items,dateStr,{blocks:timeBlocks,blockStyle:agBlockStyle,escape:escapeHtml,time:minutesToHHMM,endTime:endMinuteLabel,row:agendaItemRowHtml,addSlot:addSlotHtml});
     wireAgendaHabitChecks(containerEl);
     attachAgendaBlockDrag(containerEl, onRerender);
     attachAgendaBlockAddClick(containerEl, dateStr, undefined, undefined, undefined, onRerender, getFreshContainer);
@@ -5126,54 +5101,10 @@
   // 8-3단계: dateStr/containerEl로 일반화 — 여러 날짜 열이 나란히 렌더되므로 각 열은 자기 min/max를
   // .ag-tl-content의 data-min-m/data-max-m에 저장해두고(homeDropZone·현재시각선이 열마다 따로 읽어씀).
   function renderAgendaTimeline(items, dateStr, containerEl) {
-    let minM = daySettings.day_start_minute, maxM = daySettings.day_end_minute; // 설정 페이지에서 정한 하루 범위(기본 06:00~24:00) — 항목이 범위 밖이면 자동으로 더 넓어짐
-    items.forEach(it => {
-      minM = Math.min(minM, it.start_minute);
-      maxM = Math.max(maxM, it.start_minute + it.duration_minutes);
-    });
-    if (dateStr === homeAgendaDate) { agendaTimelineMinM = minM; agendaTimelineMaxM = maxM; } // 첫째 열 기준값(기존 전역 변수 호환용)
-    const slotCount = Math.max(1, Math.ceil((maxM - minM) / AG_TL_SLOT_MIN));
-    const rowOf = (m) => Math.floor((m - minM) / AG_TL_SLOT_MIN) + 1;
-
-    let rowsHtml = "";
-    for (let i = 0; i < slotCount; i++) {
-      const m = minM + i * AG_TL_SLOT_MIN;
-      if (m % 30 === 0) {
-        rowsHtml += `<div class="tl-row-line${m % 60 === 0 ? " hour" : ""}" style="grid-row:${i+1}"></div>`; // 정시 선은 진하게, 30분 선은 연하게(CSS)
-        if (m % 60 === 0) rowsHtml += `<div class="tl-row-label" style="grid-row:${i+1}">${minutesToHHMM(m)}</div>`;
-      }
-    }
-    // 항목이 화면에 실제로 차지하는 세로 범위(px).
-    // 15분처럼 짧은 항목은 실제 칸 높이(AG_TL_ROW_PX)로는 체크박스+글자가 다 안 들어가서 잘려버리므로 최소 높이를 보장.
-    const boxOf = (it) => {
-      const sRow = rowOf(it.start_minute), eRow = Math.max(sRow + 1, rowOf(it.start_minute + it.duration_minutes));
-      const top = (sRow - 1) * AG_TL_ROW_PX;
-      return { top, height: Math.max(AG_TL_MIN_ITEM_PX, (eRow - sRow) * AG_TL_ROW_PX) };
-    };
-    // 같은 시간대에 겹치는 항목은 나란히 배치(2개 겹치면 2열, 3개면 3열 …) — 겹치는 묶음(cluster) 단위로
-    // 그 묶음 안 최대 동시 개수만큼 열을 나눔(캘린더 앱들이 흔히 쓰는 구간 색칠 방식).
-    // 09-24 버그 수정: 겹침 판정을 "분"이 아니라 위 boxOf의 화면 범위로 함 — 분 기준이면 12:00(15분)·12:15처럼
-    // 시간상 안 겹쳐도 최소 높이 때문에 화면에선 겹치는 항목이 같은 열에 놓여 뒤 항목이 앞 항목을 덮어버렸음.
-    const placements = agendaTimelineLayout(items, boxOf);
-
-    let itemsHtml = "";
-    placements.forEach(({ item: it, col, colCount }) => {
-      const { top, height } = boxOf(it);
-      // 제목이 보일 수 있는 줄 수(패딩·테두리 6px 제외, 줄 높이 12px×1.3 — 2px까지는 살짝 넘쳐도 한 줄로 쳐줌)
-      const titleLines = Math.max(1, Math.floor((height - 6 + 2) / (12 * 1.3)));
-      const widthPct = 100 / colCount;
-      const leftPct = widthPct * col;
-      itemsHtml += `<div class="ag-tl-task ${it.kind} ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, it.occurrence_date||dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, it.occurrence_date||dateStr)} data-period-label="${escapeHtml(it.period_label||'')}" title="${escapeHtml(it.period_label||'')}" data-occurrence="${it.occurrence_date||''}" data-start="${it.start_minute}" data-duration="${it.duration_minutes}" style="top:${top}px;height:${height}px;left:${leftPct}%;width:calc(${widthPct}% - 4px);${itemTagBgStyle(it.kind, it.cat_id)}">
-        ${it.kind === "habit"
-          ? habitLeadHtml(it.id, it.occurrence_date||dateStr, it.done, "ag-habit-check")
-          : it.kind === "todo"
-          ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
-          : eventDotHtml(it.cat_id, 8, 14)}
-        <span class="ag-tl-title" style="-webkit-line-clamp:${titleLines}">${titleWithProjectHtml(it.name, it.proj)}</span>
-        ${moreBtnHtml(it.name)}
-      </div>`;
-    });
-    containerEl.innerHTML = `<div class="ag-tl-grid" style="grid-template-rows:repeat(${slotCount},${AG_TL_ROW_PX}px)">${rowsHtml}<div class="ag-tl-content" data-date="${dateStr}" data-min-m="${minM}" data-max-m="${maxM}">${itemsHtml}</div></div>`;
+    const view=OnekanAgendaMarkup.timeline(items,dateStr,{min:daySettings.day_start_minute,max:daySettings.day_end_minute,layout:agendaTimelineLayout,escape:escapeHtml,time:minutesToHHMM,skipped:it=>skippedCls(it.kind,it.id,it.occurrence_date||dateStr),attrs:it=>menuAttrs(it.kind,it.id,it.occurrence_date||dateStr),style:it=>itemTagBgStyle(it.kind,it.cat_id),title:it=>titleWithProjectHtml(it.name,it.proj),more:it=>moreBtnHtml(it.name),lead:it=>it.kind==='habit'?habitLeadHtml(it.id,it.occurrence_date||dateStr,it.done,'ag-habit-check'):it.kind==='todo'?`<input type="checkbox" ${it.done?'checked':''} data-id="${it.id}" class="ag-todo-check" />`:eventDotHtml(it.cat_id,8,14)});
+    const minM=view.min,maxM=view.max,slotCount=Math.max(1,Math.ceil((maxM-minM)/AG_TL_SLOT_MIN));
+    if(dateStr===homeAgendaDate){agendaTimelineMinM=minM;agendaTimelineMaxM=maxM;}
+    containerEl.innerHTML=view.html;
     wireAgendaHabitChecks(containerEl);
     attachAgendaTimelineItemDrag(minM, containerEl, dateStr);
     attachAgendaTimelineAddDrag(minM, slotCount, containerEl, dateStr);
@@ -9993,6 +9924,7 @@
     categoryList:host=>renderCategoryManageList(host,habitCategories,'tok_habit_categories',()=>{rerenderCategoryViews();classification.render();},false,false),
     menu:openMenuShell,alert,trap:trapFocusIn,reserved:isReservedCategoryName
   });
+  OnekanCalendarUI.agendaHelpers={title:titleWithProjectHtml,layout:agendaTimelineLayout,blockStyle:agBlockStyle,addSlot:addSlotHtml,handle:DRAG_HANDLE_SVG};
   OnekanCalendarUI.timelineSpec=()=>({min:daySettings.day_start_minute,max:daySettings.day_end_minute,scale:AG_TL_ROW_PX/AG_TL_SLOT_MIN,minHeight:AG_TL_MIN_ITEM_PX});
   scheduleViews = window.createOnekanScheduleViews({
     period:OnekanPeriod,sb,user:()=>appSymbolUserId,page:()=>currentPage,mode:()=>scheduleMode,setMode:v=>{scheduleMode=v;},changeMode:showScheduleMode,
