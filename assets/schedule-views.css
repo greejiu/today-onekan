@@ -120,7 +120,7 @@
  .schedule-sidebar .goal-sidebar-heading{display:none}
 }
 /* Schedule week uses one axis and seven flexible lanes. */
-.iv-page #scheduleTimeDays.schedule-week-fit{position:relative;padding-left:42px;min-width:0;box-sizing:border-box;width:100%;gap:0}
+.iv-page .schedule-week-fit{position:relative;padding-left:42px;min-width:0;box-sizing:border-box;width:100%;gap:0}
 .iv-page .schedule-week-fit .sv-day{min-width:0;width:auto;margin:0}
 .iv-page .schedule-week-fit .sv-day>header{height:44px;box-sizing:border-box;padding:4px 1px;justify-content:center}
 .iv-page .schedule-week-fit .sv-day>header button{font-size:11px;min-width:0;padding:0;line-height:1.4;overflow-wrap:anywhere}
@@ -147,3 +147,10 @@
 /* Schedule view selection belongs to the page header at every width. */
 #scheduleModeToggle{display:flex!important}
 #scheduleSidebarNav{display:none!important}
+
+.iv-page .iv-controls>.iv-view-tabs{display:flex!important}
+.iv-page .iv-controls>.iv-view-tabs>[hidden]{display:none!important}
+.iv-page [id$="CalendarOptions"]{display:none!important}
+@media(min-width:761px){.sidebar.view-sidebar #pageSidebarItems{display:none!important}}
+.iv-page .iv-view-tabs{justify-content:flex-start;overflow:visible;flex-wrap:wrap}
+.iv-page .iv-view-tabs button{flex:0 0 auto!important}

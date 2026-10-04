@@ -71,7 +71,7 @@ window.createOnekanHabitViews = api => {
  }
  function render(){
   calendarCache=null;renderVersion++;const state=engine.state();api.setLifecycle(state.lifecycle);
-  for(const b of $('habitViewTabs').querySelectorAll('button')){b.classList.toggle('active',b.dataset.tab===mode);b.setAttribute('aria-pressed',String(b.dataset.tab===mode));}
+  for(const b of $('habitViewTabs').querySelectorAll('button[data-tab]')){b.classList.toggle('active',b.dataset.tab===mode);b.setAttribute('aria-pressed',String(b.dataset.tab===mode));}
   for(const b of $('habitsTabRow').querySelectorAll('button')){b.classList.toggle('active',b.dataset.tab===state.lifecycle);b.setAttribute('aria-pressed',String(b.dataset.tab===state.lifecycle));}
   $('habitCollection').hidden=mode==='calendar';$('habitCalendarMode').hidden=mode!=='calendar';$('todoList').hidden=mode==='board';$('habitBoard').hidden=mode!=='board';
   $('habitDateNav').hidden=mode!=='calendar';$('habitStatusWrap').hidden=mode!=='calendar';$('habitStatus').value=state.status;$('habitMonthCount').hidden=mode==='calendar';$('habitJumpRow').hidden=true;
@@ -91,11 +91,11 @@ window.createOnekanHabitViews = api => {
   info:row=>'<span class="hv-note">'+esc(note(row))+'</span>',
   menuAttrs:(rowId)=>{const row=calendarRows.find(r=>r.id===rowId);return api.menuAttrs(row?.habit_id||rowId,row?.action_date)+(row?.block?' data-habit-status-block="'+esc(row.block)+'"':'');},
   scrollDate:()=>{},paintRange:(a,b)=>host.querySelectorAll('.cal-cell[data-date]').forEach(el=>el.classList.toggle('cal-range',el.dataset.date>=a&&el.dataset.date<=b)),clearRange:()=>host.querySelectorAll('.cal-range').forEach(el=>el.classList.remove('cal-range')),
-  focusTarget:()=>$('habitViewTabs').querySelector('[data-tab="'+mode+'"]')
+  focusTarget:()=>$('habitViewTabs').querySelector('[data-common-view].active')||$('habitViewTabs').querySelector('[data-tab="'+mode+'"]')
  });
  $('habitStatus').onchange=e=>engine.option('status',e.target.value);
  $('habitPrevBtn').onclick=()=>engine.navigate(-1);$('habitNextBtn').onclick=()=>engine.navigate(1);$('habitTodayBtn').onclick=()=>{engine.resetRange();selectDate(api.today());};
- $('habitViewTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>engine.option('mode',b.dataset.tab));
+ $('habitViewTabs').querySelectorAll('button[data-tab]').forEach(b=>b.onclick=()=>engine.option('mode',b.dataset.tab));
  $('habitAddBtn').onclick=()=>api.add({startDate:date,endDate:date,allDay:true,opener:$('habitAddBtn')});
  return {...engine,render,selectDate,occurrenceRows,nextDue,check,note,perform:(row,action)=>{const h=source(row);if(!h||row.block||row.status==='open'&&api.blockReason(h,row.action_date))return Promise.resolve(false);return api.status(h.id,row.action_date,action);},addCurrent:opener=>api.add({startDate:date,endDate:date,allDay:true,opener})};
 };

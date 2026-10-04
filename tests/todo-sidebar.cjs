@@ -14,8 +14,8 @@ const {chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs')
   const initial=await p.evaluate(()=>({...mockRows.tok_todos[0]}));
   const get=()=>p.evaluate(()=>({...mockRows.tok_todos[0]}));
   const drop=async(mode,id,cancel=false)=>{
-   await p.locator('#pageSidebarItems [data-sidebar-tab='+mode+']').click();
-   if(mode==='calendar')await p.locator('#todoCalendarOptions [data-sv-span=month]').click();
+   await p.locator(mode==='calendar'?'#todoTopTabs [data-common-view=month]':'#todoTopTabs [data-tab='+mode+']').click();
+
    const selector=mode==='calendar'?'#todoCalGrid [data-menu-id=task]':mode==='board'?'#todoBoard [data-menu-id=task]':'#todoUnifiedList [data-menu-id=task]';
    const card=p.locator(selector).first();await card.scrollIntoViewIfNeeded();
    const a=await card.boundingBox(),target=p.locator('#classificationSideHost [data-group-select='+id+']');await target.scrollIntoViewIfNeeded();const b=await target.boundingBox();

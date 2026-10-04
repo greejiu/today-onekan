@@ -48,5 +48,20 @@
   const [year,month]=ms.split('-').map(Number);$('calMonthLabel').textContent=year+'년 '+month+'월';if(focused)grid.querySelector('.selected')?.focus({preventScroll:true});return true;
  }
  const eye=shown=>'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>'+(shown?'':'<path d="M3 3l18 18"/>')+'</svg>';
- root.OnekanCalendarUI={mount,month,eye};
+   function fitWeek(host,api,active){
+   host.classList.toggle('schedule-week-fit',active);
+   if(!active)return;
+   host.style.gridTemplateColumns='repeat(7,minmax(0,1fr))';
+   const days=[...host.querySelectorAll('.sv-day')];
+   days.forEach(day=>{const b=day.querySelector('[data-sv-select]'),d=day.dataset.svDate;b.setAttribute('aria-label',api.dateLabel(d));b.textContent=Number(d.slice(5,7))+'/'+Number(d.slice(8))+' '+['일','월','화','수','목','금','토'][new Date(d+'T12:00:00').getDay()];day.querySelector('.sv-allday .label').textContent='종일';day.querySelectorAll('.sv-allday .add-slot').forEach(add=>{add.textContent='＋';add.setAttribute('aria-label',api.dateLabel(d)+' 종일 '+api.title+' 추가');});});
+   host.style.removeProperty('--all-height');host.style.setProperty('--all-height',Math.max(70,...days.map(d=>d.querySelector('.sv-allday').scrollHeight))+'px');
+   const grid=days[0]?.querySelector('.ag-tl-grid');if(!grid)return;
+   const axis=grid.cloneNode(false);axis.classList.add('schedule-week-axis');axis.setAttribute('aria-hidden','true');
+   grid.querySelectorAll('.tl-row-label').forEach(label=>axis.append(label.cloneNode(true)));
+   host.querySelectorAll('.sv-day .tl-row-label').forEach(label=>label.remove());
+   host.append(axis);axis.style.top=(grid.getBoundingClientRect().top-host.getBoundingClientRect().top)+'px';
+   host.parentElement.scrollLeft=0;
+  }
+
+ root.OnekanCalendarUI={mount,month,eye,fitWeek};
 })(window);
