@@ -15,22 +15,22 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  await page.evaluate(()=>{document.getElementById('quickTaskInput').value='폭 변경 중인 빠른 입력';});
  await go('todos');await page.locator('#pageSidebarItems [data-sidebar-tab=someday]:visible, #todoTopTabs [data-tab=someday]:visible').click();await page.locator('#somedayInput').fill('보존할 담아두기');
  await go('habits');
- assert.equal(await side.locator('[data-page].active').getAttribute('data-page'),'habits');assert.equal(await side.locator('[aria-current=page]').count(),1);
+ assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [data-page].active').getAttribute('data-page'),'habits');assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [aria-current=page]').count(),1);
  for(const [width,height] of [[1366,768],[1440,900],[761,768],[760,768],[390,844],[1440,900]]){
   await page.setViewportSize({width,height});
   assert.equal(await side.isVisible(),width>760);assert.equal(await page.locator('.bottombar').isVisible(),width<=760);
   assert.equal(await page.locator('.page[data-page=habits]').isVisible(),true);
   assert.equal(await page.locator('#quickTaskInput').inputValue(),'폭 변경 중인 빠른 입력');
   assert.equal(await page.locator('#somedayInput').inputValue(),'보존할 담아두기');
-  if(width>760){assert.equal((await side.boundingBox()).width,180);assert.equal(await side.locator('[data-page].active').count(),1);assert.equal(await page.locator('.page[data-page=habits] h1.page-title').isVisible(),true);}
+  if(width>760){assert.equal((await side.boundingBox()).width,180);assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [data-page].active').count(),1);assert.equal(await page.locator('.page[data-page=habits] h1.page-title').isVisible(),true);}
   else{assert.equal(await page.locator('.bottombar .active').getAttribute('data-page'),'habits');assert.equal(await page.locator('.page[data-page=habits] h1.page-title').isVisible(),true);}
   await page.screenshot({path:`test-results/sidebar-${width}x${height}.png`});
  }
  await go('todos');assert.equal(await page.locator('#todoSomedayView').isVisible(),true);
- await page.locator('.sidebar [data-page=home]').focus();await page.keyboard.press('Enter');assert.equal(await side.locator('[data-page].active').getAttribute('data-page'),'home');
- await page.keyboard.press('Tab');await page.keyboard.press('Space');assert.equal(await side.locator('[data-page].active').getAttribute('data-page'),'all');
+ await page.locator('#sidebarHomeNav [data-page=home]:visible,#todoIconRail [data-page=home]:visible').focus();await page.keyboard.press('Enter');assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [data-page].active').getAttribute('data-page'),'home');
+ await page.keyboard.press('Tab');await page.keyboard.press('Space');assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [data-page].active').getAttribute('data-page'),'all');
  assert.notEqual(await page.locator('#pageSidebarItems [data-sidebar-tab=calendar]').evaluate(e=>getComputedStyle(e).outlineStyle),'none');
- for(const target of ['home','all','community','timer','schedule','todos','habits','work','together','records','settings']){await go(target);assert.equal(await side.locator('[data-page].active').count(),1);assert.equal(await side.locator('[aria-current=page]').getAttribute('data-page'),target);}
+ for(const target of ['home','all','community','timer','schedule','todos','habits','work','together','records','settings']){await go(target);assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [data-page].active').count(),1);assert.equal(await side.locator(':is(#mainSidebarNav,#sidebarHomeNav) [aria-current=page]').getAttribute('data-page'),target);}
  // Calendar/list selection and scroll survive navigation through the new sidebar.
  await go('schedule');
  await page.locator('#scheduleSidebarNav [data-schedule-mode=list]').click();await page.evaluate(()=>window.scrollTo(0,200));
@@ -49,7 +49,7 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  await page.locator('#sidebarAllMenuBtn').click();await page.setViewportSize({width:1440,height:320});await page.locator('#mainSidebarNav [data-page=settings]').scrollIntoViewIfNeeded();
  const logout=await page.locator('#logoutBtn').boundingBox();assert(logout.y>=64&&logout.y+logout.height<=320);assert(await page.locator('#mainSidebarNav').evaluate(e=>e.scrollTop>0));
  await page.screenshot({path:'test-results/sidebar-short-account.png'});
- await page.locator('.sidebar [data-page=settings]').scrollIntoViewIfNeeded();assert(await page.locator('.sidebar [data-page=settings]').isVisible());
+ await page.locator('#mainSidebarNav [data-page=settings]').scrollIntoViewIfNeeded();assert(await page.locator('#mainSidebarNav [data-page=settings]').isVisible());
  await page.setViewportSize({width:1440,height:900});await page.evaluate(()=>document.querySelector('.sidebar').scrollTop=0);
  for(const theme of ['white','black','cheese']){
   await page.evaluate(theme=>{applyTheme(theme);applyUserFont('Georgia');},theme);

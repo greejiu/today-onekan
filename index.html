@@ -2378,6 +2378,8 @@
 <script src="assets/item-views.js"></script>
 <script src="assets/schedule-views.js"></script>
 <script src="assets/todo-views.js"></script>
+<link rel="stylesheet" href="assets/todo-sidebar.css">
+<script src="assets/todo-sidebar.js"></script>
 <script src="assets/habit-views.js"></script>
 <script src="assets/all-views.js"></script>
 <script src="assets/tracking.js"></script>
@@ -2987,6 +2989,7 @@
   let classification = null;
   let scheduleViews = null;
   let todoViews = null;
+  let todoSidebar = null;
   let habitViews = null;
   let allViews = null;
   let tracking = null;
@@ -3080,6 +3083,7 @@
     $('dedicatedSidebarNav').hidden = !sidebarDedicated;
     document.querySelector('.sidebar').classList.toggle('schedule-sidebar', sidebarDedicated && currentPage === 'schedule');
     syncPageSidebar();
+    todoSidebar?.sync();
   }
   $('sidebarAllMenuBtn').onclick = () => {
     setSidebarMode(false); // Do not call showPage or rerender any body content.
@@ -10032,6 +10036,11 @@
     add:context=>openTodoSheet(null,context),edit:id=>openTodoSheet(todos.find(t=>t.id===id)),done:setTodoDone,
     reload:loadAll,refresh:()=>{renderHome();renderTodosPage();if(currentPage==='work')renderWork();},someday:renderSomeday,sidebar:syncPageSidebar,
     projectName:todoProjectName,groupBadge:e=>classification.badge('todo',e)
+  });
+  todoSidebar = window.createOnekanTodoSidebar({
+    sb,user:()=>appSymbolUserId,page:()=>currentPage,dedicated:()=>sidebarDedicated,
+    navigate:showPage,expand:setSidebarMode,rows:()=>todos,classification:()=>classification,
+    cancel:()=>todoViews.cancel(),mode:()=>todoViews.state().mode,reload:loadAll
   });
   habitViews = window.createOnekanHabitViews({
     period:OnekanPeriod,sb,user:()=>appSymbolUserId,page:()=>currentPage,today:todayStr,rows:()=>tasks,
