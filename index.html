@@ -1637,7 +1637,7 @@
         <div class="sched-top">
           <div class="sched-title-row">
             <h1 class="page-title sched-page-title">일정</h1>
-            <button type="button" id="scheduleCategoryMobileBtn" class="mobile-only sched-add-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="classificationManageBg">그룹</button>
+            <button type="button" id="scheduleCategoryMobileBtn" class="mobile-only sched-add-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="classificationManageBg">범주</button>
             <div class="view-toggle" id="scheduleModeToggle" role="group" aria-label="일정 보기 방식">
               <button type="button" id="scheduleModeCalendarBtn" class="active" aria-pressed="true">달력</button>
               <button type="button" id="scheduleModeListBtn" aria-pressed="false">목록</button>
@@ -2028,7 +2028,7 @@
         <div class="cev-hint" id="td_period_hint"></div>
       </div>
       <label class="period-undated"><input id="td_undated" type="checkbox" /> 날짜 없음 · 담아두기</label>
-      <div class="field"><label for="td_tag">범주</label><select id="td_tag"></select></div>
+      <div class="field"><label for="td_tag">그룹</label><select id="td_tag"></select></div>
       <div class="field split"><div><label for="td_repeat_unit">반복</label><select id="td_repeat_unit"><option value="">반복 없음</option><option value="day">일마다</option><option value="week">주마다</option><option value="month">개월마다</option></select></div><div id="td_repeat_interval_wrap"><label for="td_repeat_interval">주기</label><input id="td_repeat_interval" type="number" min="1" value="1" /></div></div>
       <div id="td_repeat_days_row" class="field" hidden><label>반복 요일</label><div class="weekday-picker"><label><input type="checkbox" value="0" />일</label><label><input type="checkbox" value="1" />월</label><label><input type="checkbox" value="2" />화</label><label><input type="checkbox" value="3" />수</label><label><input type="checkbox" value="4" />목</label><label><input type="checkbox" value="5" />금</label><label><input type="checkbox" value="6" />토</label></div></div>
       <div id="td_repeat_dates" class="field split"><div><label for="td_repeat_start">반복 시작일</label><input id="td_repeat_start" type="date" /></div><div><label for="td_repeat_end">반복 종료일 (선택)</label><input id="td_repeat_end" type="date" /></div></div>
@@ -2165,7 +2165,7 @@
       </div>
       <div class="field split">
 
-        <div><label for="ha_category">범주</label><select id="ha_category"></select></div>
+        <div><label for="ha_category">그룹</label><select id="ha_category"></select></div>
       </div>
       <div class="field project-field" id="ha_project_wrap" hidden><label for="ha_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="ha_project"></select></div>
       <div class="cev-hint">이름만 적고 저장하면 오늘부터 매일 반복돼요. 요일 지정 등은 저장 후 습관 설정에서 바꿀 수 있어요.</div>
@@ -2224,13 +2224,13 @@
       <div><label>반복 시작일</label><input id="hs_start" type="date" /></div>
       <div><label>반복 종료일 (선택)</label><input id="hs_end" type="date" /></div>
     </div>
-    <div class="field"><label>범주</label><select id="hs_category"></select></div>
+    <div class="field"><label>그룹</label><select id="hs_category"></select></div>
     <div class="field project-field" id="hs_project_wrap" hidden><label for="hs_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="hs_project"></select></div>
-    <div class="hs-cat-manage-label">범주 관리 (이름 수정 · 삭제)</div>
+    <div class="hs-cat-manage-label">그룹 관리 (이름 수정 · 삭제)</div>
     <div class="hs-cat-list" id="hs_cat_list"></div>
     <div class="field">
       <div style="display:flex;gap:6px;align-items:flex-end;">
-        <div style="flex:1;"><label>새 범주</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
+        <div style="flex:1;"><label>새 그룹</label><input id="hs_newcat_name" type="text" placeholder="예: 집안일" /></div>
         <input id="hs_newcat_color" type="color" value="#FF6B6B" class="color-native-input" />
         <button type="button" class="color-swatch-btn" data-for="hs_newcat_color" title="색상 선택" style="background:#FF6B6B;"></button>
         <button class="btn-ghost" id="hs_newcat_btn" type="button" style="flex:none;padding:0 12px;height:38px;">추가</button>
@@ -2249,7 +2249,7 @@
     <h2 id="sd_sheet_title">담아두기 수정</h2>
     <form id="sdForm" class="cal-ev-fields" novalidate>
       <div class="field"><label for="sd_title">제목</label><input id="sd_title" type="text" autocomplete="off" enterkeyhint="done" /></div>
-      <div class="field"><label for="sd_tag">범주</label><select id="sd_tag"></select></div>
+      <div class="field"><label for="sd_tag">그룹</label><select id="sd_tag"></select></div>
       <div class="cal-ev-error" id="sd_error" role="alert"></div>
     </form>
     <div class="sheet-actions">
@@ -3150,7 +3150,7 @@
     $('scheduleCategoryCollapse').textContent = (scheduleCategoriesCollapsed ? '▸' : '▾') + ' 범주';
     $('scheduleCategoryCollapse').setAttribute('aria-expanded', String(!scheduleCategoriesCollapsed));
     list.hidden = scheduleCategoriesCollapsed;
-    $('scheduleCategoryMobileBtn').textContent = '그룹';
+    $('scheduleCategoryMobileBtn').textContent = '범주';
     if (focus) [...list.children].find(row => row.dataset.scheduleCat === focus.id)?.querySelector(focus.eye ? '.schedule-cat-eye' : '.schedule-cat-more')?.focus({ preventScroll: true });
   }
   function refreshScheduleFilterViews() {
@@ -6716,13 +6716,13 @@
   });
   $("hs_newcat_btn").onclick = async () => {
     const name = $("hs_newcat_name").value.trim();
-    if (!name) { alert("범주 이름을 입력해주세요."); return; }
-    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("범주")); return; }
+    if (!name) { alert("그룹 이름을 입력해주세요."); return; }
+    if (isReservedCategoryName(name)) { alert(RESERVED_CATEGORY_NAME_MSG("그룹")); return; }
     const color = $("hs_newcat_color").value;
     const { data, error } = await sb.from("tok_habit_categories")
       .insert({ name, color, sort_order: nextCategorySortOrder(habitCategories) })
       .select().single();
-    if (error) { alert("범주 추가 실패: " + error.message); return; }
+    if (error) { alert("그룹 추가 실패: " + error.message); return; }
     habitCategories.push(data);
     populateHabitCategorySelect(data.id);
     renderHabitCategoryList();
@@ -8063,27 +8063,27 @@
       entries.push(...(statusBlock?[{note:statusBlock}]:habitStatusEntries(item, date)));
       sep();
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openHabitSheet(item) });
-      entries.push(groupEntry("범주 변경"));
+      entries.push(groupEntry("그룹 변경"));
       entries.push(dupEntry);
       sep();
       entries.push({ label: "습관 삭제", icon: "trash", danger: true, run: () => deleteHabitWithConfirm(id) });
     } else if (kind === "todo") {
       if(OnekanRelease.canOpen('timer'))entries.push({ label: "타이머 시작", icon: "time", run: () => tracking?.start(id) });
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openTodoSheet(item) });
-      entries.push(groupEntry("범주 변경"));
+      entries.push(groupEntry("그룹 변경"));
       entries.push(dupEntry);
       sep();
       entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteTodoWithConfirm(id) });
     } else if (kind === "event") {
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openEventEditor({ mode: "edit", id, opener: activeOpener() }) });
-      entries.push(groupEntry("그룹 변경"));
+      entries.push(groupEntry("범주 변경"));
       entries.push(dupEntry);
       sep();
       entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteEventWithConfirm(id, activeOpener()) });
     } else if (kind === "someday") {
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openSomedaySheet(id) });
       entries.push({ label: "날짜 정해서 할일로 옮기기", icon: "move", window: true, run: () => openSomedayMoveSheet(id) });
-      entries.push(groupEntry("범주 변경"));
+      entries.push(groupEntry("그룹 변경"));
       sep();
       entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteSomedayWithConfirm(id) });
     }
@@ -8586,7 +8586,7 @@
   // 설정 목록과 일정 범주 편집창이 같은 검증·저장·메모리 갱신을 사용한다.
   async function saveManagedCategory(pool, table, id, patch) {
     const cat = pool.find(c => c.id === id), userId = appSymbolUserId;
-    const noun = table === 'tok_event_categories' ? '그룹' : '범주';
+    const noun = table === 'tok_event_categories' ? '범주' : '그룹';
     if (!cat || cat.is_archived) return { ok: false, error: new Error('사용 중인 ' + noun + '만 수정할 수 있어요.') };
     if ('name' in patch) {
       patch = { ...patch, name: patch.name.trim() };
