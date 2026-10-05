@@ -3,12 +3,19 @@ window.createOnekanClassification = api => {
  'use strict';
  const $=id=>document.getElementById(id),esc=api.escape;
  let groups=[],ready=false,user=null,legacyOwner=null,epoch=0,manager=null,busy=false,opener=null;
- const states={};
+ const states={},projectStates={};
  const kindForPage=()=>({schedule:'event',todos:'todo',habits:'habit'})[api.page()];
  const normalized=kind=>kind==='someday'?'todo':kind;
  const pool=kind=>normalized(kind)==='event'?(legacyOwner===api.user()?api.eventGroups():[]):groups.filter(g=>g.kind===normalized(kind));
  const groupId=(kind,item)=>normalized(kind)==='event'?item.category_id:item.group_id;
  const key=kind=>'tok_classification:'+user+':'+normalized(kind);
+ const projectKey=kind=>'tok_project_sidebar:'+user+':'+normalized(kind);
+ function projectState(kind){
+  kind=normalized(kind);
+  if(!projectStates[kind]){let saved={};try{saved=JSON.parse(localStorage.getItem(projectKey(kind)))||{};}catch{}projectStates[kind]={selected:saved.selected||'all'};}
+  return projectStates[kind];
+ }
+ function projectSelection(kind){const id=projectState(kind).selected;return id==='all'||id==='none'||api.projects().some(p=>p.id===id)?id:'all';}
  function state(kind){
   kind=normalized(kind);
   if(!states[kind]){
@@ -20,20 +27,21 @@ window.createOnekanClassification = api => {
   return states[kind];
  }
  function remember(kind){const s=state(kind);try{localStorage.setItem(key(kind),JSON.stringify({...s,hidden:[...s.hidden]}));}catch{}}
- function bind(){const next=api.user();if(user===next)return;user=next;legacyOwner=null;epoch++;groups=[];ready=false;Object.keys(states).forEach(k=>delete states[k]);close(true);}
+ function bind(){const next=api.user();if(user===next)return;user=next;legacyOwner=null;epoch++;groups=[];ready=false;Object.keys(states).forEach(k=>delete states[k]);Object.keys(projectStates).forEach(k=>delete projectStates[k]);close(true);}
  async function load(){
   bind();const ticket=++epoch,owner=user;
   try{const r=await api.sb.from('tok_item_groups').select('*').order('sort_order').order('created_at');if(ticket!==epoch||owner!==api.user())return;legacyOwner=owner;ready=!r.error;groups=ready?(r.data||[]).map(g=>({...g,is_archived:false})):[];}catch{if(ticket===epoch&&owner===api.user()){legacyOwner=owner;ready=false;groups=[];}}
   render();
  }
- function matches(kind,item){const s=state(kind),id=groupId(kind,item)||'none';return s.selected==='all'||s.selected===id;}
- function calendarVisible(item,kind='event'){return !state(kind).hidden.has(groupId(kind,item)||'default');}
- function defaultGroup(kind){if(kindForPage()!==normalized(kind))return null;const selected=state(kind).selected;return pool(kind).some(g=>g.id===selected&&!g.is_archived)?selected:null;}
+ function matches(kind,item){if(normalized(kind)!=='event'&&api.projectsReady()){const selected=projectSelection(kind),id=item.project_id||'none';return selected==='all'||selected===id;}const s=state(kind),id=groupId(kind,item)||'none';return s.selected==='all'||s.selected===id;}
+ function calendarVisible(item,kind='event'){return normalized(kind)!=='event'&&api.projectsReady()?true:!state(kind).hidden.has(groupId(kind,item)||'default');}
+ function defaultGroup(kind){if(kindForPage()!==normalized(kind)||normalized(kind)!=='event'&&api.projectsReady())return null;const selected=state(kind).selected;return pool(kind).some(g=>g.id===selected&&!g.is_archived)?selected:null;}
  function table(kind){return kind==='event'?'tok_event_categories':'tok_item_groups';}
  function render(){
   bind();const kind=kindForPage(),host=$('classificationSideHost');
   host.hidden=!kind;document.querySelectorAll('[data-classification-mobile]').forEach(el=>el.hidden=!kind||el.dataset.classificationMobile!==api.page());
   if(!kind)return;
+  if(kind!=='event'&&api.projectsReady()){renderProjects(kind,host);return;}
   const s=state(kind),list=pool(kind),shown=list,noun=kind==='event'?'범주':'기존 분류';
   const focus=host.contains(document.activeElement)?document.activeElement.dataset.groupSelect:null;
   host.innerHTML=`<hr class="sidebar-divider"><div class="classification-heading"><span class="classification-group-title">${noun}</span><button type="button" data-add-group aria-label="${noun} 추가" ${kind!=='event'&&!ready?'disabled':''}>＋</button></div>
@@ -42,11 +50,25 @@ window.createOnekanClassification = api => {
    </div>${kind==='event'?'':'<hr class="sidebar-divider"><button type="button" class="navitem" data-manage-categories>그룹 관리</button>'}`;
   if(focus)host.querySelector('[data-group-select="'+CSS.escape(focus)+'"]')?.focus({preventScroll:true});
   const select=document.querySelector('[data-classification-mobile="'+api.page()+'"] select');if(select){select.innerHTML='<option value="all">전체 '+noun+'</option><option value="none">기본</option>'+list.map(g=>`<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');select.value=s.selected;}
+  const mobile=document.querySelector('[data-classification-mobile="'+api.page()+'"]');if(mobile&&kind!=='event'){mobile.querySelector('label').firstChild.textContent=noun;mobile.querySelector('button').hidden=false;mobile.querySelector('button').textContent=noun+' 관리';}
+ }
+ function renderProjects(kind,host){
+  const selected=projectSelection(kind),projects=api.projects(),focus=host.contains(document.activeElement)?document.activeElement.dataset.projectSelect:null;
+  const byId=new Map(projects.map(p=>[p.id,p]));
+  const root=p=>p?.parent_id?byId.get(p.parent_id)||p:p;
+  const status=p=>{const r=root(p);return !r?'':r.is_archived?' · 보관':r.lifecycle_state==='ended'?' · 종료':'';};
+  const ordered=[];for(const p of projects.filter(p=>!p.parent_id||!byId.has(p.parent_id))){ordered.push(p);ordered.push(...projects.filter(c=>c.parent_id===p.id));}
+  const option=(id,label,depth=0,p=null)=>`<button type="button" class="navitem project-side-item${selected===id?' active':''}${depth?' project-side-child':''}" data-project-select="${esc(id)}" aria-pressed="${selected===id}" title="${esc(label+status(p))}">${depth?'└ ':''}${esc(label)}${p?`<span class="project-side-state">${status(p)}</span>`:''}</button>`;
+  host.innerHTML=`<hr class="sidebar-divider"><div class="classification-heading"><span class="classification-group-title">프로젝트 목록</span></div><div class="classification-groups">${option('all','전체')}${option('none','작업')}${ordered.map(p=>option(p.id,p.name,p.parent_id?1:0,p)).join('')}</div><hr class="sidebar-divider"><button type="button" class="navitem" data-manage-categories>그룹 관리</button>`;
+  if(focus)host.querySelector('[data-project-select="'+CSS.escape(focus)+'"]')?.focus({preventScroll:true});
+  const select=document.querySelector('[data-classification-mobile="'+api.page()+'"] select');if(select){select.innerHTML='<option value="all">전체</option><option value="none">작업</option>'+ordered.map(p=>`<option value="${esc(p.id)}">${p.parent_id?'└ ':''}${esc(p.name)}${status(p)}</option>`).join('');select.value=selected;}
+  const mobile=document.querySelector('[data-classification-mobile="'+api.page()+'"]');if(mobile){mobile.querySelector('label').firstChild.textContent='프로젝트';mobile.querySelector('button').hidden=true;}
  }
  function refresh(){const y=scrollY;api.refresh();render();scrollTo(0,y);}
- function select(kind,id){state(kind).selected=id;remember(kind);refresh();}
+ function select(kind,id){if(normalized(kind)!=='event'&&api.projectsReady()){projectState(kind).selected=id;try{localStorage.setItem(projectKey(kind),JSON.stringify(projectState(kind)));}catch{}}else{state(kind).selected=id;remember(kind);}refresh();}
  function sideClick(e){
   const kind=kindForPage(),b=e.target.closest('button');if(!kind||!b)return;
+  if(b.dataset.projectSelect){select(kind,b.dataset.projectSelect);return;}
   if(b.dataset.groupSelect){select(kind,b.dataset.groupSelect);return;}
   if(b.hasAttribute('data-group-eye')){const id=b.dataset.groupEye,s=state(kind);s.hidden.has(id)?s.hidden.delete(id):s.hidden.add(id);remember(kind);api.calendarRefresh();render();$('classificationSideHost').querySelector('[data-group-eye="'+CSS.escape(id)+'"]')?.focus({preventScroll:true});return;}
   if(b.hasAttribute('data-manage-categories'))open('category',kind,b);
@@ -94,7 +116,7 @@ window.createOnekanClassification = api => {
   const host=document.createElement('section');host.id='classificationSideHost';host.className='classification-side';host.hidden=true;$('dedicatedSidebarNav').append(host);host.addEventListener('click',sideClick);host.addEventListener('contextmenu',e=>{const r=e.target.closest('[data-group-row]');if(!r)return;e.preventDefault();groupMenu(kindForPage(),r.dataset.groupRow,r.querySelector('[data-group-edit]'),e.clientX,e.clientY);});
   const bg=document.createElement('div');bg.id='classificationManageBg';bg.className='sheet-bg classification-manage-bg';bg.innerHTML=`<section class="sheet" role="dialog" aria-modal="true" aria-labelledby="classificationManageTitle"><h2 id="classificationManageTitle"></h2><div id="classificationManageList"></div><form id="classificationManageForm"><div class="field"><label for="classificationManageName">이름</label><input id="classificationManageName" maxlength="200" required></div><div class="field"><label for="classificationManageColor">색상</label><input id="classificationManageColor" type="color" value="#9a8cf0"></div><p id="classificationManageError" role="status"></p><div class="sheet-actions"><button type="button" id="classificationManageClose" class="btn-ghost">닫기</button><button type="submit" id="classificationManageSave" class="btn">저장</button></div></form></section>`;document.body.append(bg);$('classificationManageForm').onsubmit=save;$('classificationManageClose').onclick=()=>close();bg.addEventListener('click',e=>{if(e.target===bg)close();});bg.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();}else api.trap(bg.querySelector('.sheet'),e);});
   for(const [page,kind] of [['schedule','event'],['todos','todo'],['habits','habit']]){
-   const noun=kind==='event'?'범주':'기존 분류';const row=document.createElement('div');row.className='classification-mobile';row.dataset.classificationMobile=page;row.innerHTML=`<label>${noun}<select aria-label="${kind==='event'?'일정':kind==='todo'?'할일':'습관'} ${noun} 조회"></select></label><button type="button" class="btn-ghost">${noun} 관리</button><button type="button" class="btn-ghost">그룹 관리</button>`;document.querySelector('.page[data-page="'+page+'"]').prepend(row);row.querySelector('select').onchange=e=>select(kind,e.target.value);row.querySelectorAll('button')[0].onclick=e=>manageGroups(kind,e.currentTarget);row.querySelectorAll('button')[1].hidden=kind==='event';row.querySelectorAll('button')[1].onclick=e=>open('category',kind,e.currentTarget);
+   const noun=kind==='event'?'범주':'프로젝트';const row=document.createElement('div');row.className='classification-mobile';row.dataset.classificationMobile=page;row.innerHTML=`<label>${noun}<select aria-label="${kind==='event'?'일정':kind==='todo'?'할일':'습관'} ${noun} 조회"></select></label><button type="button" class="btn-ghost">${noun} 관리</button><button type="button" class="btn-ghost">그룹 관리</button>`;document.querySelector('.page[data-page="'+page+'"]').prepend(row);row.querySelector('select').onchange=e=>select(kind,e.target.value);row.querySelectorAll('button')[0].hidden=kind!=='event';row.querySelectorAll('button')[0].onclick=e=>manageGroups(kind,e.currentTarget);row.querySelectorAll('button')[1].hidden=kind==='event';row.querySelectorAll('button')[1].onclick=e=>open('category',kind,e.currentTarget);
   }
   for(const [prefix,kind,anchor] of [['td','todo','td_tag'],['hs','habit','hs_category'],['ha','habit','ha_category'],['sd','someday','sd_tag'],['cev','event','cev_category']]){
    if(kind==='event')continue; // Existing event category links remain stored, but are no longer editable here.
@@ -103,6 +125,6 @@ window.createOnekanClassification = api => {
  }
  function manageGroups(kind,b){open('group',kind,b);$('classificationManageTitle').textContent=(kind==='event'?'범주':'기존 분류')+' 관리';$('classificationManageList').hidden=false;renderMobileGroupManager(kind);}
  function renderMobileGroupManager(kind){const host=$('classificationManageList');host.innerHTML='<div class="classification-mobile-groups"><div class="classification-row"><span><span class="classification-dot" style="display:inline-block;background:'+esc(api.defaultGroupColor(kind))+'"></span> 기본</span><button type="button" data-edit="default">색상 수정</button><button type="button" data-eye="default" aria-pressed="'+!state(kind).hidden.has('default')+'">'+(state(kind).hidden.has('default')?'달력 표시':'달력 숨김')+'</button></div>'+pool(kind).map(g=>'<div class="classification-row"><span>'+esc(g.name)+'</span><button type="button" data-eye="'+esc(g.id)+'" aria-pressed="'+!state(kind).hidden.has(g.id)+'">'+(state(kind).hidden.has(g.id)?'달력 표시':'달력 숨김')+'</button><button type="button" data-edit="'+esc(g.id)+'">수정</button></div>').join('')+'</div>';host.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-eye')){const id=b.dataset.eye,s=state(kind);s.hidden.has(id)?s.hidden.delete(id):s.hidden.add(id);remember(kind);api.calendarRefresh();render();renderMobileGroupManager(kind);host.querySelector('[data-eye="'+CSS.escape(id)+'"]').focus({preventScroll:true});return;}if(b.dataset.edit==='default'){open('default',kind,b);return;}const g=pool(kind).find(g=>g.id===b.dataset.edit);if(g)open('group',kind,b,g);};}
- function badge(kind,item){if(normalized(kind)==='event')return '';const field=normalized(kind)==='event'?'shared_category_id':'group_id',g=(field==='group_id'?pool(kind):api.categories()).find(g=>g.id===item[field]);return g?`<span class="classification-badge">${field==='group_id'?'그룹':'범주'} · ${esc(g.name)}${g.is_archived?' · 보관됨':''}</span>`:'';}
- mount();return {load,bind,render,matches,calendarVisible,defaultGroup,prepare,patch,inherited,badge,isReady:()=>ready,groups:()=>groups,select,state,open,manageGroups};
+ function badge(kind,item){if(normalized(kind)==='event')return '';const field='group_id',g=pool(kind).find(g=>g.id===item[field]);return g?`<span class="classification-badge">기존 분류 · ${esc(g.name)}${g.is_archived?' · 보관됨':''}</span>`:'';}
+ mount();return {load,bind,render,matches,calendarVisible,defaultGroup,prepare,patch,inherited,badge,isReady:()=>ready,groups:()=>groups,select,state,projectSelection,open,manageGroups};
 };

@@ -6,6 +6,7 @@
 .classification-row{display:flex;gap:2px;align-items:center;min-width:0;}.classification-row>.navitem{flex:1;min-width:0;margin:0;padding:9px 8px;}
 .classification-row .navitem>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.classification-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .classification-row>button:not(.navitem){border:0;background:none;color:var(--sub);cursor:pointer;min-width:28px;min-height:36px;padding:3px;}.classification-row>span{flex:1;min-width:0;overflow-wrap:anywhere;}
+.project-side-item{width:100%;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.project-side-child{padding-left:22px!important;}.project-side-state{font-size:11px;color:var(--sub);}
 .classification-side button:focus-visible,.classification-mobile button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
 .classification-manage-bg{z-index:50;}.classification-manage-bg .sheet{max-height:85vh;overflow-y:auto;}.classification-manage-bg .field input[type=color]{width:60px;height:38px;padding:2px;}.classification-manage-bg #classificationManageError{color:var(--danger,#c44);font-size:13px;}
 .classification-mobile{display:none;}.classification-groups[hidden]{display:none;}
