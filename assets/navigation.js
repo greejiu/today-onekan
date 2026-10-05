@@ -98,7 +98,9 @@ window.OnekanNavigation = (() => {
   return {version:1,order:[...order,...defaults.filter(id=>!order.includes(id))],hidden};
  }
  let config=normalize(null);
- const visible=()=>config.order.filter(id=>!config.hidden.includes(id)).map(byId);
+ const allowed=id=>!window.OnekanRelease||OnekanRelease.canOpen(id);
+ const restricted=()=>!!window.OnekanRelease&&OnekanRelease.isRestricted();
+ const visible=()=>config.order.filter(id=>allowed(id)&&(!config.hidden.includes(id)||(id==='home'&&restricted()))).map(byId);
  const primary=()=>visible().slice(0,5),overflow=()=>[...visible().slice(5),byId('settings')];
  function button(item,onClick){
   const el=document.createElement('button');el.type='button';el.className='navitem';el.dataset.page=item.page;el.setAttribute('aria-label',item.label);el.title=item.label;
@@ -121,21 +123,21 @@ window.OnekanNavigation = (() => {
    const mobile=document.querySelector('.bottombar'),more=document.getElementById('navMoreBtn');mobile.querySelectorAll('[data-page]').forEach(el=>el.remove());primary().forEach(r=>mobile.insertBefore(button(r,navClick),more));
    const sheet=document.getElementById('navMoreSheet');sheet.replaceChildren(...overflow().map(r=>{const el=button(r,navClick);el.setAttribute('role','menuitem');return el;}));
    api.morePages(overflow().map(r=>r.page));api.refresh();active();
-   if(config.hidden.includes(api.page()))api.navigate('home');
+   if(!allowed(api.page())||config.hidden.includes(api.page()))api.navigate('home');
   }
   function renderRows(focusId,focusType='toggle'){
    list.replaceChildren();let count=0,divided=false;
    const heading=text=>{const el=document.createElement('h3');el.className='navigation-list-heading';el.textContent=text;list.append(el);};heading('기본 메뉴');
    for(const id of config.order){
-    const item=byId(id),hidden=config.hidden.includes(id);
+    const item=byId(id),unavailable=!allowed(id),locked=unavailable||(id==='home'&&restricted()),hidden=config.hidden.includes(id)||unavailable;
     if(!hidden&&count===5&&!divided){heading('더보기');divided=true;}
     const row=document.createElement('div');row.className='navigation-setting-row';row.dataset.navigationId=id;row.classList.toggle('navigation-hidden',hidden);
-    const handle=document.createElement('button');handle.type='button';handle.className='navigation-drag-handle';handle.textContent='≡';handle.setAttribute('aria-label',item.label+' 순서 변경');handle.title='드래그 또는 위·아래 화살표 키';handle.disabled=!ready||busy;
+    const handle=document.createElement('button');handle.type='button';handle.className='navigation-drag-handle';handle.textContent='≡';handle.setAttribute('aria-label',item.label+' 순서 변경');handle.title='드래그 또는 위·아래 화살표 키';handle.disabled=!ready||busy||locked;
     const icon=document.createElement('span');icon.innerHTML=item.icon;icon.querySelector('svg').setAttribute('aria-hidden','true');icon.className='navigation-setting-icon';
     const name=document.createElement('span');name.className='navigation-setting-name';name.textContent=item.label;
-    const area=document.createElement('label');area.className='navigation-setting-toggle';const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=!hidden;toggle.disabled=!ready||busy;toggle.setAttribute('role','switch');toggle.setAttribute('aria-label',item.label+' 표시');const state=document.createElement('span');state.textContent=hidden?'OFF':'ON';area.append(toggle,state);
+    const area=document.createElement('label');area.className='navigation-setting-toggle';const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=id==='home'&&locked?true:!hidden;toggle.disabled=!ready||busy||locked;toggle.setAttribute('role','switch');toggle.setAttribute('aria-label',item.label+' 표시');const state=document.createElement('span');state.textContent=unavailable?'아직 준비 중이에요':toggle.checked?'ON':'OFF';area.append(toggle,state);
     row.append(handle,icon,name,area);list.append(row);if(!hidden)count++;
-    toggle.onchange=()=>{const next=normalize(config);next.hidden=toggle.checked?next.hidden.filter(v=>v!==id):[...next.hidden,id];void save(next,id);};
+    toggle.onchange=()=>{if(locked)return;const next=normalize(config);next.hidden=toggle.checked?next.hidden.filter(v=>v!==id):[...next.hidden,id];void save(next,id);};
     handle.onkeydown=e=>{if(!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();const next=normalize(config),from=next.order.indexOf(id),to=from+(e.key==='ArrowUp'?-1:1);if(to>=0&&to<next.order.length){[next.order[from],next.order[to]]=[next.order[to],next.order[from]];void save(next,id,'handle');}};
     handle.onpointerdown=e=>{if(e.button!==0||busy||!ready)return;drag={id,pointer:e.pointerId,x:e.clientX,y:e.clientY,target:id,moved:false,epoch};handle.setPointerCapture(e.pointerId);};
    }
@@ -163,14 +165,14 @@ window.OnekanNavigation = (() => {
    if(stamp===epoch)renderRows();
   }
   async function save(next,focusId,focusType){
-   if(!ready||busy||!owner){renderRows();return;}const userId=owner,stamp=epoch;revision++;busy=true;config=normalize(next);status.textContent='저장 중…';renderNav();renderRows(focusId,focusType);host.setAttribute('aria-busy','true');
+   if(!ready||busy||!owner||!allowed(focusId)||(focusId==='home'&&restricted())){renderRows();return;}const userId=owner,stamp=epoch;revision++;busy=true;config=normalize(next);status.textContent='저장 중…';renderNav();renderRows(focusId,focusType);host.setAttribute('aria-busy','true');
    try{const {data:auth,error:authError}=await api.sb.auth.getUser();if(stamp!==epoch)return;if(authError||auth?.user?.id!==userId)throw authError||Error('로그인이 바뀌었어요.');
     const {data,error}=await api.sb.from('tok_settings').upsert({user_id:userId,navigation_config:config},{onConflict:'user_id'}).select('user_id,navigation_config').single();
     if(stamp!==epoch)return;if(error||data?.user_id!==userId||JSON.stringify(normalize(data?.navigation_config))!==JSON.stringify(config))throw error||Error('저장 결과 불일치');saved=normalize(config);status.textContent='저장했어요.';
    }catch(_){if(stamp!==epoch)return;config=normalize(saved);status.textContent='저장하지 못했어요. 이전 탭 설정으로 돌아왔어요. 다시 변경해 주세요.';renderNav();}
    finally{if(stamp===epoch){busy=false;host.setAttribute('aria-busy','false');renderRows(focusId,focusType);}}
   }
-  retry.onclick=load;renderNav();renderRows();return {bind,load};
+  retry.onclick=load;renderNav();renderRows();return {bind,load,policyChanged(){cancelDrag();renderNav();renderRows();}};
  }
  return {registry,normalize,primary,overflow,button,createSettings};
 })();

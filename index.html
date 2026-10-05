@@ -98,6 +98,10 @@
   #authBox input{width:100%;padding:10px 12px;margin-bottom:8px;border:1px solid var(--line);border-radius:12px;font-size:14px;}
   #authBox button{width:100%;padding:10px;border:none;border-radius:12px;background:var(--accent);color:var(--accent-on);font-size:14px;cursor:pointer;margin-top:4px;}
   #authBox .alt{background:none;color:var(--accent-text);font-size:12px;padding:6px;}
+  #passwordRecoveryBox [hidden],#passwordRecoveryBox[hidden],#shareTogetherBtn[hidden],#betaPreviewButton[hidden],#td_project_wrap[hidden],#ha_project_wrap[hidden],#hs_project_wrap[hidden]{display:none!important;}
+  #passwordRecoveryBox input{box-sizing:border-box;width:100%;padding:10px;margin:6px 0 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);}
+  #passwordRecoveryBox button{padding:10px 12px;margin:6px 0;border:1px solid var(--line);border-radius:12px;background:var(--accent-soft);color:var(--text);cursor:pointer;}
+  #passwordRecoveryBox button:disabled{opacity:.6;cursor:wait;}
   #authMsg{font-size:12px;color:var(--danger);min-height:16px;margin-top:4px;}
 
   /* ── 레이아웃 ──
@@ -2351,6 +2355,8 @@
 <script src="assets/todo-views.js"></script>
 <link rel="stylesheet" href="assets/navigation.css">
 <link rel="stylesheet" href="assets/todo-sidebar.css">
+<script src="assets/release-policy.js"></script>
+<script src="assets/password-recovery.js"></script>
 <script src="assets/navigation.js"></script>
 <script src="assets/todo-sidebar.js"></script>
 <script src="assets/habit-views.js"></script>
@@ -2458,6 +2464,7 @@
   const SUPABASE_URL = "https://mmpsyajgyufdxmmnxqba.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_odr6eVpfut1PbfGcG9vDYQ_pKEVFggA";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const recovery = createOnekanRecovery(sb);
 
   const $ = (id) => document.getElementById(id);
   // UTC 기준(toISOString)이 아니라 사용자 로컬 시간 기준으로 "오늘" 날짜를 계산 (자정 근처 한국시간 오차 방지)
@@ -2656,11 +2663,14 @@
   $('appSymbolRetry').onclick = loadAppSymbolPreference;
   renderAppSymbol();
   sb.auth.onAuthStateChange?.((_event, session) => {
+    recovery.onEvent(_event, session);
     const userId = session?.user?.id || null;
+    OnekanRelease.bind(userId);
+    if (['SIGNED_IN','INITIAL_SESSION','USER_UPDATED','TOKEN_REFRESHED'].includes(_event)) setTimeout(() => { if(appSymbolUserId===userId)void OnekanRelease.verify(sb,userId); },0);
     if (userId === appSymbolUserId) return;
     window.Together?.reset();
     bindAppSymbolUser(userId); // Synchronous reset before any new account's asynchronous response.
-    if (!userId) { $('app').style.display = 'none'; $('authBox').style.display = ''; }
+    if (!userId) { $('app').style.display = 'none'; if(!recovery.ownsScreen())$('authBox').style.display = ''; }
     else setTimeout(() => { void loadAppSymbolPreference(); void navigationSettings?.load(); }, 0); // Do not await another Supabase call inside auth callbacks.
   });
 
@@ -3275,26 +3285,32 @@
     const password = $("authPw").value;
     $("authMsg").textContent = "";
     if (password.length < 8) { $("authMsg").textContent = "비밀번호는 8자 이상이어야 해요."; return; }
-    const { error } = await sb.auth.signUp({ email, password });
+    const { data, error } = await sb.auth.signUp({ email, password, options:{emailRedirectTo:'https://greejiu.github.io/today-onekan/'} });
     if (error) { $("authMsg").textContent = error.message; return; }
     $("authMsg").style.color = "var(--ok)";
-    $("authMsg").textContent = "가입 완료! 로그인 버튼을 눌러주세요.";
+    $("authMsg").textContent = data?.session ? "가입 완료!" : "가입 확인 메일을 보냈어요. 메일의 링크를 누른 뒤 로그인해 주세요.";
+    if(data?.session)await boot();
   };
   $("logoutBtn").onclick = async () => { await sb.auth.signOut(); location.reload(); };
 
   async function boot() {
+    await recovery.settle();
+    if(recovery.ownsScreen())return;
     const { data: { session } } = await sb.auth.getSession();
+    OnekanRelease.bind(session?.user?.id||null);
     bindAppSymbolUser(session?.user?.id || null);
     if (!session) return;
+    await OnekanRelease.verify(sb,session.user.id);
     await loadAppSymbolPreference();
     await navigationSettings?.load();
-    if (appSymbolUserId !== session.user.id) return;
+    if (appSymbolUserId !== session.user.id || recovery.ownsScreen()) return;
     $("authBox").style.display = "none";
     $("app").style.display = "block";
     $("sidebarUserEmail").textContent = session.user.email;
     $("settingsAccountCard").textContent = session.user.email;
     renderThemeGrid();
     await loadAll();
+    if(appSymbolUserId!==session.user.id||recovery.ownsScreen())return;
     showPage("home");
   }
 
@@ -3304,6 +3320,7 @@
   // 전부 그 오래된 상태를 계속 보여주고 있었음. 탭이 다시 보이거나(백그라운드→포그라운드) 창에 포커스가
   // 돌아오면 자동으로 다시 불러오도록 보강(3초 이내 중복 새로고침은 건너뜀).
   async function autoRefreshIfStale() {
+    if(recovery.ownsScreen())return;
     if (document.visibilityState === "hidden") return;
     if (Date.now() - lastLoadAllAt < 3000) return;
     const { data: { session } } = await sb.auth.getSession();
@@ -3335,6 +3352,8 @@
   $("navMoreBg").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); closeNavMore(); } });
   let scheduleScrollY = 0; // 일정 탭을 떠날 때 목록 스크롤 위치를 기억했다가 돌아오면 복원(2026-09-27)
   function showPage(page, togetherLoaded = false) {
+    if(recovery.ownsScreen())return;
+    if(!OnekanRelease.canOpen(page))page='home';
     const prevPage = currentPage;
     if(page!=="schedule")scheduleViews?.cancel();
     if(page!=="todos")todoViews?.cancel();
@@ -8048,7 +8067,7 @@
       sep();
       entries.push({ label: "습관 삭제", icon: "trash", danger: true, run: () => deleteHabitWithConfirm(id) });
     } else if (kind === "todo") {
-      entries.push({ label: "타이머 시작", icon: "time", run: () => tracking?.start(id) });
+      if(OnekanRelease.canOpen('timer'))entries.push({ label: "타이머 시작", icon: "time", run: () => tracking?.start(id) });
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openTodoSheet(item) });
       entries.push({ label: "날짜 변경", icon: "date", window: true, run: () => openItemDateSheet("todo", id) });
       entries.push(groupEntry("범주 변경"));
@@ -9031,7 +9050,7 @@
   // 할일·습관 입력창의 프로젝트 선택칸(기존 입력·수정 창 재사용). DB 준비 전(projectsReady=false)이면 칸 자체를 숨김.
   function fillProjectSelect(sel, wrap, currentId) {
     if (!sel || !wrap) return;
-    wrap.hidden = !projectsReady;
+    wrap.hidden = !projectsReady || !OnekanRelease.canOpen('work');
     if (!projectsReady) { sel.innerHTML = ""; return; }
     const opts = [`<option value="">없음</option>`];
     topProjects().forEach(p => {
@@ -9267,6 +9286,7 @@
 
   // 할일·습관의 프로젝트 연결/해제 — project_id 한 칸만 바꿈(항목·완료 기록·날짜는 그대로). val=null이면 해제.
   async function setItemProject(kind, id, val) {
+    if(!OnekanRelease.canOpen('work'))return false;
     const rowBefore=(kind==='habit'?tasks:todos).find(x=>x.id===id),owner=appSymbolUserId;
     if(val&&rowBefore?.project_id!==val&&!goalCanAdd(projectById(val))){alert('진행중·미보관 목표에만 새로 연결할 수 있어요.');return false;}
     const table = kind === "habit" ? "tok_habits" : "tok_todos";
@@ -9285,6 +9305,7 @@
   // 기존 할일·습관 연결 창 — 다른 프로젝트에 이미 연결된 항목은 옮길지 한 번 물어봄(직접 연결은 프로젝트 하나).
   let projectLinkState = { kind: "todo", projectId: null, opener: null };
   function openProjectLink(kind, projectId, opener) {
+    if(!OnekanRelease.canOpen('work'))return;
     if(!goalCanAdd(projectById(projectId)))return;
     projectLinkState = { kind, projectId, opener: opener || null };
     $("projectLinkTitle").textContent = kind === "habit" ? "기존 습관 연결" : "기존 할일 연결";
@@ -9344,6 +9365,7 @@
   // 프로젝트 만들기/수정 창. 하위 프로젝트는 상위를 고정(2단계까지 — 하위 아래에는 만들 수 없음, DB 트리거도 막음).
   let projectSheet = { mode: "add", id: null, parentId: null, saving: false, opener: null };
   function openProjectSheet({ mode = "add", id = null, parentId = null, opener = null } = {}) {
+    if(!OnekanRelease.canOpen('work'))return;
     const p = mode === "edit" ? projectById(id) : null;
     if (mode === "edit" && !p) return;
     const parent = p ? (p.parent_id ? projectById(p.parent_id) : null) : (parentId ? projectById(parentId) : null);
@@ -9373,6 +9395,7 @@
     if (o && document.body.contains(o) && o.getClientRects().length) o.focus({ preventScroll: true });
   }
   async function saveProjectSheet() {
+    if(!OnekanRelease.canOpen('work'))return;
     if (projectSheet.saving) return;
     const name = $("pj_name").value.trim();
     if (!name) { $("pj_error").textContent = "프로젝트 이름을 적어주세요."; $("pj_name").focus(); return; }
@@ -9928,6 +9951,7 @@
     setTimeout(() => { s.busy = false; shareSetButtons(); }, ok ? 1200 : 0);
   }
   async function shareToTogether() {
+    if(!OnekanRelease.canOpen('together'))return;
     const s = shareState;
     if (!s.ready || !s.blob || s.busy) return;
     const version = s.version;
@@ -9977,7 +10001,7 @@
 
 
   window.Together?.init({
-    sb, getUser: () => appSymbolUserId, today: todayStr,
+    sb, allowed:()=>OnekanRelease.canOpen('together'), getUser: () => appSymbolUserId, today: todayStr,
     goToTogether: () => { closeShareSheet(); showPage("together", true); },
     sources: () => [
       ...todos.filter(t => t.user_id === appSymbolUserId).map(t => ({ id: t.id, title: t.title, kind: "todo" })),
@@ -10040,8 +10064,26 @@
     choose:(context,onSelect)=>showAddKindMenu(context.opener?.getBoundingClientRect?.().left||innerWidth/2,context.opener?.getBoundingClientRect?.().bottom||150,kind=>onSelect(kind)),
     done:setTodoDone,reload:loadAll,refresh:()=>{renderHome();renderTodosPage();renderTodo();if(currentPage==='work')renderWork();},sidebar:syncPageSidebar
   });
-  tracking=window.createOnekanTracking({sb,user:()=>appSymbolUserId,page:()=>currentPage,todos:()=>todos,groups:()=>classification.groups(),categories:()=>habitCategories,projects:()=>projects,escape:escapeHtml,today:todayStr,addDays:OnekanPeriod.addDays,navigate:()=>showPage("timer"),sidebar:syncPageSidebar});
+  tracking=window.createOnekanTracking({sb,allowed:()=>OnekanRelease.canOpen('timer'),user:()=>appSymbolUserId,page:()=>currentPage,todos:()=>todos,groups:()=>classification.groups(),categories:()=>habitCategories,projects:()=>projects,escape:escapeHtml,today:todayStr,addDays:OnekanPeriod.addDays,navigate:()=>showPage("timer"),sidebar:syncPageSidebar});
   navigationSettings = OnekanNavigation.createSettings({sb, user:()=>appSymbolUserId, page:()=>currentPage, navigate:showPage, closeMore:()=>closeNavMore(false), refresh:()=>todoSidebar.renderNavigation(), morePages:pages=>{NAV_MORE_PAGES=pages;}});
+  const previewButton=document.createElement('button');previewButton.type='button';previewButton.id='betaPreviewButton';previewButton.className='btn-ghost';previewButton.hidden=true;previewButton.onclick=()=>OnekanRelease.setPreview(!OnekanRelease.isPreview());$('navigationSettings').prepend(previewButton);
+  const settingsLogout=document.createElement('button');settingsLogout.type='button';settingsLogout.className='btn-ghost';settingsLogout.textContent='로그아웃';settingsLogout.onclick=()=>$('logoutBtn').click();$('settingsAccountCard').after(settingsLogout);
+  OnekanRelease.onChange(()=>{
+    navigationSettings.policyChanged();
+    previewButton.hidden=!OnekanRelease.isOperator();
+    previewButton.textContent=OnekanRelease.isPreview()?'운영자 화면으로 돌아가기':'일반 사용자 화면 미리보기';
+    $('shareTogetherBtn').hidden=!OnekanRelease.canOpen('together');
+    closeItemMenu();
+    if(!OnekanRelease.canOpen('work')){
+      closeProjectSheet();closeProjectLink();
+      ['td_project_wrap','ha_project_wrap','hs_project_wrap'].forEach(id=>{if($(id))$(id).hidden=true;});
+    }
+    if(!OnekanRelease.canOpen('together'))window.Together?.reset();
+    tracking.render();
+    if(OnekanRelease.canOpen('timer'))void tracking.refresh();
+    if(!OnekanRelease.canOpen(currentPage))showPage('home');
+  });
+  $('shareTogetherBtn').hidden=!OnekanRelease.canOpen('together');
   boot();
 </script>
 </body>
