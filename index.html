@@ -6515,7 +6515,7 @@
     syncTodoRepeatForm();
     classification?.prepare("todo","td",existing);
     populateTodoTagSelect(existing ? (existing.tag_id || null) : (prefill?.tagId || null));
-    fillProjectSelect($("td_project"), $("td_project_wrap"), existing ? (existing.project_id || null) : (prefill?.projectId || null));
+    fillProjectSelect($("td_project"), $("td_project_wrap"), existing ? (existing.project_id || null) : (prefill?.projectId || (currentPage==='todos'&&goalCanAdd(projectById(classification?.projectSelection('todo')))?classification.projectSelection('todo'):null)));
     $("td_error").textContent = "";
     $("todoSaveBtn").disabled = false;
     $("todoSaveBtn").textContent = "저장";
@@ -7960,7 +7960,7 @@
       assignableTagPool(habitCategories, null).map(c => `<option value="${c.id}">${escapeHtml(tagPickLabel(c))}</option>`).join("");
     $("ha_category").value = prefill?.categoryId || "";
     classification?.prepare("habit","ha");
-    fillProjectSelect($("ha_project"), $("ha_project_wrap"), prefill?.projectId || null);
+    fillProjectSelect($("ha_project"), $("ha_project_wrap"), prefill?.projectId || (currentPage==='habits'&&goalCanAdd(projectById(classification?.projectSelection('habit')))?classification.projectSelection('habit'):null));
     $("ha_error").textContent = "";
     $("ha_save").disabled = false;
     $("ha_save").textContent = "저장";
@@ -10009,7 +10009,7 @@
   });
   classification = window.createOnekanClassification({
     sb, user:()=>appSymbolUserId, page:()=>currentPage, escape:escapeHtml,
-    categories:()=>habitCategories,eventGroups:()=>eventCategories,defaultGroupColor,saveDefaultGroupColor,
+    categories:()=>habitCategories,eventGroups:()=>eventCategories,projects:()=>projects,projectsReady:()=>projectsReady,defaultGroupColor,saveDefaultGroupColor,
     reload:loadAll, refresh:rerenderCategoryViews,
     calendarRefresh:()=>{renderScheduleCalendar();renderTodosPage();renderTodo();},
     categoryList:host=>renderCategoryManageList(host,habitCategories,'tok_habit_categories',()=>{rerenderCategoryViews();classification.render();},false,false),
@@ -10037,7 +10037,7 @@
   });
   todoSidebar = window.createOnekanTodoSidebar({
     sb,user:()=>appSymbolUserId,page:()=>currentPage,dedicated:()=>sidebarDedicated,
-    navigate:showPage,expand:setSidebarMode,rows:()=>todos,classification:()=>classification,
+    navigate:showPage,expand:setSidebarMode,rows:()=>todos,classification:()=>classification,projects:()=>projects,projectsReady:()=>projectsReady,canConnect:goalCanAdd,
     cancel:()=>todoViews.cancel(),mode:()=>todoViews.state().mode,reload:loadAll
   });
   habitViews = window.createOnekanHabitViews({
