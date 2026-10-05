@@ -2585,6 +2585,7 @@
     if (appSymbolUserId === userId) return;
     appSymbolUserId = userId;
     navigationSettings?.bind(userId);
+    daySettings.default_group_colors = {};
     bindScheduleFilterUser(userId);
     appSymbolEpoch++;
     appSymbolRevision++;
@@ -2838,7 +2839,7 @@
   let somedayTabSort = "recent";
   let somedayTabFilterTag = null;
   let timeBlocks = []; // tok_time_blocks: 타임블럭 탭의 이름표 그룹핑용(시작/종료 분 포함 — 설정 페이지에서 목록으로 추가/수정/삭제)
-  let daySettings = { day_start_minute: 360, day_end_minute: 1440, default_tag_color: null, default_event_color: null }; // tok_settings: 타임라인/타임블럭에서 보여줄 하루 시작~종료 시간(분) + 그룹 "기본"·범주 "기본"(분류 없음) 색상. 행이 없으면 이 기본값 사용.
+  let daySettings = { day_start_minute: 360, day_end_minute: 1440, default_tag_color: null, default_event_color: null, default_group_colors: {} }; // tok_settings: 타임라인/타임블럭에서 보여줄 하루 시작~종료 시간(분) + 그룹 "기본"·범주 "기본"(분류 없음) 색상. 행이 없으면 이 기본값 사용.
   let lastLoadAllAt = 0; // 2026-09-23: 다른 기기/탭에서 바뀐 내용을 돌아왔을 때 자동으로 다시 불러오기 위한 마지막 로드 시각(아래 loadAll/자동새로고침 참고)
   let todos = []; // tok_todos: 다가오는 계획 보드용 (날짜 있는 1회성 할일)
   let habitCategories = []; // tok_habit_categories: 일정·습관·할일 공용 "범주"(이름+색상) — 할일은 tag_id 컬럼으로 이 풀을 공유해서 씀
@@ -3450,14 +3451,14 @@
     timeBlocks = blockData || []; // 09-24: 설정에서 손잡이로 직접 정한 순서(sort_order) 그대로 사용(예전엔 항상 시작 시각순 정렬)
     todos = todoData || [];
     habitCategories = habitCatData || [];
-    eventCategories = eventCatData || [];
+    eventCategories = (eventCatData || []).map(g=>({...g,is_archived:false}));
     scheduleDataUser = scheduleLoadUser;
     await classification?.load();
     scheduleViews?.bind();
     todoViews?.bind();
     habitViews?.bind();
     allViews?.bind();
-    if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute, default_tag_color: settingsData.default_tag_color || null, default_event_color: settingsData.default_event_color || null }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00, 기본색 없음) 유지
+    if (settingsData) daySettings = { day_start_minute: settingsData.day_start_minute, day_end_minute: settingsData.day_end_minute, default_tag_color: settingsData.default_tag_color || null, default_event_color: settingsData.default_event_color || null, default_group_colors: settingsData.default_group_colors || {} }; // 행이 없으면(첫 사용자) 기본값(06:00~24:00, 기본색 없음) 유지
     await advancePastRepeatingEvents(events); // 반복 설정된 일정 중 날짜 지난 것은 다음 회차로 자동 이동
     renderScheduleCategories();
     allViews?.render();
@@ -4086,11 +4087,21 @@
   function nextCategorySortOrder(pool) { return pool.reduce((m, c) => Math.max(m, Number.isFinite(c.sort_order) ? c.sort_order : -1), -1) + 1; }
   // 2026-09-28: 분류가 없는 항목(tag_id/category_id = null) = "기본". 그룹 "기본" 색(default_tag_color)은 할일·습관·언젠가,
   // 범주 "기본" 색(default_event_color)은 일정에 씀. 둘 다 tok_settings에 저장, 미지정이면 null.
+  function defaultGroupColor(kind){return daySettings.default_group_colors?.[kind] || (kind==='event'?daySettings.default_event_color:null) || '#9a8cf0';}
+  async function saveDefaultGroupColor(kind,color){
+    const owner=appSymbolUserId;
+    try{const {data:auth,error:authError}=await sb.auth.getUser();if(authError||auth?.user?.id!==owner||owner!==appSymbolUserId)throw Error('계정이 변경됐어요.');
+      const read=await sb.from('tok_settings').select('user_id,default_group_colors').eq('user_id',owner).maybeSingle();if(read.error)throw read.error;if(owner!==appSymbolUserId)throw Error('계정이 변경됐어요.');
+      const colors={...(read.data?.default_group_colors||{}),[kind]:color};const {data,error}=await sb.from('tok_settings').upsert({user_id:owner,default_group_colors:colors},{onConflict:'user_id'}).select('user_id,default_group_colors').single();
+      if(error||owner!==appSymbolUserId||data?.user_id!==owner||data?.default_group_colors?.[kind]!==color)throw error||Error('저장 결과를 확인하지 못했어요.');daySettings.default_group_colors=data.default_group_colors;return {ok:true};
+    }catch(error){return {ok:false,error};}
+  }
+  function itemViewColor(kind,row){const id=kind==='event'?row.category_id:row.group_id;return !id&&daySettings.default_group_colors?.[kind] || itemTagColor(kind,kind==='todo'?row.tag_id:row.category_id);}
   function defaultCategoryColor(kind) {
     return (kind === "event" ? daySettings.default_event_color : daySettings.default_tag_color) || null;
   }
   function itemTagColor(kind, catId) {
-    if (!catId) return defaultCategoryColor(kind);
+    if (!catId) return kind==='event' ? daySettings.default_group_colors?.event || defaultCategoryColor(kind) : defaultCategoryColor(kind);
     const cat = itemTagPool(kind).find(c => c.id === catId);
     return cat ? (cat.color || null) : null;
   }
@@ -9975,7 +9986,7 @@
   });
   classification = window.createOnekanClassification({
     sb, user:()=>appSymbolUserId, page:()=>currentPage, escape:escapeHtml,
-    categories:()=>habitCategories,eventGroups:()=>eventCategories,
+    categories:()=>habitCategories,eventGroups:()=>eventCategories,defaultGroupColor,saveDefaultGroupColor,
     reload:loadAll, refresh:rerenderCategoryViews,
     calendarRefresh:()=>{renderScheduleCalendar();renderTodosPage();renderTodo();},
     categoryList:host=>renderCategoryManageList(host,habitCategories,'tok_habit_categories',()=>{rerenderCategoryViews();classification.render();},false,false),
@@ -9996,7 +10007,7 @@
     period:OnekanPeriod,sb,user:()=>appSymbolUserId,page:()=>currentPage,today:todayStr,rows:()=>todos,
     groups:()=>classification.groups().filter(g=>g.kind==='todo'),categories:()=>habitCategories,projects:()=>projects,blocks:()=>timeBlocks,
     matches:e=>classification.matches('todo',e),visible:e=>classification.matches('todo',e)&&classification.calendarVisible(e,'todo'),
-    color:e=>itemTagColor('todo',e.tag_id),escape:escapeHtml,dateLabel:calDateLabel,menuAttrs:(id,date)=>menuAttrs('todo',id,date),
+    color:e=>itemViewColor('todo',e),escape:escapeHtml,dateLabel:calDateLabel,menuAttrs:(id,date)=>menuAttrs('todo',id,date),
     add:context=>openTodoSheet(null,context),edit:id=>openTodoSheet(todos.find(t=>t.id===id)),done:setTodoDone,
     reload:loadAll,refresh:()=>{renderHome();renderTodosPage();if(currentPage==='work')renderWork();},someday:renderSomeday,sidebar:syncPageSidebar,
     projectName:todoProjectName,groupBadge:e=>classification.badge('todo',e)
@@ -10013,7 +10024,7 @@
     resolved:habitResolvedSinceOccurrence,blockReason:habitStatusBlockReason,status:setHabitDayStatus,canSkip:()=>habitSkipsReady,
     groups:()=>classification.groups().filter(g=>g.kind==='habit'),categories:()=>habitCategories,projects:()=>projects,blocks:()=>timeBlocks,
     matches:e=>classification.matches('habit',e),visible:e=>classification.matches('habit',e)&&classification.calendarVisible(e,'habit'),
-    color:e=>itemTagColor('habit',e.category_id),escape:escapeHtml,dateLabel:calDateLabel,
+    color:e=>itemViewColor('habit',e),escape:escapeHtml,dateLabel:calDateLabel,
     menuAttrs:(id,date)=>menuAttrs('habit',id,date),edit:id=>openHabitSheet(tasks.find(h=>h.id===id)),
     add:context=>openHabitAddSheet(context.opener,context),sidebar:syncPageSidebar,
     sourceCard:renderHabitRow,wireSource:wireHabitRows,setLifecycle:value=>{habitsTabView=value;},
@@ -10022,7 +10033,7 @@
   allViews=window.createOnekanAllViews({
     period:OnekanPeriod,sb,user:()=>appSymbolUserId,page:()=>currentPage,today:todayStr,
     events:()=>events,todos:()=>todos,habits:()=>habitViews,groups:()=>[...eventCategories.map(g=>({...g,kind:'event'})),...classification.groups()],categories:()=>habitCategories,projects:()=>projects,blocks:()=>timeBlocks,
-    escape:escapeHtml,dateLabel:calDateLabel,color:r=>itemTagColor(r.kind,r.kind==='event'?r.category_id:r.kind==='todo'?r.tag_id:r.category_id),
+    escape:escapeHtml,dateLabel:calDateLabel,color:r=>itemViewColor(r.kind,r),
     menuAttrs:(kind,id,date)=>menuAttrs(kind,id,date),detail:(kind,id,opener)=>kind==='event'?openEventDetail(id,opener):kind==='todo'?openTodoSheet(todos.find(t=>t.id===id)):openHabitSheet(tasks.find(h=>h.id===id)),
     edit:(kind,id,opener)=>kind==='event'?openEventEditor({mode:'edit',id,opener}):kind==='todo'?openTodoSheet(todos.find(t=>t.id===id)):openHabitSheet(tasks.find(h=>h.id===id)),
     add:openAddWindowFor,
