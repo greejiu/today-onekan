@@ -34,6 +34,62 @@
 
 [data-page=habits] .sv-timed-cards .sv-event-open{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start}
 
+/* Todo shell: one view row, one period row, expandable collection controls. */
+[data-page=todos] .todo-view-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+[data-page=todos] #todoTopTabs{display:flex!important;width:auto;flex-wrap:wrap;background:transparent;border:0;padding:0;gap:4px}
+[data-page=todos] #todoTopTabs button{flex:none;min-height:40px;padding:8px 14px;border:1px solid transparent;border-radius:var(--r-pill,20px);font-size:14px}
+[data-page=todos] #todoTopTabs button.active{background:var(--card);border-color:var(--line);color:var(--text);box-shadow:0 1px 3px #0001}
+[data-page=todos] #todoTopTabs [data-tab=board]{margin-right:10px}
+[data-page=todos] #todoTopTabs [data-tab=someday]{border-left:1px solid var(--line);border-radius:0;padding-left:18px;color:var(--sub)}
+[data-page=todos] #todoTopTabs [data-tab=someday].active{border-radius:var(--r-pill,20px);color:var(--text)}
+[data-page=todos] #todoQuickAddBtn{flex-shrink:0;white-space:nowrap;min-height:40px}
+.todo-filter-bar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px 16px;min-width:0}
+[data-page=todos] .todo-filter-bar>.iv-date-nav{flex-wrap:wrap;gap:2px;min-width:0}
+[data-page=todos] .todo-filter-bar .sched-month-title{font-size:17px}
+.todo-filter-bar>label{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:13px}
+.todo-filter-bar select{border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--card);color:var(--text);min-height:40px}
+.todo-view-settings{display:contents}
+.todo-view-settings summary{grid-column:3;cursor:pointer;min-height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);list-style:none}
+.todo-view-settings summary::-webkit-details-marker{display:none}
+.todo-view-settings summary::after{content:'⌄';color:var(--sub)}
+.todo-view-settings[open] summary::after{content:'⌃'}
+#todoSettingsSummary{display:none}
+#todoSettingsContent{grid-column:1/-1;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--card);min-width:0}
+.todo-view-settings:not([open]) #todoSettingsContent{display:none}
+[data-page=todos] #todoCollectionOptions{gap:12px 18px}
+[data-page=todos] #todoUndatedWrap{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--sub);margin-top:14px}
+[data-page=todos] #todoCalendarOptions{display:none!important}
+.todo-results-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 12px;min-height:24px}
+.todo-results-meta .sched-count{margin:0;color:var(--sub);font-size:13px}
+.todo-results-meta:has(>.sched-count[hidden]){display:none}
+.todo-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:340px;border:1px dashed var(--line);border-radius:16px;background:var(--card);padding:40px 24px;box-sizing:border-box}
+.todo-empty-mark{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:14px;background:var(--accent-soft);color:var(--accent-text);font-size:24px;margin-bottom:18px}
+.todo-empty h2{font-size:18px;font-weight:600;margin:0 0 10px;color:var(--text)}
+.todo-empty p{margin:0 0 24px;color:var(--sub);font-size:14px;line-height:1.6;max-width:340px}
+.todo-empty-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px}
+[data-page=todos] summary:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px}
+@media(max-width:960px){.todo-filter-bar{grid-template-columns:minmax(0,1fr) auto}.todo-filter-bar>.iv-date-nav{grid-column:1/-1}.todo-view-settings summary{grid-column:2;justify-self:end}}
+@media(max-width:760px){
+ [data-page=todos] .todo-view-bar{flex-wrap:wrap;gap:12px;padding-bottom:12px}
+ [data-page=todos] #todoTopTabs{flex:1 1 100%;gap:2px;overflow:visible}
+ [data-page=todos] #todoTopTabs button{padding:8px 10px;min-height:44px;font-size:13px}
+ [data-page=todos] #todoTopTabs [data-tab=board]{margin-right:4px}
+ [data-page=todos] #todoTopTabs [data-tab=someday]{padding-left:12px}
+ [data-page=todos] #todoQuickAddBtn{width:100%;min-height:44px}
+ [data-page=todos] .todo-filter-bar .sched-month-title{font-size:15px}
+ [data-page=todos] .todo-filter-bar>.iv-date-nav{justify-content:center}
+ [data-page=todos] .todo-filter-bar .sched-month-title-wrap{flex:0 1 auto;min-width:0}
+ .todo-filter-bar select,.todo-view-settings summary{min-height:44px}
+ #todoSettingsContent{padding:14px}
+ [data-page=todos] #todoCollectionOptions{align-items:stretch}
+ [data-page=todos] #todoCollectionOptions label{flex:1 1 100%;display:flex;justify-content:space-between;gap:8px}
+ [data-page=todos] #todoCollectionOptions input[type=date]{width:160px;min-height:44px;box-sizing:border-box}
+ [data-page=todos] #todoCollectionOptions select{max-width:190px;min-height:44px}
+ [data-page=todos] #todoRangeApply{width:100%;min-height:44px}
+ .todo-empty{min-height:300px;padding:32px 16px}.todo-empty h2{font-size:17px}
+ .todo-empty-actions{flex-direction:column}.todo-empty-actions button{min-height:44px}
+}
+
 /* One calendar shell for all adapters; home keeps its independent execution state. */
 .iv-page [hidden],#allDragPreview[hidden]{display:none!important}
 .iv-controls{display:flex;flex-direction:column;gap:10px;margin:12px 0 16px}
@@ -158,3 +214,26 @@
 #allSidebarTypes{flex-shrink:0}
 #allSidebarTypes .all-type-eye{width:100%;gap:12px;text-align:left}
 @media(min-width:761px){#allTypes{display:none!important}}
+
+
+/* Title-first todo rows. Detail fields stay available through the item editor. */
+[data-page=todos] .sv-card{display:flex;align-items:center;gap:10px;padding:0 10px;min-height:52px;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0;background:transparent;margin:0}
+[data-page=todos] .sv-card .iv-check{position:static;width:20px;height:20px;flex-shrink:0;margin:0}
+[data-page=todos] .sv-card .sv-open{flex:1;min-width:0;width:auto;padding:14px 0!important;min-height:52px;box-sizing:border-box;justify-content:center}
+[data-page=todos] .sv-card .sv-open strong{font-size:15px;line-height:1.5;font-weight:400;color:var(--text)}
+[data-page=todos] .sv-card.iv-done .sv-open strong{color:var(--sub)}
+[data-page=todos] .sv-card .sv-more{position:static;flex-shrink:0;min-width:32px;min-height:40px}
+[data-page=todos] .sv-card .sv-open>span{display:none!important}
+[data-page=todos] .sv-board-column{background:var(--card);border-radius:12px}
+[data-page=todos] :is(.title-proj,.plan-time,.plan-range-tag,.todo-date-badge,.class-group-badge){display:none!important}
+[data-page=todos] .cal-day-item{display:flex;align-items:center;min-height:48px;padding:10px 4px!important}
+[data-page=todos] .cal-day-body{flex:1;min-width:0}
+[data-page=todos] .cal-day-item-title{font-size:15px;font-weight:400;line-height:1.5}
+[data-page=todos] .cal-day-item :is(.cal-day-time,.cal-day-meta,.cal-day-body>span:not(.cal-day-item-title)){display:none!important}
+@media(max-width:760px){[data-page=todos] .sv-card .sv-more{min-width:44px;min-height:44px}}
+@media(max-width:760px){
+ [data-page=todos] .todo-filter-bar>.iv-date-nav{flex-wrap:nowrap;gap:0}
+ [data-page=todos] .todo-filter-bar .sched-month-title-wrap{flex:1 1 0;min-width:0;text-align:center}
+ [data-page=todos] .todo-filter-bar .sched-month-title{font-size:13px;padding:0 4px}
+ [data-page=todos] .todo-filter-bar .cal-today-btn{margin-left:4px;padding:0 10px;flex-shrink:0}
+}
