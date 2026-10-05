@@ -7,7 +7,7 @@ async function fixture(page, source = html) {
   await page.route('**/*', route => {
     const url = route.request().url();
     if (url === 'http://onekan.test/') return route.fulfill({ contentType:'text/html', body:source });
-    if (/\/assets\/navigation\.(js|css)$/.test(url)) return route.fulfill({contentType:url.endsWith('.js')?'application/javascript':'text/css',body:fs.readFileSync('assets/'+url.split('/').pop())});
+    if (/\/assets\/(navigation|release-policy|password-recovery)\.(js|css)$/.test(url)) return route.fulfill({contentType:url.endsWith('.js')?'application/javascript':'text/css',body:fs.readFileSync('assets/'+url.split('/').pop())});
     if (/\/assets\/todo-sidebar\.(js|css)$/.test(url)) return route.fulfill({contentType:url.endsWith('.js')?'application/javascript':'text/css',body:source.includes('assets/navigation.js')?fs.readFileSync('assets/'+url.split('/').pop()):require('node:child_process').execFileSync('git',['show','origin/main:assets/'+url.split('/').pop()])});
     if (/\/assets\/tracking\.(js|css)$/.test(url)) return route.fulfill({contentType:url.endsWith('.js')?'application/javascript':'text/css',body:fs.readFileSync('assets/'+url.split('/').pop())});
     if (url.endsWith('/assets/cheese-drawing.png')) return route.fulfill({contentType:'image/png',body:fs.readFileSync('assets/cheese-drawing.png')});
@@ -35,7 +35,7 @@ async function fixture(page, source = html) {
       tok_habits:[{id:'h1',name:'습관 테스트',is_active:true,start_date:date(-1),start_minute:null,repeat_unit:null}],
     };
     window.mockWrites=[]; window.mockDelay=0;
-    window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:'test',email:'test@example.invalid'}}}}),getUser:async()=>({data:{user:{id:'test'}}})},from(table){
+    window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:'test',email:'test@example.invalid'}}}}),getUser:async()=>({data:{user:{id:'test',app_metadata:{today_onekan_operator:true}}}})},from(table){
       let op='select',values,filters=[],single=false;const q=new Proxy({}, {get(_,key){
         if(key==='then')return async resolve=>{ const data=(rows[table]||[]).filter(r=>filters.every(([k,v])=>Array.isArray(v)?v.includes(r[k]):r[k]===v)).map(r=>({...r})); const delay=window.mockDelay; window.mockDelay=0; if(delay) await new Promise(r=>setTimeout(r,delay));
           if(op==='update') { (rows[table]||[]).filter(r=>filters.every(([k,v])=>r[k]===v)).forEach(r=>Object.assign(r,values));window.mockWrites.push({table,op,values}); }

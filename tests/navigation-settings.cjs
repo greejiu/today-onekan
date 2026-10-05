@@ -26,8 +26,8 @@ const defaults=['home','schedule','todos','habits','records','work','timer','tog
     return route.fulfill({body:'',status:200});
    });
    await page.addInitScript(()=>{
-    let user={id:'alice',email:'test@example.invalid'},callback;
-    window.navigationUser=id=>{user=id?{id,email:'test@example.invalid'}:null;callback?.(id?'SIGNED_IN':'SIGNED_OUT',user?{user}:null);};
+    let user={id:'alice',email:'test@example.invalid',app_metadata:{today_onekan_operator:true}},callback;
+    window.navigationUser=id=>{user=id?{id,email:'test@example.invalid',app_metadata:{today_onekan_operator:true}}:null;callback?.(id?'SIGNED_IN':'SIGNED_OUT',user?{user}:null);};
     window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:user?{user}:null}}),getUser:async()=>({data:{user}}),onAuthStateChange:fn=>{callback=fn;}},from(table){let op='select',value,columns,userId=user?.id,single=false;
      const q=new Proxy({}, {get(_,key){if(key==='then')return resolve=>window.navigationQuery({table,op,value,userId,single,columns}).then(resolve);return(...args)=>{if(key==='upsert'){op=key;value=args[0];}if(key==='select')columns=args[0];if(key==='eq'&&args[0]==='user_id')userId=args[1];if(key==='single'||key==='maybeSingle')single=true;return q;};}});return q;}})};
    });
@@ -72,7 +72,7 @@ const defaults=['home','schedule','todos','habits','records','work','timer','tog
   await page.evaluate(()=>{$('app').style.display='block';showPage('settings');});writeDelay=180;await row(page,'community').locator('input').uncheck();await page.evaluate(()=>navigationUser('alice'));await ready(page);await page.waitForTimeout(220);assert(!(await primary(page)).includes('community'));
   // A stale read cannot overwrite a newer successful save.
   await page.evaluate(()=>showPage('settings'));readDelay=180;await page.evaluate(()=>{void navigationSettings.load();});await row(page,'all').locator('input').uncheck();await saveDone(page);await page.waitForTimeout(220);assert(!(await more(page)).includes('all'));
-  await page.evaluate(()=>navigationUser(null));assert.equal(await page.locator('#app').isVisible(),false);assert.deepEqual(await primary(page),defaults.slice(0,5));
+  await page.evaluate(()=>navigationUser(null));assert.equal(await page.locator('#app').isVisible(),false);assert.deepEqual(await primary(page),['home']);
   await page.evaluate(()=>navigationUser('bob'));await ready(page);await page.evaluate(()=>{$('app').style.display='block';$('authBox').style.display='none';showPage('home');});await page.setViewportSize({width:390,height:844});rows.get('bob').navigation_config={version:1,order:['together','community','home','schedule','todos',...defaults.filter(id=>!['together','community','home','schedule','todos'].includes(id))],hidden:[]};await page.evaluate(()=>navigationSettings.load());
   const metrics=await page.locator('.bottombar .navitem').evaluateAll(es=>es.map(e=>({width:e.clientWidth,scroll:e.scrollWidth,label:e.querySelector('span')?.getBoundingClientRect().width||0,height:e.querySelector('span')?.getBoundingClientRect().height||0})));assert.equal(metrics.length,6);assert(metrics.every(r=>r.scroll<=r.width&&r.label<=r.width&&r.height<20));
   fs.mkdirSync('test-results',{recursive:true});await page.screenshot({path:'test-results/navigation-390.png'});

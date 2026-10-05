@@ -42,9 +42,12 @@ const config={event:{p:'cev',start:'cev_date',end:'cev_end',title:'cev_title',sa
   for(const [kind,pageName,group] of [['event','schedule','pg-e'],['todo','todos','pg-t'],['habit','habits','pg-h']]) {
    await page.evaluate(({kind,pageName,group})=>{showPage(pageName);classification.select(kind,group);},{kind,pageName,group});
    await open(kind,{startDate:'2026-10-03',startTime:'23:00',endDate:'2026-10-04',endTime:'01:00'});
-   const c=config[kind],cat=kind==='event'?'cev_shared_category_id':kind==='todo'?'td_tag':'ha_category';
-   await page.locator('#'+cat).selectOption('pc');await page.locator('#'+c.title).fill('통합 기간 '+kind);await save(kind);
-   const row=await lastRow(kind);assert.equal(row[kind==='event'?'category_id':'group_id'],group);assert.equal(row[kind==='event'?'shared_category_id':kind==='todo'?'tag_id':'category_id'],'pc');assert.equal(row.duration_minutes,120);
+   const c=config[kind],cat=kind==='todo'?'td_tag':'ha_category';
+   // Current main uses groups only for schedules; categories belong to todos/habits.
+   if(kind!=='event')await page.locator('#'+cat).selectOption('pc');
+   else assert.equal(await page.locator('#cev_shared_category_id').count(),0);
+   await page.locator('#'+c.title).fill('통합 기간 '+kind);await save(kind);
+   const row=await lastRow(kind);assert.equal(row[kind==='event'?'category_id':'group_id'],group);if(kind!=='event')assert.equal(row[kind==='todo'?'tag_id':'category_id'],'pc');assert.equal(row.duration_minutes,120);
    await page.evaluate(({kind,id})=>duplicateAgendaItem(kind,id),{kind,id:row.id});const copy=await lastRow(kind);assert.equal(copy[kind==='event'?'category_id':'group_id'],group);assert.equal(copy.end_time,'01:00:00');assert.equal(copy.duration_minutes,120);
   }
   await page.evaluate(()=>showPage('home'));

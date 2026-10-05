@@ -25,6 +25,7 @@ window.Together = (() => {
     return e?.message||'연결하지 못했어요. 작성 내용은 유지했으니 다시 시도해주세요.';
   }
   async function query(table,room){
+    if(api.allowed&&!api.allowed())throw Error('아직 준비 중이에요.');
     const rows=[];
     for(let offset=0;;offset+=500){
       let q=api.sb.from('tok_pair_'+table).select('*').order(table==='members'?'user_id':'id').range(offset,offset+499);
@@ -33,6 +34,7 @@ window.Together = (() => {
     }
   }
   async function load(){
+    if(api.allowed&&!api.allowed()){reset();return false;}
     const me=api.getUser(); if(!me){reset();host.innerHTML='<p>로그인 후 같이 한칸을 이용해주세요.</p>';return;}
     if(user!==me){reset();user=me;date=api.today();tab='plans';filter='all';}
     if(!state)host.innerHTML='<p role="status" class="pair-muted">같이 한칸을 불러오는 중…</p>';
@@ -46,7 +48,7 @@ window.Together = (() => {
     }catch(e){if(ticket===epoch){if(!state)host.innerHTML=`<div class="pair-card"><h2>같이 한칸</h2><p class="pair-error" role="alert">${esc(errorText(e))}</p>${action('다시 불러오기','refresh')}</div>`;else status(errorText(e));}}
   }
   function status(message){const el=host.querySelector('[data-status]');if(el)el.textContent=message;}
-  async function rpc(op,p){const {data,error}=await api.sb.rpc('tok_pair_mutate',{op,p:{room_id:state?.room?.id,...p}});if(error)throw error;return data;}
+  async function rpc(op,p){if(api.allowed&&!api.allowed())throw Error('아직 준비 중이에요.');const {data,error}=await api.sb.rpc('tok_pair_mutate',{op,p:{room_id:state?.room?.id,...p}});if(error)throw error;return data;}
   async function pictures(){
     const ticket=revision;
     await Promise.all([...host.querySelectorAll('[data-image]')].map(async el=>{
@@ -85,6 +87,7 @@ window.Together = (() => {
     return `${action('하루 이야기 쓰기','diary','','pair-primary')}<p class="pair-muted">한 줄이어도 좋아요. 초안은 나만 보고, ‘함께 보기로 올리기’를 눌러 공유해요.</p>${days.map(day=>`<h3 style="margin-top:24px">${esc(day)}</h3>${state.diaries.filter(d=>d.entry_date===day).map(d=>`<article class="pair-card">${person(d.user_id)}<p class="pair-muted">${esc(d.mood)} · ${d.published_at?'함께 보는 이야기':'나만 보는 초안'}</p><p class="pair-text">${esc(d.body)}</p>${image(d.image_path)}${d.user_id===user?`<div class="pair-row">${action('수정','diary',d.id)}${action('삭제','delete_diary',d.id)}</div>`:''}${d.published_at?`<div class="pair-reply">${state.replies.filter(x=>x.diary_id===d.id).sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(x=>`<div class="pair-reply">${person(x.user_id)}<p class="pair-text">${esc(x.body)}</p><p class="pair-muted">${esc(when(x.updated_at))}</p>${x.user_id===user?action('답글 수정','edit_reply',x.id)+action('답글 삭제','delete_reply',x.id):''}</div>`).join('')}${action('짧은 답글 남기기','reply',d.id)}</div>`:''}</article>`).join('')}`).join('')||'<div class="pair-card pair-empty">아직 이야기가 없어요. 오늘은 어땠나요?</div>'}`;
   }
   async function upload(form){
+    if(api.allowed&&!api.allowed())throw Error('아직 준비 중이에요.');
     const file=form._pairFile||form.elements.image?.files[0];if(!file)return form.dataset.imagePath||null;
     validateImage(file);
     // Retain successful upload when a subsequent database request fails.
@@ -140,6 +143,7 @@ window.Together = (() => {
     f.elements.purpose.onchange=sync;sync();if(file)selectImage(f,file);
   }
   async function receiveImage(file,imageDate,owner,isCurrent=()=>true){
+    if(api.allowed&&!api.allowed())throw Error('아직 준비 중이에요.');
     validateImage(file);
     if(!owner||api.getUser()!==owner)throw new Error('현재 계정의 이미지 공유 화면을 다시 열어주세요.');
     if(busy||dialog.open)throw new Error('작성 중인 내용을 먼저 저장하거나 닫아주세요.');
