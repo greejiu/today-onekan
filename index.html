@@ -10037,7 +10037,7 @@
   });
   todoSidebar = window.createOnekanTodoSidebar({
     sb,user:()=>appSymbolUserId,page:()=>currentPage,dedicated:()=>sidebarDedicated,
-    navigate:showPage,expand:setSidebarMode,rows:()=>todos,classification:()=>classification,projects:()=>projects,projectsReady:()=>projectsReady,canConnect:goalCanAdd,
+    navigate:showPage,expand:setSidebarMode,rows:()=>todos,habitRows:()=>tasks,classification:()=>classification,projects:()=>projects,projectsReady:()=>projectsReady,canConnect:goalCanAdd,
     cancel:()=>todoViews.cancel(),mode:()=>todoViews.state().mode,reload:loadAll
   });
   habitViews = window.createOnekanHabitViews({
