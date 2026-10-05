@@ -15,7 +15,7 @@ window.createOnekanClassification = api => {
    let saved={};try{saved=JSON.parse(localStorage.getItem(key(kind)))||{};}catch{}
    // Preserve the old schedule eye preference, independently of list selection.
    if(kind==='event'&&!saved.hidden)try{saved.hidden=JSON.parse(localStorage.getItem('tok_schedule_categories:'+user))?.hidden;}catch{}
-   states[kind]={selected:saved.selected||'all',hidden:new Set(saved.hidden||[]),collapsed:!!saved.collapsed,archived:!!saved.archived};
+   states[kind]={selected:saved.selected||'all',hidden:new Set(saved.hidden||[]),archived:!!saved.archived};
   }
   return states[kind];
  }
@@ -36,8 +36,8 @@ window.createOnekanClassification = api => {
   if(!kind)return;
   const s=state(kind),list=pool(kind),shown=list.filter(g=>s.archived?g.is_archived:!g.is_archived);
   const focus=host.contains(document.activeElement)?document.activeElement.dataset.groupSelect:null;
-  host.innerHTML=`<hr class="sidebar-divider"><div class="classification-heading"><button type="button" data-collapse aria-expanded="${!s.collapsed}">${s.collapsed?'▸':'▾'} 그룹</button><button type="button" data-add-group aria-label="그룹 추가" ${kind!=='event'&&!ready?'disabled':''}>＋</button></div>
-   <div class="classification-groups" ${s.collapsed?'hidden':''}><button type="button" class="navitem${s.selected==='all'?' active':''}" data-group-select="all" aria-pressed="${s.selected==='all'}">전체</button><button type="button" class="navitem${s.selected==='none'?' active':''}" data-group-select="none" aria-pressed="${s.selected==='none'}">미지정</button>
+  host.innerHTML=`<hr class="sidebar-divider"><div class="classification-heading"><span class="classification-group-title">그룹</span><button type="button" data-add-group aria-label="그룹 추가" ${kind!=='event'&&!ready?'disabled':''}>＋</button></div>
+   <div class="classification-groups"><button type="button" class="navitem${s.selected==='all'?' active':''}" data-group-select="all" aria-pressed="${s.selected==='all'}">전체</button><button type="button" class="navitem${s.selected==='none'?' active':''}" data-group-select="none" aria-pressed="${s.selected==='none'}">미지정</button>
    ${shown.map(g=>`<div class="classification-row" data-group-row="${esc(g.id)}"><button type="button" class="navitem${s.selected===g.id?' active':''}" data-group-select="${esc(g.id)}" aria-pressed="${s.selected===g.id}" title="${esc(g.name)}"><span class="classification-dot" style="background:${esc(g.color||'#9a8cf0')}"></span><span>${esc(g.name)}</span></button><button type="button" data-group-edit="${esc(g.id)}" aria-label="${esc(g.name)} 그룹 메뉴">⋯</button>${(['event','todo','habit'].includes(kind))?`<button type="button" data-group-eye="${esc(g.id)}" aria-label="${esc(g.name)} 달력 ${s.hidden.has(g.id)?'표시':'숨기기'}" aria-pressed="${!s.hidden.has(g.id)}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>${s.hidden.has(g.id)?'<path d="M3 3l18 18"/>':''}</svg></button>`:''}</div>`).join('')||'<p class="sidebar-preparing">'+(kind!=='event'&&!ready?'그룹 저장소 준비 중':'아직 그룹이 없어요')+'</p>'}
    ${(['event','todo','habit'].includes(kind))?`<button type="button" class="navitem" data-group-eye="default" aria-pressed="${!s.hidden.has('default')}">미지정 달력 ${s.hidden.has('default')?'표시':'숨기기'}</button>`:''}
    <button type="button" class="navitem" data-archived aria-pressed="${s.archived}">${s.archived?'사용 중 그룹':'보관 그룹'} (${list.filter(g=>g.is_archived).length})</button></div>
@@ -51,7 +51,6 @@ window.createOnekanClassification = api => {
   const kind=kindForPage(),b=e.target.closest('button');if(!kind||!b)return;
   if(b.dataset.groupSelect){select(kind,b.dataset.groupSelect);return;}
   if(b.hasAttribute('data-group-eye')){const id=b.dataset.groupEye,s=state(kind);s.hidden.has(id)?s.hidden.delete(id):s.hidden.add(id);remember(kind);api.calendarRefresh();render();$('classificationSideHost').querySelector('[data-group-eye="'+CSS.escape(id)+'"]')?.focus({preventScroll:true});return;}
-  if(b.hasAttribute('data-collapse')){state(kind).collapsed=!state(kind).collapsed;remember(kind);render();$('classificationSideHost').querySelector('[data-collapse]').focus();return;}
   if(b.hasAttribute('data-archived')){state(kind).archived=!state(kind).archived;remember(kind);render();return;}
   if(b.hasAttribute('data-manage-categories'))open('category',kind,b);
   else if(b.hasAttribute('data-add-group'))open('group',kind,b);
