@@ -1717,7 +1717,7 @@
 
         <h1 class="page-title">할일</h1>
         <div id="todosTodosView">
-          <div class="view-toggle" id="todoTopTabs" style="margin-bottom:10px;">
+          <div class="view-toggle" id="todoTopTabs" role="group" aria-label="할일 보기" style="margin-bottom:10px;">
             <button type="button" data-tab="calendar">달력</button>
             <button type="button" data-tab="list" class="active">목록</button>
             <button type="button" data-tab="board">보드</button>
@@ -1725,7 +1725,8 @@
           </div>
 
           <div id="todoUnifiedView">
-            <div class="sv-toolbar"><button id="todoQuickAddBtn" type="button" class="sched-add-btn">+ 할일</button><label>완료 <select id="todoCompletion"><option value="all">전체</option><option value="open" selected>미완료</option><option value="done">완료</option></select></label><label id="todoUndatedWrap"><input type="checkbox" id="todoUndated" checked>날짜 없음 포함</label></div>
+            <div class="sv-toolbar" id="todoPrimaryActions"><button id="todoQuickAddBtn" type="button" class="sched-add-btn">+ 할일</button><label>상태 <select id="todoCompletion"><option value="all">전체</option><option value="open" selected>미완료</option><option value="done">완료</option></select></label><label id="todoUndatedWrap"><input type="checkbox" id="todoUndated" checked>날짜 없음 포함</label></div>
+            <details id="todoViewSettings" class="todo-view-settings"><summary>보기 설정 <span id="todoSettingsSummary"></span></summary><div id="todoSettingsContent"></div></details>
             <div class="sv-toolbar"><button id="todoPrevBtn" type="button" aria-label="이전 기간">‹</button><span id="todoMonthLabel"></span><button id="todoNextBtn" type="button" aria-label="다음 기간">›</button><button id="todoTodayBtn" type="button">오늘</button></div>
         <div id="todoCalendarOptions" class="sv-toolbar">
         </div>
@@ -1737,8 +1738,8 @@
         </div>
         <p id="todoRangeLabel" class="sv-status"></p><p id="todoSaveStatus" class="sv-status" role="status" aria-live="polite"></p>
             <p id="todoUndatedNotice" class="sv-status"></p>
-            <span id="todoMonthCount" class="sched-count"></span><div id="todoJumpRow"></div>
-            <div id="todoCollection"><div id="todoUnifiedList"></div><div id="todoBoard" class="sv-board" hidden></div><p id="todoViewEmpty" class="empty"></p></div>
+            <div class="todo-results-meta"><span id="todoMonthCount" class="sched-count" role="status" aria-live="polite"></span><div id="todoJumpRow"></div></div>
+            <div id="todoCollection"><div id="todoUnifiedList"></div><div id="todoBoard" class="sv-board" hidden></div><section id="todoViewEmpty" class="todo-empty" aria-labelledby="todoEmptyTitle" hidden><span class="todo-empty-mark" aria-hidden="true">✓</span><h2 id="todoEmptyTitle"></h2><p id="todoEmptyDescription"></p><div class="todo-empty-actions"><button type="button" class="sched-add-btn" id="todoEmptyAddBtn">+ 할일 추가</button><button type="button" class="btn-ghost" id="todoEmptySettingsBtn">조회 조건 확인</button></div></section></div>
             <div id="todoCalendarMode" hidden><div id="todoTimeView" hidden><div id="todoTimeScroll" class="sv-time-scroll"><div id="todoTimeDays" class="sv-time-days"></div></div></div><div class="cal-layout"><div class="cal-main"><div class="cal-weekday-row" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div id="todoCalGrid" class="cal-grid" aria-label="할일 월간 달력"></div></div></div></div>
             <select id="todoSortSelect" hidden></select><select id="todoGroupSelect" hidden></select>
           </div>
@@ -8069,14 +8070,12 @@
     } else if (kind === "todo") {
       if(OnekanRelease.canOpen('timer'))entries.push({ label: "타이머 시작", icon: "time", run: () => tracking?.start(id) });
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openTodoSheet(item) });
-      entries.push({ label: "날짜 변경", icon: "date", window: true, run: () => openItemDateSheet("todo", id) });
       entries.push(groupEntry("범주 변경"));
       entries.push(dupEntry);
       sep();
       entries.push({ label: "삭제", icon: "trash", danger: true, run: () => deleteTodoWithConfirm(id) });
     } else if (kind === "event") {
       entries.push({ label: "수정", icon: "edit", window: true, run: () => openEventEditor({ mode: "edit", id, opener: activeOpener() }) });
-      entries.push({ label: "날짜·시간 변경", icon: "date", window: true, run: () => openItemDateSheet("event", id) });
       entries.push(groupEntry("그룹 변경"));
       entries.push(dupEntry);
       sep();
