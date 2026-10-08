@@ -1733,8 +1733,8 @@
         <div id="todoCollectionOptions" class="sv-toolbar" hidden>
           <label>조회 시작일 <input id="todoRangeStart" type="date" /></label><label>종료일 <input id="todoRangeEnd" type="date" /></label><button type="button" id="todoRangeApply">조회</button>
           <label>정렬 <select id="todoSort"><option value="date">시작 날짜·시각순</option><option value="name">이름순</option></select></label>
-          <label id="todoListGroupWrap">그룹화 <select id="todoGroup"><option value="none">없음</option><option value="date" selected>날짜별</option><option value="group">그룹별</option><option value="category">범주별</option><option value="project">프로젝트별</option></select></label>
-          <label id="todoBoardOptions" hidden>열 기준 <select id="todoBoardBy"><option value="group">그룹별</option><option value="category">범주별</option><option value="project">프로젝트별</option></select></label>
+          <label id="todoListGroupWrap">그룹화 <select id="todoGroup"><option value="none">없음</option><option value="date" selected>날짜별</option><option value="group">기존 분류별</option><option value="category">그룹별</option><option value="project">프로젝트별</option></select></label>
+          <label id="todoBoardOptions" hidden>열 기준 <select id="todoBoardBy"><option value="group">기존 분류별</option><option value="category">그룹별</option><option value="project">프로젝트별</option></select></label>
         </div>
         <p id="todoRangeLabel" class="sv-status"></p><p id="todoSaveStatus" class="sv-status" role="status" aria-live="polite"></p>
             <p id="todoUndatedNotice" class="sv-status"></p>
@@ -1782,8 +1782,8 @@
         <div id="habitCollectionOptions" class="sv-toolbar" hidden>
           <span>습관 원본을 한 번씩 표시합니다</span><span hidden><input id="habitRangeStart" type="date"><input id="habitRangeEnd" type="date"><button id="habitRangeApply">조회</button></span>
           <label>정렬 <select id="habitSort"><option value="date">다음 예정일순</option><option value="name">이름순</option></select></label>
-          <label id="habitListGroupWrap">그룹화 <select id="habitGroup"><option value="none">없음</option><option value="group">그룹별</option><option value="category">범주별</option><option value="project">프로젝트별</option></select></label>
-          <label id="habitBoardOptions" hidden>열 기준 <select id="habitBoardBy"><option value="group">그룹별</option><option value="category">범주별</option><option value="project">프로젝트별</option></select></label>
+          <label id="habitListGroupWrap">그룹화 <select id="habitGroup"><option value="none">없음</option><option value="group">기존 분류별</option><option value="category">그룹별</option><option value="project">프로젝트별</option></select></label>
+          <label id="habitBoardOptions" hidden>열 기준 <select id="habitBoardBy"><option value="group">기존 분류별</option><option value="category">그룹별</option><option value="project">프로젝트별</option></select></label>
         </div>
         <p id="habitRangeLabel" class="sv-status"></p><p id="habitSaveStatus" class="sv-status" role="status" aria-live="polite"></p>
             <p id="habitUndatedNotice" class="sv-status"></p>
@@ -2064,7 +2064,7 @@
       </div>
       <div hidden><span id="cev_date_err"></span><span id="cev_end_err"></span><span id="cev_time_err"></span></div>
       <fieldset class="field cev-cat-field">
-        <legend>그룹 <span class="cev-opt">(선택)</span></legend>
+        <legend>범주 <span class="cev-opt">(선택)</span></legend>
         <div class="cev-cat-list" id="cev_category"></div>
       </fieldset>
       <button type="button" class="cev-memo-toggle" id="cev_memo_toggle" aria-expanded="false" aria-controls="cev_memo_wrap">메모 쓰기</button>
@@ -7775,13 +7775,13 @@
   // 정렬/그룹화 select 두 개를 채우고 onChange 연결(공용) — allowDateGroup=false면 "날짜별" 옵션은 뺌(습관·언젠가처럼 날짜 개념이 약한 목록용).
   function renderSortGroupControls(sortSelEl, groupSelEl, settings, allowDateGroup, onChange) {
     if (!sortSelEl.dataset.filled) {
-      sortSelEl.innerHTML = `<option value="created">정렬: 없음(등록일순)</option><option value="date_desc">날짜 최신순</option><option value="date_asc">날짜 오래된순</option><option value="group">범주순</option>`;
+      sortSelEl.innerHTML = `<option value="created">정렬: 없음(등록일순)</option><option value="date_desc">날짜 최신순</option><option value="date_asc">날짜 오래된순</option><option value="group">그룹순</option>`;
       sortSelEl.dataset.filled = "1";
     }
     sortSelEl.value = settings.sort;
     sortSelEl.onchange = () => { settings.sort = sortSelEl.value; onChange(); };
     if (!groupSelEl.dataset.filled) {
-      groupSelEl.innerHTML = `<option value="none">그룹화: 안 함</option>${allowDateGroup ? `<option value="date">날짜별</option>` : ""}<option value="group">범주별</option>`;
+      groupSelEl.innerHTML = `<option value="none">그룹화: 안 함</option>${allowDateGroup ? `<option value="date">날짜별</option>` : ""}<option value="group">그룹별</option>`;
       groupSelEl.dataset.filled = "1";
     }
     groupSelEl.value = settings.group;
@@ -7839,7 +7839,7 @@
         <div class="block-tag">${escapeHtml(periodLabel("habit",t))} · ${repeatText}${windowText}${catChip}${classification?.badge("habit",t) || ""}</div>
       </div>
       <button class="historybtn icon-btn" data-id="${t.id}" title="기록 보기" aria-label="${escapeHtml(t.name)} 기록 보기">${ICON_HISTORY_SVG}</button>
-      <button class="settingsbtn icon-btn" data-id="${t.id}" title="반복·범주 설정" aria-label="${escapeHtml(t.name)} 반복·범주 설정">${ICON_SLIDERS_SVG}</button>
+      <button class="settingsbtn icon-btn" data-id="${t.id}" title="반복·그룹 설정" aria-label="${escapeHtml(t.name)} 반복·그룹 설정">${ICON_SLIDERS_SVG}</button>
       ${actionBtn}
       <button class="del" data-id="${t.id}">삭제</button>
       ${moreBtnHtml(t.name)}
@@ -8607,8 +8607,8 @@
     const host = $(hostId);
     if (!host) return;
     const isEvent = table === "tok_event_categories";
-    const noun = isEvent ? "그룹" : "범주";
-    const nounObj = isEvent ? "그룹을" : "범주를", nounSubj = isEvent ? "그룹이" : "범주가", nounTopic = isEvent ? "그룹은" : "범주는"; // 받침에 맞춘 조사
+    const noun = isEvent ? "범주" : "그룹";
+    const nounObj = isEvent ? "범주를" : "그룹을", nounSubj = isEvent ? "범주가" : "그룹이", nounTopic = isEvent ? "범주는" : "그룹은"; // 받침에 맞춘 조사
     const noneLabel = "기본";
     const defaultField = isEvent ? "default_event_color" : "default_tag_color";
     const defaultColor = daySettings[defaultField] || "#c7c2d6";
