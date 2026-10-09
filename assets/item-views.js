@@ -11,7 +11,8 @@
  if(typeof module!=='undefined')module.exports=root.OnekanScheduleMath;
  root.createOnekanItemViews=api=>{
   const common=['all','todos','habits'].includes(api.pageName);
-  if(common)api={...api,normalizeState:s=>{s.format='timeline';s.days=s.days>1?7:1;}};
+  // allowDayBlocks: '모두'의 일 보기만 시간블럭 허용(주는 타임라인). 다른 공용 화면은 기존처럼 타임라인 고정.
+  if(common)api={...api,normalizeState:s=>{s.days=s.days>1?7:1;if(!(api.allowDayBlocks&&s.days===1))s.format='timeline';}};
   root.OnekanCalendarUI?.mount(api);
   const $=id=>document.getElementById(api.id?api.id(id):id),esc=api.escape,P=api.period,kind=api.kind||'event',page=api.pageName||'schedule',host=document.querySelector('[data-page="'+page+'"].page'),query=selector=>host.querySelectorAll(selector),rowKind=e=>api.kindOf?.(e)||kind,read=e=>P.read(rowKind(e),e),overlap=(e,d)=>P.overlap(rowKind(e),e,d),clip=(e,d)=>P.clip(rowKind(e),e,d),periodLabel=e=>P.label(rowKind(e),e),canMove=e=>api.allowMove!==false&&api.canMove?.(e)!==false,start=e=>read(e).startDate||'',time=e=>read(e).startTime||'',groupId=e=>api.groupId?api.groupId(e):kind==='event'?e.category_id:e.group_id,categoryId=e=>api.categoryId?api.categoryId(e):kind==='event'?e.shared_category_id:kind==='habit'?e.category_id:e.tag_id,check=e=>api.check?.(e)||'',info=e=>api.info?.(e)||'';
   const defaults={mode:'calendar',span:'month',days:1,format:'timeline',sort:'date',group:'date',board:'group',...api.defaults};
@@ -44,7 +45,8 @@
    if(api.mode()==='board'){host.innerHTML=bucket(items,state.board).map(([id,g])=>'<section class="sv-board-column" data-bucket="'+esc(id)+'"><h2>'+esc(g.name)+' <span>'+g.items.length+'</span></h2>'+g.items.map(e=>card(e,start(e))).join('')+(g.items.length?'':'<p class="empty">'+(api.title||'일정')+' 없음</p>')+'</section>').join('');}
    else {host.innerHTML=bucket(items,state.group).map(([id,g])=>'<section class="day-group" '+(state.group==='date'?'id="'+(page==='schedule'?'sched':page)+'-day-'+id+'" data-date="'+id+'"':'')+'><div class="day-head"><h3 class="day-label" tabindex="-1">'+esc(g.name)+'</h3>'+(state.group==='date'&&id!=='undated'?'<button type="button" class="day-add" data-sv-add="'+id+'" aria-label="'+esc(g.name)+'에 일정 추가">＋</button>':'')+'</div>'+g.items.map(e=>card(e,state.group==='date'?id:start(e))).join('')+'</section>').join('');}wireCards(host);
   }
-  const calendarDate=()=>common&&state.span==='day'&&state.days===7?P.addDays(api.date(),-new Date(api.date()+'T12:00:00').getDay()):api.date();
+  // weekStartsMonday: 주를 월~일로(‘모두’). 그 외 공용 화면은 기존 일~토.
+  const calendarDate=()=>common&&state.span==='day'&&state.days===7?P.addDays(api.date(),-((new Date(api.date()+'T12:00:00').getDay()+(api.weekStartsMonday?6:0))%7)):api.date();
   const dates=()=>{const start=calendarDate();return Array.from({length:state.days},(_,i)=>P.addDays(start,i));};
   function add(date,minute,opener,block){api.add({mode:'add',date,startDate:date,...(block?{startTime:P.time(block.start_minute),...P.plus(date,P.time(block.start_minute),block.end_minute-block.start_minute),endDate:P.plus(date,P.time(block.start_minute),block.end_minute-block.start_minute).date,endTime:P.plus(date,P.time(block.start_minute),block.end_minute-block.start_minute).time}:minute==null?{allDay:true}:{startMinute:minute}),opener});}
   function timelineDay(date){
