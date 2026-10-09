@@ -5450,22 +5450,18 @@
       el.style.height = `${durationMinutes / AG_TL_SLOT_MIN * AG_TL_ROW_PX}px`;
     };
 
-    content.onpointerdown = (e) => {
-      if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(일정/할일/습관 선택 메뉴)가 따로 처리
-      if (e.target.closest(".ag-tl-task")) return;
-      const startSlot = slotFromEvent(e);
-      agAddState = { startSlot, currentSlot: startSlot, moved: false };
-      const preview = document.createElement("div");
-      preview.className = "ag-tl-add-preview";
-      preview.id = "agTlAddPreview";
-      const r = rangeOf(startSlot, startSlot);
-      placePreview(preview, r.startMinute, r.durationMinutes);
-      content.appendChild(preview);
-      content.setPointerCapture?.(e.pointerId);
-    };
-    content.onpointermove = (e) => {
-      if (!agAddState) return;
-      const slot = slotFromEvent(e);
+    // 마우스: 누르는 즉시 범위 선택 시작(클릭=30분 한 칸, 끌면 범위).
+    // 터치(모바일): 스크롤과 겹치지 않게 — 짧게 탭하면 그 칸에 추가, 움직이면 스크롤, TL_LONG_PRESS_MS 동안 가만히 누르면
+    // 진동과 함께 범위 선택 모드가 되어 그때부터 끌면 범위가 잡히고(화면 스크롤은 막힘, 위·아래 가장자리에선 자동 스크롤),
+    // 끌지 않고 손을 떼면 종류 메뉴(일정/할일/습관)가 뜸(예전 롱프레스 메뉴 대체).
+    const scroller = content.closest("#homeTimelineScroll");
+    let selecting = false, touchPending = null, lpTimer = null, lastPt = null, edgeFrame = 0;
+    const clearPending = () => { clearTimeout(lpTimer); lpTimer = null; touchPending = null; };
+    const stopEdge = () => { cancelAnimationFrame(edgeFrame); edgeFrame = 0; };
+    const cancelAll = () => { clearPending(); stopEdge(); selecting = false; $("agTlAddPreview")?.remove(); agAddState = null; };
+    const updateRange = () => {
+      if (!agAddState || !lastPt) return;
+      const slot = slotFromEvent(lastPt);
       if (slot !== agAddState.startSlot) agAddState.moved = true;
       agAddState.currentSlot = slot;
       const preview = $("agTlAddPreview");
@@ -5474,23 +5470,91 @@
         placePreview(preview, r.startMinute, r.durationMinutes);
       }
     };
+    const edgeScroll = () => {
+      edgeFrame = 0;
+      if (!selecting || !lastPt) return;
+      if (scroller) {
+        const r = scroller.getBoundingClientRect();
+        const delta = lastPt.clientY < r.top + 48 ? -12 : lastPt.clientY > r.bottom - 48 ? 12 : 0;
+        if (delta) { scroller.scrollTop += delta; updateRange(); }
+      }
+      edgeFrame = requestAnimationFrame(edgeScroll);
+    };
+    const beginSelect = (e) => {
+      const startSlot = slotFromEvent(e);
+      agAddState = { startSlot, currentSlot: startSlot, moved: false };
+      const preview = document.createElement("div");
+      preview.className = "ag-tl-add-preview";
+      preview.id = "agTlAddPreview";
+      const r = rangeOf(startSlot, startSlot);
+      placePreview(preview, r.startMinute, r.durationMinutes);
+      content.appendChild(preview);
+      selecting = true;
+      lastPt = { clientY: e.clientY };
+    };
+    // 선택 모드 중엔 손가락 움직임이 화면 스크롤로 넘어가지 않게(스크롤이 시작되기 전이라 막을 수 있음)
+    if (!content._tlSelectGuard) {
+      content._tlSelectGuard = true;
+      content.addEventListener("touchmove", (ev) => { if (content._tlSelecting) ev.preventDefault(); }, { passive: false });
+    }
+    const setSelecting = (on) => { content._tlSelecting = on; };
+    content.onpointerdown = (e) => {
+      if (e.button === 2) return; // 오른쪽 클릭은 아래 oncontextmenu(일정/할일/습관 선택 메뉴)가 따로 처리
+      if (e.target.closest(".ag-tl-task")) return;
+      if (e.pointerType === "touch") {
+        touchPending = { x: e.clientX, y: e.clientY, id: e.pointerId, clientY: e.clientY };
+        lpTimer = setTimeout(() => {
+          lpTimer = null;
+          if (!touchPending) return;
+          beginSelect(touchPending); setSelecting(true);
+          try { content.setPointerCapture?.(touchPending.id); } catch (_) {}
+          navigator.vibrate?.(15);
+          touchPending = null;
+          edgeFrame = requestAnimationFrame(edgeScroll);
+        }, TL_LONG_PRESS_MS);
+        return;
+      }
+      beginSelect(e);
+      content.setPointerCapture?.(e.pointerId);
+    };
+    content.onpointermove = (e) => {
+      if (touchPending) {
+        // 가만히 있지 않고 움직이면 스크롤 의도 — 범위 선택 대기를 취소(브라우저가 스크롤함)
+        if (Math.hypot(e.clientX - touchPending.x, e.clientY - touchPending.y) > 8) clearPending();
+        return;
+      }
+      if (!agAddState) return;
+      lastPt = { clientY: e.clientY };
+      updateRange();
+    };
     // 빈칸 왼쪽 클릭·터치(또는 드래그로 범위 지정) → 메뉴 없이 그 시간(범위)에 할일 입력창을 바로 엶.
     // 다른 종류(일정/습관)는 오른쪽 클릭 메뉴(아래 oncontextmenu)에서 고름. 시작·끝은 30분 경계, 클릭은 30분.
     const finish = (e) => {
+      if (touchPending) { // 터치: 롱프레스 전에 뗌 = 짧은 탭 → 그 칸(30분)에 바로 추가
+        const slot = slotFromEvent(e);
+        clearPending();
+        const { startMinute, durationMinutes } = rangeOf(slot, slot);
+        showAgendaTimelineInlineAdd(content, startMinute, durationMinutes, "todo", dateStr);
+        return;
+      }
       if (!agAddState) return;
-      const { startSlot, currentSlot } = agAddState;
+      const wasSelecting = selecting, { startSlot, currentSlot, moved } = agAddState;
       const { startMinute, durationMinutes } = rangeOf(Math.min(startSlot, currentSlot), Math.max(startSlot, currentSlot));
-      $("agTlAddPreview")?.remove();
-      agAddState = null;
+      cancelAll(); setSelecting(false);
+      if (wasSelecting && e.pointerType === "touch" && !moved) { // 롱프레스 후 끌지 않고 뗌 → 종류 메뉴
+        showAddKindMenu(e.clientX, e.clientY, (kind) => showAgendaTimelineInlineAdd(content, startMinute, durationMinutes, kind, dateStr));
+        return;
+      }
       showAgendaTimelineInlineAdd(content, startMinute, durationMinutes, "todo", dateStr);
     };
     content.onpointerup = finish;
-    content.onpointercancel = () => { $("agTlAddPreview")?.remove(); agAddState = null; };
+    content.onpointercancel = () => { cancelAll(); setSelecting(false); };
     // 빈 곳 오른쪽 클릭 → "일정 추가/할일 추가" 중 고르는 작은 메뉴(2026-09-12 — 메모 기능 제거로 두번째 항목이 할일로 바뀜).
     // 항목(.ag-tl-task) 위 오른쪽 클릭은 항목 공통 메뉴(openItemMenu, 문서 위임)가 처리하므로 여기선 기본 동작도 막지 않고 건너뜀.
     content.oncontextmenu = (e) => {
       if (e.target.closest(".ag-tl-task")) return; // 항목 위는 항목 공통 메뉴(문서 위임)가 처리
       e.preventDefault();
+      if (selecting || touchPending) return; // 터치 롱프레스는 위 범위 선택이 처리(손을 떼면 종류 메뉴)
       const slot = slotFromEvent(e);
       const { startMinute, durationMinutes } = rangeOf(slot, slot);
       showAddKindMenu(e.clientX, e.clientY, (kind) => showAgendaTimelineInlineAdd(content, startMinute, durationMinutes, kind, dateStr));
