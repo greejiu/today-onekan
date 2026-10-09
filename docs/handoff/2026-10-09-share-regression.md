@@ -1,8 +1,8 @@
 # 인계: 이미지로 공유 회귀 검증 (#84·#85)
 
 - 작성일 / 작성 AI: 2026-10-09 / Claude Code
-- 상태: 진행 중
-- 브랜치 / 마지막 커밋: `codex/share-regression-2026-10-09` / (병합 후 기록)
+- 상태: 완료
+- 브랜치 / 마지막 커밋: `codex/share-regression-2026-10-09` / 470f6c1 → 병합 커밋 `37be3a2`(main)
 - PR: https://github.com/greejiu/today-onekan/pull/87
 
 ## 목표
@@ -73,6 +73,14 @@ PNG 확인
   - 실제 휴대폰의 공유창·사진 저장
   - 운영 계정 데이터로 만든 이미지
   - 결의 로컬 Windows Chrome에서의 실행
+
+## 병합·배포 확인
+- PR #87 병합 커밋: `37be3a23cc5c20a87aeffd072c74b74363c5889f`. 병합 직전 `origin/main`은 9e8903b 그대로였다(다른 작업 변경 없음, 충돌 없음).
+- GitHub Pages 배포 실행: [run 37873557836](https://github.com/greejiu/today-onekan/actions/runs/37873557836) → `completed / success`, head_sha = 37be3a2.
+- **미확인**: 배포 주소의 `index.html`이 main 파일과 같은지 직접 비교하지 못했다.
+  - 이유: 이 작업 환경(클라우드 컨테이너)의 네트워크 정책이 `greejiu.github.io` 접속을 403으로 막는다.
+  - Pages 산출물 zip도 외부 저장소 주소라 내려받을 수 없었다.
+  - 결의 PC에서 `docs/AI_WORKFLOW.md`의 PowerShell 비교 명령으로 확인하면 된다. 비교할 파일은 `index.html`(이번 변경 정적 파일은 이것 하나, 테스트·문서는 배포 화면과 무관)이다.
 
 ## 주의할 점
 - DB 변경 없음.
