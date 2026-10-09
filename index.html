@@ -2686,6 +2686,24 @@
   const DEFAULT_FONT_STACK = `-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif`;
   const FONT_NAME_MAX = 100;
   const FONT_LIST_LIMIT = 300; // 목록에 한 번에 그리는 최대 개수(글꼴이 수천 개여도 화면이 버벅이지 않게)
+  // 글꼴 한글 이름 — 공식 한글 이름이 있는 글꼴만(브라우저가 주는 이름은 영어라서). 키는 소문자·공백/기호 제거.
+  // 목록·현재 글꼴·미리보기에 한글로 보여 주고 검색은 한글·영어 모두 됨. 실제 적용은 항상 원래(영어) 이름으로.
+  const FONT_KO_NAMES = {
+    malgungothic:"맑은 고딕", batang:"바탕", batangche:"바탕체", dotum:"돋움", dotumche:"돋움체", gulim:"굴림", gulimche:"굴림체", gungsuh:"궁서", gungsuhche:"궁서체",
+    nanumgothic:"나눔고딕", nanumgothiccoding:"나눔고딕코딩", nanumgothiceco:"나눔고딕 에코", nanummyeongjo:"나눔명조", nanummyeongjoeco:"나눔명조 에코",
+    nanumbarungothic:"나눔바른고딕", nanumbarunpen:"나눔바른펜", nanumsquare:"나눔스퀘어", nanumsquareround:"나눔스퀘어라운드", nanumsquareneo:"나눔스퀘어 네오",
+    nanumpenscript:"나눔손글씨 펜", nanumpen:"나눔손글씨 펜", nanumbrushscript:"나눔손글씨 붓", nanumbrush:"나눔손글씨 붓",
+    applesdgothicneo:"애플 SD 산돌고딕 Neo", applegothic:"애플고딕", applemyungjo:"애플명조",
+    notosanskr:"노토 산스 KR", notosanscjkkr:"본고딕", notoserifkr:"노토 세리프 KR", notoserifcjkkr:"본명조", sourcehansanskr:"본고딕", sourcehansanskorean:"본고딕", sourcehanserifkr:"본명조",
+    pretendard:"프리텐다드", spoqahansans:"스포카 한 산스", spoqahansansneo:"스포카 한 산스 Neo", ibmplexsanskr:"IBM 플렉스 산스 KR",
+    gowundodum:"고운돋움", gowunbatang:"고운바탕", blackhansans:"블랙 한 산스", dohyeon:"도현", jua:"주아", gaegu:"개구", himelody:"하이멜로디", gamjaflower:"감자꽃",
+    singleday:"싱글데이", songmyung:"송명", stylish:"스타일리시", sunflower:"해바라기", yeonsung:"연성", eastseadokdo:"동해 독도", poorstory:"푸어 스토리", dokdo:"독도",
+    cutefont:"귀여운 폰트", gugi:"구기", kirangharang:"키랑해랑", hahmlet:"함렛", gothica1:"고딕 A1", bagelfatone:"베이글팻원", dongle:"동글", orbit:"오르빗",
+    maruburi:"마루 부리", suit:"수트", wantedsans:"원티드 산스", paperlogy:"페이퍼로지", gmarketsans:"G마켓 산스", scoredream:"에스코어 드림",
+    kopubworldbatang:"KoPubWorld 바탕", kopubworlddotum:"KoPubWorld 돋움", kopubbatang:"KoPub 바탕", kopubdotum:"KoPub 돋움",
+  };
+  const fontKoName = (family) => FONT_KO_NAMES[String(family || "").toLowerCase().replace(/[\s\-_]/g, "")] || "";
+  const fontDisplayName = (family) => fontKoName(family) || family;
   // 폰트 이름 정리: 제어문자 제거 + 길이 제한. CSS에는 아래 cssFontString으로 따옴표 문자열로만 넣음.
   function sanitizeFontName(name) {
     return String(name || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, FONT_NAME_MAX);
@@ -2712,7 +2730,7 @@
     const input = $("settingsFontName");
     if (input) input.value = trimmed;
     const cur = $("settingsFontCurrent");
-    if (cur) cur.textContent = trimmed || "기본(시스템 글꼴)";
+    if (cur) cur.textContent = trimmed ? fontDisplayName(trimmed) : "기본(시스템 글꼴)";
     setFontPreview(trimmed);
   }
   // 미리보기만 바꿈 — 저장·앱 전체 적용은 "적용" 버튼을 눌러야 일어남.
@@ -2722,7 +2740,7 @@
     const box = $("settingsFontPreview");
     if (box) box.style.fontFamily = fontStackFor(fontPreviewName);
     const label = $("settingsFontPreviewName");
-    if (label) label.textContent = fontPreviewName || "기본(시스템 글꼴)";
+    if (label) label.textContent = fontPreviewName ? fontDisplayName(fontPreviewName) : "기본(시스템 글꼴)";
     $("settingsFontList")?.querySelectorAll(".font-option").forEach(el => {
       el.setAttribute("aria-selected", el.dataset.family === fontPreviewName ? "true" : "false");
     });
@@ -2761,8 +2779,8 @@
       btn.className = "font-option";
       btn.setAttribute("role", "option");
       btn.dataset.family = f.family;
-      btn.textContent = f.family;
-      btn.title = f.family;
+      btn.textContent = fontDisplayName(f.family);
+      btn.title = fontKoName(f.family) ? `${fontKoName(f.family)} · ${f.family}` : f.family;
       btn.style.fontFamily = fontStackFor(f.family);
       btn.setAttribute("aria-selected", f.family === fontPreviewName ? "true" : "false");
       btn.addEventListener("click", () => setFontPreview(f.family));
@@ -2788,11 +2806,12 @@
         const family = sanitizeFontName(f && f.family);
         if (!family) continue;
         const prev = byFamily.get(family) || "";
-        byFamily.set(family, `${prev} ${family} ${f.fullName || ""}`.toLowerCase());
+        byFamily.set(family, `${prev} ${family} ${f.fullName || ""} ${fontKoName(family)}`.toLowerCase());
       }
       localFontFamilies = [...byFamily.entries()]
         .map(([family, search]) => ({ family, search }))
-        .sort((a, b) => a.family.localeCompare(b.family, "ko", { sensitivity: "base" }));
+        // 한글 이름이 있는 글꼴을 앞에(가나다순), 그 뒤에 나머지(알파벳순)
+        .sort((a, b) => (!!fontKoName(b.family) - !!fontKoName(a.family)) || fontDisplayName(a.family).localeCompare(fontDisplayName(b.family), "ko", { sensitivity: "base" }));
       if (!localFontFamilies.length) {
         // 크롬은 권한이 거부·미허용이면 에러 대신 빈 목록을 돌려줌 → 권한 상태로 "거부"와 "진짜 빈 목록"을 구분.
         let state = "";
