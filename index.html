@@ -4649,10 +4649,11 @@
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; dragDateAttr = row.dataset.date; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
+        touchGate.down(e);
       });
       row.addEventListener("pointermove", (e) => {
         if (!dragEl) return;
-        if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+        if (!moved && touchGate.allow(e, startX, startY) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
           dragEl.classList.add("dragging");
         }
@@ -4675,7 +4676,7 @@
         el.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (!wasMoved) { startAgendaItemInlineEdit(el, id, kind, renderAgendaAllDay); return; }
+        if (!wasMoved) { if (touchGate.consumeCancelled()) return; startAgendaItemInlineEdit(el, id, kind, renderAgendaAllDay); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         if (!drop) return;
         // 8-6단계 버그 수정: 여러 날짜 열이 나란히 있는 지금은 "하루종일" 존이 열마다 따로 있으므로,
@@ -4911,10 +4912,11 @@
         dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
+        touchGate.down(e);
       });
       row.addEventListener("pointermove", (e) => {
         if (!dragEl) return;
-        if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+        if (!moved && touchGate.allow(e, startX, startY) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
           dragEl.classList.add("dragging");
           ghost = document.createElement("div");
@@ -4939,7 +4941,7 @@
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (!wasMoved) { startAgendaItemInlineEdit(el, id, kind, rerender); return; }
+        if (!wasMoved) { if (touchGate.consumeCancelled()) return; startAgendaItemInlineEdit(el, id, kind, rerender); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         await moveItemToZone(kind,id,drop?{...drop,sourceDate:el.closest('[data-date]')?.dataset.date}:null);
       };
@@ -5030,10 +5032,11 @@
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
+        touchGate.down(e);
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
-        if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+        if (!moved && touchGate.allow(e, startX, startY) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
           row.classList.add("dragging");
           ghost = document.createElement("div");
@@ -5061,7 +5064,7 @@
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (!wasMoved) {
+        if (!wasMoved) { if (touchGate.consumeCancelled()) return;
           if (skipInlineEditKinds.includes(kind)) return; // 다른 곳(예: 제목 클릭)이 처리하도록 그대로 둠
           startAgendaItemInlineEdit(row, id, kind, onRerender);
           return;
@@ -5155,6 +5158,31 @@
   // 빈 곳 클릭·드래그로 "새로 추가"할 때만 시작·끝을 30분 경계에 맞춤. 기존 항목의 이동·길이 조절은 15분 그대로.
   const AG_TL_ADD_STEP_MIN = 30;
   const TL_LONG_PRESS_MS = 300;
+  // 모바일 항목 이동(드래그) ↔ 화면 스크롤 충돌 방지 공용 장치. 터치로 끌려면 TL_LONG_PRESS_MS 동안 가만히 눌러야(진동) 하고,
+  // 그 전에 움직이면 스크롤로 보고 이동을 시작하지 않으며(손을 떼도 이름 수정으로 열리지 않음), 이동 중엔 손가락이
+  // 화면 스크롤로 넘어가지 않게 막음. 마우스·펜은 예전처럼 8px 움직이면 바로 이동. 한 번에 한 손가락만 쓰므로 전역 하나.
+  const touchGate = (() => {
+    let timer = null, touch = false, armed = true, cancelled = false;
+    const end = () => { clearTimeout(timer); timer = null; armed = true; touch = false; };
+    document.addEventListener("touchmove", (ev) => { if (touch && armed && ev.cancelable) ev.preventDefault(); }, { passive: false });
+    document.addEventListener("pointerup", end);
+    document.addEventListener("pointercancel", end);
+    return {
+      down(e) {
+        end(); cancelled = false;
+        touch = e.pointerType === "touch"; armed = !touch;
+        if (touch) timer = setTimeout(() => { timer = null; armed = true; navigator.vibrate?.(15); }, TL_LONG_PRESS_MS);
+      },
+      // 이동을 시작해도 되는가(터치는 롱프레스 후에만). 롱프레스 전에 움직였으면 그 누르기는 이동·탭 모두 아님.
+      allow(e, x, y) {
+        if (!touch || armed) return true;
+        if (Math.hypot(e.clientX - x, e.clientY - y) > 8) { clearTimeout(timer); timer = null; cancelled = true; }
+        return false;
+      },
+      consumeCancelled() { const c = cancelled; cancelled = false; return c; },
+      arm() { touch = true; armed = true; }, // 다른 곳(타임라인 항목)이 자체 롱프레스로 이동을 시작했을 때 스크롤만 막음
+    };
+  })();
   const TL_EDGE_ZONE_PX = 8;
   // 8-3단계: dateStr/containerEl로 일반화 — 여러 날짜 열이 나란히 렌더되므로 각 열은 자기 min/max를
   // .ag-tl-content의 data-min-m/data-max-m에 저장해두고(homeDropZone·현재시각선이 열마다 따로 읽어씀).
@@ -5310,6 +5338,7 @@
           longPressTimer = null;
           if (cancelled) return;
           dragKind = "move";
+          if (!isMouse) { touchGate.arm(); navigator.vibrate?.(15); }
           task.classList.add("dragging");
           clearHoverHint();
         }, TL_LONG_PRESS_MS);
@@ -5821,11 +5850,12 @@
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
+        touchGate.down(e);
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
         e.stopPropagation();
-        if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+        if (!moved && touchGate.allow(e, startX, startY) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
           row.classList.add("dragging");
           ghost = document.createElement("div");
@@ -5851,7 +5881,7 @@
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (!wasMoved) {
+        if (!wasMoved) { if (touchGate.consumeCancelled()) return;
           // 할일은 이미 제목 클릭/연필 버튼으로 전체 수정 시트가 열리므로 건드리지 않고,
           // 습관·일정만 다른 카드들과 동일하게 짧은 클릭 = 이름 인라인 수정으로 통일.
           if (kind !== "todo") startAgendaItemInlineEdit(row, id, kind, renderPlanUpcomingBoard);
@@ -6323,10 +6353,11 @@
         moved = false; curTarget = null;
         startX = e.clientX; startY = e.clientY;
         row.setPointerCapture?.(e.pointerId);
+        touchGate.down(e);
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
-        if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+        if (!moved && touchGate.allow(e, startX, startY) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
           row.classList.add("dragging");
           ghost = document.createElement("div");
@@ -6351,7 +6382,7 @@
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (!wasMoved) { startAgendaItemInlineEdit(row, id, "someday", renderSomedaySummary); return; }
+        if (!wasMoved) { if (touchGate.consumeCancelled()) return; startAgendaItemInlineEdit(row, id, "someday", renderSomedaySummary); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         if (!drop || drop.zone === "someday") return; // 이미 언젠가라 놓아도 변화 없음
         await moveItemToZone("someday", id, drop);
