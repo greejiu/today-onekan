@@ -4448,7 +4448,7 @@
   // "일정/할일/습관 추가" 메뉴(showAddKindMenu)를 띄워 고른 종류로 입력창을 엶.
   // dateStr: 이 add-row가 속한 열의 날짜(8-3단계 — 여러 날이 나란히 보이므로 열마다 따로 지정).
   // autoOpenKind: 지정돼 있으면 붙자마자 그 종류로 바로 입력창을 염(엔터로 연달아 추가할 때, 메뉴 없이 바로).
-  function attachAgendaAllDayAddClick(dateStr, autoOpenKind) {
+  function attachAgendaAllDayAddClick(dateStr) {
     const row = document.querySelector(`#agendaAllDayList .block-add-row[data-alladd="${dateStr}"]`);
     if (!row) return;
     const openInput = (kind) => openAddInput(row, {
@@ -4472,12 +4472,11 @@
         await renderAgendaAllDay();
         return true;
       },
-      onReopen: (kind) => attachAgendaAllDayAddClick(dateStr, kind),
+      // 타임라인은 목록이 아니라서 엔터 후 다음 입력창을 다시 열지 않음(목록형 시간블럭·다가오는만 연속 입력).
     });
     const openMenu = (e) => { e.preventDefault(); showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind)); };
     row.onclick = () => openInput("todo"); // 왼쪽 클릭·터치 = 기본(할일) 입력창 바로 열기
     row.oncontextmenu = openMenu;           // 오른쪽 클릭 = 종류 메뉴(일정/할일/습관) → 고르면 입력창
-    if (autoOpenKind) openInput(autoOpenKind);
   }
 
   // 집 페이지 3열(언젠가 / 다가오는 계획 / 오늘의 하루종일·타임블럭·타임라인) 전체를 아우르는
