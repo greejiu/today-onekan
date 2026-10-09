@@ -3703,14 +3703,10 @@
   });
   $('td_undated').addEventListener('change',()=>syncPeriodForm('td'));
   const periodLabel = (kind,row) => OnekanPeriod.label(kind,row);
-  // 다가오는 계획 전용: 날짜 칸 아래에 이미 날짜가 있으므로 하루 종일은 비우고, 시간·여러 날만 짧게 보여줌.
+  // 다가오는 계획 전용: 날짜는 칸 제목에 있으므로 날짜·종일·기간은 빼고, 시간 지정 항목의 시작 시각만 보여줌.
   const upcomingTimeLabel = (kind,row) => {
-    const p=OnekanPeriod.read(kind,row); if (!p.startDate) return '';
-    const md=d=>d.slice(5).replace('-','/'), multi=p.endDate&&p.endDate!==p.startDate;
-    if (p.allDay) return multi?`${md(p.startDate)} ~ ${md(p.endDate)}`:'';
-    if (!p.startTime) return '';
-    if (!p.endTime) return p.startTime;
-    return multi?`${p.startTime} → ${md(p.endDate)} ${p.endTime}`:`${p.startTime} → ${p.endTime}`;
+    const p=OnekanPeriod.read(kind,row);
+    return p.startDate && !p.allDay && p.startTime ? p.startTime : '';
   };
   const planTimeHtml = (kind,row) => { const t=upcomingTimeLabel(kind,row); return t?`<span class="plan-time">${escapeHtml(t)}</span>`:''; };
   // Resolve continuation rows to the original start-date occurrence; saved historic log dates stay literal.
