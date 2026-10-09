@@ -5475,7 +5475,7 @@
   }
 
   // 팝업 없이 타임라인 그 자리에 바로 입력창을 띄워 할일/일정(kind)을 추가함(Enter/바깥 클릭 시 저장, Esc면 취소).
-  // Enter로 저장하면 같은 자리에 바로 다음 입력창이 다시 열려 연달아 입력할 수 있음(언젠가 목록과 동일한 패턴).
+  // Enter/바깥 클릭으로 저장하면 입력창은 닫힘(타임라인은 목록이 아니라서 연속 입력 없음).
   // dateStr: 8-3단계 — 이 열이 어느 날짜인지(여러 날짜 열이 있으므로 homeAgendaDate 대신 이걸 씀).
   // 위치는 시작 시각·길이(분)로 계산(2026-09-28 — 30분 단위 추가로 칸 번호 대신 분을 넘김).
   function showAgendaTimelineInlineAdd(content, startMinute, durationMinutes, kind, dateStr) {
@@ -5491,7 +5491,7 @@
     const input = el.querySelector("input");
     input.focus();
     let done = false;
-    const commit = async (reopen) => {
+    const commit = async () => {
       if (done) return;
       const name = input.value.trim();
       if (!name) { el.remove(); return; }
@@ -5513,18 +5513,13 @@
       }
       if (error) { alert("저장 실패: " + error.message); done = false; return; }
       await loadAll();
-      // 연속 입력: loadAll이 타임라인을 통째로 다시 그리므로(.ag-tl-content가 새로 생김) 그 새 요소를 다시 찾아서 이어붙임.
-      // 8-3단계: 여러 날짜 열 중 이 dateStr에 해당하는 열을 정확히 찾음.
-      if (reopen && agendaView === "timeline") {
-        const freshContent = document.querySelector(`#agendaTimeWrap .ag-tl-content[data-date="${dateStr}"]`);
-        if (freshContent) showAgendaTimelineInlineAdd(freshContent, startMinute, durationMinutes, kind, dateStr);
-      }
+      // 타임라인은 목록이 아니라서 엔터로 저장한 뒤 다음 입력창을 다시 열지 않음.
     };
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); commit(true); }
+      if (e.key === "Enter") { e.preventDefault(); commit(); }
       else if (e.key === "Escape") { done = true; el.remove(); }
     });
-    input.addEventListener("blur", () => commit(false));
+    input.addEventListener("blur", () => commit());
   }
 
   // scopeEl: 8-3단계 — 여러 날짜 열이 있을 땐 해당 열(containerEl)로 좁혀서 씀(onchange는 대입이라 중복 문제는 없지만,
