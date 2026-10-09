@@ -73,7 +73,16 @@
   - 이미지: 주 7일 전체(스크롤 밖 포함), 월 PNG, 일은 공유 창
   - 할일 탭 패널(할일만)
   - 모바일: 보드 가로 넘김(스냅·오늘 열·다음 열 일부·페이지 넘침 없음), 패널·표시 설정, 월 날짜 목록 추가
-- 회귀: (전체 테스트 결과를 아래에 기록)
+- 회귀(전체 `tests/*.cjs`를 이 브랜치와 `origin/main` 93524cf에서 각각 실행해 비교)
+  - main에서 통과하던 테스트는 이 브랜치에서도 모두 통과한다.
+    - 화면 변경으로 옛 '모두' 설계를 검사하던 부분만 새 설계 기준으로 고쳤다. 검증 의도는 유지했다.
+      - `all-sidebar-eyes`: 기간별 눈, 화면 이동·접기·모바일 동기화, 쓰기 0
+      - `shared-view-tabs`: '모두'는 월/주/일, 주 7열
+      - `schedule-panels`: 날짜 버튼 선택자를 일정 달력 `#calGrid`로 좁힘('모두' 달력에도 같은 버튼이 생겨서)
+      - `all-views`: 사이드바 종류 3개 확인
+  - main에서도 실패하던 13개는 같은 오류로 실패한다(이번 범위 밖, 옛 화면 기준 선택자).
+    - all-views(21행), calendar-ui, classification-ui, common-navigation, design-restoration, direct-navigation, group-defaults, habit-views, period-ui, schedule-sidebar, schedule-views, todo-views, together-ui.
+  - `deployed-navigation`은 배포 SHA가 필요해서 실행하지 않았다.
 - 실행하지 못한 것
   - 실제 휴대폰의 터치 스크롤감과 공유창
   - 실제 계정 데이터

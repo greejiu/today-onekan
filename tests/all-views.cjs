@@ -14,7 +14,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
   await loadAll();showPage('all');allViews.selectDate('2026-10-04');mockWrites.length=0;
  });
  const writes=()=>p.evaluate(()=>mockWrites.length),view=mode=>p.locator('#pageSidebarItems [data-sidebar-tab='+mode+']:visible, #allViewTabs [data-tab='+mode+']:visible').click();
- assert.equal(await p.evaluate(()=>allViews.state().span),'month');assert.equal(await p.locator('#allSidebarTypes button').count(),3);assert.equal(await p.locator('#allTodoStatus').inputValue(),'open');
+ assert.equal(await p.evaluate(()=>allViews.state().span),'month');assert.equal(await p.locator('#allSidebarTypes [data-aft-fold]').count(),3); // 2026-10-10: 종류 3개(+범주·그룹 눈), 옛 상태 선택은 숨김(완료도 체크로 보여줌)
  const model=await p.evaluate(()=>allViews.displayRows());assert.equal(new Set(model.map(r=>r.id)).size,model.length);for(const k of ['event','todo','habit'])assert(model.some(r=>r.kind===k&&r.source_id==='same'));
  assert.equal(model.find(r=>r.record_id==='snapshot').duration_minutes,120);assert.equal(model.find(r=>r.record_id==='snapshot').start_minute,1380);assert.equal(model.find(r=>r.record_id==='old').duration_minutes,null);assert.equal(model.find(r=>r.record_id==='late-log').occurrence_date,null);assert(model.some(r=>r.kind==='habit'&&r.source_id==='ended'&&r.status==='skipped'));
  await p.screenshot({path:'test-results/all-views/month.png'});
