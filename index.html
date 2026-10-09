@@ -3703,6 +3703,16 @@
   });
   $('td_undated').addEventListener('change',()=>syncPeriodForm('td'));
   const periodLabel = (kind,row) => OnekanPeriod.label(kind,row);
+  // 다가오는 계획 전용: 날짜 칸 아래에 이미 날짜가 있으므로 하루 종일은 비우고, 시간·여러 날만 짧게 보여줌.
+  const upcomingTimeLabel = (kind,row) => {
+    const p=OnekanPeriod.read(kind,row); if (!p.startDate) return '';
+    const md=d=>d.slice(5).replace('-','/'), multi=p.endDate&&p.endDate!==p.startDate;
+    if (p.allDay) return multi?`${md(p.startDate)} ~ ${md(p.endDate)}`:'';
+    if (!p.startTime) return '';
+    if (!p.endTime) return p.startTime;
+    return multi?`${p.startTime} → ${md(p.endDate)} ${p.endTime}`:`${p.startTime} → ${p.endTime}`;
+  };
+  const planTimeHtml = (kind,row) => { const t=upcomingTimeLabel(kind,row); return t?`<span class="plan-time">${escapeHtml(t)}</span>`:''; };
   // Resolve continuation rows to the original start-date occurrence; saved historic log dates stay literal.
   function habitPeriodRow(habit,occurrence) {
     const base=OnekanPeriod.read('habit',habit), delta=OnekanPeriod.days(base.startDate,occurrence);
@@ -5676,7 +5686,7 @@
         const isRange = e.end_date && e.end_date !== e.event_date;
         return `<div class="plan-row ${isRange ? "" : "planup-drag-row"}" data-id="${e.id}" data-kind="event">
           <span class="plan-todo-title">${escapeHtml(e.title)}</span>
-          <span class="plan-time">${escapeHtml(periodLabel("event",e))}</span>
+          ${planTimeHtml("event",e)}
         </div>`;
       }).join("");
       const todoHtml = dayTodos.map(td => {
@@ -5685,7 +5695,7 @@
         <div class="plan-row todo planup-drag-row ${td.is_done ? "done" : ""}" data-id="${td.id}" data-kind="todo">
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="planup-todo-check" />
           <span class="plan-todo-title planup-todo-title"${tagColor ? ` style="color:${tagColor};"` : ""}>${escapeHtml(td.title)}</span>
-          <span class="plan-time">${escapeHtml(periodLabel("todo",td))}</span>
+          ${planTimeHtml("todo",td)}
         </div>`;
       }).join("");
       const bodyHtml = habitHtml + eventHtml + todoHtml;
@@ -5899,7 +5909,7 @@
           ${DRAG_HANDLE_SVG}
           ${eventDotHtml(e.category_id, 10, 20)}
           <span class="plan-todo-title">${escapeHtml(e.title)}</span>
-          <span class="plan-time">${escapeHtml(periodLabel("event",e))}</span>
+          ${planTimeHtml("event",e)}
           ${moreBtnHtml(e.title)}
         </div>`;
       }).join("");
@@ -5909,7 +5919,7 @@
           ${DRAG_HANDLE_SVG}
           <input type="checkbox" ${td.is_done ? "checked" : ""} data-id="${td.id}" class="upcoming-todo-check" />
           ${groupTitleHtml("plan-todo-title planup-todo-title", "todo", td.tag_id, td.title)}
-          <span class="plan-time">${escapeHtml(periodLabel("todo",td))}</span>
+          ${planTimeHtml("todo",td)}
           ${moreBtnHtml(td.title)}
         </div>`;
       }).join("");
