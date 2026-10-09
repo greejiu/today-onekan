@@ -9489,7 +9489,11 @@
     const allDay = liveAllDay.filter(it => it.kind === "event");
     const timed = liveTimed.filter(it => it.kind === "event");
     const push = it => (it.start_minute == null ? allDay : timed).push(it);
-    todos.filter(td => td.is_done && td.completed_date === dateStr).forEach(td => {
+    // 집 화면에서 그날 완료로 보이는 할일(그날 일정 기간에 걸친 완료 할일)을 먼저 담음 — 다음 날 체크해서 완료일이
+    // 다른 날짜로 저장됐거나 비어 있어도 화면과 이미지가 같게. 아래 완료일 기준은 화면에 없는 완료 기록을 보충.
+    const seenTodo = new Set();
+    [...liveAllDay, ...liveTimed].filter(it => it.kind === "todo" && it.done).forEach(it => { seenTodo.add(it.id); push(it); });
+    todos.filter(td => td.is_done && td.completed_date === dateStr && !seenTodo.has(td.id)).forEach(td => {
       const sm = td.todo_time ? hhmmToMinutes(td.todo_time.slice(0, 5)) : null;
       push({ kind: "todo", id: td.id, name: td.title, start_minute: sm, duration_minutes: sm == null ? null : (td.duration_minutes || 30), done: true, cat_id: td.tag_id });
     });
