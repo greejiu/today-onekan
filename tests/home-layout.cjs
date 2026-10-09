@@ -114,7 +114,7 @@ if (require.main === module) (async()=>{
   before=await count();await page.locator('[data-somedaymore]').click();assert.equal(await count(),before+5);
   await page.locator('#somedaySummaryList .item-more').first().click();assert(await page.locator('.item-menu').isVisible());await page.keyboard.press('Escape');
   await page.locator('.somedaysum-check').first().click();await page.waitForTimeout(100);assert(await page.evaluate(()=>mockWrites.some(w=>w.table==='tok_someday'&&w.op==='update')));
-  await page.locator('[data-somedayadd]').click();await page.locator('#somedaySummaryList .inline-add-input').fill('모바일 추가 테스트');await page.locator('#somedaySummaryList .inline-add-input').press('Enter');await page.waitForTimeout(100);assert(await page.evaluate(()=>mockRows.tok_someday.some(r=>r.title==='모바일 추가 테스트')));
+  await page.locator('[data-somedayadd="bottom"]').click();await page.locator('#somedaySummaryList .inline-add-input').fill('모바일 추가 테스트');await page.locator('#somedaySummaryList .inline-add-input').press('Enter');await page.waitForTimeout(100);assert(await page.evaluate(()=>mockRows.tok_someday.some(r=>r.title==='모바일 추가 테스트')));
   await page.evaluate(()=>{todos=[];tasks=[];events=[];renderHome();});await page.waitForTimeout(100);
   await page.locator('[data-blockallday]').click();assert(await page.locator('#homeTodayBlockAllDay .inline-add-input').isVisible());await page.keyboard.press('Escape');
   console.log('mobile more / menu / check / add / empty all-day PASS');
@@ -130,7 +130,7 @@ if (require.main === module) (async()=>{
   await mobile.locator('#somedaySummaryList .item-more').first().tap();assert(await mobile.locator('.item-menu.is-sheet').isVisible());await mobile.keyboard.press('Escape');
   await mobile.locator('[data-somedaymore]').tap();assert.equal(await mobile.locator('.ag-someday-row').count(),20);
   await mobile.locator('.somedaysum-check').first().tap();await mobile.waitForFunction(()=>mockWrites.some(w=>w.op==='update'));
-  await mobile.locator('[data-somedayadd]').tap();await mobile.locator('#somedaySummaryList .inline-add-input').fill('터치 추가');await mobile.keyboard.press('Enter');await mobile.waitForFunction(()=>mockRows.tok_someday.some(r=>r.title==='터치 추가'));
+  await mobile.locator('[data-somedayadd="bottom"]').tap();await mobile.locator('#somedaySummaryList .inline-add-input').fill('터치 추가');await mobile.keyboard.press('Enter');await mobile.waitForFunction(()=>mockRows.tok_someday.some(r=>r.title==='터치 추가'));
   await mobile.evaluate(()=>scrollTo(0,0));await mobile.screenshot({path:'test-results/home-mobile-block.png'});
   console.log('banners / touch emulation PASS');
   assert.deepEqual(errors,[]);console.log('other tabs / no JavaScript errors PASS');

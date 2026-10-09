@@ -6104,11 +6104,12 @@
     const moreHtml = nextCount > 0
       ? `<button type="button" class="someday-more-row" data-somedaymore="1">${nextCount}개 더 보기</button><p class="someday-more-hint">아래로 한 번 더 스크롤하면 펼쳐져요</p>`
       : "";
+    // 위·아래 두 곳에서 모두 바로 추가할 수 있게(긴 목록에서 아래까지 내려가지 않아도 됨). 둘은 같은 입력·같은 저장.
     $("somedaySummaryList").innerHTML = items.length
-      ? rowsHtml + moreHtml + addSlotHtml(`data-somedayadd="1"`, false)
+      ? addSlotHtml(`data-somedayadd="top"`, false) + rowsHtml + moreHtml + addSlotHtml(`data-somedayadd="bottom"`, false)
       : undone.length === 0
-        ? addSlotHtml(`data-somedayadd="1"`, true)
-        : `<div class="agenda-empty-block">이 범주의 항목이 없어요.</div>` + addSlotHtml(`data-somedayadd="1"`, false);
+        ? addSlotHtml(`data-somedayadd="bottom"`, true)
+        : `<div class="agenda-empty-block">이 범주의 항목이 없어요.</div>` + addSlotHtml(`data-somedayadd="bottom"`, false);
     document.querySelectorAll(".somedaysum-check").forEach(cb => {
       cb.onchange = async () => {
         const { error } = await sb.from("tok_someday").update({ is_done: cb.checked }).eq("id", cb.dataset.id);
@@ -6191,36 +6192,38 @@
   }
 
   // "언젠가" 빈칸/+ 추가 클릭 → 인라인 입력으로 tok_someday에 바로 생성.
-  // autoOpen: true면 붙자마자 바로 입력창을 염(엔터로 연달아 추가할 때, 마우스로 다시 안 눌러도 되게).
+  // 빈칸은 목록 위(top)·아래(bottom) 두 곳 — 어느 쪽이든 입력창과 저장 결과는 같고, 눌린 빈칸 자리에서 입력창이 열림.
+  // autoOpen: 'top'|'bottom'이면 붙자마자 그 자리의 입력창을 염(엔터로 연달아 추가할 때, 마우스로 다시 안 눌러도 되게).
   function attachSomedayAddClick(autoOpen) {
-    const row = document.querySelector('#somedaySummaryList .block-add-row[data-somedayadd]');
-    if (!row) return;
-    const openInput = () => {
-      const wrap = document.createElement("div");
-      wrap.className = "inline-add-wrap";
-      wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="담아둘 일" />`;
-      row.replaceWith(wrap);
-      const input = wrap.querySelector("input");
-      input.focus();
-      let done = false;
-      const commit = async (reopen) => {
-        if (done) return;
-        const name = input.value.trim();
-        if (!name) { done = true; renderSomedaySummary(); return; }
-        done = true;
-        const { error } = await sb.from("tok_someday").insert({ title: name });
-        if (error) { alert("저장 실패: " + error.message); done = false; return; }
-        await loadAll();
-        if (reopen) attachSomedayAddClick(true);
+    document.querySelectorAll('#somedaySummaryList .block-add-row[data-somedayadd]').forEach(row => {
+      const pos = row.dataset.somedayadd;
+      const openInput = () => {
+        const wrap = document.createElement("div");
+        wrap.className = "inline-add-wrap";
+        wrap.innerHTML = `<input type="text" class="inline-add-input" placeholder="담아둘 일" />`;
+        row.replaceWith(wrap);
+        const input = wrap.querySelector("input");
+        input.focus();
+        let done = false;
+        const commit = async (reopen) => {
+          if (done) return;
+          const name = input.value.trim();
+          if (!name) { done = true; renderSomedaySummary(); return; }
+          done = true;
+          const { error } = await sb.from("tok_someday").insert({ title: name });
+          if (error) { alert("저장 실패: " + error.message); done = false; return; }
+          await loadAll();
+          if (reopen) attachSomedayAddClick(pos);
+        };
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit(true); }
+          else if (e.key === "Escape") { done = true; renderSomedaySummary(); }
+        });
+        input.addEventListener("blur", () => commit(false));
       };
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") { e.preventDefault(); commit(true); }
-        else if (e.key === "Escape") { done = true; renderSomedaySummary(); }
-      });
-      input.addEventListener("blur", () => commit(false));
-    };
-    row.onclick = openInput;
-    if (autoOpen) openInput();
+      row.onclick = openInput;
+      if (autoOpen === pos) openInput();
+    });
   }
 
   // 언젠가 행을 다가오는 계획의 특정 날짜/오늘(타임블럭·타임라인·하루종일)로 드래그하면
