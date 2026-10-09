@@ -2414,15 +2414,19 @@
     result[kind==='habit'?'start_minute':kind==='event'?'event_time':'todo_time']=p.allDay?null:kind==='habit'?minutes(p.startTime):p.startTime+':00';
     return result;
   }
-  function shift(kind,row,date,startMinute) {
+  function shift(kind,row,date,startMinute,toAllDay=false) {
     const p=read(kind,row), delta=p.startDate?days(p.startDate,date):0;
     const moved={...p,startDate:date,endDate:p.endDate?addDays(p.endDate,delta):p.allDay?date:''};
-    if (startMinute!=null) {
+    if (toAllDay && !p.allDay) {
+      // 시간 항목을 하루종일로: 시간·소요시간은 비우고, 끝 날짜는 마지막으로 포함되는 날(자정 00:00 끝은 그 전날)
+      let end=moved.endDate||date; if (p.endTime==='00:00' && end>date) end=addDays(end,-1);
+      moved.allDay=true; moved.startTime=''; moved.endTime=''; moved.endDate=end<date?date:end;
+    } else if (startMinute!=null) {
       const length=p.allDay?Math.max(30,(p.startDate&&p.endDate?days(p.startDate,p.endDate):0)*1440+30):p.endTime?duration(p):row.duration_minutes;
       moved.allDay=false; moved.startTime=time(startMinute);
       if (length>0) { const end=plus(date,moved.startTime,length); moved.endDate=end.date; moved.endTime=end.time; }
     }
-    if (!validate(moved,kind==='todo') && row.all_day!=null) {
+    if (!validate(moved,kind==='todo') && (row.all_day!=null || (toAllDay && moved.allDay))) {
       const result=patch(kind,moved);
       // Non-repeating todos can still store the occurrence end in end_date.
       // Move it atomically too: the existing database date-order constraint
@@ -4574,16 +4578,16 @@
   // kind: "habit" | "event" | "todo" | "someday"(아직 날짜 없는 언젠가 항목) 소스를 zone으로 옮김.
   // 습관은 날짜 개념이 없어 오늘(하루종일/시간) 두 zone만 적용되고 나머지는 무시(아무 일도 안 일어남).
   // 언젠가⇄할일은 테이블 자체가 달라서(tok_someday ↔ tok_todos) 새로 만들고 지우는 방식으로 옮김.
-  function periodDropPatch(kind,item,targetDate,startMinute,sourceDate) {
+  function periodDropPatch(kind,item,targetDate,startMinute,sourceDate,toAllDay=false) {
     const base=OnekanPeriod.read(kind,item);
     const offset=sourceDate&&base.startDate?daysBetween(base.startDate,sourceDate):0;
     const date=offset?addDaysStr(targetDate,-offset):targetDate;
-    if(startMinute!=null && offset>0 && !base.allDay) {
+    if(!toAllDay && startMinute!=null && offset>0 && !base.allDay) {
       const clip=OnekanPeriod.clip(kind,item,sourceDate);
       const shifted=OnekanPeriod.plus(date,base.startTime,startMinute-(clip?.start_minute||0));
       return OnekanPeriod.shift(kind,item,shifted.date,OnekanPeriod.minutes(shifted.time));
     }
-    return OnekanPeriod.shift(kind,item,date,startMinute);
+    return OnekanPeriod.shift(kind,item,date,startMinute,toAllDay);
   }
   async function moveItemToZone(kind, id, zoneObj) {
     if (!zoneObj) return;
@@ -4592,16 +4596,16 @@
     // "오늘 보는 날짜" 하나가 아니라 이 date를 씀. 혹시 없으면(옛 호출 등) homeAgendaDate로 안전하게 대체.
     const targetDate = zoneObj.date || homeAgendaDate;
     if (kind === "habit") {
-      if(zone!=='today-timed') return;
+      if(zone!=='today-timed' && zone!=='today-allday') return;
       const item=tasks.find(t=>t.id===id);if(!item)return;
       const base=OnekanPeriod.read('habit',item);
-      const patch=periodDropPatch('habit',item,base.startDate,zoneObj.startMinute,null);
+      const patch=periodDropPatch('habit',item,base.startDate,zone==='today-timed'?zoneObj.startMinute:null,null,zone==='today-allday');
       const {error}=await sb.from('tok_habits').update(patch).eq('id',id);
       if(error) {alert('이동 실패: '+error.message);return;}
     } else if (kind === "event") {
       if (zone === "someday") return; // 일정은 고정 스케줄 개념이라 언젠가로는 전환하지 않음
       const item=events.find(e=>e.id===id);if(!item)return;
-      const patch=periodDropPatch('event',item,targetDate,zone==='today-timed'?zoneObj.startMinute:null,zoneObj.sourceDate);
+      const patch=periodDropPatch('event',item,targetDate,zone==='today-timed'?zoneObj.startMinute:null,zoneObj.sourceDate,zone==='today-allday');
       const { error } = await sb.from("tok_events").update(patch).eq("id", id);
       if (error) { alert("이동 실패: " + error.message); return; }
     } else if (kind === "todo") {
@@ -4615,7 +4619,7 @@
         if (delErr) { alert("이동 실패: " + delErr.message); return; }
       } else {
         const item=todos.find(t=>t.id===id);if(!item)return;
-        const patch=periodDropPatch('todo',item,targetDate,zone==='today-timed'?zoneObj.startMinute:null,zoneObj.sourceDate);
+        const patch=periodDropPatch('todo',item,targetDate,zone==='today-timed'?zoneObj.startMinute:null,zoneObj.sourceDate,zone==='today-allday');
         const { error } = await sb.from("tok_todos").update(patch).eq("id", id);
         if (error) { alert("이동 실패: " + error.message); return; }
       }
