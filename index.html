@@ -5946,16 +5946,8 @@
         renderHomeUpcomingList();
       };
     });
-    containerEl.querySelectorAll(".plan-row.todo .planup-todo-title").forEach(titleEl => {
-      titleEl.onclick = (e) => {
-        e.stopPropagation();
-        const id = titleEl.closest(".plan-row").dataset.id;
-        openTodoSheet(todos.find(t => t.id === id));
-      };
-    });
-    // 4단계: 2열 타임라인 등으로 드래그. 할일은 짧은 클릭이 이미 위 .planup-todo-title.onclick(전체 수정 시트)이
-    // 처리하므로 인라인 이름수정에서 제외(skipInlineEditKinds) — 옛 attachPlanUpcomingItemDrag와 동일 규칙.
-    attachHomeRowDrag(containerEl, ".plan-row[data-id]", renderHomeUpcomingList, ["todo"]);
+    // 지금 한칸·언젠가와 같이 제목을 짧게 누르면 바로 이름 수정(전체 수정 시트는 ⋯ 메뉴의 "수정").
+    attachHomeRowDrag(containerEl, ".plan-row[data-id]", renderHomeUpcomingList);
     days.forEach(dateStr => attachUpcomingDayAddClick(dateStr)); // 2026-09-20: 날짜별 빈칸 클릭 → 그 날짜로 바로 추가
   }
 
