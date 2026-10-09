@@ -1,1 +1,3 @@
 - 작업이 끝나면 항상 커밋·푸시 후 PR을 만들어 main에 병합(Pages 배포)까지 진행한다. 단, DB 변경 등 되돌리기 어려운 작업은 먼저 확인한다.
+- Codex와의 작업 분담, 공통 규칙, 인계 방법은 [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md)를 따른다. Claude Code는 코드 검토, 자잘한 버그 수정, 프롬프트로 하는 작업을 맡는다.
+- 시작할 때 로컬이 `origin/main`과 같은지 확인하고, 병합 후에는 main과 배포본이 같은지 확인한다. 사용량이 소진되기 전에 `docs/handoff/`에 인계를 남긴다.
