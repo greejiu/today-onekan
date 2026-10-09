@@ -3,7 +3,7 @@
 - 작성일 / 작성 AI: 2026-10-09 / Claude Code
 - 상태: 진행 중
 - 브랜치 / 마지막 커밋: `codex/share-regression-2026-10-09` / (병합 후 기록)
-- PR: (생성 후 기록)
+- PR: https://github.com/greejiu/today-onekan/pull/87
 
 ## 목표
 #84(지난 날짜에 화면에서 완료로 보이는 할일 포함)와 #85(공유 타임라인을 앱 화면과 같은 위치·높이·겹침 열로)를 검토하고,
