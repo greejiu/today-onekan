@@ -3458,7 +3458,7 @@
     if (focused && focused !== document.body && !focused.getClientRects().length) {
       const target = scheduleSidebarMq.matches
         ? document.querySelector('.bottombar [data-page="' + currentPage + '"]') || $('navMoreBtn')
-        : sidebarDedicated ? $('sidebarRailToggle') : document.querySelector('#mainSidebarNav [data-page="' + currentPage + '"]') || document.querySelector('#sidebarHomeNav button');
+        : sidebarDedicated ? $('sidebarRailToggle') : document.querySelector('#todoIconRail [data-page="' + currentPage + '"]') || $('sidebarRailToggle'); // 아이콘 줄(보이는 메뉴)로 — 옛 전체 메뉴 목록은 숨겨져 있어 초점이 사라졌음
       target?.focus({ preventScroll: true });
     }
   });
