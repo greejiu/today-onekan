@@ -276,21 +276,27 @@
 #allCalendarMode.all-board-mode>#allTimeView,#allCalendarMode.all-board-mode>.cal-layout{display:none!important}
 .all-week-board[hidden]{display:none}
 .awb-scroll{overflow-x:auto;padding-bottom:4px}
-.awb-grid{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:8px}
-.awb-col{display:flex;flex-direction:column;min-height:340px;background:var(--card);border:1px solid var(--line);border-radius:14px;min-width:0}
-.awb-col.is-today{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+/* 2026-10-10 결 요청: 날짜별 카드 대신 하나의 카드 안에 날짜 사이 구분선만 */
+.awb-grid{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:0;min-width:max(100%,1050px);box-sizing:border-box;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.awb-col{display:flex;flex-direction:column;min-height:340px;min-width:0}
+.awb-col+.awb-col{border-left:1px solid var(--line)}
+.awb-head{border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.awb-col.is-today{background:color-mix(in srgb,var(--accent) 4%,transparent)}
 .awb-head button{display:flex;align-items:center;gap:4px;width:100%;min-height:40px;padding:0 10px;border:0;background:none;color:var(--text);font:inherit;font-size:13px;cursor:pointer;text-align:left}
 .awb-col.is-today .awb-head strong{color:var(--accent-text)}
-.awb-col.is-selected .awb-head button{background:var(--accent-soft);border-radius:13px 13px 0 0}
+.awb-col.is-selected .awb-head button{background:var(--accent-soft)}
 .awb-dow{color:var(--sub);font-weight:600}
 .awb-body{flex:1;display:flex;flex-direction:column;gap:0;padding:4px 6px 6px}
 .awb-body>.add-slot{flex:1;min-height:44px}
 /* 보드 줄 = 지금 한칸 목록 줄(.home1-flat-row). 좁은 열이라 좌우 여백만 조금 줄임 */
-.awb-body>.home1-flat-row{display:grid;grid-template-columns:12px 18px minmax(0,1fr) 24px;column-gap:6px;row-gap:0;padding-left:2px;padding-right:0}
+.awb-body>.home1-flat-row{display:grid;grid-template-columns:12px 16px minmax(0,1fr) 22px;column-gap:6px;row-gap:0;min-height:0;padding:6px 0 6px 2px;font-size:12px;line-height:1.45}
+/* 글씨는 타임라인 항목과 같게: 제목 12px, 시각 11px */
+.awb-body>.home1-flat-row>.agenda-title{font-size:12px!important;line-height:1.45!important}
 .awb-body>.home1-flat-row>.drag-handle-dots{grid-column:1;grid-row:1}
-.awb-body>.home1-flat-row>:is(input[type=checkbox],.agenda-event-dot-wrap,.habit-skip-mark){grid-column:2;grid-row:1;width:18px;height:18px}
+.awb-body>.home1-flat-row>:is(input[type=checkbox],.agenda-event-dot-wrap,.habit-skip-mark){grid-column:2;grid-row:1;width:16px!important;height:16px!important;margin:1px 0 0!important}
+.awb-body>.home1-flat-row>.drag-handle-dots{margin-top:2px!important}
 .awb-body>.home1-flat-row>:is(.agenda-title,.inline-add-wrap){grid-column:3;grid-row:1}
-.awb-body>.home1-flat-row>.plan-time{grid-column:3;grid-row:2;margin-top:0;justify-self:start;font-size:11.5px}
+.awb-body>.home1-flat-row>.plan-time{grid-column:3;grid-row:2;margin-top:0;justify-self:start;font-size:11px!important;line-height:1.4}
 .awb-body>.home1-flat-row>.habit-due-chip{grid-column:3;grid-row:3;justify-self:start}
 .awb-body>.home1-flat-row>.item-more{grid-column:4;grid-row:1;min-width:24px} /* 빈칸은 지금 한칸 빈칸(addSlotHtml)과 같은 모양·규칙 */
 .awb-dragging{opacity:.4}
@@ -332,6 +338,6 @@
  .sa-reopen{display:none!important}
  .sa-panel{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:46;max-height:80vh;height:80vh;background:var(--card);border-left:0;border-radius:18px 18px 0 0;padding:10px 14px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.18)}
  .awb-scroll{scroll-snap-type:x mandatory;overscroll-behavior-x:contain}
- .awb-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:78%}
+ .awb-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:calc((100vw - 32px)*.78);min-width:0;width:max-content}
  .awb-col{scroll-snap-align:start;min-height:260px}
 }
