@@ -251,6 +251,9 @@
 .all-chip-btn[hidden]{display:none!important}
 #allFilterBtn{display:none}
 .layout:has(.sidebar.rail-collapsed) #allFilterBtn{display:inline-flex}
+#allFilters.all-retired{display:none!important}
+.all-chip-btn{gap:6px}.all-chip-btn svg{flex:none}
+.iv-date-nav .all-add-btn{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:36px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--text);font:inherit;font-size:13px;cursor:pointer}
 #allNotice:not(:empty){display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 /* 표시 설정(종류 눈 + 범주·그룹 눈, 종류별 접기) */
 .all-filter-tree{display:flex;flex-direction:column;gap:2px}
@@ -334,6 +337,19 @@
 #allExportCanvas[hidden]{display:none}
 @media(max-width:760px){
  #allFilterBtn{display:inline-flex}
+ /* 위쪽 컨트롤: 월주일+아이콘 / 보조 보기 / 날짜+오늘+추가, 버튼 글자는 아이콘으로 */
+ .page[data-page=all] .iv-controls{gap:8px}
+ .page[data-page=all] .iv-controls>.view-toggle button{min-height:34px}
+ .page[data-page=all] .iv-controls{position:relative}
+ .page[data-page=all] .iv-controls>#allViewTabs{margin-right:88px!important}
+ .all-tools{display:contents}
+ .all-tools #allFilterBtn,.all-tools #allPanelBtn{position:absolute;top:3px;right:0}
+ .all-tools #allFilterBtn{right:44px}
+ .all-chip-btn{justify-content:center;width:38px;min-height:38px;padding:0}
+ .all-chip-label{display:none}
+ .page[data-page=all] .iv-date-nav .agenda-nav{width:38px;height:38px}
+ .page[data-page=all] .iv-date-nav .cal-today-btn{height:38px;min-height:38px;padding:0 12px}
+ .iv-date-nav .all-add-btn{width:38px;min-height:38px;padding:0;justify-content:center;font-size:18px}
  .all-filter-panel{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;max-height:75vh;border-radius:18px 18px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
  .sa-shell,.sa-shell.sa-closed{display:block}
  .sa-reopen{display:none!important}

@@ -213,10 +213,14 @@ window.createOnekanAllViews = api => {
  tabs.append(sep,exportBtn);
  const subTabs=document.createElement('div');subTabs.id='allSubTabs';subTabs.className='view-toggle all-sub-tabs';subTabs.setAttribute('role','group');subTabs.setAttribute('aria-label','보기 방식');
  const tools=document.createElement('div');tools.className='all-tools';
- tools.innerHTML='<button type="button" id="allFilterBtn" class="all-chip-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="allFilterPanel">표시 설정</button><button type="button" id="allPanelBtn" class="all-chip-btn" aria-haspopup="dialog" aria-controls="allSideAgenda">다가오는 · 언젠가</button>';
+ // 모바일은 글자를 숨기고 아이콘만(이름은 aria-label·title) — 위쪽 줄 높이 줄이기
+ const ICON={filter:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="10" y1="17" x2="14" y2="17"></line></svg>',panel:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="14" y1="4" x2="14" y2="20"></line></svg>'};
+ tools.innerHTML='<button type="button" id="allFilterBtn" class="all-chip-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="allFilterPanel" aria-label="표시 설정" title="표시 설정">'+ICON.filter+'<span class="all-chip-label">표시 설정</span></button><button type="button" id="allPanelBtn" class="all-chip-btn" aria-haspopup="dialog" aria-controls="allSideAgenda" aria-label="다가오는 · 언젠가" title="다가오는 · 언젠가">'+ICON.panel+'<span class="all-chip-label">다가오는 · 언젠가</span></button>';
  tools.prepend(subTabs);tabs.after(tools); // 보조 보기(주: 보드/타임라인, 일: 시간블럭/타임라인)는 표시 설정 버튼과 같은 줄
  ['allCalendarOptions','allCollectionOptions','allRangeLabel','allMonthCount','allJumpRow'].forEach(k=>{const n=$(k);if(n){n.hidden=true;n.classList.add('all-retired');}});
  $('allFilters').querySelectorAll('label').forEach(l=>{l.hidden=true;l.classList.add('all-retired');});
+ // '＋ 추가'는 날짜 줄 오른쪽 끝으로 옮기고, 남은 옛 도구 줄은 숨김(한 줄 절약)
+ const addBtn=$('allAddBtn');addBtn.classList.add('all-add-btn');addBtn.setAttribute('aria-label','추가');addBtn.innerHTML='<span aria-hidden="true">＋</span><span class="all-chip-label"> 추가</span>';$('allPrevBtn').parentElement.append(addBtn);$('allFilters').classList.add('all-retired');
  // 왼쪽을 접었거나 모바일일 때 여는 표시 설정 패널(사이드바와 같은 목록)
  const filterPanel=document.createElement('div');filterPanel.id='allFilterPanel';filterPanel.className='all-filter-panel';filterPanel.hidden=true;filterPanel.setAttribute('role','dialog');filterPanel.setAttribute('aria-label','표시 설정');
  filterPanel.innerHTML='<div class="afp-head"><strong>표시 설정</strong><button type="button" id="allFilterClose" aria-label="표시 설정 닫기">✕</button></div><div id="allFilterPanelBody" class="all-filter-tree"></div>';

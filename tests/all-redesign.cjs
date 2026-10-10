@@ -270,6 +270,14 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await m.locator('#allViewTabs [data-common-view=month]').click();await m.locator('#allCalGrid .cal-cell[data-date="'+await m.evaluate(()=>todayStr())+'"]').tap();
  assert(await m.locator('.page[data-page=all] .cal-side .cal-day-add').isVisible(),'모바일 월: 날짜 목록과 추가');
  assert.equal(await m.locator('#allCalGrid .cal-cell .cal-day-add, #allCalGrid button[aria-label$="추가"]').count(),0,'달력 칸 상시 + 없음');
+ // 위쪽 컨트롤 줄이기: 월주일+아이콘 / 보조 보기 / 날짜+오늘+추가 (주 보기 3줄, 160px 이하)
+ await m.locator('#allViewTabs [data-common-view=week]').click();await m.waitForTimeout(150);
+ const ctl=await m.locator('.page[data-page=all] .iv-controls').boundingBox();assert(ctl.height<=160,'모바일 위쪽 컨트롤 높이 '+ctl.height);
+ assert.equal(await m.locator('.page[data-page=all] .iv-date-nav #allAddBtn').count(),1,'추가는 날짜 줄에');assert(await m.locator('#allFilters').isHidden());
+ for(const id of ['allFilterBtn','allPanelBtn','allAddBtn']){const bb=await m.locator('#'+id).boundingBox();assert(bb.width>=36&&bb.height>=36,id+' 누르기 크기');assert(await m.locator('#'+id+' .all-chip-label').isHidden(),id+' 글자 숨김');assert(await m.locator('#'+id).getAttribute('aria-label'));}
+ const vt=await m.locator('#allViewTabs').boundingBox(),fb=await m.locator('#allFilterBtn').boundingBox();assert(vt.x+vt.width<=fb.x,'아이콘이 월주일·이미지 버튼을 가리지 않음');assert(await m.locator('#allExportBtn').isVisible());
+ await m.locator('#allViewTabs [data-common-view=month]').click();await m.waitForTimeout(150);assert((await m.locator('.page[data-page=all] .iv-controls').boundingBox()).height<=110,'월 보기는 2줄');
+ await m.screenshot({path:OUT+'/m390-top-compact.png'});
  await m.evaluate(()=>allViews.selectDate('2026-10-05'));await m.waitForTimeout(150);const mh=m.locator('#allCalGrid .cal-cell[data-date="2026-10-05"] .cal-holiday');
  assert.equal(await mh.locator('.hl-tiny').textContent(),'대체');assert(await mh.locator('.hl-tiny').isVisible()&&await mh.locator('.hl-short').isHidden(),'모바일은 줄임말');
  const mcb=await m.locator('#allCalGrid .cal-cell[data-date="2026-10-05"]').boundingBox(),mhb=await mh.boundingBox();assert(mhb.x+mhb.width<=mcb.x+mcb.width+0.5&&await mh.evaluate(e=>e.scrollWidth<=e.clientWidth),'모바일 휴일 줄임말이 칸 안에 다 보임');
