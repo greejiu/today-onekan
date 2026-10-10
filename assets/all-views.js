@@ -90,9 +90,9 @@ window.createOnekanAllViews = api => {
  const timeOn=(r,d)=>{const p=P.read(r.kind,r);if(p.allDay)return {all:true,label:'종일',min:-1};const c=P.clip(r.kind,r,d);return {all:false,label:p.startDate===d?p.startTime:'이어짐',min:c?c.start_minute:0};};
  const dayItems=(list,d)=>list.filter(r=>P.overlap(r.kind,r,d)).map(r=>({r,t:timeOn(r,d)})).sort((a,b)=>a.t.min-b.t.min||(a.r.title||'').localeCompare(b.r.title||'','ko'));
  function boardRows(){const s=engine.state();return rows().filter(r=>!catHidden(r)&&accept(r,s));}
+ // 카드 = 지금 한칸 목록 줄 그대로(손잡이·체크·그룹색 제목·시각·⋯, 같은 체크·이름 수정 규칙). 보드 표시용 속성만 덧붙임.
  function boardCard(r,t,d){
-  return '<article class="awb-card iv-kind-'+r.kind+(r.is_done||r.status==='done'?' iv-done':'')+(r.status==='skipped'?' iv-skipped':'')+'" data-awb-id="'+esc(r.id)+'" data-awb-date="'+d+'" style="--awb-c:'+esc(api.color(r)||'var(--line)')+'"'+api.menuAttrs(r.kind,r.source_id,r.kind==='habit'?r.action_date:d)+'>'+check(r)+
-   '<span class="awb-open"><span class="awb-time">'+esc(t.label)+'</span><span class="awb-title plan-todo-title" role="button" tabindex="0" data-awb-open="'+esc(r.id)+'">'+esc(r.title||'')+'</span></span><button type="button" class="item-more" aria-label="'+esc(r.title||'항목')+' 메뉴" aria-haspopup="menu">⋯</button></article>';
+  return api.rowHtml({kind:r.kind,id:r.source_id,name:r.title||'',done:r.kind==='todo'?!!r.is_done:r.kind==='habit'&&r.status==='done',cat_id:r.kind==='todo'?r.tag_id:r.category_id,occurrence_date:r.kind==='habit'?r.action_date:null,start_minute:t.all?null:t.min,show_time:true},d,' data-awb-id="'+esc(r.id)+'" data-awb-date="'+d+'"');
  }
  function wireAdd(slot,kind){const d=slot.dataset.awbAdd;api.addSlot(slot,d,{rerender:async()=>render(),reopen:k=>{const next=$('allWeekBoard').querySelector('[data-awb-add="'+d+'"]');if(next)wireAdd(next,k);}},kind);}
  function renderBoard(){
@@ -103,9 +103,9 @@ window.createOnekanAllViews = api => {
     '<div class="awb-body">'+items.map(x=>boardCard(x.r,x.t,d)).join('')+api.addSlotHtml('data-awb-add="'+d+'"',!items.length)+'</div></section>';
   }).join('')+'</div></div>';
   box.dataset.week=days[0];
-  wire(box);
-  // 지금 한칸과 같은 규칙: 제목 누르기 = 이름 수정(전체 수정은 ⋯ 메뉴), 빈칸 = 할일 입력창(오른쪽 클릭 = 종류 메뉴)
-  box.querySelectorAll('[data-awb-open]').forEach(b=>{const go=()=>{if(performance.now()<suppressClick)return;const r=lookup(b.dataset.awbOpen);if(r)api.rename(b.closest('.awb-card'),r.kind,r.source_id,()=>render());};b.onclick=go;b.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();go();}};});
+  // 지금 한칸과 같은 규칙: 줄 누르기 = 이름 수정(전체 수정·건너뛰기는 ⋯ 메뉴), 체크 = 완료, 빈칸 = 할일 입력창(오른쪽 클릭 = 종류 메뉴)
+  api.wireRows(box);
+  box.querySelectorAll('[data-awb-id]').forEach(row=>row.addEventListener('click',e=>{if(performance.now()<suppressClick||e.target.closest('input,.item-more,.habit-skip-mark,.inline-add-wrap'))return;const r=lookup(row.dataset.awbId);if(r)api.rename(row,r.kind,r.source_id,()=>render());}));
   box.querySelectorAll('[data-awb-add]').forEach(b=>wireAdd(b));
   box.querySelectorAll('[data-awb-select]').forEach(b=>b.onclick=()=>selectDate(b.dataset.awbSelect));
   const scroll=box.querySelector('.awb-scroll');
@@ -132,7 +132,7 @@ window.createOnekanAllViews = api => {
  }
  function dragDown(e){
   if(api.page()!=='all'||e.button!==0||e.pointerType==='touch'||matchMedia('(max-width:760px)').matches)return;
-  const card=e.target.closest('.awb-card[data-awb-id]');if(!card||e.target.closest('input,.item-more,[data-habit-action],.iv-check'))return;
+  const card=e.target.closest('#allWeekBoard [data-awb-id]');if(!card||e.target.closest('input,.item-more,.habit-skip-mark,.inline-add-wrap'))return;
   drag={card,x:e.clientX,y:e.clientY,moved:false,pointer:e.pointerId};
  }
  function dragMove(e){
@@ -216,7 +216,7 @@ window.createOnekanAllViews = api => {
  $('allFilterBtn').onclick=()=>openFilter(filterPanel.hidden);$('allFilterClose').onclick=()=>{openFilter(false);$('allFilterBtn').focus({preventScroll:true});};
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!filterPanel.hidden){openFilter(false);$('allFilterBtn').focus({preventScroll:true});}});
  document.addEventListener('pointerdown',e=>{if(!filterPanel.hidden&&!filterPanel.contains(e.target)&&e.target!==$('allFilterBtn'))openFilter(false);});
- const board=document.createElement('div');board.id='allWeekBoard';board.className='all-week-board';board.hidden=true;$('allCalendarMode').prepend(board);
+ const board=document.createElement('div');board.id='allWeekBoard';board.className='all-week-board home-loan';board.hidden=true;$('allCalendarMode').prepend(board);
  const homeDayHost=document.createElement('div');homeDayHost.id='allHomeDay';homeDayHost.className='home-loan all-home-day';homeDayHost.hidden=true;board.after(homeDayHost);
  exportBtn.onclick=()=>api.exportView?.(exportModel(),exportBtn);
 
