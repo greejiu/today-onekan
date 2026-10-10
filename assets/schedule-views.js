@@ -15,7 +15,7 @@
   const addDate=(date,opener)=>api.add({mode:'add',date,startDate:date,endDate:date,allDay:true,opener});
   function renderPanel(){
    if(owner!==api.user()){owner=api.user();closed=false;pendingDate=null;}
-   const active=desktop.matches&&view()!=='list';workspace.classList.toggle('schedule-panels',active);workspace.classList.toggle('agenda-closed',closed);
+   const active=!api.sideAgenda&&desktop.matches&&view()!=='list'; // 오른쪽 '다가오는 · 언젠가'(지금 한칸 목록)가 있으면 '이 달의 일정' 칸은 쓰지 않음workspace.classList.toggle('schedule-panels',active);workspace.classList.toggle('agenda-closed',closed);
    panel.hidden=!active||closed;reopen.hidden=!active||!closed;reopen.setAttribute('aria-expanded',String(!closed));
    if(!active)return;
    const scroll=panel.querySelector('#scheduleAgendaScroll'),top=scroll.scrollTop,{ms,me}=api.month(),esc=api.escape,P=api.period;

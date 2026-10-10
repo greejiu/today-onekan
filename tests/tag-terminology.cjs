@@ -43,7 +43,7 @@ const { fixture } = require('./home-layout.cjs');
       await page.evaluate(() => showPage('habits'));
       const sorting = await page.locator('#habitSort').textContent(), grouping = await page.locator('#habitGroup').textContent();
       assert.match(sorting, /다음 예정일순/); assert.match(grouping, /없음/); assert.match(grouping, /그룹별/); assert(grouping.includes('기존 분류별'));
-      assert.match(await page.locator('#todoList .settingsbtn').first().getAttribute('aria-label'), /반복·그룹 설정/);
+      assert(await page.locator('#todoList [data-iv-row] .item-more').count()); // 2026-10-10 목록 줄 = 지금 한칸 줄(설정은 ⋯ 메뉴)
       for (const [kind, id] of [['todo','t0'], ['habit','h1'], ['someday','s0']]) {
         if (kind === 'habit') {
           await page.evaluate(({ kind, id }) => openItemMenu({ kind, id, x: 30, y: 160 }), { kind, id });
