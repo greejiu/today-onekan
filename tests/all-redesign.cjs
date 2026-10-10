@@ -219,14 +219,23 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  ok('월: 날짜 숫자 → 일 보기, 빈 공간 → 추가');
  // 대한민국 휴일(앱 안 표): 2026-10 개천절·대체공휴일·한글날, 눈으로 숨김
  await go(p,'month');await p.evaluate(()=>allViews.selectDate('2026-10-01'));await p.waitForTimeout(150);
- assert.equal(await p.locator('#allCalGrid .cal-cell[data-date="2026-10-03"] .cal-holiday').textContent(),'개천절');
- assert.equal(await p.locator('#allCalGrid .cal-cell[data-date="2026-10-05"] .cal-holiday').textContent(),'대체공휴일(개천절)');
+ assert.equal(await p.locator('#allCalGrid .cal-cell[data-date="2026-10-03"] .cal-holiday .hl-short').textContent(),'개천절');
+ const sub=p.locator('#allCalGrid .cal-cell[data-date="2026-10-05"] .cal-holiday');assert.equal(await sub.locator('.hl-short').textContent(),'대체공휴일','칸에는 짧은 이름');assert(await sub.locator('.hl-tiny').isHidden());
+ assert.equal(await p.locator('#allCalGrid .cal-cell[data-date="2026-10-03"] .cal-date-button').evaluate(e=>getComputedStyle(e).color),'rgb(216, 67, 67)','휴일 날짜 숫자 빨강');assert.equal(await sub.getAttribute('title'),'대체공휴일(개천절)','전체 이름은 title');
+ const hb=await sub.boundingBox(),nb=await p.locator('#allCalGrid .cal-cell[data-date="2026-10-05"] .cal-cell-num').boundingBox();assert(hb.y<nb.y+nb.height&&hb.x>=nb.x+nb.width-1,'휴일 이름은 날짜 옆 같은 줄');
+ assert((await p.locator('#allCalGrid .cal-cell[data-date="2026-10-05"]').getAttribute('aria-label')).includes('대체공휴일(개천절)'));
  assert(await p.locator('#allCalGrid .cal-cell[data-date="2026-10-09"]').evaluate(e=>e.classList.contains('is-holiday')));
  await p.locator('#allSidebarTypes [data-aft-holiday]').click();await p.waitForTimeout(100);assert.equal(await p.locator('#allCalGrid .cal-holiday').count(),0,'휴일 눈 끄면 숨김');
  assert.equal(await p.evaluate(()=>allViews.prefs().holidays),false);await p.locator('#allSidebarTypes [data-aft-holiday]').click();
  await go(p,'week');await p.evaluate(()=>allViews.selectDate('2026-10-05'));await p.waitForTimeout(150);assert((await p.locator('#allWeekBoard [data-awb-col="2026-10-05"] .cal-holiday').textContent()).includes('대체공휴일'),'보드 머리에도 휴일');
  await p.evaluate(()=>allViews.selectDate(todayStr()));
  ok('대한민국 휴일: 월 칸·보드 머리 표시, 다른 캘린더 눈으로 숨김');
+ // 월 칸 막대: '일정 · ' 같은 종류 글자 없이 점 모양으로 구분(글자는 title·화면낭독기)
+ await go(p,'month');const titles=await p.locator('#allCalGrid .cal-chip-title').allTextContents();assert(titles.length>0);assert(!titles.some(t=>/^(일정|할일|습관) · /.test(t)),'막대 제목 앞 종류 글자 없음');
+ const kinds=await p.locator('#allCalGrid .cal-chip .dot').evaluateAll(es=>[...new Set(es.map(e=>[...e.classList].find(c=>c.startsWith('k-'))))].sort());assert(kinds.includes('k-event')&&kinds.includes('k-habit'),'종류별 점 '+kinds);
+ const hc=p.locator('#allCalGrid .cal-chip:has(.dot.k-habit)').first();assert((await hc.getAttribute('title')).startsWith('습관 · '));assert.equal(await hc.locator('.sr-only').textContent(),'습관 · ');
+ assert.notEqual(await hc.locator('.dot').evaluate(e=>getComputedStyle(e).backgroundColor),await p.locator('#allCalGrid .cal-chip .dot.k-event').first().evaluate(e=>getComputedStyle(e).backgroundColor),'습관 점은 속이 빈 모양');
+ ok('월 막대: 종류 글자 대신 점 모양, 제목이 덜 잘림');
  // 12) 이미지 저장: 주(스크롤 밖 열 포함)·월·일
  await go(p,'week');await p.locator('#allExportBtn').click();await p.waitForFunction(()=>document.getElementById('allExportBg').classList.contains('open')&&!document.getElementById('allExportSave').disabled);
  const wm=await p.evaluate(()=>allViews.exportModel());assert.equal(wm.days.length,7);
@@ -261,6 +270,10 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await m.locator('#allViewTabs [data-common-view=month]').click();await m.locator('#allCalGrid .cal-cell[data-date="'+await m.evaluate(()=>todayStr())+'"]').tap();
  assert(await m.locator('.page[data-page=all] .cal-side .cal-day-add').isVisible(),'모바일 월: 날짜 목록과 추가');
  assert.equal(await m.locator('#allCalGrid .cal-cell .cal-day-add, #allCalGrid button[aria-label$="추가"]').count(),0,'달력 칸 상시 + 없음');
+ await m.evaluate(()=>allViews.selectDate('2026-10-05'));await m.waitForTimeout(150);const mh=m.locator('#allCalGrid .cal-cell[data-date="2026-10-05"] .cal-holiday');
+ assert.equal(await mh.locator('.hl-tiny').textContent(),'대체');assert(await mh.locator('.hl-tiny').isVisible()&&await mh.locator('.hl-short').isHidden(),'모바일은 줄임말');
+ const mcb=await m.locator('#allCalGrid .cal-cell[data-date="2026-10-05"]').boundingBox(),mhb=await mh.boundingBox();assert(mhb.x+mhb.width<=mcb.x+mcb.width+0.5&&await mh.evaluate(e=>e.scrollWidth<=e.clientWidth),'모바일 휴일 줄임말이 칸 안에 다 보임');
+ assert(await m.locator('#allCalGrid .cal-cell[data-date="2026-10-03"] .cal-holiday').evaluate(e=>e.scrollWidth<=e.clientWidth),'3글자(개천절)도 잘리지 않음');
  assert.deepEqual(merr,[],'모바일 페이지 오류 없음');ok('모바일 390: 보드 가로 넘김(열 스냅·오늘 열부터·다음 열 일부), 패널·표시 설정 버튼, 월 날짜 목록에서 추가');
  await m.close();
  console.log(results.join('\n'));
