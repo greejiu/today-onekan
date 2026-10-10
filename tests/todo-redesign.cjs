@@ -33,7 +33,7 @@ const {chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs')
   await p.locator('#todoTopTabs [data-tab=list]').click();assert(await p.locator('#todoListGroupWrap').isVisible());assert(await p.locator('#todoBoardOptions').isHidden());
   assert.equal(await p.locator('#todoRangeEnd').inputValue(),'2026-10-06');
   await p.locator('#todoGroup').selectOption('none');await p.locator('#todoSort').selectOption('name');
-  const names=await p.locator('#todoUnifiedList strong').allTextContents();assert.deepEqual(names,names.slice().sort((a,b)=>a.localeCompare(b,'ko')));
+  const names=await p.locator('#todoUnifiedList [data-iv-row] .agenda-title').evaluateAll(es=>es.map(e=>[...e.childNodes].filter(n=>!n.classList?.contains('title-proj')).map(n=>n.textContent).join('').trim())); // 프로젝트 이름 머리말 빼고 제목만assert(names.length);assert.deepEqual(names,names.slice().sort((a,b)=>a.localeCompare(b,'ko')));
   for(const group of ['date','group','category','project']){await p.locator('#todoGroup').selectOption(group);assert(await p.locator('#todoUnifiedList [data-id=a]').count());}
   await p.locator('#todoUndated').uncheck();assert.equal(await p.locator('#todoUnifiedList [data-id=undated]').count(),0);
   await p.locator('#todoCompletion').selectOption('done');assert(await p.locator('#todoUnifiedList [data-id=done]').count());
@@ -52,13 +52,13 @@ const {chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs')
   assert.equal(await p.evaluate(()=>mockWrites.length),0);
   await p.locator('#todoViewSettings summary').click();await p.locator('#todoUndated').check();await p.locator('#todoTopTabs [data-tab=board]').click();await p.locator('#todoBoardBy').selectOption('group');await p.locator('#todoViewSettings summary').click();
   await p.screenshot({path:'test-results/todo-redesign/desktop-board.png'});
-  assert.equal(await p.locator('#todoBoard [data-id=a] .sv-open').innerText(),'서류 정리하기');
+  assert.equal(await p.locator('#todoBoard [data-iv-row=a] .agenda-title').innerText(),'서류 정리하기');
   const todoMenu=await p.evaluate(()=>itemMenuModel('todo','a','2026-10-05').entries.filter(e=>e.label).map(e=>e.label));
   assert(todoMenu.includes('수정'));assert(!todoMenu.includes('날짜 변경'));
-  await p.locator('#todoBoard [data-id=a] .sv-open').click();assert(await p.locator('#todoSheetBg').isVisible());
+  await p.locator('#todoBoard [data-iv-row=a] .item-more').click();await p.getByRole('menuitem',{name:'수정',exact:true}).click();assert(await p.locator('#todoSheetBg').isVisible()); // 2026-10-10 줄 누르기 = 이름 수정, 전체 수정은 ⋯ 메뉴
   assert.equal(await p.locator('#td_start').inputValue(),'2026-10-05');assert.equal(await p.locator('#td_group_id').inputValue(),'g1');await p.evaluate(()=>closeTodoSheet());
   // Completion uses the original recurrence writer and retains links in the next occurrence.
-  await p.locator('#todoBoard [data-todo-check=repeat]').click();await p.waitForFunction(()=>mockRows.tok_todos.some(r=>r.repeat_source_id==='repeat'));
+  await p.locator('#todoBoard [data-iv-row=repeat] .ag-todo-check').click();await p.waitForFunction(()=>mockRows.tok_todos.some(r=>r.repeat_source_id==='repeat'));
   assert.deepEqual(await p.evaluate(()=>{const r=mockRows.tok_todos.find(r=>r.repeat_source_id==='repeat');return [r.group_id,r.tag_id,r.project_id,r.end_date]}),['g1','c1','p1','2026-10-31']);
   await p.locator('#todoTopTabs [data-tab=someday]').click();assert(await p.locator('#todoFilterBar').isHidden());assert(await p.locator('#todoQuickAddBtn').isHidden());assert(await p.locator('#somedayList [data-id=s1]').count());
   await p.locator('#somedayInput').fill('작성 중인 메모');await p.locator('#todoTopTabs [data-common-view=week]').click();assert.equal(await p.locator('#todoTimeDays .sv-day').count(),7);

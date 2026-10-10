@@ -3019,7 +3019,8 @@
   let todoViews = null;
   let todoSidebar = null;
   let habitViews = null;
-  let allViews = null, todoAgenda = null;
+  let allViews = null;
+  const sideAgendas = {}; // 오른쪽 '다가오는 · 언젠가' 칸(일정·할일·습관 탭) — 모두 지금 한칸 목록을 빌려 씀
   // 2026-10-10 지금 한칸 화면 빌려 쓰기 — '모두'·'할일'에서 같은 기능(다가오는·담아두기·타임라인·시간블럭)은 새로 만들지 않고
   // 지금 한칸의 DOM을 그대로 옮겨 붙임. 그리기·클릭(이름 수정)·끌기(모바일 길게 누르기)·추가 규칙이 모두 같고, 지금 한칸으로 돌아가면 제자리로.
   const HOME_LOAN_DROP = "[data-awb-col], #allCalGrid .cal-cell[data-date]"; // 빌려 간 행을 놓을 수 있는 '모두'의 날짜 칸
@@ -3436,10 +3437,10 @@
     });
     $("navMoreBtn")?.classList.toggle("active", NAV_MORE_PAGES.includes(page)); // 더보기 안 메뉴를 보고 있으면 더보기 칸 강조
     document.querySelectorAll(".page").forEach(el => el.style.display = el.dataset.page === page ? "block" : "none");
-    if (page !== "all") releaseHomeDay(); // 빌려 간 지금 한칸 화면은 다른 탭으로 가면 제자리로
-    if (page !== "all" && page !== "todos") returnHomeLists();
+    if (page !== prevPage) releaseHomeDay(); // 빌려 간 지금 한칸 화면은 다른 탭으로 가면 제자리로(새 탭이 필요하면 다시 빌려 감)
+    if (!sideAgendas[page] && page !== "all") returnHomeLists();
     if (page === "all") allViews?.render();
-    if (page === "todos") todoAgenda?.render();
+    sideAgendas[page]?.render();
     if (page === "work") renderWork();
     tracking?.render();
     if(page === "timer") tracking?.refresh();
@@ -3605,6 +3606,8 @@
   function renderLoanHosts() {
     if (currentPage === "all") allViews?.render();
     else if (currentPage === "todos") todoViews?.render();
+    else if (currentPage === "schedule") showScheduleMode(scheduleMode);
+    else if (currentPage === "habits") habitViews?.render();
     else return;
     renderHomeUpcomingList(); // 가운데(보드 등)에서 체크해도 빌려 간 다가오는 목록이 같이 맞게
   }
@@ -5037,7 +5040,9 @@
   // 4단계에서 그대로 붙일 수 있음).
   // attrs: 다른 화면('모두' 주간 보드)이 같은 줄을 쓸 때 붙이는 자기 표시용 속성. it.show_time이면 일정도 시각 표시.
   function homeTodayRowHtml(it, dateStr, attrs = "") {
-    const lead = it.kind === "habit"
+    // it.lead === "none": 날짜가 없는 원본 줄(습관 목록) — 체크 자리만 비워 둠(어느 날 완료인지 정할 수 없어서)
+    const lead = it.lead === "none" ? `<span class="agenda-event-dot-wrap" style="width:14px;height:14px;"></span>`
+      : it.kind === "habit"
       ? habitLeadHtml(it.id, it.occurrence_date||dateStr, it.done, "ag-habit-check")
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
@@ -5048,6 +5053,7 @@
       ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name, it.proj)}
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${skipChipHtml(it.kind, it.id, it.occurrence_date||dateStr)}
+      ${it.chip ? `<span class="habit-due-chip">${escapeHtml(it.chip)}</span>` : ""}
       ${it.start_minute != null && (it.kind !== "event" || it.show_time) ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
       ${moreBtnHtml(it.name)}
     </div>`;
@@ -6499,7 +6505,7 @@
 
   function renderTodosPage() {
     allViews?.render();
-    todoAgenda?.render();
+    sideAgendas.todos?.render();
     if(todoViews){todoViews.render();return;}
     document.querySelectorAll("#todoTopTabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === todoTabView));
     const isSomeday = todoTabView === "someday";
@@ -10383,7 +10389,8 @@
   });
   OnekanCalendarUI.agendaHelpers={title:titleWithProjectHtml,layout:agendaTimelineLayout,blockStyle:agBlockStyle,addSlot:addSlotHtml,handle:DRAG_HANDLE_SVG};
   OnekanCalendarUI.timelineSpec=()=>({min:daySettings.day_start_minute,max:daySettings.day_end_minute,scale:AG_TL_ROW_PX/AG_TL_SLOT_MIN,minHeight:AG_TL_MIN_ITEM_PX});
-  scheduleViews = window.createOnekanScheduleViews({
+  // 일정·할일·습관 탭도 지금 한칸과 같게: 목록·보드 줄 = 지금 한칸 줄(rowHtml·wireRows·rename), 일 보기 = 지금 한칸 타임라인·시간블럭(engineHomeDay)
+  scheduleViews = window.createOnekanScheduleViews({rowHtml:homeTodayRowHtml,wireRows:wireHomeTodayChecks,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone),engineHomeDay:lendHomeDay,sideAgenda:true,
     period:OnekanPeriod,sb,user:()=>appSymbolUserId,page:()=>currentPage,mode:()=>scheduleMode,setMode:v=>{scheduleMode=v;},changeMode:showScheduleMode,
     today:todayStr,scrollDate:d=>schedScrollToDate(d,{focus:true}),date:()=>calSelected,month:schedMonthInfo,rows:()=>events,groups:()=>eventCategories,categories:()=>habitCategories,blocks:()=>timeBlocks,
     color:e=>itemTagColor("event",e.category_id),visible:scheduleEventVisible,matches:e=>!classification||classification.matches("event",e),endDate:evEndDate,dateLabel:calDateLabel,escape:escapeHtml,
@@ -10392,7 +10399,7 @@
     goMonth:n=>schedGoToMonth(addMonthsStr(calCursor,n)),render:()=>showScheduleMode(scheduleMode),reload:loadAll,
     menuAttrs:(id,date)=>menuAttrs("event",id,date),detail:openEventDetail,add:openEventEditor,edit:(id,opener)=>openEventEditor({mode:"edit",id,opener}),paintRange:paintCalRange,clearRange:clearCalRange
   });
-  todoViews = window.createOnekanTodoViews({
+  todoViews = window.createOnekanTodoViews({rowHtml:homeTodayRowHtml,wireRows:wireHomeTodayChecks,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone),engineHomeDay:lendHomeDay,sideAgenda:true,
     period:OnekanPeriod,sb,user:()=>appSymbolUserId,page:()=>currentPage,today:todayStr,rows:()=>todos,
     groups:()=>classification.groups().filter(g=>g.kind==='todo'),categories:()=>habitCategories,projects:()=>projects,blocks:()=>timeBlocks,
     matches:e=>classification.matches('todo',e),visible:e=>classification.matches('todo',e)&&classification.calendarVisible(e,'todo'),
@@ -10406,7 +10413,7 @@
     navigate:showPage,expand:setSidebarMode,rows:()=>todos,habitRows:()=>tasks,classification:()=>classification,projects:()=>projects,projectsReady:()=>projectsReady,canConnect:goalCanAdd,
     cancel:()=>todoViews.cancel(),mode:()=>todoViews.state().mode,reload:loadAll
   });
-  habitViews = window.createOnekanHabitViews({
+  habitViews = window.createOnekanHabitViews({rowHtml:homeTodayRowHtml,wireRows:wireHomeTodayChecks,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone),engineHomeDay:lendHomeDay,sideAgenda:true,
     period:OnekanPeriod,sb,user:()=>appSymbolUserId,page:()=>currentPage,today:todayStr,rows:()=>tasks,
     logs:()=>habitLogs,skips:()=>habitSkips,pauses:()=>habitPauses,periodRow:habitPeriodRow,occurrences:habitOccurrencesInRange,
     effectiveStart:habitEffectiveStartDate,lifecycle:habitLifecycleState,nextDue:habitNextDueAfter,overdue:habitOverdueDays,
@@ -10434,16 +10441,18 @@
   }
   // '모두' 일 보기 = 지금 한칸의 타임라인·시간블럭을 그대로 빌려 씀(날짜는 '모두'의 날짜, 표시는 '모두'의 눈).
   // 지금 한칸에서 보던 날짜·보기는 따로 저장해 두었다가 돌려줄 때 되살림(지금 한칸 설정 tok_home_view는 바꾸지 않음).
-  function lendHomeDay(host, opts) {
-    if (!host) { releaseHomeDay(); return; }
+  // opts.owner: 빌려 가는 화면('all'·'schedule'·'todos'·'habits'). 숨은 화면이 새로고침되며 null로 불러도 남이 빌린 건 돌려받지 않음.
+  function lendHomeDay(host, opts = {}) {
+    if (!host) { if (homeDayLoan && (!opts.owner || homeDayLoan.owner === opts.owner)) releaseHomeDay(); return; }
     const timeline = $("homeTimelinePanel"), block = $("homeBlockPanel");
     if (!homeDayLoan) homeDayLoan = { date: homeAgendaDate, key: null };
+    homeDayLoan.owner = opts.owner;
     homeItemFilter = opts.filter;
     homeLoan.lend(timeline, host);
     homeLoan.lend(block, host);
     timeline.style.display = opts.sub === "timeline" ? "" : "none";
     block.style.display = opts.sub === "timeline" ? "none" : "";
-    const key = [opts.date, opts.sub, opts.filterKey].join("|");
+    const key = [opts.owner, opts.date, opts.sub, opts.filterKey].join("|");
     if (homeDayLoan.key === key) return; // 데이터가 바뀐 경우는 loadAll → renderHome이 다시 그림
     homeDayLoan.key = key;
     homeAgendaDate = opts.date;
@@ -10478,12 +10487,13 @@
     addSlotHtml,addSlot:wireDateAddSlot,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone),
     rowHtml:homeTodayRowHtml,wireRows:wireHomeTodayChecks
   });
-  // 할일 탭 오른쪽 '다가오는 · 언젠가'(지금 한칸과 같은 목록)
-  {
-    const todoPage=document.querySelector('.page[data-page="todos"]'),btn=document.createElement('button');
-    btn.type='button';btn.id='todoPanelBtn';btn.className='all-chip-btn';btn.textContent='다가오는 · 언젠가';btn.setAttribute('aria-haspopup','dialog');btn.setAttribute('aria-controls','todoSideAgenda');
-    $('todoQuickAddBtn').before(btn); // 할일 탭 상단 '+ 할일' 옆(모바일에서만 보임)
-    todoAgenda=window.createOnekanSideAgenda({pageName:'todos',host:todoPage,openButton:btn,user:()=>appSymbolUserId,page:()=>currentPage,mountLists:mountHomeLists});
+  // 일정·할일·습관 탭 오른쪽 '다가오는 · 언젠가'(지금 한칸과 같은 목록). 모바일은 상단 추가 버튼 옆 버튼으로 여는 아래쪽 패널.
+  for (const [page, before, id] of [["todos", "todoQuickAddBtn", "todoPanelBtn"], ["schedule", "scheduleCategoryMobileBtn", "schedulePanelBtn"], ["habits", "habitAddBtn", "habitPanelBtn"]]) {
+    const host = document.querySelector(`.page[data-page="${page}"]`), btn = document.createElement("button");
+    btn.type = "button"; btn.id = id; btn.className = "all-chip-btn"; btn.textContent = "다가오는 · 언젠가"; btn.setAttribute("aria-haspopup", "dialog");
+    $(before).before(btn);
+    sideAgendas[page] = window.createOnekanSideAgenda({ pageName: page, host, openButton: btn, user: () => appSymbolUserId, page: () => currentPage, mountLists: mountHomeLists });
+    btn.setAttribute("aria-controls", sideAgendas[page].panelId);
   }
   tracking=window.createOnekanTracking({sb,allowed:()=>OnekanRelease.canOpen('timer'),user:()=>appSymbolUserId,page:()=>currentPage,todos:()=>todos,groups:()=>classification.groups(),categories:()=>habitCategories,projects:()=>projects,escape:escapeHtml,today:todayStr,addDays:OnekanPeriod.addDays,navigate:()=>showPage("timer"),sidebar:syncPageSidebar});
   navigationSettings = OnekanNavigation.createSettings({sb, user:()=>appSymbolUserId, page:()=>currentPage, navigate:showPage, closeMore:()=>closeNavMore(false), refresh:()=>todoSidebar.renderNavigation(), morePages:pages=>{NAV_MORE_PAGES=pages;}});

@@ -9,7 +9,7 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright'),{fix
  const before=await p.evaluate(()=>JSON.stringify(mockRows.tok_events));
  await p.locator('#scheduleModeToggle [data-schedule-view=week]').click();assert.equal(await p.locator('#scheduleTimeDays .sv-day').count(),7);assert.equal(await p.locator('#scheduleTimeDays .sv-day').first().getAttribute('data-sv-date'),'2026-10-04');assert.equal(await p.locator('#scheduleCalendarOptions').isVisible(),false);
  await p.locator('#calNextBtn').click();assert.equal(await p.locator('#scheduleTimeDays .sv-day').first().getAttribute('data-sv-date'),'2026-10-11');
- await p.locator('#scheduleModeToggle [data-schedule-view=day]').click();assert.equal(await p.locator('#scheduleTimeDays .sv-day').count(),1);
+ await p.locator('#scheduleModeToggle [data-schedule-view=day]').click();assert.equal(await p.locator('#scheduleHomeDay .home2-tabpanel:visible').count(),1); // 2026-10-10 일 보기 = 지금 한칸 타임라인
  await p.locator('#scheduleModeToggle [data-schedule-view=month]').click();assert(await p.locator('#calGrid').isVisible());assert.equal(await p.locator('#scheduleModeBoardBtn').isVisible(),false);
  await p.evaluate(()=>openEventEditor({mode:'edit',id:'e'}));assert.equal(await p.locator('#cev_shared_category_id').count(),0);await p.locator('#cev_cancel').click();
  assert.equal(await p.evaluate(()=>JSON.stringify(mockRows.tok_events)),before);assert.equal(await p.evaluate(()=>mockWrites.length),0);

@@ -326,7 +326,8 @@
 .sa-body :is(#homeUpcomingList,#somedayZone){overscroll-behavior-y:contain}
 /* '모두' 일 보기 = 지금 한칸 타임라인·시간블럭(날짜 이동은 '모두' 위쪽 화살표가 맡음) */
 #allHomeDay[hidden]{display:none}
-.all-home-day .agenda-head{display:none}
+.all-home-day .agenda-head,.iv-home-day .agenda-head{display:none}
+.iv-home-day[hidden]{display:none}
 /* 이미지 저장 미리보기(월·주) */
 #allExportBg .share-sheet{max-width:980px}
 #allExportCanvas{display:block;width:100%;height:auto;margin:0 auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.12)}

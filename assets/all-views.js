@@ -170,7 +170,7 @@ window.createOnekanAllViews = api => {
   if(board){engine.controls();renderBoard();}else if(homeDay)engine.controls();else engine.calendar();
   // 일 보기 = 지금 한칸의 타임라인·시간블럭을 그대로 빌려 씀(클릭·끌기·추가 규칙이 같음). 표시는 이 화면의 종류·범주·그룹 눈.
   const hidden=prefs().hidden;
-  api.homeDay?.(homeDay&&api.page()==='all'?$('allHomeDay'):null,{date,sub,filter:it=>!!e[it.kind]&&!(hidden[it.kind]||[]).includes(it.cat_id||'default'),filterKey:JSON.stringify([e,hidden])});
+  api.homeDay?.(homeDay&&api.page()==='all'?$('allHomeDay'):null,{owner:'all',date,sub,filter:it=>!!e[it.kind]&&!(hidden[it.kind]||[]).includes(it.cat_id||'default'),filterKey:JSON.stringify([e,hidden])});
   renderTrees();agenda?.render();
  }
  const preview=document.createElement('div');preview.id='allDragPreview';preview.className='sv-drag-preview';preview.hidden=true;preview.innerHTML='<span id="allDragText"></span><br><button type="button" id="allDragCancel">취소 (Esc)</button>';document.body.append(preview);
@@ -248,7 +248,7 @@ window.createOnekanSideAgenda = api => {
  const shell=document.createElement('div');shell.className='sa-shell';
  const main=document.createElement('div');main.className='sa-main';
  while(host.firstChild)main.append(host.firstChild);
- const aside=document.createElement('aside');aside.className='sa-panel';aside.id=page==='all'?'allSideAgenda':'todoSideAgenda';aside.setAttribute('aria-label','다가오는 · 언젠가');
+ const aside=document.createElement('aside');aside.className='sa-panel';aside.id={all:'allSideAgenda',todos:'todoSideAgenda',schedule:'scheduleSideAgenda',habits:'habitSideAgenda'}[page]||page+'SideAgenda';aside.setAttribute('aria-label','다가오는 · 언젠가');
  aside.innerHTML='<header class="sa-head"><div class="view-toggle sa-tabs" role="group" aria-label="목록 선택"><button type="button" data-sa-list="upcoming">다가오는</button><button type="button" data-sa-list="someday">언젠가</button></div><button type="button" class="sa-close" aria-label="다가오는 · 언젠가 접기">→</button></header><div class="sa-body home-loan"></div>';
  const reopen=document.createElement('button');reopen.type='button';reopen.className='sa-reopen';reopen.textContent='←';reopen.setAttribute('aria-label','다가오는 · 언젠가 펼치기');reopen.setAttribute('aria-controls',aside.id);
  shell.append(main,aside,reopen);host.append(shell);
@@ -270,5 +270,5 @@ window.createOnekanSideAgenda = api => {
   // 보이는 쪽만 빌려 가고, 숨으면 이 칸에 있던 목록은 지금 한칸 제자리로
   if(visible&&!aside.hidden)api.mountLists(state.list,body);else api.mountLists(null,body);
  }
- return {render,state:()=>({...state}),open:setMobile};
+ return {render,state:()=>({...state}),open:setMobile,panelId:aside.id};
 };
