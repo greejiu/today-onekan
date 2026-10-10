@@ -69,11 +69,12 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  const today=await p.evaluate(()=>todayStr()),tomorrow=await p.evaluate(()=>addDaysStr(todayStr(),1));
  const col=d=>p.locator('#allWeekBoard [data-awb-col="'+d+'"]');
  assert.equal(await col(today).locator('[data-awb-id="todo|t-all"]').count(),1,'종일 할일 1번');
- assert.equal(await col(today).locator('[data-awb-id="todo|t-all"] .awb-time').textContent(),'종일');
- assert.equal(await col(today).locator('[data-awb-id="todo|t-timed"] .awb-time').textContent(),'10:00');
+ assert.equal(await col(today).locator('[data-awb-id="todo|t-all"] .plan-time').count(),0,'종일은 시각 없음(지금 한칸 목록과 같음)');
+ assert.equal(await col(today).locator('[data-awb-id="todo|t-timed"] .plan-time').textContent(),'10:00');
+ assert(await col(today).locator('[data-awb-id="todo|t-timed"].home1-flat-row .drag-handle-dots').count(),'보드 줄 = 지금 한칸 목록 줄');assert.equal(await col(today).locator('[data-awb-id="event|e-timed"] .plan-time').textContent(),'14:00','일정도 시각');
  assert.equal(await p.locator('#allWeekBoard [data-awb-id="todo|t-undated"]').count(),0,'날짜 없는 할일은 보드에 없음');
  assert.equal(await col(today).locator('[data-awb-id="event|e-range"]').count()+await col(tomorrow).locator('[data-awb-id="event|e-range"]').count(),(await p.evaluate(()=>{const r=allViews.range();return r.end>=addDaysStr(todayStr(),1);}))?2:1,'기간 일정은 날짜마다 1번');
- const order=await col(today).locator('.awb-card .awb-time').allTextContents();assert.deepEqual(order.slice(0,order.lastIndexOf('종일')+1).every(t=>t==='종일'),true,'종일 먼저');
+ const order=await col(today).locator('[data-awb-id]').evaluateAll(es=>es.map(e=>!!e.querySelector('.plan-time')));assert.deepEqual(order,[...order].sort((a,b)=>a-b),'종일 먼저');
  assert(!(await p.locator('#allWeekBoard').textContent()).includes('시간 미정'),'시간 미정 영역 없음');
  assert.equal(await col(today).locator('[data-awb-id="event|e-timed"] input').count(),0,'일정은 체크박스 없음');
  const heads=await p.locator('#allWeekBoard .awb-head').allTextContents();assert(heads[0].startsWith('월'),'월요일 시작 '+heads[0]);assert.equal(await p.locator('#allWeekBoard .awb-col.is-today').count(),1);
@@ -89,11 +90,11 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  assert(!await upCheck.isChecked(),'가운데에서 취소 → 오른쪽도 취소');
  ok('완료·취소가 가운데 보드와 오른쪽 목록(지금 한칸 다가오는)에 함께 반영');
  // 6) 습관 완료·건너뛰기(기존 규칙)
- await col(today).locator('[data-awb-id^="habit|"] [data-habit-action=done]').click();await p.waitForFunction(()=>mockRows.tok_habit_logs.some(l=>l.habit_id==='h1'&&l.done_date===todayStr()));
- await p.waitForTimeout(150);await col(today).locator('[data-awb-id^="habit|"] [data-habit-action=undone]').click();await p.waitForFunction(()=>!mockRows.tok_habit_logs.some(l=>l.habit_id==='h1'&&l.done_date===todayStr()));
- await p.waitForTimeout(150);await col(today).locator('[data-awb-id^="habit|"] [data-habit-action=skip]').click();await p.waitForFunction(()=>mockRows.tok_habit_skips.some(l=>l.habit_id==='h1'&&l.skip_date===todayStr()));
- await p.waitForTimeout(150);await col(today).locator('[data-awb-id^="habit|"] [data-habit-action=unskip]').click();await p.waitForFunction(()=>!mockRows.tok_habit_skips.some(l=>l.habit_id==='h1'&&l.skip_date===todayStr()));
- ok('보드에서 습관 완료·완료 취소·건너뛰기·건너뛰기 취소');
+ const hab=()=>col(today).locator('[data-awb-id^="habit|"]');await hab().locator('.ag-habit-check').check();await p.waitForFunction(()=>mockRows.tok_habit_logs.some(l=>l.habit_id==='h1'&&l.done_date===todayStr()));
+ await p.waitForTimeout(150);await hab().locator('.ag-habit-check').uncheck();await p.waitForFunction(()=>!mockRows.tok_habit_logs.some(l=>l.habit_id==='h1'&&l.done_date===todayStr()));
+ await p.waitForTimeout(150);await hab().locator('.item-more').click();await p.locator('.item-menu [role=menuitem]',{hasText:'이번만 건너뛰기'}).click();await p.waitForFunction(()=>mockRows.tok_habit_skips.some(l=>l.habit_id==='h1'&&l.skip_date===todayStr()));
+ await p.waitForTimeout(150);assert(await hab().locator('.habit-skip-mark').count(),'건너뜀 표시');await hab().locator('.item-more').click();await p.locator('.item-menu [role=menuitem]',{hasText:'건너뛰기 취소'}).click();await p.waitForFunction(()=>!mockRows.tok_habit_skips.some(l=>l.habit_id==='h1'&&l.skip_date===todayStr()));
+ ok('보드에서 습관 완료·완료 취소(체크)·건너뛰기·건너뛰기 취소(⋯ 메뉴) — 지금 한칸과 같은 규칙');
  // 7) 끌어서 날짜 이동: 시간·길이 보존, 기간 일정 길이 보존, 실패 시 복원, 반복은 수정창 안내
  const dragTo=async(sel,target)=>{const a=await p.locator(sel).first().boundingBox(),b=await p.locator(target).boundingBox();await p.mouse.move(a.x+a.width/2,a.y+8);await p.mouse.down();await p.mouse.move(a.x+a.width/2+20,a.y+20,{steps:3});await p.mouse.move(b.x+b.width/2,b.y+b.height-40,{steps:6});await p.mouse.up();};
  await p.setViewportSize({width:1800,height:900});await p.evaluate(()=>{allViews.selectDate(todayStr());}); // 이번 주, 7열이 모두 보이는 폭에서 끌기
@@ -157,7 +158,7 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await p.evaluate(()=>showPage('all'));await p.waitForTimeout(100);assert.equal(await p.locator('#allSideAgenda #homeSomedayPanel').count(),1);
  ok('오른쪽 = 지금 한칸 다가오는·담아두기(같은 화면·눈과 무관·지난 할일 접힘 없음): 7일 이동, 제목 클릭 이름 수정, 빈칸 추가, 보드 열로 끌기, 목록 기억, 지금 한칸으로 돌려줌');
  // 8-2) 주간 보드도 같은 규칙: 제목 누르기 = 이름 수정, 빈칸 = 할일 입력창(연속 입력)
- await col(target).locator('[data-awb-id="todo|t-timed"] .awb-title').click();const renameB=col(target).locator('[data-awb-id="todo|t-timed"] .inline-add-input');assert(await renameB.isVisible(),'보드 제목 클릭 → 이름 수정');
+ await col(target).locator('[data-awb-id="todo|t-timed"] .agenda-title').click();const renameB=col(target).locator('[data-awb-id="todo|t-timed"] .inline-add-input');assert(await renameB.isVisible(),'보드 제목 클릭 → 이름 수정');
  await renameB.fill('시간 할일 고침');await renameB.press('Enter');await p.waitForFunction(()=>mockRows.tok_todos.find(t=>t.id==='t-timed').title==='시간 할일 고침');await p.waitForTimeout(150);
  await col(target).locator('.add-slot').click();const addB=col(target).locator('.inline-add-input');await addB.fill('보드에서 추가');await addB.press('Enter');
  await p.waitForFunction(t=>mockRows.tok_todos.some(x=>x.title==='보드에서 추가'&&x.start_date===t),target);await p.waitForTimeout(200);
@@ -208,7 +209,7 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  // 12) 이미지 저장: 주(스크롤 밖 열 포함)·월·일
  await go(p,'week');await p.locator('#allExportBtn').click();await p.waitForFunction(()=>document.getElementById('allExportBg').classList.contains('open')&&!document.getElementById('allExportSave').disabled);
  const wm=await p.evaluate(()=>allViews.exportModel());assert.equal(wm.days.length,7);
- const boardIds=await p.locator('#allWeekBoard .awb-card').count();assert.equal(wm.days.reduce((a,d)=>a+d.items.length,0),boardIds,'보드의 모든 카드(스크롤 밖 포함)');
+ const boardIds=await p.locator('#allWeekBoard [data-awb-id]').count();assert.equal(wm.days.reduce((a,d)=>a+d.items.length,0),boardIds,'보드의 모든 카드(스크롤 밖 포함)');
  const dims=await p.evaluate(()=>[document.getElementById('allExportCanvas').width,document.getElementById('allExportCanvas').height]);assert(dims[0]>=2000&&dims[1]>200,'주 이미지 해상도 '+dims);
  const [dl]=await Promise.all([p.waitForEvent('download'),p.locator('#allExportSave').click()]);await dl.saveAs(OUT+'/week.png');assert(/^오늘한칸_주_/.test(dl.suggestedFilename())||dl.suggestedFilename()==='download');
  await p.locator('#allExportClose').click();

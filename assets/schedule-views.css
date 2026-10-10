@@ -283,31 +283,25 @@
 .awb-col.is-today .awb-head strong{color:var(--accent-text)}
 .awb-col.is-selected .awb-head button{background:var(--accent-soft);border-radius:13px 13px 0 0}
 .awb-dow{color:var(--sub);font-weight:600}
-.awb-body{flex:1;display:flex;flex-direction:column;gap:6px;padding:4px 6px 6px}
-.awb-card{position:relative;display:flex;align-items:flex-start;gap:6px;padding:6px 26px 6px 8px;border-left:3px solid var(--awb-c);border-radius:8px;background:color-mix(in srgb,var(--text) 4%,var(--card));cursor:grab}
-.awb-card .iv-check{margin-top:3px;flex:none}
-.awb-open{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:0;border:0;background:none;color:var(--text);font:inherit;text-align:left;overflow-wrap:anywhere}
-.awb-time{font-size:11px;color:var(--sub)}
-.awb-title{font-size:13px;line-height:1.35;cursor:pointer;overflow-wrap:anywhere}
-.awb-card.iv-done .awb-title,.awb-card.iv-skipped .awb-title{color:var(--sub);text-decoration:line-through}
-.awb-card>.item-more{position:absolute;top:3px;right:2px;min-width:24px;min-height:24px}
-.awb-body>.add-slot{flex:1;min-height:44px} /* 빈칸은 지금 한칸 빈칸(addSlotHtml)과 같은 모양·규칙 */
-.awb-open .inline-add-wrap{width:100%}
-.awb-open .inline-add-input{width:100%;min-width:0;font-size:13px}
+.awb-body{flex:1;display:flex;flex-direction:column;gap:0;padding:4px 6px 6px}
+.awb-body>.add-slot{flex:1;min-height:44px}
+/* 보드 줄 = 지금 한칸 목록 줄(.home1-flat-row). 좁은 열이라 좌우 여백만 조금 줄임 */
+.awb-body>.home1-flat-row{display:grid;grid-template-columns:12px 18px minmax(0,1fr) 24px;column-gap:6px;row-gap:0;padding-left:2px;padding-right:0}
+.awb-body>.home1-flat-row>.drag-handle-dots{grid-column:1;grid-row:1}
+.awb-body>.home1-flat-row>:is(input[type=checkbox],.agenda-event-dot-wrap,.habit-skip-mark){grid-column:2;grid-row:1;width:18px;height:18px}
+.awb-body>.home1-flat-row>:is(.agenda-title,.inline-add-wrap){grid-column:3;grid-row:1}
+.awb-body>.home1-flat-row>.plan-time{grid-column:3;grid-row:2;margin-top:0;justify-self:start;font-size:11.5px}
+.awb-body>.home1-flat-row>.habit-due-chip{grid-column:3;grid-row:3;justify-self:start}
+.awb-body>.home1-flat-row>.item-more{grid-column:4;grid-row:1;min-width:24px} /* 빈칸은 지금 한칸 빈칸(addSlotHtml)과 같은 모양·규칙 */
 .awb-dragging{opacity:.4}
-.awb-ghost{position:fixed;z-index:60;width:160px;pointer-events:none;opacity:.92;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.awb-ghost{position:fixed;z-index:60;width:180px;background:var(--card);border-radius:10px;pointer-events:none;opacity:.92;box-shadow:0 8px 20px rgba(0,0,0,.18)}
 .awb-drop{outline:2px dashed var(--accent);outline-offset:-2px}
 /* 월: PC는 오른쪽 패널이 선택 날짜 목록을 대신함(모바일은 달력 아래 그날 목록에서 추가). 날짜 숫자 = 그날 일 보기 버튼 */
 @media(min-width:761px){.page[data-page=all] .cal-side{display:none}.page[data-page=all] .cal-layout{display:block!important}}
 #allCalGrid .cal-date-button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;margin:-4px 0 0 -4px;padding:0;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}
 #allCalGrid .cal-date-button:hover{background:var(--accent-soft)}
 #allCalGrid .cal-date-button:focus-visible{outline:2px solid var(--accent)}
-/* 보드 안의 체크는 줄 흐름 안에(다른 화면의 겹침 배치 규칙보다 우선) */
-.awb-card .iv-check{position:static!important;width:16px;height:16px;margin:2px 0 0;flex:none}
-.awb-card .hv-actions{position:static!important;display:flex;gap:2px;width:auto;height:auto;flex:none}
-.awb-card .hv-state{position:static!important;flex:none;padding:2px 0 0;font-size:10.5px}
 #allTypes{display:none!important}
-.awb-card .hv-actions button{min-width:22px;min-height:22px}
 /* 오른쪽 '다가오는 · 언젠가' */
 .sa-shell{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,300px);gap:18px;align-items:start}
 .sa-shell.sa-closed{grid-template-columns:minmax(0,1fr) 36px}

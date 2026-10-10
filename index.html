@@ -3605,6 +3605,8 @@
   function renderLoanHosts() {
     if (currentPage === "all") allViews?.render();
     else if (currentPage === "todos") todoViews?.render();
+    else return;
+    renderHomeUpcomingList(); // 가운데(보드 등)에서 체크해도 빌려 간 다가오는 목록이 같이 맞게
   }
   // 같은 할일에 대한 체크/해제 요청을 순서대로 처리(빠른 연속 클릭 시 저장 순서가 뒤섞이지 않게).
   // 중복 생성 자체는 DB unique 인덱스가 막고, 이 줄세우기는 완료 상태 저장 순서를 지키기 위한 보조 장치.
@@ -5033,19 +5035,20 @@
 
   // 목록 뷰 한 줄(체크박스, 그룹색, 제목, 시간) — agendaItemRowHtml과 거의 같은 모양(같은 클래스라 드래그 등을
   // 4단계에서 그대로 붙일 수 있음).
-  function homeTodayRowHtml(it, dateStr) {
+  // attrs: 다른 화면('모두' 주간 보드)이 같은 줄을 쓸 때 붙이는 자기 표시용 속성. it.show_time이면 일정도 시각 표시.
+  function homeTodayRowHtml(it, dateStr, attrs = "") {
     const lead = it.kind === "habit"
       ? habitLeadHtml(it.id, it.occurrence_date||dateStr, it.done, "ag-habit-check")
       : it.kind === "todo"
       ? `<input type="checkbox" ${it.done ? "checked" : ""} data-id="${it.id}" class="ag-todo-check" />`
       : eventDotHtml(it.cat_id);
-    return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, it.occurrence_date||dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, it.occurrence_date||dateStr)}>
+    return `<div class="plan-row ag-block-row home-today-row home1-flat-row ${it.done ? "done" : ""}${skippedCls(it.kind, it.id, it.occurrence_date||dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${menuAttrs(it.kind, it.id, it.occurrence_date||dateStr)}${attrs}>
       ${DRAG_HANDLE_SVG}
       ${lead}
       ${groupTitleHtml("agenda-title", it.kind, it.kind === "event" ? null : it.cat_id, it.name, it.proj)}
       ${it.overdue ? `<span class="habit-due-chip due-overdue">${it.overdue}일 지남</span>` : ""}
       ${skipChipHtml(it.kind, it.id, it.occurrence_date||dateStr)}
-      ${it.start_minute != null && it.kind !== "event" ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
+      ${it.start_minute != null && (it.kind !== "event" || it.show_time) ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
       ${moreBtnHtml(it.name)}
     </div>`;
   }
@@ -10472,7 +10475,8 @@
     // 2026-10-10 '모두': 오른쪽 다가오는·언젠가와 일 보기는 지금 한칸 화면을 그대로 빌려 씀, 이미지 저장
     mountLists:mountHomeLists,homeDay:lendHomeDay,exportView:openAllExport,
     // 주간 보드도 지금 한칸과 같은 규칙: 빈칸(모양·입력), 제목 누르기 = 이름 수정
-    addSlotHtml,addSlot:wireDateAddSlot,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone)
+    addSlotHtml,addSlot:wireDateAddSlot,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone),
+    rowHtml:homeTodayRowHtml,wireRows:wireHomeTodayChecks
   });
   // 할일 탭 오른쪽 '다가오는 · 언젠가'(지금 한칸과 같은 목록)
   {
