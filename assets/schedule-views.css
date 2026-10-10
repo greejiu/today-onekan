@@ -347,6 +347,15 @@
 .cal-holiday{display:block;max-width:100%;margin:1px 0 2px;padding:0 5px;border-radius:4px;background:#e57373;color:#fff;font-size:10.5px;font-weight:600;line-height:1.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal-cell.is-holiday .cal-cell-num,.is-holiday>.awb-head button strong,.ag-mday-col-head.is-holiday button,.awb-col.is-holiday .awb-head strong{color:#d84343}
 .awb-head .cal-holiday,.ag-mday-col-head .cal-holiday{display:inline-block;margin:0 10px 6px;vertical-align:middle}
+/* 월 칸: 휴일 이름은 날짜 옆 같은 줄(일정 한 줄을 먹지 않게), 종류는 점 모양(일정 ● 할일 ▢ 습관 ○) */
+.cal-cell-head{display:flex;align-items:center;gap:4px;min-width:0;flex:0 0 auto}
+.cal-cell-head .cal-holiday{flex:0 1 auto;min-width:0;margin:0}
+.cal-chip .dot.k-todo,.cal-chip .dot.k-habit{background:transparent;box-shadow:inset 0 0 0 1.5px var(--chip-c,var(--sub))}
+.cal-chip .dot.k-todo{border-radius:2px}
+.cal-holiday .hl-tiny{display:none}
+#allCalGrid .cal-cell.is-holiday .cal-date-button,#calGrid .cal-cell.is-holiday .cal-date-button{color:#d84343}
+#allCalGrid .cal-cell.today .cal-date-button,#calGrid .cal-cell.today .cal-date-button{width:26px;height:26px;margin:0 5px 0 0;border-radius:50%;background:var(--cal-today-bg,var(--accent));color:var(--cal-today-fg,var(--accent-on));font-weight:700}
+@media(max-width:760px){.cal-cell-head{justify-content:center;gap:1px}.cal-cell-head .cal-holiday{padding:0;background:none;color:#d84343;font-size:9px;line-height:20px}.cal-cell-head .hl-short{display:none}.cal-cell-head .hl-tiny{display:inline}.cal-cell-head:has(.cal-holiday) .cal-cell-num{min-width:0;padding:0 1px}.cal-cell.today .cal-cell-head .cal-cell-num{min-width:20px}.cal-cell-head .hl-tiny{letter-spacing:-.4px}.cal-chip .dot.k-todo,.cal-chip .dot.k-habit{width:6px;height:6px;flex-basis:6px}}
 /* 2026-10-10 양쪽 사이드바 사이를 꽉 채움(달력 화면은 최대 폭 제한 없음) — 사이드바를 접으면 그만큼 넓어짐 */
 .content:has(.page:is([data-page=all],[data-page=schedule],[data-page=todos],[data-page=habits]):not([style*="display: none"])){max-width:none}
 @media(min-width:761px){.page[data-page=schedule] .sa-main .cal-side{display:none}.page[data-page=schedule] .sa-main .cal-layout{display:block!important}}
