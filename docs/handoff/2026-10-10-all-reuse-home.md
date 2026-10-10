@@ -1,7 +1,8 @@
 # 인계: '모두'·'할일'에서 지금 한칸 화면 그대로 쓰기 (다가오는·담아두기·타임라인·시간블럭)
 
 - 작성일 / 작성 AI: 2026-10-10 / Claude Code
-- 상태: 구현·검증 완료, 병합·배포는 아래 '병합·배포 확인'에 기록
+- 상태: 완료(배포됨, 배포본 파일 비교는 결의 PC에서 확인 필요)
+- PR: https://github.com/greejiu/today-onekan/pull/96 → 병합 커밋 `46d3efc`
 - 브랜치: `codex/all-reuse-home` (기준 `origin/main` 1b7ad4a)
 
 ## 목표 (결 요청)
@@ -73,7 +74,11 @@
 - main에서도 실패하던 13개는 같은 오류로 실패한다(이번 범위 밖).
 
 ## 병합·배포 확인
-(아래에 기록)
+- 병합 직전 `origin/main`은 1b7ad4a 그대로였다(다른 작업 변경 없음).
+- GitHub Pages 배포 run 38015505695: `completed / success`, head_sha = 46d3efc.
+- **미확인**: 배포 주소의 파일이 main과 같은지 직접 비교하지 못했다(이 환경은 `greejiu.github.io` 접속이 막혀 있음).
+  - 결의 PC에서 `docs/AI_WORKFLOW.md`의 비교 명령으로 확인한다.
+  - 비교할 파일: `index.html`, `assets/all-views.js`, `assets/schedule-views.css`.
 
 ## 다음에 할 행동 1개
 운영자 계정으로 배포본 '모두' → 주 → 오른쪽 다가오는에서 할일 하나를 보드의 다른 날짜 열로 끌어 보고, 지금 한칸 다가오는과 같은 손잡이·모양인지 본다.
