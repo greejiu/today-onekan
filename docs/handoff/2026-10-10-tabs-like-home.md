@@ -36,7 +36,7 @@
 - 디자인 변경으로 옛 화면을 보던 테스트 7개를 새 기준으로 고쳤다. 검증 의도는 유지했다.
   - `project-today`, `schedule-panels`, `schedule-simple-views`, `week-fit`, `shared-view-tabs`, `tag-terminology`, `todo-redesign`.
   - `schedule-panels`의 '이 달의 일정' 목록 검증(25개, 날짜 스크롤)은 그 칸이 없어져서 빠졌다. 칸 접기·보기 전환·범주 눈·모바일 분리 검증은 남겼다.
-- 전체 회귀: 아래에 기록.
+- 전체 회귀(48개): 35개 통과. 실패 13개는 main에서도 실패하던 그 13개다(이번 범위 밖).
 - 실행하지 못한 것: 실제 휴대폰, 실제 계정 데이터.
 
 ## 다음에 할 행동 1개
