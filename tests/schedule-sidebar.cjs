@@ -62,7 +62,7 @@ const { fixture } = require('./home-layout.cjs');
     const main=page.locator('#mainSidebarNav'),side=page.locator('#scheduleSidebarNav'),host=page.locator('#classificationSideHost');
     await main.locator('[data-page=schedule]').click();assert(await side.isVisible());
     const before=await page.evaluate(()=>({date:calSelected,month:calCursor,mode:scheduleMode,scroll:scrollY}));
-    await page.locator('#sidebarAllMenuBtn').click();await main.locator('[data-page=schedule]').click();
+    await page.locator('#sidebarRailToggle').click();await main.locator('[data-page=schedule]').click();
     assert.deepEqual(await page.evaluate(()=>({date:calSelected,month:calCursor,mode:scheduleMode,scroll:scrollY})),before);
     await host.locator('[data-group-eye=cat-work]').click();
     assert.equal(await page.locator('#calGrid .cal-chip[data-id=range]').count(),0);

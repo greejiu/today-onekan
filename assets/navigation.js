@@ -1,4 +1,5 @@
-/* One shared navigation registry; preferences only affect navigation. */
+/* One shared navigation registry; preferences only affect navigation.
+   2026-10-10: '모두'를 없애고 일정 메뉴가 통합 화면(page 'all': 일정 + 할일·습관 눈)을 엶. 옛 일정 화면(page 'schedule')은 코드만 남김. */
 window.OnekanNavigation = (() => {
  'use strict';
  const registry=[
@@ -12,7 +13,7 @@ window.OnekanNavigation = (() => {
  },
  {
   "id": "schedule",
-  "page": "schedule",
+  "page": "all",
   "label": "일정",
   "icon": "<svg class=\"nav-icon\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"></rect><line x1=\"16\" y1=\"2\" x2=\"16\" y2=\"6\"></line><line x1=\"8\" y1=\"2\" x2=\"8\" y2=\"6\"></line><line x1=\"3\" y1=\"10\" x2=\"21\" y2=\"10\"></line></svg>",
   "configurable": true,
@@ -73,14 +74,6 @@ window.OnekanNavigation = (() => {
   "icon": "<svg class=\"nav-icon\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a18 18 0 0 1 0 18 18 18 0 0 1 0-18\"/></svg>",
   "configurable": true,
   "defaultOrder": 8
- },
- {
-  "id": "all",
-  "page": "all",
-  "label": "모두",
-  "icon": "<svg class=\"nav-icon\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/></svg>",
-  "configurable": true,
-  "defaultOrder": 9
  },
  {
   "id": "settings",

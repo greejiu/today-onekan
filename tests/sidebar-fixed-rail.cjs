@@ -2,14 +2,14 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright'),{fix
 (async()=>{const b=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{
  const p=await b.newPage({viewport:{width:1440,height:900}}),errors=[];p.on('pageerror',e=>errors.push(e.message));await fixture(p);
  const positions=()=>p.locator('#todoIconRail [data-page]').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return {page:e.dataset.page,x:r.x,y:r.y};}));
- assert.deepEqual((await positions()).map(x=>x.page),['home','schedule','todos','habits','records']);const original=await positions();
+ assert.deepEqual((await positions()).map(x=>x.page),['home','all','todos','habits','records']); /* 2026-10-10 일정 메뉴 = 통합 화면(page all) */const original=await positions();
  assert.equal(await p.locator('#todoIconRail').evaluate(e=>getComputedStyle(e).borderRightColor),'rgba(0, 0, 0, 0)');
  assert.equal(await p.locator('#mainSidebarNav').isVisible(),false);
  assert.deepEqual(await p.locator('#todoIconRail .todo-rail-label').allTextContents(),['지금한칸','일정','할일','습관','기록','더보기']);
  await p.locator('#todoIconRail [data-page=todos]').click();assert(await p.locator('#dedicatedSidebarNav').isVisible());assert.notEqual(await p.locator('#todoIconRail').evaluate(e=>getComputedStyle(e).borderRightColor),'rgba(0, 0, 0, 0)');assert.equal(await p.locator('#todoIconRail .todo-rail-label').first().evaluate(e=>getComputedStyle(e).clipPath),'inset(50%)');assert.deepEqual(await positions(),original);
- await p.locator('#sidebarAllMenuBtn').click();assert(await p.locator('#todoIconRail .todo-rail-label').first().isVisible());assert.deepEqual(await positions(),original);
+ await p.locator('#sidebarRailToggle').click();assert(await p.locator('#todoIconRail .todo-rail-label').first().isVisible());assert.deepEqual(await positions(),original);
  await p.locator('#sidebarRailToggle').click();assert.equal(await p.locator('#mainSidebarNav').isVisible(),false);assert.equal(await p.locator('#dedicatedSidebarNav').isVisible(),false);assert.deepEqual(await positions(),original);
- await p.locator('#todoIconRail [data-page=schedule]').click();assert.equal(await p.evaluate(()=>currentPage),'schedule');assert.equal(await p.locator('#dedicatedSidebarNav').isVisible(),false);assert.deepEqual(await positions(),original);
+ await p.locator('#todoIconRail [data-page=all]').click();assert.equal(await p.evaluate(()=>currentPage),'all');assert.equal(await p.locator('#dedicatedSidebarNav').isVisible(),false);assert.deepEqual(await positions(),original);
  await p.locator('#sidebarRailToggle').click();assert(await p.locator('#todoIconRail .todo-rail-label').first().isVisible());assert.deepEqual(await positions(),original);
  await p.locator('#sidebarRailMore').click();assert(await p.locator('#sidebarRailMoreMenu').isVisible());assert.equal(await p.locator('#sidebarRailMoreMenu [data-page=habits]').count(),0);
  await p.locator('#sidebarRailMoreMenu [data-page=settings]').click();assert.equal(await p.evaluate(()=>currentPage),'settings');assert.equal(await p.locator('#sidebarRailMoreMenu').isVisible(),false);assert.deepEqual(await positions(),original);

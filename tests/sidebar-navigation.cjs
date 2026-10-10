@@ -7,9 +7,10 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  const page=await browser.newPage({viewport:{width:1440,height:900},timezoneId:'Asia/Seoul'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await fixture(page);fs.mkdirSync('test-results',{recursive:true});
  const side=page.locator('.sidebar');const nav=side.locator('#mainSidebarNav .navitem');
- const go=async target=>{if(['home','schedule','todos','habits','records'].includes(target))return page.locator('#todoIconRail [data-page='+target+']').click();await page.locator('#sidebarRailMore').click();await page.locator('#sidebarRailMoreMenu [data-page='+target+']').click();};
+ // 2026-10-10 일정 메뉴 = 통합 화면(page all), 옛 '모두' 메뉴 없음
+ const go=async target=>{if(['home','all','todos','habits','records'].includes(target))return page.locator('#todoIconRail [data-page='+target+']').click();await page.locator('#sidebarRailMore').click();await page.locator('#sidebarRailMoreMenu [data-page='+target+']').click();};
  assert.deepEqual((await nav.allTextContents()).map(t=>t.trim()),['지금한칸','일정','할일','습관','기록']);
- assert.deepEqual(await side.locator('#mainSidebarNav > *').evaluateAll(es=>es.map(e=>e.dataset.page||'divider')),['home','schedule','todos','habits','records']);
+ assert.deepEqual(await side.locator('#mainSidebarNav > *').evaluateAll(es=>es.map(e=>e.dataset.page||'divider')),['home','all','todos','habits','records']);
  assert.equal(await side.locator('#mainSidebarNav .sidebar-divider').count(),0);assert.equal(await side.locator('.sidebar-footer .navitem').count(),0);
  assert.equal(await side.locator('.sidebar-quickadd, #quickTaskInputSide, #quickAddBtnSide').count(),0);
  await page.evaluate(()=>{document.getElementById('quickTaskInput').value='폭 변경 중인 빠른 입력';});
@@ -28,17 +29,13 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  }
  await go('todos');assert.equal(await page.locator('#todoSomedayView').isVisible(),true);
  await page.locator('#sidebarHomeNav [data-page=home]:visible,#todoIconRail [data-page=home]:visible').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#todoIconRail [data-page].active,#sidebarRailMoreMenu [data-page].active').getAttribute('data-page'),'home');
- await page.keyboard.press('Tab');await page.keyboard.press('Space');assert.equal(await page.locator('#todoIconRail [data-page].active,#sidebarRailMoreMenu [data-page].active').getAttribute('data-page'),'schedule');
- assert.notEqual(await page.locator('#todoIconRail [data-page=schedule]').evaluate(e=>getComputedStyle(e).outlineStyle),'none');
- for(const target of ['home','all','community','timer','schedule','todos','habits','work','together','records','settings']){await go(target);assert.equal(await page.locator('#todoIconRail [data-page].active,#sidebarRailMoreMenu [data-page].active').count(),1);assert.equal(await page.locator('#todoIconRail [aria-current=page],#sidebarRailMoreMenu [aria-current=page]').getAttribute('data-page'),target);}
- // Calendar/list selection and scroll survive navigation through the new sidebar.
- await go('schedule');
- await page.locator('#scheduleModeToggle [data-schedule-view=list]').click();await page.evaluate(()=>window.scrollTo(0,200));
- const scroll=await page.evaluate(()=>window.scrollY);
- await go('records');await go('schedule');
- assert.equal(await page.locator('#scheduleModeToggle [data-schedule-view=list]').getAttribute('aria-pressed'),'true');assert.equal(await page.evaluate(()=>window.scrollY),scroll);
- await page.locator('#scheduleModeToggle [data-schedule-view=month]').click();const selected=await page.evaluate(()=>calSelected);
- await go('todos');await go('schedule');assert.equal(await page.evaluate(()=>calSelected),selected);
+ await page.keyboard.press('Tab');await page.keyboard.press('Space');assert.equal(await page.locator('#todoIconRail [data-page].active,#sidebarRailMoreMenu [data-page].active').getAttribute('data-page'),'all');
+ assert.notEqual(await page.locator('#todoIconRail [data-page=all]').evaluate(e=>getComputedStyle(e).outlineStyle),'none');
+ for(const target of ['home','all','community','timer','todos','habits','work','together','records','settings']){await go(target);assert.equal(await page.locator('#todoIconRail [data-page].active,#sidebarRailMoreMenu [data-page].active').count(),1);assert.equal(await page.locator('#todoIconRail [aria-current=page],#sidebarRailMoreMenu [aria-current=page]').getAttribute('data-page'),target);}
+ // 일정(통합 화면)의 보기·날짜는 다른 메뉴를 다녀와도 유지
+ await go('all');await page.locator('#allViewTabs [data-common-view=week]').click();const selected=await page.evaluate(()=>allViews.range().start);
+ await go('records');await go('all');assert.equal(await page.evaluate(()=>allViews.view()),'week');
+ await go('todos');await go('all');assert.equal(await page.evaluate(()=>allViews.range().start),selected);
  // Keep the selected project while its title switches between desktop and mobile.
  await page.evaluate(async()=>{mockRows.tok_projects=[{id:'p1',name:'연결된 프로젝트',parent_id:null,sort_order:0}];await loadAll();});
  await go('work');await page.locator('#projectList [data-proj=p1]').click();
@@ -46,7 +43,7 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  await page.setViewportSize({width:1440,height:900});assert.equal(await page.evaluate(()=>workSelectedId),'p1');
  assert.equal(await page.locator('.page[data-page=work] h1').textContent(),'목표');
  assert.equal(await page.evaluate(()=>mockWrites.length),0,'navigation never writes');
- await page.locator('#sidebarAllMenuBtn').click();await page.setViewportSize({width:1440,height:320});await page.locator('#sidebarRailMore').scrollIntoViewIfNeeded();
+ await page.locator('#sidebarRailToggle').click();await page.setViewportSize({width:1440,height:320});await page.locator('#sidebarRailMore').scrollIntoViewIfNeeded();
  const logout=await page.locator('#logoutBtn').boundingBox();assert(logout.y>=64&&logout.y+logout.height<=320);assert(await page.locator('#todoIconRail').evaluate(e=>e.scrollTop>0));
  await page.screenshot({path:'test-results/sidebar-short-account.png'});
  await page.locator('#sidebarRailMore').scrollIntoViewIfNeeded();assert(await page.locator('#sidebarRailMore').isVisible());
@@ -58,7 +55,7 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  }
  await page.setViewportSize({width:390,height:844});
  assert.deepEqual((await page.locator('.bottombar .navitem').allTextContents()).map(t=>t.trim()),['지금한칸','일정','할일','습관','기록','더보기']);
- await page.locator('#navMoreBtn').click();assert.deepEqual((await page.locator('#navMoreSheet .navitem').allTextContents()).map(t=>t.trim()),['목표','추적','같이한칸','커뮤니티','모두','설정']);
+ await page.locator('#navMoreBtn').click();assert.deepEqual((await page.locator('#navMoreSheet .navitem').allTextContents()).map(t=>t.trim()),['목표','추적','같이한칸','커뮤니티','설정']);
  await page.locator('#navMoreSheet [data-page=work]').click();assert(await page.locator('.page[data-page=work] .mobile-only').isVisible());assert.equal(await page.locator('#navMoreBtn').getAttribute('aria-expanded'),'false');assert(await page.locator('#navMoreBtn').evaluate(e=>e.classList.contains('active')));
  await page.screenshot({path:'test-results/sidebar-mobile-project.png'});
  await page.locator('.bottombar [data-page=todos]').click();await page.locator('.bottombar [data-page=habits]').click();

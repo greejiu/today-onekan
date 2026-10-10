@@ -7,7 +7,7 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  const page=await browser.newPage({viewport:{width:1366,height:768},timezoneId:'Asia/Seoul'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await fixture(page);fs.mkdirSync('test-results',{recursive:true});
  await page.evaluate(()=>localStorage.setItem('tok_task_page','habits'));
- const go=async kind=>{if(kind==='home')return page.locator('#sidebarHomeNav button').click();if(await page.locator('#dedicatedSidebarNav').isVisible())await page.locator('#sidebarAllMenuBtn').click();await page.locator('#mainSidebarNav [data-page='+kind+']').click();};
+ const go=async kind=>{if(kind==='home')return page.locator('#sidebarHomeNav button').click();if(await page.locator('#dedicatedSidebarNav').isVisible())await page.locator('#sidebarRailToggle').click();await page.locator('#mainSidebarNav [data-page='+kind+']').click();};
  const check=async kind=>{
   assert.equal(await page.evaluate(()=>currentPage),kind);
   assert.equal(await page.locator('#mainSidebarNav .active').count(),1);

@@ -2,6 +2,8 @@
 // 오른쪽 다가오는·언젠가와 일 보기 = 지금 한칸 화면 그대로(같은 DOM·같은 규칙), 주간 보드 빈칸·이름 수정 규칙, 월 달력 입력, 이미지 저장, PC 패널 접기·모바일 390px. 가짜 Supabase만 씀(운영 데이터·외부 요청 없음).
 const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs');
 const OUT='test-results/all-redesign';
+const collapseRail=async page=>{for(let i=0;i<3&&!(await page.evaluate(()=>document.querySelector('.sidebar').classList.contains('rail-collapsed')));i++)await page.locator('#sidebarRailToggle').click();}; // 2026-10-10 왼쪽 화살표: 세부 메뉴 → 전체 메뉴 → 접기
+
 async function seed(p){
  await p.evaluate(async()=>{
   const d=n=>addDaysStr(todayStr(),n),T=(a,b,s,e)=>OnekanPeriod.patch('todo',{allDay:false,startDate:a,endDate:b,startTime:s,endTime:e}),A=(a,b)=>OnekanPeriod.patch('todo',{allDay:true,startDate:a,endDate:b||a});
@@ -34,34 +36,37 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  const scheduleKeyBefore=await p.evaluate(()=>localStorage.getItem('tok_schedule_views:test'));
  // 1) 최초 기본값: 월=일정만, 주·일=모두
  await go(p,'month');
- assert(await pressed(eye(p,'event')));assert(!await pressed(eye(p,'todo')));assert(!await pressed(eye(p,'habit')));
+ assert(await pressed(p.locator('#allSidebarTypes [data-aft-cat="event|default"]')));assert(!await pressed(eye(p,'todo')));assert(!await pressed(eye(p,'habit')));
  const monthChips=await p.locator('#allCalGrid .cal-chip[data-id]').evaluateAll(es=>es.map(e=>e.dataset.id.split('|')[0]));
  assert(monthChips.length&&monthChips.every(k=>k==='event'),'월: 일정만 '+monthChips);
- await go(p,'week');assert(await pressed(eye(p,'todo'))&&await pressed(eye(p,'habit'))&&await pressed(eye(p,'event')));
+ await go(p,'week');assert(await pressed(eye(p,'todo'))&&await pressed(eye(p,'habit')));
  assert.equal(await p.evaluate(()=>allViews.prefs().week),'board');assert(await p.locator('#allWeekBoard').isVisible());
  await go(p,'day');assert(await pressed(eye(p,'todo')));assert.equal(await p.evaluate(()=>allViews.prefs().day),'blocks');
  ok('기본값: 월=일정만, 주=보드·모두 켬, 일=시간블럭·모두 켬');
- // 2) 기간별 독립 저장 + 범주/그룹 공통 + 접힘
+ // 2) 사이드바(2026-10-10 구글 캘린더식): 내 일정 = 일정 범주 눈 + 할일·습관 눈 / 다른 캘린더 = 대한민국 휴일. 접기 없음.
+ //    할일·습관 눈은 월·주·일마다 따로, 범주 눈은 공통.
+ assert.deepEqual(await p.locator('#allSidebarTypes .aft-title').allTextContents(),['내 일정','다른 캘린더']);
+ assert.deepEqual(await p.locator('#aftList-mine .aft-name').allTextContents(),['기본','병원','할일','습관']);
+ assert.equal(await p.locator('#allSidebarTypes [data-aft-fold],#allSidebarTypes [data-aft-eye=event]').count(),0,'접기·일정 종류 눈 없음');
  await go(p,'month');await eye(p,'habit').click();assert(await pressed(eye(p,'habit')));
- await go(p,'week');await eye(p,'event').click();assert(!await pressed(eye(p,'event')));
- await go(p,'day');assert(await pressed(eye(p,'event'))&&await pressed(eye(p,'habit')));
- await go(p,'month');assert(await pressed(eye(p,'habit'))&&await pressed(eye(p,'event'))&&!await pressed(eye(p,'todo')));
- await p.locator('#allSidebarTypes [data-aft-cat="todo|g1"]').click();
- await go(p,'week');assert.equal(await p.locator('#allSidebarTypes [data-aft-cat="todo|g1"]').getAttribute('aria-pressed'),'false','그룹 눈은 기간 공통');
- assert.equal(await p.locator('#allWeekBoard [data-awb-id="todo|t-timed"]').count(),0,'숨긴 그룹 항목 안 보임');
- await p.locator('#allSidebarTypes [data-aft-cat="todo|g1"]').click();await p.locator('#allSidebarTypes [data-aft-fold=habit]').click();
- assert(await p.locator('#aftList-habit').isHidden());
- await p.locator('#allSidebarTypes [data-aft-eye=event]').click(); // 주 일정 다시 켬
- ok('월·주·일 종류 눈 독립 저장, 범주·그룹 눈 공통, 종류 접기');
+ await go(p,'week');await eye(p,'todo').click();assert(!await pressed(eye(p,'todo')));
+ await go(p,'day');assert(await pressed(eye(p,'todo'))&&await pressed(eye(p,'habit')),'일은 따로');
+ await go(p,'month');assert(await pressed(eye(p,'habit'))&&!await pressed(eye(p,'todo')));
+ await go(p,'week');await eye(p,'todo').click(); // 주 할일 다시 켬
+ await p.locator('#allSidebarTypes [data-aft-cat="event|c1"]').click();
+ await go(p,'month');assert.equal(await p.locator('#allSidebarTypes [data-aft-cat="event|c1"]').getAttribute('aria-pressed'),'false','범주 눈은 기간 공통');
+ await go(p,'week');assert.equal(await p.locator('#allWeekBoard [data-awb-id="event|e-range"]').count(),0,'숨긴 범주 일정 안 보임');
+ await p.locator('#allSidebarTypes [data-aft-cat="event|c1"]').click();
+ ok('사이드바 내 일정(범주·할일·습관)/다른 캘린더, 할일·습관 눈 기간별 저장, 범주 눈 공통');
  // 3) 새로고침 후 복원 + 사용자 분리 + 다른 탭 설정 불변
  const saved=await p.evaluate(()=>JSON.parse(localStorage.getItem('tok_all_layout:test')));
- assert.equal(saved.eyes.month.habit,true);assert.equal(saved.folded.habit,true);
+ assert.equal(saved.eyes.month.habit,true);
  assert.equal(await p.evaluate(()=>localStorage.getItem('tok_schedule_views:test')),scheduleKeyBefore,'일정 탭 설정 키 불변');
  const other=await p.evaluate(()=>{const prev=appSymbolUserId;appSymbolUserId='other-user';const o=JSON.parse(JSON.stringify(allViews.prefs()));appSymbolUserId=prev;const back=allViews.prefs();return {o,back:back.eyes.month.habit};});
  assert.equal(other.o.eyes.month.habit,false,'다른 사용자는 기본값');assert.equal(other.back,true,'원래 사용자 설정 유지');
  await p.reload();await p.locator('#app').waitFor({state:'visible'});await p.waitForFunction(()=>document.querySelectorAll('.upcoming-day').length===7);
  await p.evaluate(()=>showPage('all'));await p.waitForTimeout(100);
- assert.equal(await p.evaluate(()=>allViews.prefs().eyes.month.habit),true);assert.equal(await p.evaluate(()=>allViews.prefs().folded.habit),true);
+ assert.equal(await p.evaluate(()=>allViews.prefs().eyes.month.habit),true);assert.equal(await p.evaluate(()=>allViews.prefs().holidays),true);
  await fixture(p);await seed(p);
  ok('새로고침 후 설정 복원, 사용자별 분리, 일정 탭 설정 덮어쓰지 않음');
  // 4) 주간 보드: 분류·중복·시간 표시
@@ -171,9 +176,9 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  assert(await p.locator('#allTimeView').isHidden(),'예전 일 보기 숨김');
  assert(await p.locator('#allHomeDay [data-kind=todo][data-id="t-all"]').count()>0,'종일 할일 보임');
  await eye(p,'todo').click();await p.waitForTimeout(150);assert.equal(await p.locator('#allHomeDay [data-kind=todo]').count(),0,'할일 눈 끄면 숨김');await eye(p,'todo').click();await p.waitForTimeout(150);
- if(await p.locator('#aftList-habit').isHidden())await p.locator('#allSidebarTypes [data-aft-fold=habit]').click(); // 2)에서 접어 둔 습관 펼침
- await p.locator('#allSidebarTypes [data-aft-cat="habit|g2"]').click();await p.waitForTimeout(150);assert.equal(await p.locator('#allHomeDay [data-kind=habit]').count(),0,'그룹 눈 끄면 숨김');await p.locator('#allSidebarTypes [data-aft-cat="habit|g2"]').click();await p.waitForTimeout(150);
+ await eye(p,'habit').click();await p.waitForTimeout(150);assert.equal(await p.locator('#allHomeDay [data-kind=habit]').count(),0,'습관 눈 끄면 숨김');await eye(p,'habit').click();await p.waitForTimeout(150);
  assert(await p.locator('#allHomeDay [data-kind=habit]').count()>0);
+ await p.locator('#allSidebarTypes [data-aft-cat="event|default"]').click();await p.waitForTimeout(150);assert.equal(await p.locator('#allHomeDay [data-kind=event][data-id="e-timed"]').count(),0,'범주 눈 끄면 일 보기에서도 숨김');await p.locator('#allSidebarTypes [data-aft-cat="event|default"]').click();await p.waitForTimeout(150);
  await p.locator('#allSubTabs [data-all-sub=timeline]').click();await p.waitForTimeout(150);assert(await p.locator('#homeTimelinePanel').isVisible()&&await p.locator('#homeBlockPanel').isHidden(),'타임라인 = 지금 한칸 타임라인');
  assert(await p.locator('#allHomeDay .ag-tl-content').count()>0);
  await p.locator('#allNextBtn').click();await p.waitForTimeout(150);assert.equal(await p.evaluate(()=>homeAgendaDate),await p.evaluate(()=>addDaysStr(todayStr(),1)),"'모두' 날짜를 따름");
@@ -189,14 +194,15 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await side.locator('.sa-close').click();assert(await p.locator('.page[data-page=all] .sa-reopen').isVisible());assert.equal(await p.evaluate(()=>JSON.parse(localStorage.getItem('tok_side_agenda:all:test')).closed),true);
  const wideBefore=await p.locator('#allWeekBoard .awb-scroll').evaluate(e=>e.clientWidth);
  await p.locator('.page[data-page=all] .sa-reopen').click();assert(await side.isVisible());
- await p.locator('#todoIconRail button').first().click();await p.waitForTimeout(100);
+ await collapseRail(p);await p.waitForTimeout(100);
  assert(await p.locator('#allFilterBtn').isVisible(),'왼쪽 접으면 표시 설정 버튼');await p.locator('#allFilterBtn').click();assert(await p.locator('#allFilterPanel [data-aft-eye=todo]').isVisible());
  await p.keyboard.press('Escape');await p.locator('#todoIconRail button').first().click();await p.evaluate(()=>showPage('all')); // 펼치면 기존 규칙대로 전체 메뉴 → 다시 '모두'
  assert(wideBefore>0);ok('오른쪽 접기·펼치기 기억, 왼쪽 접으면 표시 설정 버튼으로 열기');
  // 10) 모두 끄면 안내 + 모두 표시
- await go(p,'day');for(const k of ['event','todo','habit'])if(await pressed(eye(p,k)))await eye(p,k).click();
- assert((await p.locator('#allNotice').textContent()).includes('표시할 항목이 꺼져 있어요'));await p.locator('#allShowAll').click();
- assert(await pressed(eye(p,'event'))&&await pressed(eye(p,'todo'))&&await pressed(eye(p,'habit')));
+ await go(p,'day');for(const k of ['todo','habit'])if(await pressed(eye(p,k)))await eye(p,k).click();
+ for(const c of ['default','c1']){const b=p.locator('#allSidebarTypes [data-aft-cat="event|'+c+'"]');if(await pressed(b))await b.click();}
+ assert((await p.locator('#allNotice').textContent()).includes('표시할 항목이 꺼져 있어요'),'일정 범주·할일·습관 모두 끄면 안내');await p.locator('#allShowAll').click();
+ assert(await pressed(eye(p,'todo'))&&await pressed(eye(p,'habit'))&&await pressed(p.locator('#allSidebarTypes [data-aft-cat="event|c1"]')));
  assert.equal(await eye(p,'todo').getAttribute('aria-label'),'할일 표시 중 · 숨기기');
  ok('모두 끄면 안내와 모두 표시, 눈 아이콘 접근성 이름');
  // 11) 월 달력: 날짜 숫자 → 일 보기, 빈 공간 → 추가
@@ -206,6 +212,16 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await p.waitForTimeout(150);assert(await p.locator('.item-menu').isVisible(),'빈 공간 클릭 → 추가 종류 메뉴');assert.deepEqual(await p.locator('.item-menu [role=menuitem]').allTextContents().then(t=>t.map(x=>x.trim())),['할일 추가','습관 추가','일정 추가']);
  await p.keyboard.press('Escape');await p.evaluate(()=>{document.querySelectorAll('.sheet-bg.open').forEach(b=>b.classList.remove('open'));});
  ok('월: 날짜 숫자 → 일 보기, 빈 공간 → 추가');
+ // 대한민국 휴일(앱 안 표): 2026-10 개천절·대체공휴일·한글날, 눈으로 숨김
+ await go(p,'month');await p.evaluate(()=>allViews.selectDate('2026-10-01'));await p.waitForTimeout(150);
+ assert.equal(await p.locator('#allCalGrid .cal-cell[data-date="2026-10-03"] .cal-holiday').textContent(),'개천절');
+ assert.equal(await p.locator('#allCalGrid .cal-cell[data-date="2026-10-05"] .cal-holiday').textContent(),'대체공휴일(개천절)');
+ assert(await p.locator('#allCalGrid .cal-cell[data-date="2026-10-09"]').evaluate(e=>e.classList.contains('is-holiday')));
+ await p.locator('#allSidebarTypes [data-aft-holiday]').click();await p.waitForTimeout(100);assert.equal(await p.locator('#allCalGrid .cal-holiday').count(),0,'휴일 눈 끄면 숨김');
+ assert.equal(await p.evaluate(()=>allViews.prefs().holidays),false);await p.locator('#allSidebarTypes [data-aft-holiday]').click();
+ await go(p,'week');await p.evaluate(()=>allViews.selectDate('2026-10-05'));await p.waitForTimeout(150);assert((await p.locator('#allWeekBoard [data-awb-col="2026-10-05"] .cal-holiday').textContent()).includes('대체공휴일'),'보드 머리에도 휴일');
+ await p.evaluate(()=>allViews.selectDate(todayStr()));
+ ok('대한민국 휴일: 월 칸·보드 머리 표시, 다른 캘린더 눈으로 숨김');
  // 12) 이미지 저장: 주(스크롤 밖 열 포함)·월·일
  await go(p,'week');await p.locator('#allExportBtn').click();await p.waitForFunction(()=>document.getElementById('allExportBg').classList.contains('open')&&!document.getElementById('allExportSave').disabled);
  const wm=await p.evaluate(()=>allViews.exportModel());assert.equal(wm.days.length,7);

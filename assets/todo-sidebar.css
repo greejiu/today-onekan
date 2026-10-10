@@ -38,3 +38,4 @@
 #sidebarRailMoreMenu{position:fixed;margin:0;inset:auto;width:180px;max-height:calc(100vh - 16px);overflow-y:auto;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);box-shadow:0 6px 24px #0002;}
 #sidebarRailMoreMenu .navitem{width:100%;border:0;font:inherit;text-align:left;}
 @media(max-width:760px){#todoIconRail{display:none;}}
+#sidebarAllMenuBtn[hidden]{display:none!important} /* 2026-10-10 왼쪽 화살표로 통일 */

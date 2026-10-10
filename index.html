@@ -1481,7 +1481,7 @@
       <nav id="sidebarHomeNav" aria-label="지금한칸"></nav>
       <nav class="sidebar-nav" id="mainSidebarNav" aria-label="전체 메뉴"></nav>
       <nav id="dedicatedSidebarNav" class="dedicated-side-nav" aria-label="전용 메뉴" hidden>
-        <button type="button" class="navitem" id="sidebarAllMenuBtn">← 전체 메뉴</button>
+        <button type="button" class="navitem" id="sidebarAllMenuBtn" hidden>← 전체 메뉴</button><!-- 2026-10-10 왼쪽 화살표(#sidebarRailToggle)로 통일, 이 버튼은 숨김 -->
         <div class="goal-sidebar-heading"><h2 id="sidebarPageTitle" class="sidebar-page-title"></h2><button type="button" id="goalSidebarAdd" class="btn-ghost" aria-label="목표 추가" hidden>＋</button></div>
       <section id="scheduleSidebarNav" class="schedule-side-nav" aria-label="일정 하위 메뉴" hidden>
         <button type="button" class="navitem active" data-schedule-mode="calendar" aria-pressed="true">달력</button>
@@ -1504,7 +1504,7 @@
 
     <div class="content">
       <div class="page" data-page="all" style="display:none;">
-        <h1 class="page-title">모두</h1>
+        <h1 class="page-title">일정</h1>
         <div id="allViewTabs" class="view-toggle"><button type="button" data-tab="calendar" class="active">달력</button><button type="button" data-tab="list">목록</button><button type="button" data-tab="board">보드</button></div>
         <div class="iv-date-nav"><button id="allPrevBtn" type="button">‹</button><span id="allMonthLabel"></span><button id="allNextBtn" type="button">›</button><button id="allTodayBtn" type="button">오늘</button></div>
         <div id="allCalendarOptions" class="sv-toolbar"></div>
@@ -3458,7 +3458,7 @@
     if (focused && focused !== document.body && !focused.getClientRects().length) {
       const target = scheduleSidebarMq.matches
         ? document.querySelector('.bottombar [data-page="' + currentPage + '"]') || $('navMoreBtn')
-        : sidebarDedicated ? $('sidebarAllMenuBtn') : document.querySelector('#mainSidebarNav [data-page="' + currentPage + '"]') || document.querySelector('#sidebarHomeNav button');
+        : sidebarDedicated ? $('sidebarRailToggle') : document.querySelector('#mainSidebarNav [data-page="' + currentPage + '"]') || document.querySelector('#sidebarHomeNav button');
       target?.focus({ preventScroll: true });
     }
   });

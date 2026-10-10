@@ -1,7 +1,9 @@
 // Isolated browser tests: no requests or user writes reach production.
 const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=require('playwright');
 const html=fs.readFileSync('index.html','utf8');
-const defaults=['home','schedule','todos','habits','records','work','timer','together','community','all'];
+// 2026-10-10 '모두'를 없애고 일정 메뉴(id schedule)가 통합 화면(page 'all')을 엶 — 메뉴 DOM의 data-page는 'all'
+const defaults=['home','schedule','todos','habits','records','work','timer','together','community'];
+const idOf=page=>page==='all'?'schedule':page;
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
  try{
@@ -34,12 +36,12 @@ const defaults=['home','schedule','todos','habits','records','work','timer','tog
    await page.goto('http://navigation.test/');await page.locator('#app').waitFor({state:'visible'});await ready(page);return page;
   }
   const ready=p=>p.waitForFunction(()=>!document.querySelector('.navigation-setting-row input').disabled);
-  const primary=p=>p.locator('.bottombar [data-page]').evaluateAll(es=>es.map(e=>e.dataset.page));
-  const more=p=>p.locator('#navMoreSheet [data-page]').evaluateAll(es=>es.map(e=>e.dataset.page));
+  const primary=p=>p.locator('.bottombar [data-page]').evaluateAll(es=>es.map(e=>e.dataset.page)).then(a=>a.map(idOf));
+  const more=p=>p.locator('#navMoreSheet [data-page]').evaluateAll(es=>es.map(e=>e.dataset.page)).then(a=>a.map(idOf));
   const row=(p,id)=>p.locator('[data-navigation-id='+id+']');
   const saveDone=p=>p.waitForFunction(()=>document.getElementById('navigationSettings').getAttribute('aria-busy')!=='true');
   const page=await fixture();assert.deepEqual(await primary(page),defaults.slice(0,5));assert.deepEqual(await more(page),[...defaults.slice(5),'settings']);
-  assert.deepEqual(await page.locator('#todoIconRail [data-page]').evaluateAll(es=>es.map(e=>e.dataset.page)),defaults.slice(0,5));
+  assert.deepEqual((await page.locator('#todoIconRail [data-page]').evaluateAll(es=>es.map(e=>e.dataset.page))).map(idOf),defaults.slice(0,5));
   await page.locator('#sidebarRailMore').click();await page.locator('#sidebarRailMoreMenu [data-page=settings]').click();assert.equal(await page.evaluate(()=>currentPage),'settings');
   // Pointer drag across the fifth-menu boundary; keyboard reordering remains available.
   const start=await row(page,'home').locator('button').boundingBox(),end=await row(page,'records').boundingBox();
@@ -71,7 +73,7 @@ const defaults=['home','schedule','todos','habits','records','work','timer','tog
   assert.deepEqual(await primary(page),['together','community','home','schedule','todos']);assert.equal((await more(page)).at(-1),'settings');assert(!(await more(page)).includes('all'));
   await page.evaluate(()=>{$('app').style.display='block';showPage('settings');});writeDelay=180;await row(page,'community').locator('input').uncheck();await page.evaluate(()=>navigationUser('alice'));await ready(page);await page.waitForTimeout(220);assert(!(await primary(page)).includes('community'));
   // A stale read cannot overwrite a newer successful save.
-  await page.evaluate(()=>showPage('settings'));readDelay=180;await page.evaluate(()=>{void navigationSettings.load();});await row(page,'all').locator('input').uncheck();await saveDone(page);await page.waitForTimeout(220);assert(!(await more(page)).includes('all'));
+  await page.evaluate(()=>showPage('settings'));readDelay=180;await page.evaluate(()=>{void navigationSettings.load();});await row(page,'timer').locator('input').uncheck();await saveDone(page);await page.waitForTimeout(220);assert(!(await more(page)).includes('timer'));
   await page.evaluate(()=>navigationUser(null));assert.equal(await page.locator('#app').isVisible(),false);assert.deepEqual(await primary(page),['home']);
   await page.evaluate(()=>navigationUser('bob'));await ready(page);await page.evaluate(()=>{$('app').style.display='block';$('authBox').style.display='none';showPage('home');});await page.setViewportSize({width:390,height:844});rows.get('bob').navigation_config={version:1,order:['together','community','home','schedule','todos',...defaults.filter(id=>!['together','community','home','schedule','todos'].includes(id))],hidden:[]};await page.evaluate(()=>navigationSettings.load());
   const metrics=await page.locator('.bottombar .navitem').evaluateAll(es=>es.map(e=>({width:e.clientWidth,scroll:e.scrollWidth,label:e.querySelector('span')?.getBoundingClientRect().width||0,height:e.querySelector('span')?.getBoundingClientRect().height||0})));assert.equal(metrics.length,6);assert(metrics.every(r=>r.scroll<=r.width&&r.label<=r.width&&r.height<20));
