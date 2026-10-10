@@ -7,11 +7,13 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  const page=await browser.newPage({viewport:{width:1366,height:768},timezoneId:'Asia/Seoul'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await fixture(page);fs.mkdirSync('test-results',{recursive:true});
  await page.evaluate(()=>localStorage.setItem('tok_task_page','habits'));
- const go=async kind=>{if(kind==='home')return page.locator('#sidebarHomeNav button').click();if(await page.locator('#dedicatedSidebarNav').isVisible())await page.locator('#sidebarRailToggle').click();await page.locator('#mainSidebarNav [data-page='+kind+']').click();};
+ // 2026-10-10 PC는 아이콘 줄(#todoIconRail), 모바일은 아래 탭 줄로 이동·현재 위치 표시
+ const nav=async()=>await page.locator('#todoIconRail').isVisible()?'#todoIconRail':'.bottombar';
+ const go=async kind=>page.locator((await nav())+' [data-page='+kind+']').click();
  const check=async kind=>{
   assert.equal(await page.evaluate(()=>currentPage),kind);
-  assert.equal(await page.locator('#mainSidebarNav .active').count(),1);
-  assert.equal(await page.locator('#mainSidebarNav .active').getAttribute('data-page'),kind);
+  const n=await nav();assert.equal(await page.locator(n+' [data-page].active').count(),1);
+  assert.equal(await page.locator(n+' [data-page].active').getAttribute('data-page'),kind);
   assert.equal(await page.locator('.page[data-page='+kind+'] h1:visible').count(),1);
   assert.equal(await page.locator('.page[data-page='+kind+'] h1:visible').textContent(),kind==='todos'?'할일':'습관');
  };

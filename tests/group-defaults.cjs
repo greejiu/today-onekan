@@ -2,6 +2,7 @@ const fs=require('fs'),assert=require('assert/strict'),{chromium}=require('playw
 (async()=>{const b=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{
  const p=await b.newPage({viewport:{width:1440,height:900}}),errors=[];p.on('pageerror',e=>errors.push(e.message));await fixture(p);
  await p.evaluate(async()=>{
+  mockMissingTables=['tok_projects']; // 2026-10-10 그룹 사이드바(기본 색·그룹 선택)는 프로젝트 기능이 없을 때의 화면
   mockRows.tok_settings=[{user_id:'test',day_start_minute:420,day_end_minute:1380,app_symbol:'check',default_tag_color:'#123456',navigation_config:{version:1,order:['home'],hidden:[]}}];
   mockRows.tok_item_groups=[{id:'oldtodo',kind:'todo',name:'예전 할일 그룹',is_archived:true},{id:'oldhabit',kind:'habit',name:'예전 습관 그룹',is_archived:true}];mockRows.tok_event_categories=[{id:'oldevent',name:'예전 일정 그룹',is_archived:true}];
   mockRows.tok_todos=[{id:'todo1',user_id:'test',title:'기본 할일',start_date:todayStr(),all_day:true,is_done:false},{id:'todo2',user_id:'test',title:'기존 그룹 할일',start_date:todayStr(),group_id:'oldtodo',is_done:false}];
