@@ -57,7 +57,12 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await go(p,'month');assert.equal(await p.locator('#allSidebarTypes [data-aft-cat="event|c1"]').getAttribute('aria-pressed'),'false','범주 눈은 기간 공통');
  await go(p,'week');assert.equal(await p.locator('#allWeekBoard [data-awb-id="event|e-range"]').count(),0,'숨긴 범주 일정 안 보임');
  await p.locator('#allSidebarTypes [data-aft-cat="event|c1"]').click();
- ok('사이드바 내 일정(범주·할일·습관)/다른 캘린더, 할일·습관 눈 기간별 저장, 범주 눈 공통');
+ // 범주 추가·수정(옛 일정 사이드바와 같은 창)
+ await p.locator('#allSidebarTypes [data-aft-add-cat]').click();assert(await p.locator('#classificationManageBg').evaluate(e=>e.classList.contains('open')));await p.locator('#classificationManageName').fill('약속');await p.locator('#classificationManageSave').click();
+ await p.waitForFunction(()=>mockRows.tok_event_categories.some(c=>c.name==='약속'));await p.waitForTimeout(150);assert((await p.locator('#aftList-mine .aft-name').allTextContents()).includes('약속'));
+ await p.locator('#allSidebarTypes [data-aft-cat-edit=c1]').click();await p.getByRole('menuitem',{name:'이름·색상 수정'}).click();await p.locator('#classificationManageName').fill('병원 진료');await p.locator('#classificationManageSave').click();
+ await p.waitForFunction(()=>mockRows.tok_event_categories.find(c=>c.id==='c1').name==='병원 진료');await p.waitForTimeout(150);assert((await p.locator('#aftList-mine .aft-name').allTextContents()).includes('병원 진료'));
+ ok('사이드바 내 일정(범주·할일·습관)/다른 캘린더, 할일·습관 눈 기간별 저장, 범주 눈 공통, 범주 추가·수정');
  // 3) 새로고침 후 복원 + 사용자 분리 + 다른 탭 설정 불변
  const saved=await p.evaluate(()=>JSON.parse(localStorage.getItem('tok_all_layout:test')));
  assert.equal(saved.eyes.month.habit,true);

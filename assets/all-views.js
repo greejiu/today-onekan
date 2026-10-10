@@ -67,11 +67,13 @@ window.createOnekanAllViews = api => {
   const L=prefs(),e=eyesOf(),v=view(),vName={month:'월',week:'주',day:'일'}[v];
   const eyeBtn=(attr,on,label,cls='')=>'<button type="button" class="aft-eye'+cls+'" '+attr+' aria-pressed="'+on+'" aria-label="'+esc(label)+' '+(on?'표시 중 · 숨기기':'숨김 · 표시하기')+'" title="'+esc(label)+' '+(on?'숨기기':'표시')+'">'+OnekanCalendarUI.eye(on)+'</button>';
   const row=(color,name,eye,on)=>'<li'+(on?'':' class="aft-off"')+'><span class="aft-dot" style="background:'+esc(color||'var(--line)')+'"></span><span class="aft-name">'+esc(name)+'</span>'+eye+'</li>';
-  const section=(key,title,body)=>'<section class="aft-kind" data-aft-kind="'+key+'"><h3 class="aft-title">'+title+'</h3><ul class="aft-list" id="aftList-'+key+'">'+body+'</ul></section>';
+  const section=(key,title,body,action='')=>'<section class="aft-kind" data-aft-kind="'+key+'"><div class="aft-title-row"><h3 class="aft-title">'+title+'</h3>'+action+'</div><ul class="aft-list" id="aftList-'+key+'">'+body+'</ul></section>';
+  const catEdit=g=>'<button type="button" class="aft-cat-edit" data-aft-cat-edit="'+esc(g.id)+'" aria-label="'+esc(g.name)+' 범주 '+(g.id==='default'?'색상 수정':'이름·색상 수정')+'" title="수정">⋯</button>';
   const cats=[{id:'default',name:'기본',color:null},...pools.event().filter(g=>!g.is_archived).map(g=>({id:g.id,name:g.name,color:g.color}))];
   return '<p class="aft-scope">'+vName+' 보기 표시</p>'+
-   section('mine','내 일정',cats.map(g=>{const shown=!L.hidden.event.includes(g.id);return row(g.color,g.name,eyeBtn('data-aft-cat="event|'+esc(g.id)+'"',shown,'일정 · '+g.name,' aft-cat-eye'),shown);}).join('')+
-    row('var(--accent)','할일',eyeBtn('data-aft-eye="todo"',e.todo,'할일'),e.todo)+row('#3fae6a','습관',eyeBtn('data-aft-eye="habit"',e.habit,'습관'),e.habit))+
+   section('mine','내 일정',cats.map(g=>{const shown=!L.hidden.event.includes(g.id);return row(g.color,g.name,catEdit(g)+eyeBtn('data-aft-cat="event|'+esc(g.id)+'"',shown,'일정 · '+g.name,' aft-cat-eye'),shown);}).join('')+
+    row('var(--accent)','할일',eyeBtn('data-aft-eye="todo"',e.todo,'할일'),e.todo)+row('#3fae6a','습관',eyeBtn('data-aft-eye="habit"',e.habit,'습관'),e.habit),
+    '<button type="button" class="aft-add" data-aft-add-cat aria-label="일정 범주 추가" title="범주 추가">＋</button>')+
    section('other','다른 캘린더',row('#e57373','대한민국 휴일',eyeBtn('data-aft-holiday="1"',L.holidays,'대한민국 휴일'),L.holidays));
  }
  function wireTree(box){
@@ -79,6 +81,8 @@ window.createOnekanAllViews = api => {
   box.innerHTML=filterTree();
   box.querySelectorAll('[data-aft-eye]').forEach(b=>b.onclick=()=>{const e=eyesOf();e[b.dataset.aftEye]=!e[b.dataset.aftEye];savePrefs();render();});
   box.querySelectorAll('[data-aft-cat]').forEach(b=>b.onclick=()=>{const [k,g]=b.dataset.aftCat.split('|'),list=prefs().hidden[k],i=list.indexOf(g);if(i<0)list.push(g);else list.splice(i,1);savePrefs();render();});
+  box.querySelector('[data-aft-add-cat]')?.addEventListener('click',e=>api.categoryAdd?.(e.currentTarget)); // 범주 추가·수정은 옛 일정 사이드바와 같은 창
+  box.querySelectorAll('[data-aft-cat-edit]').forEach(b=>b.onclick=()=>api.categoryEdit?.(b.dataset.aftCatEdit,b));
   box.querySelectorAll('[data-aft-holiday]').forEach(b=>b.onclick=()=>{const L=prefs();L.holidays=!L.holidays;savePrefs();render();});
   if(focus>=0)box.querySelectorAll('button')[focus]?.focus({preventScroll:true});
  }

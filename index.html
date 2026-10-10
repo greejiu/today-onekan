@@ -10491,6 +10491,8 @@
     done:setTodoDone,reload:loadAll,refresh:()=>{renderHome();renderTodosPage();renderTodo();if(currentPage==='work')renderWork();},sidebar:syncPageSidebar,
     // 2026-10-10 '모두': 오른쪽 다가오는·언젠가와 일 보기는 지금 한칸 화면을 그대로 빌려 씀, 이미지 저장
     mountLists:mountHomeLists,homeDay:lendHomeDay,exportView:openAllExport,
+    // 일정 범주 추가·수정(옛 일정 화면 사이드바와 같은 창) — 통합 일정 화면 사이드바 '내 일정'에서 엶
+    categoryAdd:opener=>classification.open('group','event',opener),categoryEdit:(id,opener)=>classification.editGroup('event',id,opener),
     // 주간 보드도 지금 한칸과 같은 규칙: 빈칸(모양·입력), 제목 누르기 = 이름 수정
     addSlotHtml,addSlot:wireDateAddSlot,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone),
     rowHtml:homeTodayRowHtml,wireRows:wireHomeTodayChecks
