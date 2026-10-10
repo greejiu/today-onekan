@@ -237,3 +237,113 @@
  [data-page=todos] .todo-filter-bar .sched-month-title{font-size:13px;padding:0 4px}
  [data-page=todos] .todo-filter-bar .cal-today-btn{margin-left:4px;padding:0 10px;flex-shrink:0}
 }
+
+/* ── 2026-10-10 '모두' 개편: 상단(월/주/일 | 이미지 저장), 표시 설정 목록, 주간 보드, 오른쪽 다가오는·언젠가(할일 탭 공용) ── */
+.content:has(.page[data-page=all]:not([style*="display: none"])),.content:has(.page[data-page=todos]:not([style*="display: none"])){max-width:1480px}
+.all-tab-sep{align-self:stretch;width:1px;background:var(--line);margin:6px 4px}
+.all-icon-btn{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:36px;border:0;border-radius:10px;background:transparent;color:var(--text);cursor:pointer}
+.all-icon-btn:hover,.all-icon-btn:focus-visible{background:var(--card)}
+.all-sub-tabs{flex:none;margin-right:auto}
+.all-sub-tabs button{flex:none;padding:0 14px;white-space:nowrap}
+.all-sub-tabs[hidden]{display:none!important}
+.all-tools{position:relative;display:flex;flex-wrap:wrap;gap:6px}
+.all-chip-btn{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--text);font:inherit;font-size:13px;cursor:pointer}
+.all-chip-btn[hidden]{display:none!important}
+#allFilterBtn{display:none}
+.layout:has(.sidebar.rail-collapsed) #allFilterBtn{display:inline-flex}
+#allNotice:not(:empty){display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* 표시 설정(종류 눈 + 범주·그룹 눈, 종류별 접기) */
+.all-filter-tree{display:flex;flex-direction:column;gap:2px}
+#allSidebarTypes{border-top:1px solid var(--line);margin-top:10px;padding-top:6px}
+.aft-scope{font-size:11.5px;color:var(--sub);margin:4px 2px}
+.aft-head{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.aft-fold{display:flex;align-items:center;gap:6px;min-height:36px;border:0;background:none;color:var(--text);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;padding:0 4px;border-radius:8px}
+.aft-caret{display:inline-block;width:12px;color:var(--sub);font-size:11px}
+.aft-eye{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;border:0;background:none;color:var(--sub);border-radius:8px;cursor:pointer}
+.aft-eye[aria-pressed=true]{color:var(--text)}
+.aft-eye:hover,.aft-fold:hover{background:var(--accent-soft)}
+.aft-list{list-style:none;margin:0 0 6px;padding:0 0 0 22px}
+.aft-list[hidden]{display:none}
+.aft-list li{display:flex;align-items:center;gap:8px;min-height:32px;font-size:13px}
+.aft-dot{flex:none;width:8px;height:8px;border-radius:50%}
+.aft-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.aft-off .aft-list{opacity:.5}
+.all-filter-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:45;width:290px;max-height:70vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:8px 10px}
+.all-filter-panel[hidden]{display:none}
+.afp-head{display:flex;align-items:center;justify-content:space-between}
+.afp-head button{min-width:40px;min-height:40px;border:0;background:none;color:var(--sub);font-size:16px;cursor:pointer}
+/* 주간 보드 */
+#allCalendarMode.all-board-mode>#allTimeView,#allCalendarMode.all-board-mode>.cal-layout{display:none!important}
+.all-week-board[hidden]{display:none}
+.awb-scroll{overflow-x:auto;padding-bottom:4px}
+.awb-grid{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:8px}
+.awb-col{display:flex;flex-direction:column;min-height:340px;background:var(--card);border:1px solid var(--line);border-radius:14px;min-width:0}
+.awb-col.is-today{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+.awb-head button{display:flex;align-items:center;gap:4px;width:100%;min-height:40px;padding:0 10px;border:0;background:none;color:var(--text);font:inherit;font-size:13px;cursor:pointer;text-align:left}
+.awb-col.is-today .awb-head strong{color:var(--accent-text)}
+.awb-col.is-selected .awb-head button{background:var(--accent-soft);border-radius:13px 13px 0 0}
+.awb-dow{color:var(--sub);font-weight:600}
+.awb-body{flex:1;display:flex;flex-direction:column;gap:6px;padding:4px 6px 6px}
+.awb-card{position:relative;display:flex;align-items:flex-start;gap:6px;padding:6px 26px 6px 8px;border-left:3px solid var(--awb-c);border-radius:8px;background:color-mix(in srgb,var(--text) 4%,var(--card));cursor:grab}
+.awb-card .iv-check{margin-top:3px;flex:none}
+.awb-open{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:0;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.awb-time{font-size:11px;color:var(--sub)}
+.awb-title{font-size:13px;line-height:1.35}
+.awb-card.iv-done .awb-title,.awb-card.iv-skipped .awb-title{color:var(--sub);text-decoration:line-through}
+.awb-card>.item-more{position:absolute;top:3px;right:2px;min-width:24px;min-height:24px}
+.awb-add{flex:1;min-height:44px;border:1px dashed transparent;border-radius:10px;background:none;color:transparent;font:inherit;font-size:12px;cursor:pointer}
+.awb-add:hover,.awb-add:focus-visible{border-color:var(--line);color:var(--sub)}
+@media(hover:none){.awb-add{color:var(--sub);border-color:color-mix(in srgb,var(--line) 70%,transparent)}}
+.awb-dragging{opacity:.4}
+.awb-ghost{position:fixed;z-index:60;width:160px;pointer-events:none;opacity:.92;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.awb-drop{outline:2px dashed var(--accent);outline-offset:-2px}
+/* 월: PC는 오른쪽 패널이 선택 날짜 목록을 대신함(모바일은 달력 아래 그날 목록에서 추가). 날짜 숫자 = 그날 일 보기 버튼 */
+@media(min-width:761px){.page[data-page=all] .cal-side{display:none}.page[data-page=all] .cal-layout{display:block!important}}
+#allCalGrid .cal-date-button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;margin:-4px 0 0 -4px;padding:0;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+#allCalGrid .cal-date-button:hover{background:var(--accent-soft)}
+#allCalGrid .cal-date-button:focus-visible{outline:2px solid var(--accent)}
+/* 보드·오른쪽 목록 안의 체크는 줄 흐름 안에(다른 화면의 겹침 배치 규칙보다 우선) */
+.awb-card .iv-check,.sa-row .iv-check{position:static!important;width:16px;height:16px;margin:2px 0 0;flex:none}
+.awb-card .hv-actions{position:static!important;display:flex;gap:2px;width:auto;height:auto;flex:none}
+.awb-card .hv-state{position:static!important;flex:none;padding:2px 0 0;font-size:10.5px}
+#allTypes{display:none!important}
+.awb-card .hv-actions button{min-width:22px;min-height:22px}
+/* 오른쪽 '다가오는 · 언젠가' */
+.sa-shell{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,300px);gap:18px;align-items:start}
+.sa-shell.sa-closed{grid-template-columns:minmax(0,1fr) 36px}
+.sa-main{min-width:0}
+.sa-panel{position:sticky;top:84px;max-height:calc(100vh - 110px);display:flex;flex-direction:column;border-left:1px solid var(--line);padding-left:14px;min-width:0}
+.sa-panel[hidden],.sa-reopen[hidden]{display:none!important}
+.sa-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0 8px}
+.sa-tabs button{min-height:36px}
+.sa-close,.sa-reopen{min-width:36px;min-height:36px;border:0;border-radius:10px;background:none;color:var(--text);font:inherit;cursor:pointer}
+.sa-reopen{position:sticky;top:84px}
+.sa-body{flex:1;overflow:auto;min-height:0;padding-right:2px}
+.sa-from,.sa-empty{font-size:11.5px;color:var(--sub);margin:2px 0 6px}
+.sa-day h3{font-size:13px;margin:12px 0 4px;display:flex;align-items:center;gap:6px}
+.sa-overdue{margin-bottom:6px}
+.sa-overdue-toggle{min-height:36px;border:0;background:none;color:var(--danger-text);font:inherit;font-size:12.5px;cursor:pointer;padding:0}
+.sa-row{position:relative;display:flex;align-items:flex-start;gap:6px;margin:4px 0;padding:6px 28px 6px 8px;border-left:3px solid var(--sa-c);border-radius:6px;background:color-mix(in srgb,var(--text) 3%,var(--card))}
+.sa-row .iv-check{margin-top:3px;flex:none}
+.sa-open{flex:1;min-width:0;display:grid;grid-template-columns:42px minmax(0,1fr);gap:6px;padding:0;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.sa-drag .sa-open{grid-template-columns:minmax(0,1fr)}
+.sa-drag{cursor:grab}
+.sa-time{font-size:11px;color:var(--sub);padding-top:2px}
+.sa-title{font-size:13px;line-height:1.35}
+.sa-row.iv-done .sa-title{color:var(--sub);text-decoration:line-through}
+.sa-row>.item-more{position:absolute;right:2px;top:4px;min-width:24px;min-height:24px}
+.sa-more{width:100%;margin:10px 0}
+/* 이미지 저장 미리보기(월·주) */
+#allExportBg .share-sheet{max-width:980px}
+#allExportCanvas{display:block;width:100%;height:auto;margin:0 auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+#allExportCanvas[hidden]{display:none}
+@media(max-width:760px){
+ #allFilterBtn{display:inline-flex}
+ .all-filter-panel{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;max-height:75vh;border-radius:18px 18px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+ .sa-shell,.sa-shell.sa-closed{display:block}
+ .sa-reopen{display:none!important}
+ .sa-panel{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:46;max-height:80vh;height:80vh;background:var(--card);border-left:0;border-radius:18px 18px 0 0;padding:10px 14px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.18)}
+ .awb-scroll{scroll-snap-type:x mandatory;overscroll-behavior-x:contain}
+ .awb-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:78%}
+ .awb-col{scroll-snap-align:start;min-height:260px}
+}

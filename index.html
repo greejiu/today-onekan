@@ -1984,6 +1984,23 @@
   </div>
 </div>
 
+<!-- 2026-10-10 '모두' 월·주 이미지 저장 미리보기. 미리보기 캔버스가 곧 저장되는 PNG(일 보기는 기존 '오늘한칸 공유' 창을 씀). -->
+<div class="sheet-bg share-sheet-bg" id="allExportBg">
+  <div class="sheet share-sheet" role="dialog" aria-modal="true" aria-labelledby="allExportTitle">
+    <div class="share-head"><h2 id="allExportTitle">이미지 저장</h2><button type="button" class="share-close" id="allExportClose" aria-label="닫기">✕</button></div>
+    <p class="share-note" id="allExportNote"></p>
+    <div class="share-preview" id="allExportPreview" tabindex="0" aria-label="저장할 이미지 미리보기">
+      <canvas id="allExportCanvas" role="img" aria-label="저장할 이미지"></canvas>
+      <div class="share-empty" id="allExportEmpty" hidden></div>
+    </div>
+    <div class="share-status" id="allExportStatus" role="status" aria-live="polite"></div>
+    <div class="sheet-actions share-actions">
+      <button type="button" class="btn-primary" id="allExportSave">이미지 저장</button>
+      <button type="button" class="btn-primary" id="allExportShare" hidden>공유하기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 2026-09-29 프로젝트 만들기/수정 창(작업 탭). 하위 프로젝트는 상위를 고정해서 만듦. -->
 <div class="sheet-bg cal-ev-sheet-bg add-sheet" id="projectSheetBg">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="projectSheetTitle">
@@ -3002,7 +3019,7 @@
   let todoViews = null;
   let todoSidebar = null;
   let habitViews = null;
-  let allViews = null;
+  let allViews = null, todoAgenda = null;
   let tracking = null;
   // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가). 메모 기능은 2026-09-12에 완전히 제거함(scheduleSubView도 함께 삭제).
   let scheduleMode = "calendar"; // "calendar" | "list" — 2026-09-26: 첫 화면은 캘린더(앱 사용 중 바꾼 보기는 탭을 오가도 유지, 새로고침하면 다시 캘린더)
@@ -3399,6 +3416,7 @@
     $("navMoreBtn")?.classList.toggle("active", NAV_MORE_PAGES.includes(page)); // 더보기 안 메뉴를 보고 있으면 더보기 칸 강조
     document.querySelectorAll(".page").forEach(el => el.style.display = el.dataset.page === page ? "block" : "none");
     if (page === "all") allViews?.render();
+    if (page === "todos") todoAgenda?.render();
     if (page === "work") renderWork();
     tracking?.render();
     if(page === "timer") tracking?.refresh();
@@ -6441,6 +6459,7 @@
 
   function renderTodosPage() {
     allViews?.render();
+    todoAgenda?.render();
     if(todoViews){todoViews.render();return;}
     document.querySelectorAll("#todoTopTabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === todoTabView));
     const isSomeday = todoTabView === "someday";
@@ -9632,6 +9651,7 @@
   }
   // 종류(일정·할일·습관) → 할일·습관은 완료 상태(완료한 일·미완료한 일)까지 통과해야 표시. 일정은 완료 개념이 없어 종류만 봄.
   function shareFilterItems(items, opts, record) {
+    if (shareState.extra) items = items.filter(shareState.extra); // '모두' 화면에서 연 경우: 그 화면의 범주·그룹 눈
     return items.filter(it => it.kind === "event" ? opts.events
       : !(it.kind === "habit" ? opts.habit : opts.todo) ? false
       : it.done ? opts.done : (opts.undone && !record));
@@ -10063,13 +10083,15 @@
     shareSetButtons();
   }
 
-  function openShareSheet(dateStr, view) {
+  function openShareSheet(dateStr, view, from) {
     const s = shareState;
+    s.extra = from?.extra || null;
     s.userId = appSymbolUserId;
     s.opener = document.activeElement;
     s.date = dateStr || todayStr();
     s.view = view === "block" ? "block" : "timeline";
     s.opts = { events: true, todo: true, habit: true, done: true, undone: true, hideEmpty: true }; // 옵션은 열 때마다 기본값(모두 켜짐)
+    if (from?.opts) Object.assign(s.opts, from.opts); // '모두' 일 보기에서 열면 그 화면의 종류 눈을 시작값으로
     s.busy = false;
     $("shareSheetBg").classList.add("open");
     $("sharePreview").scrollTop = 0;
@@ -10157,6 +10179,146 @@
   });
   $("shareSheetBg").addEventListener("click", (e) => { if (e.target === $("shareSheetBg")) closeShareSheet(); });
 
+  // ── 2026-10-10 '모두' 이미지 저장(갤러리 아이콘) ──
+  // 일 보기 = 기존 '오늘한칸 공유' 창(같은 날짜·보기·종류 눈·범주/그룹 눈으로 시작).
+  // 주·월 = 아래 캔버스(화면의 기간·보기·필터를 담은 모델 그대로, 스크롤 밖 항목 포함). 글자를 줄이거나 잘라내지 않고,
+  // 캔버스 한계를 넘으면 배율을 낮추고 그래도 넘치면 저장하지 않고 안내.
+  const ALL_EXPORT_AREA = 16000000; // 모바일 사파리 캔버스 한계(약 1,670만 화소) 안
+  const allExport = { model: null, blob: null, busy: false, opener: null, version: 0 };
+  function openAllExport(model, opener) {
+    if (model.view === "day") {
+      const catKey = it => it.cat_id || "default";
+      openShareSheet(model.date, model.sub === "blocks" ? "block" : "timeline", {
+        opts: { events: model.eyes.event, todo: model.eyes.todo, habit: model.eyes.habit },
+        extra: it => !(model.hidden[it.kind] || []).includes(catKey(it)),
+      });
+      return;
+    }
+    allExport.model = model; allExport.opener = opener || document.activeElement; allExport.busy = false;
+    $("allExportBg").classList.add("open");
+    $("allExportPreview").scrollTop = 0;
+    renderAllExport();
+    $("allExportClose").focus();
+  }
+  function closeAllExport() {
+    $("allExportBg").classList.remove("open");
+    allExport.version++;
+    const o = allExport.opener;
+    if (o && document.body.contains(o) && o.getClientRects().length) o.focus({ preventScroll: true });
+  }
+  // 주: 7열(요일·날짜 머리 + 카드: 시각/종일 줄 + 제목 전부 줄바꿈). 월: 달력 칸에 항목을 모두 적고, 주마다 가장 긴 칸에 맞춰 높이를 늘림.
+  function allExportCompose(ctx, m, T, draw, height) {
+    const week = m.view === "week", COL = week ? 150 : 132, GAP = week ? 8 : 0, PAD = 18;
+    const W = PAD * 2 + COL * 7 + GAP * 6, F = (w, sz, fam = T.font) => `${w} ${sz}px ${fam}`, today = todayStr();
+    const text = (str, x, y, font, color) => { ctx.font = font; if (!draw) return; ctx.fillStyle = shareCss(color); ctx.textAlign = "left"; ctx.textBaseline = "alphabetic"; ctx.fillText(str, x, y); };
+    if (draw) { ctx.fillStyle = shareCss(T.bg); ctx.fillRect(0, 0, W, height); }
+    let y = PAD;
+    const d0 = m.days.find(d => !d.outside) || m.days[0], dN = [...m.days].reverse().find(d => !d.outside) || m.days[m.days.length - 1];
+    const [y0, m0, dd0] = d0.date.split("-").map(Number), [, m1, dd1] = dN.date.split("-").map(Number);
+    const title = week ? `${y0}년 ${m0}월 ${dd0}일 – ${m1 === m0 ? "" : m1 + "월 "}${dd1}일` : `${y0}년 ${m0}월`;
+    text(title, PAD, y + 22, F(700, 21), T.text);
+    ctx.font = F(700, 14, T.brandFont);
+    const bw = 22 + ctx.measureText("오늘한칸").width;
+    if (draw) shareDrawSymbol(ctx, W - PAD - bw, y + 6, 16, T.accentText);
+    text("오늘한칸", W - PAD - bw + 22, y + 19, F(700, 14, T.brandFont), T.accentText);
+    y += 40;
+    const WD = ["일", "월", "화", "수", "목", "금", "토"];
+    const itemH = (it, w, sz, lh) => { ctx.font = F(it.done ? 400 : 500, sz); return shareWrap(ctx, (week ? "" : it.done ? "✓ " : it.skipped ? "× " : "") + it.title, w).length * lh; };
+    const drawItem = (it, x, yy, w, sz, lh, lines) => {
+      const c = it.color ? shareRgb(it.color, T.sub) : shareMix(T.sub, T.card, 0.6);
+      ctx.font = F(it.done ? 400 : 500, sz);
+      lines.forEach((ln, i) => {
+        const by = yy + i * lh + sz;
+        text(ln, x, by, F(it.done ? 400 : 500, sz), it.done || it.skipped ? T.sub : T.text);
+        if (draw && it.done && week && ln) { ctx.fillStyle = shareCss(T.sub); ctx.fillRect(x, by - sz * 0.35, ctx.measureText(ln).width, 1); }
+      });
+      return c;
+    };
+    if (week) {
+      const cards = m.days.map(d => d.items.map(it => { ctx.font = F(it.done ? 400 : 500, 13); const lines = shareWrap(ctx, it.title, COL - 26); return { it, lines, h: 8 + 15 + lines.length * 18 + 6 }; }));
+      const headH = 34, colH = Math.max(80, ...cards.map(cs => cs.reduce((a, c) => a + c.h + 6, 0) + 8));
+      m.days.forEach((d, i) => {
+        const x = PAD + i * (COL + GAP), isToday = d.date === today;
+        if (draw) { shareRoundRect(ctx, x, y, COL, headH + colH, 12); ctx.fillStyle = shareCss(T.card); ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = shareCss(isToday ? T.accent : T.line); ctx.stroke(); }
+        text(`${WD[new Date(d.date + "T12:00:00").getDay()]} ${Number(d.date.slice(5, 7))}/${Number(d.date.slice(8))}`, x + 10, y + 22, F(700, 13), isToday ? T.accentText : T.text);
+        let cy = y + headH;
+        cards[i].forEach(({ it, lines, h }) => {
+          const c = it.color ? shareRgb(it.color, T.sub) : shareMix(T.sub, T.card, 0.6);
+          if (draw) {
+            shareRoundRect(ctx, x + 6, cy, COL - 12, h, 8); ctx.fillStyle = shareCss(shareMix(T.text, T.card, 0.045)); ctx.fill();
+            ctx.fillStyle = shareCss(c); ctx.fillRect(x + 6, cy + 4, 3, h - 8);
+          }
+          const mark = it.kind === "event" ? "" : it.done ? "✓ " : it.skipped ? "× " : "□ ";
+          text(mark + it.time, x + 16, cy + 8 + 11, F(600, 11), T.sub);
+          drawItem(it, x + 16, cy + 8 + 15, COL - 26, 13, 18, lines);
+          cy += h + 6;
+        });
+      });
+      y += headH + colH + PAD;
+    } else {
+      if (draw) { ctx.fillStyle = shareCss(T.card); ctx.fillRect(PAD, y, COL * 7, height - y - PAD); }
+      WD.forEach((w, i) => text(w, PAD + i * COL + COL / 2 - 6, y + 16, F(600, 12), T.sub));
+      y += 24;
+      for (let r = 0; r < m.days.length; r += 7) {
+        const week7 = m.days.slice(r, r + 7);
+        const rowH = Math.max(86, ...week7.map(d => 26 + d.items.reduce((a, it) => a + itemH(it, COL - 22, 11.5, 15) + 3, 0) + 6));
+        week7.forEach((d, i) => {
+          const x = PAD + i * COL, isToday = d.date === today;
+          if (draw) { ctx.strokeStyle = shareCss(T.line); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, COL, rowH); }
+          text(String(Number(d.date.slice(8))), x + 8, y + 17, F(isToday ? 700 : 500, 12.5), d.outside ? shareMix(T.sub, T.card, 0.55) : isToday ? T.accentText : T.text);
+          let cy = y + 24;
+          d.items.forEach(it => {
+            ctx.font = F(it.done ? 400 : 500, 11.5);
+            const lines = shareWrap(ctx, (it.done ? "✓ " : it.skipped ? "× " : "") + it.title, COL - 22);
+            const c = it.color ? shareRgb(it.color, T.sub) : shareMix(T.sub, T.card, 0.6);
+            if (draw) { ctx.beginPath(); ctx.arc(x + 10, cy + 7, 3, 0, Math.PI * 2); ctx.fillStyle = shareCss(c); ctx.fill(); }
+            drawItem(it, x + 17, cy - 1, COL - 22, 11.5, 15, lines);
+            cy += lines.length * 15 + 3;
+          });
+        });
+        y += rowH;
+      }
+      y += PAD;
+    }
+    return { width: W, height: Math.ceil(y) };
+  }
+  async function renderAllExport() {
+    const version = ++allExport.version, m = allExport.model, canvas = $("allExportCanvas"), empty = $("allExportEmpty");
+    allExport.blob = null; $("allExportSave").disabled = true; $("allExportShare").disabled = true; $("allExportShare").hidden = !shareCanShareFiles;
+    $("allExportNote").textContent = m.view === "week" ? (m.sub === "timeline" ? "주 타임라인은 날짜별 카드 목록(시각 포함)으로 저장해요." : "선택한 주 7일을 모두 저장해요.") : "이번 달의 모든 항목을 칸에 다 적어 저장해요.";
+    $("allExportStatus").textContent = "이미지를 만드는 중…";
+    try {
+      if (!m.days.some(d => d.items.length)) { canvas.hidden = true; empty.hidden = false; empty.textContent = "표시할 항목이 없어요"; $("allExportStatus").textContent = ""; return; }
+      const T = shareTheme(); await shareEnsureFonts(T); if (version !== allExport.version) return;
+      const size = allExportCompose(document.createElement("canvas").getContext("2d"), m, T, false, 0);
+      let scale = 2; while (scale > 1 && size.width * scale * size.height * scale > ALL_EXPORT_AREA) scale -= 0.25;
+      if (size.width * scale * size.height * scale > ALL_EXPORT_AREA) { canvas.hidden = true; empty.hidden = false; empty.textContent = "내용이 많아 한 장에 담을 수 없어요. 글자를 줄이거나 잘라내지 않으려고 만들지 않았어요. 표시할 종류를 줄이거나 주·일 보기로 저장해 주세요."; $("allExportStatus").textContent = ""; return; }
+      canvas.width = Math.round(size.width * scale); canvas.height = Math.round(size.height * scale);
+      const ctx = canvas.getContext("2d"); ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      allExportCompose(ctx, m, T, true, size.height);
+      canvas.hidden = false; empty.hidden = true;
+      const blob = await new Promise(r => canvas.toBlob(r, "image/png")); if (version !== allExport.version) return;
+      if (!blob) throw new Error("PNG를 만들지 못했어요.");
+      allExport.blob = blob; $("allExportStatus").textContent = ""; $("allExportSave").disabled = false; $("allExportShare").disabled = false;
+    } catch (err) { if (version === allExport.version) $("allExportStatus").textContent = "이미지를 만들지 못했어요. 다시 열어 주세요."; }
+  }
+  const allExportName = () => { const m = allExport.model, d = m.view === "week" ? m.days[0].date : m.days.find(x => !x.outside).date; return `오늘한칸_${m.view === "week" ? "주" : "월"}_${m.view === "week" ? d : d.slice(0, 7)}.png`; };
+  $("allExportSave").onclick = () => {
+    if (!allExport.blob || allExport.busy) return; allExport.busy = true; $("allExportSave").disabled = true;
+    const url = URL.createObjectURL(allExport.blob), a = document.createElement("a"); a.href = url; a.download = allExportName(); document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000); $("allExportStatus").textContent = "이미지를 저장했어요.";
+    setTimeout(() => { allExport.busy = false; $("allExportSave").disabled = !allExport.blob; }, 1200);
+  };
+  $("allExportShare").onclick = async () => {
+    if (!allExport.blob || allExport.busy || !shareCanShareFiles) return; allExport.busy = true;
+    try { await navigator.share({ files: [new File([allExport.blob], allExportName(), { type: "image/png" })], title: "오늘한칸" }); }
+    catch (err) { if (err?.name !== "AbortError") $("allExportStatus").textContent = "공유하지 못했어요. ‘이미지 저장’을 써 주세요."; }
+    finally { allExport.busy = false; }
+  };
+  $("allExportClose").onclick = closeAllExport;
+  $("allExportBg").addEventListener("click", e => { if (e.target === $("allExportBg")) closeAllExport(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && $("allExportBg").classList.contains("open")) { e.preventDefault(); closeAllExport(); } });
+
 
   window.Together?.init({
     sb, allowed:()=>OnekanRelease.canOpen('together'), getUser: () => appSymbolUserId, today: todayStr,
@@ -10220,8 +10382,22 @@
     edit:(kind,id,opener)=>kind==='event'?openEventEditor({mode:'edit',id,opener}):kind==='todo'?openTodoSheet(todos.find(t=>t.id===id)):openHabitSheet(tasks.find(h=>h.id===id)),
     add:openAddWindowFor,
     choose:(context,onSelect)=>showAddKindMenu(context.opener?.getBoundingClientRect?.().left||innerWidth/2,context.opener?.getBoundingClientRect?.().bottom||150,kind=>onSelect(kind)),
-    done:setTodoDone,reload:loadAll,refresh:()=>{renderHome();renderTodosPage();renderTodo();if(currentPage==='work')renderWork();},sidebar:syncPageSidebar
+    done:setTodoDone,reload:loadAll,refresh:()=>{renderHome();renderTodosPage();renderTodo();if(currentPage==='work')renderWork();},sidebar:syncPageSidebar,
+    // 2026-10-10 '모두' 개편: 언젠가→날짜 이동(기존 이동 규칙), 오른쪽 언젠가 목록, 이미지 저장
+    moveTo:moveItemToZone,somedayItems:()=>somedayItems,somedayColor:s=>itemTagColor('todo',s.tag_id),
+    open:(kind,id)=>{if(kind==='someday'){openSomedaySheet(id);return true;}return false;},exportView:openAllExport
   });
+  // 할일 탭 오른쪽 '다가오는 · 언젠가'(할일만)
+  {
+    const todoPage=document.querySelector('.page[data-page="todos"]'),btn=document.createElement('button');
+    btn.type='button';btn.id='todoPanelBtn';btn.className='all-chip-btn';btn.textContent='다가오는 · 언젠가';btn.setAttribute('aria-haspopup','dialog');btn.setAttribute('aria-controls','todoSideAgenda');
+    $('todoQuickAddBtn').before(btn); // 할일 탭 상단 '+ 할일' 옆(모바일에서만 보임)
+    todoAgenda=window.createOnekanSideAgenda({period:OnekanPeriod,escape:escapeHtml,pageName:'todos',host:todoPage,openButton:btn,user:()=>appSymbolUserId,page:()=>currentPage,today:todayStr,dateLabel:calDateLabel,
+      kinds:()=>['todo'],rows:()=>todos.filter(t=>!t.user_id||t.user_id===appSymbolUserId).map(t=>({...t,kind:'todo',source_id:t.id})),todos:()=>todos,
+      somedayItems:()=>somedayItems,somedayColor:s=>itemTagColor('todo',s.tag_id),color:r=>itemViewColor('todo',r),menuAttrs:(kind,id,date)=>menuAttrs(kind,id,date),
+      detail:(kind,id)=>openTodoSheet(todos.find(t=>t.id===id)),open:(kind,id)=>{if(kind==='someday'){openSomedaySheet(id);return true;}return false;},
+      done:setTodoDone,refresh:()=>{renderHome();renderTodosPage();}});
+  }
   tracking=window.createOnekanTracking({sb,allowed:()=>OnekanRelease.canOpen('timer'),user:()=>appSymbolUserId,page:()=>currentPage,todos:()=>todos,groups:()=>classification.groups(),categories:()=>habitCategories,projects:()=>projects,escape:escapeHtml,today:todayStr,addDays:OnekanPeriod.addDays,navigate:()=>showPage("timer"),sidebar:syncPageSidebar});
   navigationSettings = OnekanNavigation.createSettings({sb, user:()=>appSymbolUserId, page:()=>currentPage, navigate:showPage, closeMore:()=>closeNavMore(false), refresh:()=>todoSidebar.renderNavigation(), morePages:pages=>{NAV_MORE_PAGES=pages;}});
   const previewButton=document.createElement('button');previewButton.type='button';previewButton.id='betaPreviewButton';previewButton.className='btn-ghost';previewButton.hidden=true;previewButton.onclick=()=>OnekanRelease.setPreview(!OnekanRelease.isPreview());$('navigationSettings').prepend(previewButton);
