@@ -286,14 +286,14 @@
 .awb-body{flex:1;display:flex;flex-direction:column;gap:6px;padding:4px 6px 6px}
 .awb-card{position:relative;display:flex;align-items:flex-start;gap:6px;padding:6px 26px 6px 8px;border-left:3px solid var(--awb-c);border-radius:8px;background:color-mix(in srgb,var(--text) 4%,var(--card));cursor:grab}
 .awb-card .iv-check{margin-top:3px;flex:none}
-.awb-open{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:0;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.awb-open{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:0;border:0;background:none;color:var(--text);font:inherit;text-align:left;overflow-wrap:anywhere}
 .awb-time{font-size:11px;color:var(--sub)}
-.awb-title{font-size:13px;line-height:1.35}
+.awb-title{font-size:13px;line-height:1.35;cursor:pointer;overflow-wrap:anywhere}
 .awb-card.iv-done .awb-title,.awb-card.iv-skipped .awb-title{color:var(--sub);text-decoration:line-through}
 .awb-card>.item-more{position:absolute;top:3px;right:2px;min-width:24px;min-height:24px}
-.awb-add{flex:1;min-height:44px;border:1px dashed transparent;border-radius:10px;background:none;color:transparent;font:inherit;font-size:12px;cursor:pointer}
-.awb-add:hover,.awb-add:focus-visible{border-color:var(--line);color:var(--sub)}
-@media(hover:none){.awb-add{color:var(--sub);border-color:color-mix(in srgb,var(--line) 70%,transparent)}}
+.awb-body>.add-slot{flex:1;min-height:44px} /* 빈칸은 지금 한칸 빈칸(addSlotHtml)과 같은 모양·규칙 */
+.awb-open .inline-add-wrap{width:100%}
+.awb-open .inline-add-input{width:100%;min-width:0;font-size:13px}
 .awb-dragging{opacity:.4}
 .awb-ghost{position:fixed;z-index:60;width:160px;pointer-events:none;opacity:.92;box-shadow:0 8px 20px rgba(0,0,0,.18)}
 .awb-drop{outline:2px dashed var(--accent);outline-offset:-2px}
@@ -302,8 +302,8 @@
 #allCalGrid .cal-date-button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;margin:-4px 0 0 -4px;padding:0;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}
 #allCalGrid .cal-date-button:hover{background:var(--accent-soft)}
 #allCalGrid .cal-date-button:focus-visible{outline:2px solid var(--accent)}
-/* 보드·오른쪽 목록 안의 체크는 줄 흐름 안에(다른 화면의 겹침 배치 규칙보다 우선) */
-.awb-card .iv-check,.sa-row .iv-check{position:static!important;width:16px;height:16px;margin:2px 0 0;flex:none}
+/* 보드 안의 체크는 줄 흐름 안에(다른 화면의 겹침 배치 규칙보다 우선) */
+.awb-card .iv-check{position:static!important;width:16px;height:16px;margin:2px 0 0;flex:none}
 .awb-card .hv-actions{position:static!important;display:flex;gap:2px;width:auto;height:auto;flex:none}
 .awb-card .hv-state{position:static!important;flex:none;padding:2px 0 0;font-size:10.5px}
 #allTypes{display:none!important}
@@ -318,21 +318,15 @@
 .sa-tabs button{min-height:36px}
 .sa-close,.sa-reopen{min-width:36px;min-height:36px;border:0;border-radius:10px;background:none;color:var(--text);font:inherit;cursor:pointer}
 .sa-reopen{position:sticky;top:84px}
-.sa-body{flex:1;overflow:auto;min-height:0;padding-right:2px}
-.sa-from,.sa-empty{font-size:11.5px;color:var(--sub);margin:2px 0 6px}
-.sa-day h3{font-size:13px;margin:12px 0 4px;display:flex;align-items:center;gap:6px}
-.sa-overdue{margin-bottom:6px}
-.sa-overdue-toggle{min-height:36px;border:0;background:none;color:var(--danger-text);font:inherit;font-size:12.5px;cursor:pointer;padding:0}
-.sa-row{position:relative;display:flex;align-items:flex-start;gap:6px;margin:4px 0;padding:6px 28px 6px 8px;border-left:3px solid var(--sa-c);border-radius:6px;background:color-mix(in srgb,var(--text) 3%,var(--card))}
-.sa-row .iv-check{margin-top:3px;flex:none}
-.sa-open{flex:1;min-width:0;display:grid;grid-template-columns:42px minmax(0,1fr);gap:6px;padding:0;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;overflow-wrap:anywhere}
-.sa-drag .sa-open{grid-template-columns:minmax(0,1fr)}
-.sa-drag{cursor:grab}
-.sa-time{font-size:11px;color:var(--sub);padding-top:2px}
-.sa-title{font-size:13px;line-height:1.35}
-.sa-row.iv-done .sa-title{color:var(--sub);text-decoration:line-through}
-.sa-row>.item-more{position:absolute;right:2px;top:4px;min-width:24px;min-height:24px}
-.sa-more{width:100%;margin:10px 0}
+.sa-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+/* 빌려 온 지금 한칸 목록: 날짜 이동·정렬·그룹 칩은 고정, 목록만 스크롤(지금 한칸 카드와 같은 배치) */
+.home-loan>.home2-tabpanel[hidden]{display:none!important}
+.sa-body>.home2-tabpanel{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.sa-body #somedayHomeTagChips{max-height:100px;overflow-y:auto;flex-shrink:0}
+.sa-body :is(#homeUpcomingList,#somedayZone){overscroll-behavior-y:contain}
+/* '모두' 일 보기 = 지금 한칸 타임라인·시간블럭(날짜 이동은 '모두' 위쪽 화살표가 맡음) */
+#allHomeDay[hidden]{display:none}
+.all-home-day .agenda-head{display:none}
 /* 이미지 저장 미리보기(월·주) */
 #allExportBg .share-sheet{max-width:980px}
 #allExportCanvas{display:block;width:100%;height:auto;margin:0 auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.12)}

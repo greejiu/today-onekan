@@ -92,19 +92,21 @@ window.createOnekanAllViews = api => {
  function boardRows(){const s=engine.state();return rows().filter(r=>!catHidden(r)&&accept(r,s));}
  function boardCard(r,t,d){
   return '<article class="awb-card iv-kind-'+r.kind+(r.is_done||r.status==='done'?' iv-done':'')+(r.status==='skipped'?' iv-skipped':'')+'" data-awb-id="'+esc(r.id)+'" data-awb-date="'+d+'" style="--awb-c:'+esc(api.color(r)||'var(--line)')+'"'+api.menuAttrs(r.kind,r.source_id,r.kind==='habit'?r.action_date:d)+'>'+check(r)+
-   '<button type="button" class="awb-open" data-awb-open="'+esc(r.id)+'"><span class="awb-time">'+esc(t.label)+'</span><span class="awb-title">'+esc(r.title||'')+'</span></button><button type="button" class="item-more" aria-label="'+esc(r.title||'항목')+' 메뉴" aria-haspopup="menu">⋯</button></article>';
+   '<span class="awb-open"><span class="awb-time">'+esc(t.label)+'</span><span class="awb-title plan-todo-title" role="button" tabindex="0" data-awb-open="'+esc(r.id)+'">'+esc(r.title||'')+'</span></span><button type="button" class="item-more" aria-label="'+esc(r.title||'항목')+' 메뉴" aria-haspopup="menu">⋯</button></article>';
  }
+ function wireAdd(slot,kind){const d=slot.dataset.awbAdd;api.addSlot(slot,d,{rerender:async()=>render(),reopen:k=>{const next=$('allWeekBoard').querySelector('[data-awb-add="'+d+'"]');if(next)wireAdd(next,k);}},kind);}
  function renderBoard(){
   const box=$('allWeekBoard'),days=weekDays(),list=boardRows(),today=api.today(),scroller=box.querySelector('.awb-scroll'),keepX=scroller?scroller.scrollLeft:null,sameWeek=box.dataset.week===days[0];
   box.innerHTML='<div class="awb-scroll" tabindex="0" aria-label="주간 보드, 날짜 열을 가로로 넘겨 볼 수 있어요"><div class="awb-grid">'+days.map(d=>{
    const items=dayItems(list,d),label=Number(d.slice(5,7))+'/'+Number(d.slice(8));
    return '<section class="awb-col'+(d===today?' is-today':'')+(d===date?' is-selected':'')+'" data-awb-col="'+d+'" aria-label="'+esc(api.dateLabel(d))+'"><header class="awb-head"><button type="button" data-awb-select="'+d+'"><span class="awb-dow">'+WD[new Date(d+'T12:00:00').getDay()]+'</span> <strong>'+label+'</strong>'+(d===today?' <span class="today-badge">오늘</span>':'')+'</button></header>'+
-    '<div class="awb-body">'+items.map(x=>boardCard(x.r,x.t,d)).join('')+'<button type="button" class="awb-add" data-awb-add="'+d+'" aria-label="'+esc(api.dateLabel(d))+'에 추가"><span>눌러서 추가해요</span></button></div></section>';
+    '<div class="awb-body">'+items.map(x=>boardCard(x.r,x.t,d)).join('')+api.addSlotHtml('data-awb-add="'+d+'"',!items.length)+'</div></section>';
   }).join('')+'</div></div>';
   box.dataset.week=days[0];
   wire(box);
-  box.querySelectorAll('[data-awb-open]').forEach(b=>b.onclick=()=>{if(performance.now()<suppressClick)return;const r=lookup(b.dataset.awbOpen);if(r)api.detail(r.kind,r.source_id,b);});
-  box.querySelectorAll('[data-awb-add]').forEach(b=>b.onclick=()=>add({startDate:b.dataset.awbAdd,endDate:b.dataset.awbAdd,allDay:true,opener:b}));
+  // 지금 한칸과 같은 규칙: 제목 누르기 = 이름 수정(전체 수정은 ⋯ 메뉴), 빈칸 = 할일 입력창(오른쪽 클릭 = 종류 메뉴)
+  box.querySelectorAll('[data-awb-open]').forEach(b=>{const go=()=>{if(performance.now()<suppressClick)return;const r=lookup(b.dataset.awbOpen);if(r)api.rename(b.closest('.awb-card'),r.kind,r.source_id,()=>render());};b.onclick=go;b.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();go();}};});
+  box.querySelectorAll('[data-awb-add]').forEach(b=>wireAdd(b));
   box.querySelectorAll('[data-awb-select]').forEach(b=>b.onclick=()=>selectDate(b.dataset.awbSelect));
   const scroll=box.querySelector('.awb-scroll');
   if(keepX!=null&&sameWeek)scroll.scrollLeft=keepX;
@@ -130,7 +132,7 @@ window.createOnekanAllViews = api => {
  }
  function dragDown(e){
   if(api.page()!=='all'||e.button!==0||e.pointerType==='touch'||matchMedia('(max-width:760px)').matches)return;
-  const card=e.target.closest('.awb-card[data-awb-id],.sa-drag[data-sa-kind]');if(!card||e.target.closest('input,.item-more,[data-habit-action],.iv-check'))return;
+  const card=e.target.closest('.awb-card[data-awb-id]');if(!card||e.target.closest('input,.item-more,[data-habit-action],.iv-check'))return;
   drag={card,x:e.clientX,y:e.clientY,moved:false,pointer:e.pointerId};
  }
  function dragMove(e){
@@ -146,7 +148,6 @@ window.createOnekanAllViews = api => {
   d.card.classList.remove('awb-dragging');d.ghost?.remove();host.querySelectorAll('.awb-drop').forEach(c=>c.classList.remove('awb-drop'));
   if(!d.moved||cancelled)return;suppressClick=performance.now()+400;
   const to=dropDate(e.clientX,e.clientY);if(!to)return;
-  if(d.card.dataset.saKind){api.moveTo(d.card.dataset.saKind,d.card.dataset.saId,{zone:'today-allday',date:to});return;}
   const r=lookup(d.card.dataset.awbId),from=d.card.dataset.awbDate;if(r&&from!==to)moveRow(r,from,to);
  }
  document.addEventListener('pointerdown',dragDown,true);document.addEventListener('pointermove',dragMove,{passive:false});
@@ -164,9 +165,12 @@ window.createOnekanAllViews = api => {
   const e=eyesOf(),allOff=types.every(t=>!e[t.id]);
   $('allNotice').innerHTML=allOff?'<span>표시할 항목이 꺼져 있어요</span> <button type="button" class="btn-ghost" id="allShowAll">모두 표시</button>':'';
   if(allOff)$('allShowAll').onclick=()=>{for(const t of types)e[t.id]=true;savePrefs();render();};
-  const board=v==='week'&&sub==='board';
-  $('allWeekBoard').hidden=!board;$('allCalendarMode').classList.toggle('all-board-mode',board);
-  if(board){engine.controls();renderBoard();}else engine.calendar();
+  const board=v==='week'&&sub==='board',homeDay=v==='day';
+  $('allWeekBoard').hidden=!board;$('allCalendarMode').classList.toggle('all-board-mode',board||homeDay);$('allHomeDay').hidden=!homeDay;
+  if(board){engine.controls();renderBoard();}else if(homeDay)engine.controls();else engine.calendar();
+  // 일 보기 = 지금 한칸의 타임라인·시간블럭을 그대로 빌려 씀(클릭·끌기·추가 규칙이 같음). 표시는 이 화면의 종류·범주·그룹 눈.
+  const hidden=prefs().hidden;
+  api.homeDay?.(homeDay&&api.page()==='all'?$('allHomeDay'):null,{date,sub,filter:it=>!!e[it.kind]&&!(hidden[it.kind]||[]).includes(it.cat_id||'default'),filterKey:JSON.stringify([e,hidden])});
   renderTrees();agenda?.render();
  }
  const preview=document.createElement('div');preview.id='allDragPreview';preview.className='sv-drag-preview';preview.hidden=true;preview.innerHTML='<span id="allDragText"></span><br><button type="button" id="allDragCancel">취소 (Esc)</button>';document.body.append(preview);
@@ -213,6 +217,7 @@ window.createOnekanAllViews = api => {
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!filterPanel.hidden){openFilter(false);$('allFilterBtn').focus({preventScroll:true});}});
  document.addEventListener('pointerdown',e=>{if(!filterPanel.hidden&&!filterPanel.contains(e.target)&&e.target!==$('allFilterBtn'))openFilter(false);});
  const board=document.createElement('div');board.id='allWeekBoard';board.className='all-week-board';board.hidden=true;$('allCalendarMode').prepend(board);
+ const homeDayHost=document.createElement('div');homeDayHost.id='allHomeDay';homeDayHost.className='home-loan all-home-day';homeDayHost.hidden=true;board.after(homeDayHost);
  exportBtn.onclick=()=>api.exportView?.(exportModel(),exportBtn);
 
  // 이미지 저장용 현재 화면 모델(기간·보기·필터 그대로, 스크롤 밖 항목 포함)
@@ -225,29 +230,26 @@ window.createOnekanAllViews = api => {
   return {view:'month',month:ms,days};
  }
 
- // ── 오른쪽 '다가오는 · 언젠가' ──
- agenda=window.createOnekanSideAgenda({...api,pageName:'all',host,openButton:$('allPanelBtn'),refresh:()=>{api.refresh();render();},
-  kinds:()=>types.map(t=>t.id).filter(k=>eyesOf()[k]),
-  rows:range=>[...api.events().filter(owned).map(r=>wrap('event',r)),...api.todos().filter(owned).map(r=>wrap('todo',r)),...api.habits().occurrenceRows(range).filter(owned).map(r=>wrap('habit',r))].filter(r=>!catHidden(r)),
-  drop:(kind,rowId,d)=>api.moveTo(kind,rowId,{zone:'today-allday',date:d})});
- return {...engine,render,selectDate,sidebarTypes,displayRows:rows,prefs,view,exportModel,agenda};
+ // ── 오른쪽 '다가오는 · 언젠가' = 지금 한칸의 다가오는·담아두기를 그대로 빌려 씀 ──
+ agenda=window.createOnekanSideAgenda({pageName:'all',host,openButton:$('allPanelBtn'),user:api.user,page:api.page,mountLists:api.mountLists});
+ return {...engine,render,selectDate,sidebarTypes,displayRows:rows,prefs,view,exportModel,agenda,dropDate:(x,y)=>api.page()==='all'&&view()!=='day'?dropDate(x,y):null};
 };
 
-/* 오른쪽 '다가오는 · 언젠가' 패널 — '모두'·'할일' 공용. 원본 배열을 그대로 읽고, 열기/수정은 기존 흐름(api.detail·item menu)을 씀.
-   다가오는 = 오늘부터 날짜별(지난 미완료 할일은 위쪽 접힘 묶음), 언젠가 = 담아두기 항목 + 날짜 없는 할일(기존 목록 규칙: 미완료 먼저, 완료 뒤로).
-   마지막 목록과 접힘 상태는 화면·사용자별로 기억. 모바일은 버튼으로 여는 패널. */
+/* 오른쪽 '다가오는 · 언젠가' 칸 — '모두'·'할일' 공용 껍데기(목록 전환·접기·모바일 패널)만 둠.
+   안의 목록은 새로 그리지 않고 지금 한칸의 다가오는·담아두기를 api.mountLists로 그대로 옮겨 붙임(같은 모양·클릭·끌기·추가 규칙).
+   마지막 목록과 접힘 상태는 화면·사용자별로 기억(tok_side_agenda:<화면>:<사용자>). 모바일은 버튼으로 여는 아래쪽 패널. */
 window.createOnekanSideAgenda = api => {
  'use strict';
- const P=api.period,esc=api.escape,page=api.pageName,host=api.host,mobile=matchMedia('(max-width:760px)');
- let owner,state={list:'upcoming',closed:false},horizon=14,overdueOpen=false,mobileOpen=false;
+ const page=api.pageName,host=api.host,mobile=matchMedia('(max-width:760px)');
+ let owner,state={list:'upcoming',closed:false},mobileOpen=false;
  const key=()=>'tok_side_agenda:'+page+':'+api.user();
- function load(){if(owner===api.user())return;owner=api.user();horizon=14;overdueOpen=false;let s={};try{s=JSON.parse(localStorage.getItem(key()))||{};}catch(_){s={};}state={list:s.list==='someday'?'someday':'upcoming',closed:s.closed===true};}
+ function load(){if(owner===api.user())return;owner=api.user();let s={};try{s=JSON.parse(localStorage.getItem(key()))||{};}catch(_){s={};}state={list:s.list==='someday'?'someday':'upcoming',closed:s.closed===true};}
  function save(){try{if(api.user())localStorage.setItem(key(),JSON.stringify(state));}catch(_){}}
  const shell=document.createElement('div');shell.className='sa-shell';
  const main=document.createElement('div');main.className='sa-main';
  while(host.firstChild)main.append(host.firstChild);
  const aside=document.createElement('aside');aside.className='sa-panel';aside.id=page==='all'?'allSideAgenda':'todoSideAgenda';aside.setAttribute('aria-label','다가오는 · 언젠가');
- aside.innerHTML='<header class="sa-head"><div class="view-toggle sa-tabs" role="group" aria-label="목록 선택"><button type="button" data-sa-list="upcoming">다가오는</button><button type="button" data-sa-list="someday">언젠가</button></div><button type="button" class="sa-close" aria-label="다가오는 · 언젠가 접기">→</button></header><div class="sa-body" tabindex="0"></div>';
+ aside.innerHTML='<header class="sa-head"><div class="view-toggle sa-tabs" role="group" aria-label="목록 선택"><button type="button" data-sa-list="upcoming">다가오는</button><button type="button" data-sa-list="someday">언젠가</button></div><button type="button" class="sa-close" aria-label="다가오는 · 언젠가 접기">→</button></header><div class="sa-body home-loan"></div>';
  const reopen=document.createElement('button');reopen.type='button';reopen.className='sa-reopen';reopen.textContent='←';reopen.setAttribute('aria-label','다가오는 · 언젠가 펼치기');reopen.setAttribute('aria-controls',aside.id);
  shell.append(main,aside,reopen);host.append(shell);
  const body=aside.querySelector('.sa-body');
@@ -258,33 +260,6 @@ window.createOnekanSideAgenda = api => {
  if(api.openButton)api.openButton.onclick=()=>setMobile(!mobileOpen);
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mobileOpen&&mobile.matches)setMobile(false);});
  mobile.addEventListener('change',()=>{if(!mobile.matches&&mobileOpen){mobileOpen=false;aside.classList.remove('sa-mobile-open');}render();});
- const timeLabel=(r,d)=>{const p=P.read(r.kind,r);return p.allDay?'종일':p.startDate===d?p.startTime:'이어짐';};
- const lead=r=>r.kind==='todo'?'<input type="checkbox" class="iv-check" data-sa-check="'+esc(r.source_id)+'"'+(r.is_done?' checked':'')+' aria-label="'+esc(r.title||'')+' 완료">':'';
- const row=(r,d,extra)=>'<div class="sa-row iv-kind-'+r.kind+(r.is_done||r.status==='done'?' iv-done':'')+'" style="--sa-c:'+esc(api.color(r)||'var(--line)')+'"'+api.menuAttrs(r.kind,r.source_id,r.kind==='habit'?r.action_date:d)+'>'+lead(r)+'<button type="button" class="sa-open" data-sa-open="'+esc(r.kind+'|'+r.source_id)+'"><span class="sa-time">'+esc(extra||timeLabel(r,d))+'</span><span class="sa-title">'+esc(r.title||'')+'</span></button><button type="button" class="item-more" aria-label="'+esc(r.title||'항목')+' 메뉴" aria-haspopup="menu">⋯</button></div>';
- function upcoming(){
-  const today=api.today(),end=P.addDays(today,horizon-1),kinds=api.kinds();
-  if(!kinds.length)return '<p class="sa-empty">표시할 항목이 꺼져 있어요</p>';
-  const list=api.rows({start:today,end}).filter(r=>kinds.includes(r.kind)&&r.status!=='skipped');
-  const overdue=kinds.includes('todo')?api.todos().filter(t=>(!t.user_id||t.user_id===api.user())&&!t.is_done&&P.read('todo',t).startDate&&(P.read('todo',t).endDate||P.read('todo',t).startDate)<today).map(t=>({...t,kind:'todo',source_id:t.id})).sort((a,b)=>P.read('todo',a).startDate.localeCompare(P.read('todo',b).startDate)):[];
-  let html='<p class="sa-from">오늘부터</p>';
-  if(overdue.length)html+='<section class="sa-overdue"><button type="button" class="sa-overdue-toggle" aria-expanded="'+overdueOpen+'">'+(overdueOpen?'▾':'▸')+' 지난 할일 '+overdue.length+'개</button>'+(overdueOpen?overdue.map(r=>row(r,today,P.read('todo',r).startDate.slice(5).replace('-','/'))).join(''):'')+'</section>';
-  let any=false;
-  for(let d=today;d<=end;d=P.addDays(d,1)){
-   const items=list.filter(r=>P.overlap(r.kind,r,d)).sort((a,b)=>Number(P.read(b.kind,b).allDay)-Number(P.read(a.kind,a).allDay)||(P.clip(a.kind,a,d)?.start_minute||0)-(P.clip(b.kind,b,d)?.start_minute||0));
-   if(!items.length)continue;any=true;
-   html+='<section class="sa-day" data-sa-date="'+d+'"><h3>'+esc(api.dateLabel(d))+(d===today?' <span class="today-badge">오늘</span>':'')+'</h3>'+items.map(r=>row(r,d)).join('')+'</section>';
-  }
-  if(!any)html+='<p class="sa-empty">'+horizon+'일 안에 예정된 항목이 없어요.</p>';
-  if(horizon<120)html+='<button type="button" class="btn-ghost sa-more">'+horizon+'일 뒤까지 더 보기</button>';
-  return html;
- }
- function someday(){
-  const mine=r=>!r.user_id||r.user_id===api.user(),items=[...api.somedayItems().filter(mine).map(s=>({kind:'someday',id:s.id,title:s.title,done:!!s.is_done,color:api.somedayColor?.(s)})),
-   ...api.todos().filter(t=>mine(t)&&!P.read('todo',t).startDate).map(t=>({kind:'todo',id:t.id,title:t.title,done:!!t.is_done,color:api.color({...t,kind:'todo'})}))];
-  const sorted=[...items.filter(x=>!x.done),...items.filter(x=>x.done)];
-  if(!sorted.length)return '<p class="sa-empty">담아둔 일이 없어요.</p>';
-  return '<p class="sa-from">날짜 없는 할일 · 담아두기'+(mobile.matches?'':' — 가운데로 끌어 날짜에 놓을 수 있어요')+'</p>'+sorted.map(x=>'<div class="sa-row sa-drag'+(x.done?' iv-done':'')+'" data-sa-kind="'+x.kind+'" data-sa-id="'+esc(x.id)+'" style="--sa-c:'+esc(x.color||'var(--line)')+'"'+api.menuAttrs(x.kind,x.id)+'>'+(x.kind==='todo'?'<input type="checkbox" class="iv-check" data-sa-check="'+esc(x.id)+'"'+(x.done?' checked':'')+' aria-label="'+esc(x.title)+' 완료">':'')+'<button type="button" class="sa-open" data-sa-open="'+x.kind+'|'+esc(x.id)+'"><span class="sa-title">'+esc(x.title)+'</span></button><button type="button" class="item-more" aria-label="'+esc(x.title)+' 메뉴" aria-haspopup="menu">⋯</button></div>').join('');
- }
  function render(){
   load();const desktop=!mobile.matches,visible=api.page()===page;
   shell.classList.toggle('sa-closed',desktop&&state.closed);
@@ -292,12 +267,8 @@ window.createOnekanSideAgenda = api => {
   if(api.openButton){api.openButton.hidden=!visible||desktop;}
   aside.querySelectorAll('[data-sa-list]').forEach(b=>{const on=b.dataset.saList===state.list;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
   aside.querySelector('.sa-close').textContent=desktop?'→':'✕';aside.querySelector('.sa-close').setAttribute('aria-label',desktop?'다가오는 · 언젠가 접기':'다가오는 · 언젠가 닫기');
-  if(aside.hidden)return;
-  const top=body.scrollTop;body.innerHTML=state.list==='someday'?someday():upcoming();body.scrollTop=top;
-  body.querySelectorAll('[data-sa-open]').forEach(b=>b.onclick=()=>{const [k,id]=b.dataset.saOpen.split('|');api.open?.(k,id,b)||api.detail(k,id,b);});
-  body.querySelectorAll('[data-sa-check]').forEach(b=>{b.onclick=e=>e.stopPropagation();b.onchange=async()=>{b.disabled=true;try{await api.done(b.dataset.saCheck,b.checked);}finally{api.refresh?.();render();}};});
-  body.querySelector('.sa-more')?.addEventListener('click',()=>{horizon+=14;render();});
-  body.querySelector('.sa-overdue-toggle')?.addEventListener('click',()=>{overdueOpen=!overdueOpen;render();body.querySelector('.sa-overdue-toggle')?.focus({preventScroll:true});});
+  // 보이는 쪽만 빌려 가고, 숨으면 이 칸에 있던 목록은 지금 한칸 제자리로
+  if(visible&&!aside.hidden)api.mountLists(state.list,body);else api.mountLists(null,body);
  }
  return {render,state:()=>({...state}),open:setMobile};
 };
