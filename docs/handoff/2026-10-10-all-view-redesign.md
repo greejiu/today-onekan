@@ -1,9 +1,9 @@
 # 인계: '모두' 화면 개편 (월/주/일 · 기간별 눈 · 주간 보드 · 다가오는/언젠가 · 이미지 저장)
 
 - 작성일 / 작성 AI: 2026-10-10 / Claude Code (결이 이번 작업은 Claude가 구현하도록 직접 지정)
-- 상태: 진행 중
-- 브랜치 / 마지막 커밋: `codex/all-view-redesign` / (커밋 후 기록)
-- PR: (생성 후 기록)
+- 상태: 완료(배포됨, 배포본 파일 비교는 결의 PC에서 확인 필요)
+- 브랜치 / 마지막 커밋: `codex/all-view-redesign` / 870be80 → 병합 커밋 `067b889`(main)
+- PR: https://github.com/greejiu/today-onekan/pull/94
 
 ## 목표
 결이 손으로 그린 '모두' 화면 설계를 실제 코드로 구현한다.
@@ -93,6 +93,13 @@
 - 모바일에서 언젠가 → 날짜 지정은 기존 항목 메뉴(‘날짜 정해서 할일로 옮기기’ 등)로 한다. 끌기는 PC만 된다.
 - 다가오는의 습관은 열기만 된다. 완료·건너뛰기는 가운데 보기에서 한다.
 - 왼쪽 사이드바를 다시 펼치면 기존 규칙대로 전체 메뉴가 먼저 보인다(일정·할일 탭과 같음).
+
+## 병합·배포 확인
+- 병합 직전 `origin/main`은 93524cf 그대로였다(충돌·다른 작업 변경 없음).
+- GitHub Pages 배포 run 38007106331: `completed / success`, head_sha = 067b889.
+- **미확인**: 배포 주소의 파일이 main과 같은지 직접 비교하지 못했다(이 작업 환경은 `greejiu.github.io` 접속이 막혀 있음).
+  - 결의 PC에서 `docs/AI_WORKFLOW.md`의 비교 명령으로 확인한다.
+  - 비교할 파일: `index.html`, `assets/all-views.js`, `assets/item-views.js`, `assets/schedule-views.css`.
 
 ## 주의할 점
 - DB 변경 없음. 운영 데이터 쓰기 없음.
