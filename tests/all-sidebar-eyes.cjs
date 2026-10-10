@@ -14,7 +14,7 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright'),{fix
  await eye('event').click();await eye('todo').click();assert.equal(await eye('event').getAttribute('aria-pressed'),'false');
  assert.equal(await p.locator('#allCalGrid [data-menu-kind=event]').count(),0);assert(await p.locator('#allCalGrid [data-menu-kind=todo]').count());
  // 다른 기간은 따로: 일 보기에서는 일정 눈이 켜져 있음, 돌아오면 월 설정 유지
- await p.locator('#allViewTabs [data-common-view=day]').click();assert.equal(await eye('event').getAttribute('aria-pressed'),'true');assert(await p.locator('#allTimeDays [data-menu-kind=event]').count());
+ await p.locator('#allViewTabs [data-common-view=day]').click();assert.equal(await eye('event').getAttribute('aria-pressed'),'true');assert(await p.locator('#allHomeDay [data-kind=event]').count()); // 2026-10-10 일 보기 = 지금 한칸 화면
  await p.locator('#allViewTabs [data-common-view=month]').click();assert.equal(await eye('event').getAttribute('aria-pressed'),'false');
  // 다른 화면으로 가면 숨고, 돌아오면 다시 보임
  await p.locator('#todoIconRail [data-page=todos]').click();assert.equal(await side.isVisible(),false);await p.locator('#sidebarRailMore').click();await p.locator('#sidebarRailMoreMenu [data-page=all]').click();assert(await side.isVisible());

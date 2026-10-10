@@ -273,7 +273,7 @@
      PC(마우스) 호버·키보드 포커스 때 은은한 테두리 + "눌러서 추가해요". 두 문구를 같은 격자 칸에 겹치고 투명도만 바꿔
      높이·주변 위치가 변하지 않음(테두리는 늘 1px 투명 → 색만 바뀜). 호버 규칙은 (hover:hover)+(pointer:fine) 기기에만
      걸어서 모바일 첫 탭이 호버 표시로 소비되지 않고 바로 추가됨. 모바일 항목 아래 줄은 "눌러서 추가해요"를 작게 늘 표시. */
-  .block-add-row.add-slot, .home2-grid .block-add-row.add-slot{display:grid;place-items:center;border:1px solid transparent;background:transparent;color:var(--sub);transition:border-color .15s, background-color .15s;}
+  .block-add-row.add-slot, :is(.home2-grid,.home-loan) .block-add-row.add-slot{display:grid;place-items:center;border:1px solid transparent;background:transparent;color:var(--sub);transition:border-color .15s, background-color .15s;}
   .block-add-row.add-slot:hover{background:transparent;border-color:transparent;color:var(--sub);}
   .add-slot > span{grid-area:1 / 1;transition:opacity .12s;pointer-events:none;}
   .add-slot .add-slot-hint{opacity:0;color:var(--accent-text);}
@@ -993,18 +993,18 @@
      - 제목 15px/1.5, var(--text)로 통일, 최대 2줄 말줄임(전체 제목은 클릭 → 기존 이름 수정 입력창에서 확인).
      - 그룹 색은 제목 글자색(.gc-title, groupTitleHtml — 2026-09-28 점 → 글자색). 완료는 취소선+보조 글자색 우선.
      - 타임라인 칸(.ag-tl-task)은 시간 길이로 높이가 정해지므로 여기 규칙이 전혀 적용되지 않음. */
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row){display:flex;align-items:flex-start;gap:10px;min-height:44px;margin:0;padding:11px 6px;border-radius:10px;border-bottom:1px solid color-mix(in srgb, var(--line) 75%, transparent);font-size:15px;line-height:1.5;}
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row):hover{background:color-mix(in srgb, var(--text) 3%, var(--card));}
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) > .drag-handle-dots{margin-top:4px;cursor:grab;}
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) > input[type=checkbox]{width:20px;height:20px;margin:1px 0 0;flex-shrink:0;}
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) > .agenda-event-dot-wrap{margin-top:1px;}
-  [data-theme="black"] .home2-grid input[type=checkbox]{color-scheme:dark;} /* 검정 테마: 빈 체크박스가 흰 네모로 튀지 않게 */
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) :is(.agenda-title, .plan-todo-title){flex:1;min-width:0;font-size:15px;line-height:1.5;color:var(--text);white-space:normal;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row).done :is(.agenda-title, .plan-todo-title){color:var(--sub);text-decoration:line-through;}
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) .inline-add-wrap{align-self:center;}
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) .inline-add-input{font-size:15px;padding:4px 8px;}
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) :is(.plan-time, .plan-range-tag){font-size:12px;line-height:1.5;margin-top:3px;color:var(--sub);font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
-  :is(.home2-grid,.iv-page) :is(.home1-flat-row, .ag-block-row) .habit-due-chip{font-size:11px;margin:3px 0 0;flex-shrink:0;}
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row){display:flex;align-items:flex-start;gap:10px;min-height:44px;margin:0;padding:11px 6px;border-radius:10px;border-bottom:1px solid color-mix(in srgb, var(--line) 75%, transparent);font-size:15px;line-height:1.5;}
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row):hover{background:color-mix(in srgb, var(--text) 3%, var(--card));}
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row) > .drag-handle-dots{margin-top:4px;cursor:grab;}
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row) > input[type=checkbox]{width:20px;height:20px;margin:1px 0 0;flex-shrink:0;}
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row) > .agenda-event-dot-wrap{margin-top:1px;}
+  [data-theme="black"] :is(.home2-grid,.home-loan) input[type=checkbox]{color-scheme:dark;} /* 검정 테마: 빈 체크박스가 흰 네모로 튀지 않게 */
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row) :is(.agenda-title, .plan-todo-title){flex:1;min-width:0;font-size:15px;line-height:1.5;color:var(--text);white-space:normal;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row).done :is(.agenda-title, .plan-todo-title){color:var(--sub);text-decoration:line-through;}
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row) .inline-add-wrap{align-self:center;}
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row) .inline-add-input{font-size:15px;padding:4px 8px;}
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row) :is(.plan-time, .plan-range-tag){font-size:12px;line-height:1.5;margin-top:3px;color:var(--sub);font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
+  :is(.home2-grid,.iv-page,.home-loan) :is(.home1-flat-row, .ag-block-row) .habit-due-chip{font-size:11px;margin:3px 0 0;flex-shrink:0;}
   /* Upcoming periods sit below the title so long dates cannot squeeze it out. */
   #homeUpcomingList .home1-flat-row{display:grid;grid-template-columns:14px 20px minmax(0,1fr) auto auto;column-gap:10px;row-gap:2px;}
   #homeUpcomingList .home1-flat-row > .drag-handle-dots{grid-column:1;grid-row:1;}
@@ -1014,22 +1014,22 @@
   #homeUpcomingList .home1-flat-row > .habit-due-chip{grid-column:3;grid-row:2;min-width:0;max-width:100%;margin-top:0;white-space:normal;overflow-wrap:anywhere;justify-self:start;}
   #homeUpcomingList .home1-flat-row > .item-more{grid-column:5;grid-row:1;}
   /* 목록 보조 정보(날짜 제목·건수·빈칸 안내·더보기) 12~13px */
-  .home2-grid .ag-section-head .label{font-size:13px;font-weight:700;}
-  .home2-grid .ag-section-head .count{font-size:12px;color:var(--sub);background:color-mix(in srgb, var(--text) 6%, var(--card));}
-  .home2-grid .block-add-row{font-size:13px;min-height:40px;display:flex;align-items:center;justify-content:center;}
-  .home2-grid .agenda-empty-block{font-size:13px;line-height:1.5;}
-  .home2-grid .someday-more-row{font-size:13px;color:var(--sub);font-weight:600;min-height:40px;display:flex;align-items:center;justify-content:center;}
-  .home2-grid .someday-more-row:hover{color:var(--text);}
+  :is(.home2-grid,.home-loan) .ag-section-head .label{font-size:13px;font-weight:700;}
+  :is(.home2-grid,.home-loan) .ag-section-head .count{font-size:12px;color:var(--sub);background:color-mix(in srgb, var(--text) 6%, var(--card));}
+  :is(.home2-grid,.home-loan) .block-add-row{font-size:13px;min-height:40px;display:flex;align-items:center;justify-content:center;}
+  :is(.home2-grid,.home-loan) .agenda-empty-block{font-size:13px;line-height:1.5;}
+  :is(.home2-grid,.home-loan) .someday-more-row{font-size:13px;color:var(--sub);font-weight:600;min-height:40px;display:flex;align-items:center;justify-content:center;}
+  :is(.home2-grid,.home-loan) .someday-more-row:hover{color:var(--text);}
   #homeSomedayPanel > .someday-toolbar, #homeSomedayPanel > .someday-tag-chips{flex-shrink:0;}
   /* 날짜 이동 줄: 날짜 가운데, 이전·다음 버튼 36px 정사각 클릭 영역 */
-  .home2-grid .agenda-head{min-height:40px;}
-  .home2-grid .agenda-date-wrap{font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
+  :is(.home2-grid,.home-loan) .agenda-head{min-height:40px;}
+  :is(.home2-grid,.home-loan) .agenda-date-wrap{font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
   /* 타임라인 위 "하루종일": 제목 12px, 항목은 타임라인과 같은 배경색 구분을 유지하되 글씨만 13px로 */
-  .home2-grid .ag-section-head.tl-style .label{font-size:12px;}
-  :is(.home2-grid,.iv-page) .ag-allday-row.tl-style{padding:5px 8px;margin-bottom:4px;border-radius:10px;gap:8px;}
-  :is(.home2-grid,.iv-page) .ag-allday-row.tl-style .agenda-title{font-size:13px;line-height:1.5;color:var(--text);}
-  :is(.home2-grid,.iv-page) .ag-allday-row.tl-style.done .agenda-title{color:var(--sub);}
-  :is(.home2-grid,.iv-page) .ag-allday-row.tl-style input[type=checkbox]{width:16px;height:16px;margin:0;}
+  :is(.home2-grid,.home-loan) .ag-section-head.tl-style .label{font-size:12px;}
+  :is(.home2-grid,.iv-page,.home-loan) .ag-allday-row.tl-style{padding:5px 8px;margin-bottom:4px;border-radius:10px;gap:8px;}
+  :is(.home2-grid,.iv-page,.home-loan) .ag-allday-row.tl-style .agenda-title{font-size:13px;line-height:1.5;color:var(--text);}
+  :is(.home2-grid,.iv-page,.home-loan) .ag-allday-row.tl-style.done .agenda-title{color:var(--sub);}
+  :is(.home2-grid,.iv-page,.home-loan) .ag-allday-row.tl-style input[type=checkbox]{width:16px;height:16px;margin:0;}
   /* 2026-09-27 남아 있는 할일 — 경고색 없이 기본 글자색 + 옅은 구분선. 줄: 체크박스 → 제목(최대 2줄) → 오늘로 → ⋯,
      원래 날짜는 제목 아래 보조 정보. 좁은 화면(≤480px)에선 날짜와 버튼을 제목 아래 한 줄로 내림. */
   .leftover-wrap[hidden]{display:none;}
@@ -1248,9 +1248,9 @@
   .home2-grid.home-bounded{height:var(--home-height);}
   .home2-grid .home2-col{min-height:0;}
   .home2-grid .home2-tabpanel{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
-  .home2-grid .agenda-head,.home2-col-label,.home2-tabs,.someday-toolbar{flex-shrink:0;}
+  :is(.home2-grid,.home-loan) .agenda-head,.home2-col-label,.home2-tabs,.someday-toolbar{flex-shrink:0;}
   .home-date-reset{border:0;background:none;color:inherit;font:inherit;cursor:pointer;min-height:40px;padding:4px;overflow-wrap:anywhere;}
-  .home2-grid .agenda-date-wrap{min-width:0;text-align:center;}
+  :is(.home2-grid,.home-loan) .agenda-date-wrap{min-width:0;text-align:center;}
   .home-list-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;}
   .home-bounded :is(.home-list-scroll,#homeTodayBlockWrap,#homeUpcomingList,#somedayZone){overscroll-behavior-y:contain;}
   .home-bounded #homeLeftover{flex-shrink:0;max-height:30%;overflow:auto;}
@@ -3020,6 +3020,27 @@
   let todoSidebar = null;
   let habitViews = null;
   let allViews = null, todoAgenda = null;
+  // 2026-10-10 지금 한칸 화면 빌려 쓰기 — '모두'·'할일'에서 같은 기능(다가오는·담아두기·타임라인·시간블럭)은 새로 만들지 않고
+  // 지금 한칸의 DOM을 그대로 옮겨 붙임. 그리기·클릭(이름 수정)·끌기(모바일 길게 누르기)·추가 규칙이 모두 같고, 지금 한칸으로 돌아가면 제자리로.
+  const HOME_LOAN_DROP = "[data-awb-col], #allCalGrid .cal-cell[data-date]"; // 빌려 간 행을 놓을 수 있는 '모두'의 날짜 칸
+  const homeLoan = (() => {
+    const spots = new Map();
+    const lend = (el, host) => {
+      if (!el || !host) return;
+      if (!spots.has(el)) spots.set(el, { parent: el.parentNode, next: el.nextSibling });
+      if (el.parentNode !== host) host.append(el);
+    };
+    const giveBack = el => {
+      const spot = spots.get(el);
+      if (!spot) return;
+      spot.parent.insertBefore(el, spot.next?.parentNode === spot.parent ? spot.next : null);
+      spots.delete(el);
+    };
+    return { lend, giveBack, giveBackAll: () => [...spots.keys()].forEach(giveBack), lent: el => spots.has(el) };
+  })();
+  // '모두' 일 보기가 타임라인·시간블럭을 빌려 가 있는 동안만 쓰는 표시 거르기(종류·범주·그룹 눈). 지금 한칸에선 늘 null.
+  let homeItemFilter = null, homeDayLoan = null;
+  const homeItemShown = it => !homeItemFilter || homeItemFilter(it);
   let tracking = null;
   // 일정 탭 "목록↔캘린더" 보기 전환(2026-09-07 추가). 메모 기능은 2026-09-12에 완전히 제거함(scheduleSubView도 함께 삭제).
   let scheduleMode = "calendar"; // "calendar" | "list" — 2026-09-26: 첫 화면은 캘린더(앱 사용 중 바꾼 보기는 탭을 오가도 유지, 새로고침하면 다시 캘린더)
@@ -3415,6 +3436,8 @@
     });
     $("navMoreBtn")?.classList.toggle("active", NAV_MORE_PAGES.includes(page)); // 더보기 안 메뉴를 보고 있으면 더보기 칸 강조
     document.querySelectorAll(".page").forEach(el => el.style.display = el.dataset.page === page ? "block" : "none");
+    if (page !== "all") releaseHomeDay(); // 빌려 간 지금 한칸 화면은 다른 탭으로 가면 제자리로
+    if (page !== "all" && page !== "todos") returnHomeLists();
     if (page === "all") allViews?.render();
     if (page === "todos") todoAgenda?.render();
     if (page === "work") renderWork();
@@ -3578,6 +3601,11 @@
     if (error && error.code !== "23505") return { ok: false, error };
     return { ok: true };
   }
+  // 지금 한칸 화면을 빌려 쓰는 탭('모두'·'할일')에서 빌린 목록으로 체크했을 때 가운데 보기도 바로 맞춤
+  function renderLoanHosts() {
+    if (currentPage === "all") allViews?.render();
+    else if (currentPage === "todos") todoViews?.render();
+  }
   // 같은 할일에 대한 체크/해제 요청을 순서대로 처리(빠른 연속 클릭 시 저장 순서가 뒤섞이지 않게).
   // 중복 생성 자체는 DB unique 인덱스가 막고, 이 줄세우기는 완료 상태 저장 순서를 지키기 위한 보조 장치.
   const todoDoneQueue = new Map();
@@ -3599,6 +3627,7 @@
     if (checked) playCompleteSound(); // 할일(상위) 체크 시 완료 효과음 — 하위 행동보다 길게
     const t = todos.find(x => x.id === id);
     if (t) { t.is_done = checked; t.completed_date = completed_date; }
+    renderLoanHosts();
     if (checked && t && t.repeat_unit) {
       // 완료 저장은 위에서 이미 성공 — 다음 회차 생성 실패는 따로 알리고 재시도할 수 있게 함
       // (취소해도 완료는 유지. 나중에 체크 해제 → 다시 체크하면 연결된 다음 회차가 없으니 다시 시도됨)
@@ -4122,6 +4151,7 @@
       if (error) { alert("체크 해제 실패: " + error.message); return false; }
       habitLogs = habitLogs.filter(r => !(r.habit_id === taskId && r.done_date === dateStr));
     }
+    renderLoanHosts();
     if (dateStr === todayStr()) {
       if (checked) logsToday.add(taskId); else logsToday.delete(taskId);
       renderTodo();
@@ -4587,6 +4617,9 @@
     // — "시간 있는" 카드 위는 위의 .ag-block-card 케이스가 이미 처리함.
     if (el.closest("#homeTodayBlockAllDay")) return { zone: "today-allday", date: homeAgendaDate };
     if (el.closest("#somedayZone")) return { zone: "someday" };
+    // '모두'에 빌려 간 다가오는·담아두기 행을 주간 보드 열·월 달력 칸에 놓으면 그 날짜의 하루종일로(기존 이동 규칙 그대로)
+    const loanDate = currentPage === "all" ? allViews?.dropDate?.(x, y) : null;
+    if (loanDate) return { zone: "today-allday", date: loanDate };
     return null;
   }
   let agendaTimelineMinM = 360; // renderAgendaTimeline이 매번 갱신(타임라인 뷰 드롭 위치→시각 계산용)
@@ -4737,7 +4770,7 @@
     const direct=todos.filter(t=>!OnekanPeriod.read('todo',t).allDay&&OnekanPeriod.overlap('todo',t,dateStr));
     const overdue=overdueTodosForToday(dateStr).filter(t=>!OnekanPeriod.read('todo',t).allDay&&!direct.some(x=>x.id===t.id));
     const todoItems=[...direct,...overdue].map(t=>({kind:'todo',id:t.id,name:t.title,proj:todoProjectName(t),...(OnekanPeriod.clip('todo',t,dateStr)||{start_minute:OnekanPeriod.minutes(t.todo_time),duration_minutes:t.duration_minutes||30}),done:t.is_done,cat_id:t.tag_id,period_label:periodLabel('todo',t),overdue:direct.includes(t)?null:daysBetween(t.start_date,dateStr)}));
-    return [...habitItemsForDate(dateStr,false),...eventItems,...todoItems].filter(i=>i.duration_minutes>0).sort((a,b)=>a.start_minute-b.start_minute);
+    return [...habitItemsForDate(dateStr,false),...eventItems,...todoItems].filter(i=>i.duration_minutes>0&&homeItemShown(i)).sort((a,b)=>a.start_minute-b.start_minute);
   }
 
   // 8-3단계: homeAgendaDate 하루가 아니라 agendaWindowDates()가 계산한 N일을 나란히(열) 그림.
@@ -4989,7 +5022,7 @@
       ...events.filter(e=>OnekanPeriod.read('event',e).allDay&&OnekanPeriod.overlap('event',e,dateStr)).map(e=>({kind:'event',id:e.id,name:e.title,start_minute:null,duration_minutes:null,done:false,cat_id:e.category_id,period_label:periodLabel('event',e)})),
       ...habitItemsForDate(dateStr,true),
       ...[...direct,...overdue].map(t=>({kind:'todo',id:t.id,name:t.title,proj:todoProjectName(t),start_minute:null,duration_minutes:null,done:t.is_done,cat_id:t.tag_id,period_label:periodLabel('todo',t),overdue:direct.includes(t)?null:daysBetween(t.start_date,dateStr)})),
-    ];
+    ].filter(homeItemShown);
   }
 
   // 목록 뷰용: 하루종일 + 시간 있는 항목을 한 배열로("시간 없음" 먼저, 그다음 시간순).
@@ -5066,7 +5099,7 @@
         if (ghost) { ghost.style.left = `${e.clientX + 14}px`; ghost.style.top = `${e.clientY + 10}px`; }
         // 2026-09-20 — 이 함수는 목록/다가오는 탭 행 모두에 쓰이는데, 이제 그 탭들 자신도 드롭 대상이라
         // 자기가 지금 들어있는 컨테이너(같은 날짜) 위에선 하이라이트가 안 뜨게 .contains(row)로 걸러줌.
-        let under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
+        let under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #homeTodayBlockAllDay, .upcoming-day, #somedayZone, " + HOME_LOAN_DROP);
         if (under && under.contains(row)) under = null;
         if (under !== curTarget) {
           curTarget?.classList.remove("drop-target");
@@ -6088,10 +6121,14 @@
   function attachUpcomingDayAddClick(dateStr, autoOpenKind) {
     const row = document.querySelector(`#homeUpcomingList .block-add-row[data-upcomingadd="${dateStr}"]`);
     if (!row) return;
-    // 왼쪽 클릭·터치 = 할일 입력창 바로, 오른쪽 클릭 = 종류 메뉴 → 고른 종류로 입력창(openAddInput). 저장 필드·연속입력 규칙은 그대로.
+    wireDateAddSlot(row, dateStr, { rerender: renderHomeUpcomingList, reopen: (kind) => attachUpcomingDayAddClick(dateStr, kind) }, autoOpenKind);
+  }
+  // 날짜 빈칸 공용 규칙(다가오는·'모두' 주간 보드): 왼쪽 클릭·터치 = 할일 입력창 바로, 오른쪽 클릭 = 종류 메뉴 → 고른 종류로
+  // 입력창(openAddInput). 저장 필드·연속 입력 규칙은 같고, 다시 그릴 대상(rerender)과 다음 입력창 위치(reopen)만 부르는 쪽이 정함.
+  function wireDateAddSlot(row, dateStr, { rerender, reopen }, autoOpenKind) {
     const openInput = (kind) => openAddInput(row, {
       kind,
-      onCancel: () => renderHomeUpcomingList(),
+      onCancel: () => rerender(),
       onCommit: async (kind, name) => {
         let error;
         if (kind === "habit") {
@@ -6110,10 +6147,10 @@
         // 아직 다 안 그려졌을 수 있음 → 그 사이 옛 DOM에 입력창을 다시 붙였다가 뒤늦게 온 재렌더가
         // 통째로 덮어써서 입력창이 사라지는 레이스였음. 재조회는 이미 끝났으니 한 번 더 await로 확실히
         // 그린 다음에 입력창을 다시 열어줌(중복 렌더는 비용만 조금 더 들 뿐 안전).
-        await renderHomeUpcomingList();
+        await rerender();
         return true;
       },
-      onReopen: (kind) => attachUpcomingDayAddClick(dateStr, kind),
+      onReopen: (kind) => reopen(kind),
     });
     const openMenu = (e) => { e.preventDefault(); showAddKindMenu(e.clientX, e.clientY, (kind) => openInput(kind)); };
     row.onclick = () => openInput("todo"); // 왼쪽 클릭·터치 = 기본(할일) 입력창 바로 열기
@@ -6385,7 +6422,7 @@
         }
         if (!moved) return;
         if (ghost) { ghost.style.left = `${e.clientX + 14}px`; ghost.style.top = `${e.clientY + 10}px`; }
-        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #homeTodayBlockAllDay, .upcoming-day");
+        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], .ag-tl-grid, #agendaAllDayZone, .planup-day[data-idx], #homeTodayBlockAllDay, .upcoming-day, " + HOME_LOAN_DROP);
         if (under !== curTarget) {
           curTarget?.classList.remove("drop-target");
           curTarget = under || null;
@@ -9622,7 +9659,12 @@
   // 날짜별 항목 수집 → { record, allDay, timed } (항목 모양은 timedItemsForDate와 같음)
   async function shareCollect(dateStr) {
     const record = dateStr < todayStr();
-    const [liveAllDay, liveTimed] = await Promise.all([todayAllDayItems(dateStr), timedItemsForDate(dateStr)]);
+    // 공유 창은 자기 필터를 따로 쓰므로 '모두' 일 보기의 눈 거르기는 빼고 모음(두 함수는 호출 즉시 동기로 계산됨)
+    const keepFilter = homeItemFilter;
+    homeItemFilter = null;
+    const pending = [todayAllDayItems(dateStr), timedItemsForDate(dateStr)];
+    homeItemFilter = keepFilter;
+    const [liveAllDay, liveTimed] = await Promise.all(pending);
     const notSkipped = it => !(it.kind === "habit" && habitSkippedOn(it.id, dateStr));
     if (!record) return { record, allDay: liveAllDay.filter(notSkipped), timed: liveTimed.filter(notSkipped) };
     // 지난 날짜: 일정은 그날 일정 그대로, 할일·습관은 그날 저장된 완료 기록만(기록 탭과 같은 기준)
@@ -10374,6 +10416,50 @@
     sourceCard:renderHabitRow,wireSource:wireHabitRows,setLifecycle:value=>{habitsTabView=value;},
     refresh:()=>{renderHome();renderTodo();if(currentPage==='work')renderWork();},repeatText:h=>repeatSummaryText(h.repeat_unit,h.repeat_interval,h.repeat_days)
   });
+  // 오른쪽 '다가오는 · 언젠가' 칸에 지금 한칸의 다가오는(#homeUpcomingPanel)·담아두기(#homeSomedayPanel)를 그대로 붙임.
+  // 두 화면이 같은 DOM이라 클릭·끌기·추가·정렬·그룹 칩이 지금 한칸과 같고, 보이는 쪽(모두/할일)만 빌려 감.
+  function mountHomeLists(list, body) {
+    const panels = { upcoming: $("homeUpcomingPanel"), someday: $("homeSomedayPanel") };
+    if (!list) {
+      for (const el of Object.values(panels)) if (el.parentNode === body) { el.hidden = false; homeLoan.giveBack(el); }
+      return;
+    }
+    for (const [name, el] of Object.entries(panels)) { homeLoan.lend(el, body); el.hidden = name !== list; }
+  }
+  function returnHomeLists() {
+    for (const id of ["homeUpcomingPanel", "homeSomedayPanel"]) { const el = $(id); homeLoan.giveBack(el); el.hidden = false; }
+  }
+  // '모두' 일 보기 = 지금 한칸의 타임라인·시간블럭을 그대로 빌려 씀(날짜는 '모두'의 날짜, 표시는 '모두'의 눈).
+  // 지금 한칸에서 보던 날짜·보기는 따로 저장해 두었다가 돌려줄 때 되살림(지금 한칸 설정 tok_home_view는 바꾸지 않음).
+  function lendHomeDay(host, opts) {
+    if (!host) { releaseHomeDay(); return; }
+    const timeline = $("homeTimelinePanel"), block = $("homeBlockPanel");
+    if (!homeDayLoan) homeDayLoan = { date: homeAgendaDate, key: null };
+    homeItemFilter = opts.filter;
+    homeLoan.lend(timeline, host);
+    homeLoan.lend(block, host);
+    timeline.style.display = opts.sub === "timeline" ? "" : "none";
+    block.style.display = opts.sub === "timeline" ? "none" : "";
+    const key = [opts.date, opts.sub, opts.filterKey].join("|");
+    if (homeDayLoan.key === key) return; // 데이터가 바뀐 경우는 loadAll → renderHome이 다시 그림
+    homeDayLoan.key = key;
+    homeAgendaDate = opts.date;
+    renderAgendaAllDay();
+    renderAgendaTimed();
+    renderHomeTodayBlock();
+  }
+  function releaseHomeDay() {
+    if (!homeDayLoan) return;
+    homeAgendaDate = homeDayLoan.date;
+    homeItemFilter = null;
+    homeDayLoan = null;
+    homeLoan.giveBack($("homeTimelinePanel"));
+    homeLoan.giveBack($("homeBlockPanel"));
+    switchHomeCol2Tab(homeView, true);
+    renderAgendaAllDay();
+    renderAgendaTimed();
+    renderHomeTodayBlock();
+  }
   allViews=window.createOnekanAllViews({
     period:OnekanPeriod,sb,user:()=>appSymbolUserId,page:()=>currentPage,today:todayStr,
     events:()=>events,todos:()=>todos,habits:()=>habitViews,groups:()=>[...eventCategories.map(g=>({...g,kind:'event'})),...classification.groups()],categories:()=>habitCategories,projects:()=>projects,blocks:()=>timeBlocks,
@@ -10383,20 +10469,17 @@
     add:openAddWindowFor,
     choose:(context,onSelect)=>showAddKindMenu(context.opener?.getBoundingClientRect?.().left||innerWidth/2,context.opener?.getBoundingClientRect?.().bottom||150,kind=>onSelect(kind)),
     done:setTodoDone,reload:loadAll,refresh:()=>{renderHome();renderTodosPage();renderTodo();if(currentPage==='work')renderWork();},sidebar:syncPageSidebar,
-    // 2026-10-10 '모두' 개편: 언젠가→날짜 이동(기존 이동 규칙), 오른쪽 언젠가 목록, 이미지 저장
-    moveTo:moveItemToZone,somedayItems:()=>somedayItems,somedayColor:s=>itemTagColor('todo',s.tag_id),
-    open:(kind,id)=>{if(kind==='someday'){openSomedaySheet(id);return true;}return false;},exportView:openAllExport
+    // 2026-10-10 '모두': 오른쪽 다가오는·언젠가와 일 보기는 지금 한칸 화면을 그대로 빌려 씀, 이미지 저장
+    mountLists:mountHomeLists,homeDay:lendHomeDay,exportView:openAllExport,
+    // 주간 보드도 지금 한칸과 같은 규칙: 빈칸(모양·입력), 제목 누르기 = 이름 수정
+    addSlotHtml,addSlot:wireDateAddSlot,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone)
   });
-  // 할일 탭 오른쪽 '다가오는 · 언젠가'(할일만)
+  // 할일 탭 오른쪽 '다가오는 · 언젠가'(지금 한칸과 같은 목록)
   {
     const todoPage=document.querySelector('.page[data-page="todos"]'),btn=document.createElement('button');
     btn.type='button';btn.id='todoPanelBtn';btn.className='all-chip-btn';btn.textContent='다가오는 · 언젠가';btn.setAttribute('aria-haspopup','dialog');btn.setAttribute('aria-controls','todoSideAgenda');
     $('todoQuickAddBtn').before(btn); // 할일 탭 상단 '+ 할일' 옆(모바일에서만 보임)
-    todoAgenda=window.createOnekanSideAgenda({period:OnekanPeriod,escape:escapeHtml,pageName:'todos',host:todoPage,openButton:btn,user:()=>appSymbolUserId,page:()=>currentPage,today:todayStr,dateLabel:calDateLabel,
-      kinds:()=>['todo'],rows:()=>todos.filter(t=>!t.user_id||t.user_id===appSymbolUserId).map(t=>({...t,kind:'todo',source_id:t.id})),todos:()=>todos,
-      somedayItems:()=>somedayItems,somedayColor:s=>itemTagColor('todo',s.tag_id),color:r=>itemViewColor('todo',r),menuAttrs:(kind,id,date)=>menuAttrs(kind,id,date),
-      detail:(kind,id)=>openTodoSheet(todos.find(t=>t.id===id)),open:(kind,id)=>{if(kind==='someday'){openSomedaySheet(id);return true;}return false;},
-      done:setTodoDone,refresh:()=>{renderHome();renderTodosPage();}});
+    todoAgenda=window.createOnekanSideAgenda({pageName:'todos',host:todoPage,openButton:btn,user:()=>appSymbolUserId,page:()=>currentPage,mountLists:mountHomeLists});
   }
   tracking=window.createOnekanTracking({sb,allowed:()=>OnekanRelease.canOpen('timer'),user:()=>appSymbolUserId,page:()=>currentPage,todos:()=>todos,groups:()=>classification.groups(),categories:()=>habitCategories,projects:()=>projects,escape:escapeHtml,today:todayStr,addDays:OnekanPeriod.addDays,navigate:()=>showPage("timer"),sidebar:syncPageSidebar});
   navigationSettings = OnekanNavigation.createSettings({sb, user:()=>appSymbolUserId, page:()=>currentPage, navigate:showPage, closeMore:()=>closeNavMore(false), refresh:()=>todoSidebar.renderNavigation(), morePages:pages=>{NAV_MORE_PAGES=pages;}});
