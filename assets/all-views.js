@@ -261,7 +261,7 @@ window.createOnekanSideAgenda = api => {
  const shell=document.createElement('div');shell.className='sa-shell';
  const main=document.createElement('div');main.className='sa-main';
  while(host.firstChild)main.append(host.firstChild);
- const aside=document.createElement('aside');aside.className='sa-panel';aside.id={all:'allSideAgenda',todos:'todoSideAgenda',schedule:'scheduleSideAgenda',habits:'habitSideAgenda'}[page]||page+'SideAgenda';aside.setAttribute('aria-label','다가오는 · 언젠가');
+ const aside=document.createElement('aside');aside.className='sa-panel';aside.id={all:'allSideAgenda',todos:'todoSideAgenda',habits:'habitSideAgenda'}[page]||page+'SideAgenda';aside.setAttribute('aria-label','다가오는 · 언젠가');
  aside.innerHTML='<header class="sa-head"><div class="view-toggle sa-tabs" role="group" aria-label="목록 선택"><button type="button" data-sa-list="upcoming">다가오는</button><button type="button" data-sa-list="someday">언젠가</button></div><button type="button" class="sa-close" aria-label="다가오는 · 언젠가 접기">→</button></header><div class="sa-body home-loan"></div>';
  const reopen=document.createElement('button');reopen.type='button';reopen.className='sa-reopen';reopen.textContent='←';reopen.setAttribute('aria-label','다가오는 · 언젠가 펼치기');reopen.setAttribute('aria-controls',aside.id);
  shell.append(main,aside,reopen);host.append(shell);

@@ -116,7 +116,8 @@ window.OnekanNavigation = (() => {
    const mobile=document.querySelector('.bottombar'),more=document.getElementById('navMoreBtn');mobile.querySelectorAll('[data-page]').forEach(el=>el.remove());primary().forEach(r=>mobile.insertBefore(button(r,navClick),more));
    const sheet=document.getElementById('navMoreSheet');sheet.replaceChildren(...overflow().map(r=>{const el=button(r,navClick);el.setAttribute('role','menuitem');return el;}));
    api.morePages(overflow().map(r=>r.page));api.refresh();active();
-   if(!allowed(api.page())||config.hidden.includes(api.page()))api.navigate('home');
+   const shownId=(registry.find(r=>r.page===api.page())||{}).id||api.page(); // 메뉴 id ≠ 화면 이름일 수 있음(일정 메뉴 id 'schedule' → 화면 'all')
+   if(!allowed(api.page())||config.hidden.includes(api.page())||config.hidden.includes(shownId))api.navigate('home');
   }
   function renderRows(focusId,focusType='toggle'){
    list.replaceChildren();let count=0,divided=false;

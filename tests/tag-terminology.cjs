@@ -60,9 +60,9 @@ const { fixture } = require('./home-layout.cjs');
           return mockRows[table].find(item => item.id === id)[kind === 'habit' ? 'category_id' : 'tag_id'] === 'g0';
         }, { kind, id });
       }
-      await page.evaluate(() => { renderSchedule(); showScheduleMode('list'); });
-      assert.equal(await page.locator('#scheduleModeListBtn').textContent(), '목록');
-      assert.equal(await page.locator('#scheduleModeCalendarBtn').textContent(), '달력');
+      // 2026-10-10 옛 일정 화면(목록/달력 버튼) 삭제 — 일정 탭 보기 이름은 통합 화면의 월·주·일
+      await page.evaluate(() => showPage('all'));
+      assert.deepEqual((await page.locator('#allViewTabs [data-common-view]:visible').allTextContents()).map(t => t.trim()), ['월', '주', '일']);
       await page.evaluate(() => openEventEditor({ mode: 'add' }));
       assert.match(await page.locator('#calEventSheetBg').textContent(), /범주/); await page.evaluate(() => hideCalEventSheet());
     }

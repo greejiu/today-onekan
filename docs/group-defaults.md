@@ -10,4 +10,4 @@
 
 배포 전에 `supabase/migrations/20261005003201_tok_default_group_colors.sql`을 적용한다. nullable JSON 컬럼과 객체 형식 검사만 추가하고 기존 사용자 데이터와 소유자 RLS는 유지한다.
 
-검증: `group-defaults`, `todo-sidebar`, `schedule-panels`, `shared-view-tabs`, `navigation-settings`, `home-layout`. 테스트는 외부 요청을 차단한다. 기본 색상의 종류별 저장·재조회·부분 저장·실패 복구, 기존 보관 그룹 표시, 기본의 눈 토글, 모바일 편집 및 기존 그룹 연결/드래그를 확인했다. 운영 DB는 컬럼·제약조건·RLS 메타데이터로 확인하며 실제 사용자 행을 테스트로 변경하지 않았다.
+검증: `group-defaults`, `todo-sidebar`, `schedule-merged`, `shared-view-tabs`, `navigation-settings`, `home-layout`. 테스트는 외부 요청을 차단한다. 기본 색상의 종류별 저장·재조회·부분 저장·실패 복구, 기존 보관 그룹 표시, 기본의 눈 토글, 모바일 편집 및 기존 그룹 연결/드래그를 확인했다. 운영 DB는 컬럼·제약조건·RLS 메타데이터로 확인하며 실제 사용자 행을 테스트로 변경하지 않았다.
