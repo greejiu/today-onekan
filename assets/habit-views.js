@@ -88,6 +88,7 @@ window.createOnekanHabitViews = api => {
   collectionRows:state=>api.rows().filter(h=>api.matches(h)&&api.lifecycle(h,api.today())===state.lifecycle),
   sort:(a,b,state)=>state.sort==='name'?a.name.localeCompare(b.name,'ko'):(nextDue(a)||'9999').localeCompare(nextDue(b)||'9999')||a.name.localeCompare(b.name,'ko'),
   rowChip:row=>'다음 예정일 '+(nextDue(row)||'없음'), // 목록 줄(지금 한칸 줄)의 보조 정보
+  rowExtra:row=>api.sourceActions?.(row)||'', // 기록 보기 · 보관하기/재개하기(옛 카드와 같은 버튼·처리)
   card:row=>row.habit_id?null:api.sourceCard(row).replace('<div class="block-tag">','<div class="block-tag"><span class="hv-next">다음 예정일 '+esc(nextDue(row)||'없음')+' · </span>'),
   info:row=>'<span class="hv-note">'+esc(note(row))+'</span>',
   menuAttrs:(rowId)=>{const row=calendarRows.find(r=>r.id===rowId);return api.menuAttrs(row?.habit_id||rowId,row?.action_date)+(row?.block?' data-habit-status-block="'+esc(row.block)+'"':'');},

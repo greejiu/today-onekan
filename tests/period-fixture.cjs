@@ -9,6 +9,7 @@ async function fixture(page, source) {
    const q=new Proxy({}, {get(_,key){
     if(key==='then')return async resolve=>{
      const delay=window.mockDelay;window.mockDelay=0;if(delay)await new Promise(r=>setTimeout(r,delay));
+     if((window.mockMissingTables||[]).includes(table)){resolve({error:{message:'relation "'+table+'" does not exist'},data:null});return;} // 2026-10-10 마이그레이션 전 상태(예: 프로젝트 표 없음) 흉내
      if(mockFailure&&op!=='select'){const error={message:mockFailure};mockFailure=null;resolve({error,data:null});return;}
      const rows=mockRows[table]||=[]; const match=r=>filters.every(([type,k,v])=>type==='in'?v.includes(r[k]):type==='gte'?r[k]>=v:type==='lte'?r[k]<=v:r[k]===v);
      let data=rows.filter(match);
