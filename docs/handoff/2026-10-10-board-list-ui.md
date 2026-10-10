@@ -1,7 +1,8 @@
 # 인계: '모두' 주간 보드 UI를 지금 한칸 목록 줄과 통일
 
 - 작성일 / 작성 AI: 2026-10-10 / Claude Code
-- 상태: 구현·검증 완료(병합·배포 결과는 아래)
+- 상태: 완료(배포됨, 배포본 파일 비교는 결의 PC에서 확인 필요)
+- PR: https://github.com/greejiu/today-onekan/pull/98 → 병합 커밋 `098754d`
 - 브랜치: `codex/board-list-ui` (기준 `origin/main` 8ef799b)
 
 ## 결 요청
@@ -28,6 +29,12 @@
 - `all-sidebar-eyes`, `shared-view-tabs`, `home-layout` 통과.
 - 전체 회귀(47개): 34개 통과. 실패 13개는 main에서도 실패하던 그 13개다(이번 범위 밖).
 - 실행하지 못한 것: 실제 휴대폰, 실제 계정 데이터.
+
+## 병합·배포 확인
+- 병합 직전 `origin/main`은 8ef799b 그대로였다(다른 작업 변경 없음).
+- GitHub Pages 배포 run 38025583030: `completed / success`, head_sha = 098754d.
+- **미확인**: 배포 주소 파일 비교(이 환경은 `greejiu.github.io` 접속이 막힘).
+  - 결의 PC에서 비교한다: `index.html`, `assets/all-views.js`, `assets/schedule-views.css`.
 
 ## 다음에 할 행동 1개
 배포본 '모두' → 주 → 보드에서 할일 하나를 체크해 보고, 지금 한칸 목록과 같은 모양·반응인지 본다.
