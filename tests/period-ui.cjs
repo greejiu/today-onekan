@@ -40,7 +40,8 @@ const config={event:{p:'cev',start:'cev_date',end:'cev_end',title:'cev_title',sa
   // Integration: modern endpoints and page-selected groups/shared categories coexist.
   // 2026-10-10 화면에서 고른 그룹이 새 항목 기본값이 되는 건 그룹 사이드바(프로젝트 기능이 없을 때) 동작 — 그 상태로 검증
   await page.evaluate(async()=>{mockMissingTables=['tok_projects'];mockRows.tok_item_groups=[{id:'pg-t',kind:'todo',name:'회사'},{id:'pg-h',kind:'habit',name:'공부'}];mockRows.tok_event_categories=[{id:'pg-e',name:'개인'}];mockRows.tok_habit_categories=[{id:'pc',name:'행정'}];await loadAll();});
-  for(const [kind,pageName,group] of [['event','schedule','pg-e'],['todo','todos','pg-t'],['habit','habits','pg-h']]) {
+  // 2026-10-10 옛 일정 화면 삭제: 일정은 화면에서 고르는 '선택한 범주'가 없어(통합 화면은 눈만) 할일·습관만 확인
+  for(const [kind,pageName,group] of [['todo','todos','pg-t'],['habit','habits','pg-h']]) {
    await page.evaluate(({kind,pageName,group})=>{showPage(pageName);classification.select(kind,group);},{kind,pageName,group});
    await open(kind,{startDate:'2026-10-03',startTime:'23:00',endDate:'2026-10-04',endTime:'01:00'});
    const c=config[kind],cat=kind==='todo'?'td_tag':'ha_category';

@@ -1,8 +1,8 @@
 // 2026-10-10 일정·할일·습관 탭을 지금 한칸과 일관되게: 일 보기 = 지금 한칸 타임라인·시간블럭(그 탭 종류만),
 // 목록·보드 줄 = 지금 한칸 줄(누르면 이름 수정, 체크 = 완료), 오른쪽 '다가오는 · 언젠가' = 지금 한칸 목록. 가짜 Supabase만 씀.
 const assert=require('node:assert/strict'),{chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs');
+// 2026-10-10 옛 일정 화면 삭제: 일정은 통합 화면(all-redesign 테스트)이 맡아서 할일·습관만 남김
 const TABS=[
- {page:'schedule',view:v=>'[data-schedule-view='+v+']',kind:'event',day:'#scheduleHomeDay',side:'#scheduleSideAgenda',btn:'#schedulePanelBtn'},
  {page:'todos',view:v=>'#todoTopTabs [data-common-view='+v+']',kind:'todo',day:'#todosHomeDay',side:'#todoSideAgenda',btn:'#todoPanelBtn'},
  {page:'habits',view:v=>'#habitViewTabs [data-common-view='+v+']',kind:'habit',day:'#habitsHomeDay',side:'#habitSideAgenda',btn:'#habitPanelBtn'},
 ];
@@ -46,13 +46,10 @@ try{
  await p.evaluate(()=>showPage('habits'));await p.waitForTimeout(150);
  const hrow=p.locator('.page[data-page=habits] [data-iv-row]').first();assert.equal(await hrow.locator('input[type=checkbox]').count(),0,'습관 원본 줄은 체크 없음');
  assert((await hrow.locator('.habit-due-chip').textContent()).includes('다음 예정일'));ok('습관 목록: 원본 줄은 체크 없이 다음 예정일');
- // 일정 탭 '이 달의 일정' 칸 대신 다가오는 · 언젠가
- await p.evaluate(()=>showPage('schedule'));await p.locator('[data-schedule-view=month]').filter({visible:true}).first().click();await p.waitForTimeout(150);
- assert(await p.locator('#scheduleMonthAgenda').isHidden(),"'이 달의 일정' 칸 숨김");assert(await p.locator('#scheduleSideAgenda').isVisible());ok("일정 탭: '이 달의 일정' 대신 다가오는 · 언젠가");
- // 빌려 간 화면 주고받기: 모두 일 → 일정 일 → 지금 한칸
- await p.locator('[data-schedule-view=day]').filter({visible:true}).first().click();await p.waitForTimeout(150);
- assert.equal(await p.locator('#scheduleHomeDay #homeTimelinePanel').count(),1);
- await p.evaluate(()=>loadAll());await p.waitForTimeout(200);assert.equal(await p.locator('#scheduleHomeDay #homeTimelinePanel').count(),1,'새로고침해도 다른 탭이 가져가지 않음');
+ // 빌려 간 화면 주고받기: 할일 일 → 새로고침 → 지금 한칸
+ await p.evaluate(()=>showPage('todos'));await p.locator('#todoTopTabs [data-common-view=day]').click();await p.waitForTimeout(150);
+ assert.equal(await p.locator('#todosHomeDay #homeTimelinePanel').count(),1);
+ await p.evaluate(()=>loadAll());await p.waitForTimeout(200);assert.equal(await p.locator('#todosHomeDay #homeTimelinePanel').count(),1,'새로고침해도 다른 탭이 가져가지 않음');
  await p.evaluate(()=>showPage('home'));await p.waitForTimeout(150);
  assert.equal(await p.locator('#homeCol2 #homeTimelinePanel').count(),1);assert.equal(await p.locator('#homeCol3 #homeUpcomingPanel').count(),1);
  assert.equal(await p.evaluate(()=>homeAgendaDate),homeDate0);assert.equal(await p.evaluate(()=>homeItemFilter),null);
@@ -63,6 +60,6 @@ try{
  // 모바일: 탭마다 버튼으로 여는 아래쪽 패널
  const m=await b.newPage({viewport:{width:390,height:844},hasTouch:true,timezoneId:'Asia/Seoul'}),merr=[];m.on('pageerror',e=>merr.push(e.message));await fixture(m);await seed(m);
  for(const t of TABS){await m.evaluate(pg=>showPage(pg),t.page);await m.waitForTimeout(150);assert(!(await m.locator(t.side).isVisible()));await m.locator(t.btn).tap();assert(await m.locator(t.side+' #homeUpcomingList').isVisible(),t.page+' 모바일 패널');await m.locator(t.side+' .sa-close').tap();}
- assert.deepEqual(merr,[]);ok('모바일 390: 일정·할일·습관 탭 버튼으로 다가오는 · 언젠가 열기');await m.close();
+ assert.deepEqual(merr,[]);ok('모바일 390: 할일·습관 탭 버튼으로 다가오는 · 언젠가 열기');await m.close();
  console.log(results.join('\n'));
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exit(1);});

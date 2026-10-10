@@ -80,7 +80,7 @@ const idOf=page=>page==='all'?'schedule':page;
   fs.mkdirSync('test-results',{recursive:true});await page.screenshot({path:'test-results/navigation-390.png'});
   // All hidden, including home: settings remains available, no feature is removed.
   rows.get('bob').navigation_config={version:1,order:defaults,hidden:defaults};await page.evaluate(()=>navigationSettings.load());assert.deepEqual(await primary(page),[]);assert.deepEqual(await more(page),['settings']);
-  await page.locator('#navMoreBtn').click();await page.locator('#navMoreSheet [data-page=settings]').click();assert.equal(await page.evaluate(()=>currentPage),'settings');assert.equal(await page.locator('.page').count(),11);
+  await page.locator('#navMoreBtn').click();await page.locator('#navMoreSheet [data-page=settings]').click();assert.equal(await page.evaluate(()=>currentPage),'settings');assert.equal(await page.locator('.page').count(),10); // 2026-10-10 옛 일정 화면(.page[data-page=schedule]) 삭제로 11 → 10
   await page.setViewportSize({width:1440,height:900});await page.locator('#navigationSettings').scrollIntoViewIfNeeded();await page.screenshot({path:'test-results/navigation-settings.png'});
   assert.deepEqual(errors,[]);console.log('PASS: defaults, desktop/mobile shared registry, pointer/touch/keyboard reorder, hidden/current/all-hidden, settings safety, partial cloud writes, reload, account isolation, stale requests, rollback, Escape, 390px six slots.');
  }finally{await browser.close();}

@@ -10,7 +10,12 @@ const fs=require('fs'),assert=require('assert/strict'),{chromium}=require('playw
  });
  const open=async kind=>{await p.locator('#classificationSideHost [data-group-edit=default]').click();await p.getByRole('menuitem',{name:'색상 수정',exact:true}).click();assert(await p.locator('#classificationManageName').isDisabled());assert.equal(await p.locator('#classificationManageName').inputValue(),'기본');};
  const colors={event:'#aa1122',todo:'#22aa33',habit:'#3344aa'};
- for(const [page,kind] of [['schedule','event'],['todos','todo'],['habits','habit']]){
+ // 2026-10-10 옛 일정 화면 삭제: 일정 범주(기본 색 포함)는 통합 일정 화면 사이드바 '내 일정'의 ⋯로 수정
+ await p.evaluate(()=>showPage('all'));const cat=p.locator('#allSidebarTypes');assert(await cat.locator('[data-aft-cat-edit=oldevent]').isVisible());
+ await cat.locator('[data-aft-cat-edit=oldevent]').click();assert.equal(await p.getByRole('menuitem',{name:/보관|복원/}).count(),0);await p.keyboard.press('Escape');
+ await cat.locator('[data-aft-cat-edit=default]').click();await p.getByRole('menuitem',{name:'색상 수정',exact:true}).click();assert(await p.locator('#classificationManageName').isDisabled());assert.equal(await p.locator('#classificationManageName').inputValue(),'기본');
+ await p.locator('#classificationManageColor').fill(colors.event);await p.locator('#classificationManageSave').click();await p.locator('#classificationManageBg').waitFor({state:'hidden'});
+ for(const [page,kind] of [['todos','todo'],['habits','habit']]){
   await p.evaluate(page=>showPage(page),page);assert.equal((await p.locator('#classificationSideHost [data-group-select=none]').textContent()).trim(),'기본');assert.equal(await p.locator('#classificationSideHost [data-archived]').count(),0);assert(await p.locator('#classificationSideHost [data-group-select=old'+kind+']').isVisible());
   await p.locator('#classificationSideHost [data-group-edit=old'+kind+']').click();assert.equal(await p.getByRole('menuitem',{name:/보관|복원/}).count(),0);await p.keyboard.press('Escape');
   await open(kind);await p.locator('#classificationManageColor').fill(colors[kind]);await p.locator('#classificationManageSave').click();await p.locator('#classificationManageBg').waitFor({state:'hidden'});
