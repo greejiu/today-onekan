@@ -3628,7 +3628,7 @@
     // "예정일 대비 며칠 지나서 완료했는지" 계산할 때 씀. 체크 해제하면 다시 비움.
     const completed_date = checked ? todayStr() : null;
     const { error } = await sb.from("tok_todos").update({ is_done: checked, completed_date }).eq("id", id);
-    if (error) { alert("변경 실패: " + error.message); return false; }
+    if (error) { alert("변경 실패: " + error.message); renderLoanHosts(); return false; } // 실패하면 빌린 화면(보드 등)의 체크도 원래대로
     if (checked) playCompleteSound(); // 할일(상위) 체크 시 완료 효과음 — 하위 행동보다 길게
     const t = todos.find(x => x.id === id);
     if (t) { t.is_done = checked; t.completed_date = completed_date; }
