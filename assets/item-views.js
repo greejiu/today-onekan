@@ -39,13 +39,13 @@
   function listCard(e,date){
    if(!api.rowHtml)return card(e,date);
    const k=rowKind(e),p=read(e),d=isoDate(date),source=k==='habit'&&!e.habit_id;
-   const it=source?{kind:'habit',id:String(e.id),name:e.name||e.title||'',cat_id:e.category_id,lead:'none',chip:api.rowChip?.(e)}
+   const it=source?{kind:'habit',id:String(e.id),name:e.name||e.title||'',cat_id:e.category_id,lead:'none',chip:api.rowChip?.(e),extra:api.rowExtra?.(e)}
     :{kind:k,id:String(e.habit_id||e.source_id||e.id),name:e.title||e.name||'',done:k==='todo'?!!e.is_done:k==='habit'&&e.status==='done',cat_id:k==='todo'?e.tag_id:e.category_id,occurrence_date:k==='habit'?e.action_date:null,proj:k==='todo'?api.projectName?.(e)||null:null,start_minute:p.allDay||!p.startTime?null:P.minutes(p.startTime),show_time:true};
    return api.rowHtml(it,source?'':d,' data-iv-row="'+esc(e.id)+'"');
   }
   function wireListRows(host){
    if(!api.rowHtml)return;api.wireRows?.(host);
-   host.querySelectorAll('[data-iv-row]').forEach(row=>row.addEventListener('click',ev=>{if(ev.target.closest('input,.item-more,.habit-skip-mark,.inline-add-wrap'))return;api.rename?.(row,row.dataset.kind,row.dataset.id,()=>rerender());}));
+   host.querySelectorAll('[data-iv-row]').forEach(row=>row.addEventListener('click',ev=>{if(ev.target.closest('input,button,.habit-skip-mark,.inline-add-wrap'))return;api.rename?.(row,row.dataset.kind,row.dataset.id,()=>rerender());}));
   }
   function wireCards(host){api.wire?.(host);host.querySelectorAll('.sched-open').forEach(b=>b.onclick=()=>api.detail(b.dataset.id,b));host.querySelectorAll('[data-sv-add]').forEach(b=>b.onclick=()=>add(b.dataset.svAdd,null,b));}
   function controls(){query('[data-common-view]').forEach(b=>{const current=api.mode()==='calendar'?(state.span==='month'?'month':state.days===7?'week':'day'):api.mode(),active=b.dataset.commonView===current;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});const calendar=api.mode()==='calendar';$('scheduleAnchor').value=api.date();$('scheduleCalendarOptions').hidden=!calendar;$('scheduleCollectionOptions').hidden=calendar;$('scheduleTimeFormat').hidden=state.span==='month';$('scheduleDayCountWrap').hidden=state.span==='month';$('scheduleDayCount').value=state.days;$('scheduleBoardOptions').hidden=api.mode()!=='board';$('scheduleListGroupWrap').hidden=api.mode()!=='list';

@@ -358,3 +358,11 @@
 #allViewTabs{display:flex;align-items:center}
 #allViewTabs .all-tab-sep{display:none}
 #allViewTabs #allExportBtn{margin-left:auto}
+/* 2026-10-10 '내 일정' 범주 추가(＋)·수정(⋯) — 옛 일정 사이드바의 범주 관리와 같은 창 */
+.aft-title-row{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.aft-title-row .aft-title{margin-bottom:4px}
+.aft-add,.aft-cat-edit{min-width:28px;min-height:28px;border:0;border-radius:8px;background:none;color:var(--sub);font:inherit;cursor:pointer}
+.aft-add:hover,.aft-cat-edit:hover,.aft-add:focus-visible,.aft-cat-edit:focus-visible{background:var(--accent-soft);color:var(--text)}
+.aft-list li .aft-cat-edit{margin-left:auto;opacity:0}
+.aft-list li:hover .aft-cat-edit,.aft-list li .aft-cat-edit:focus-visible{opacity:1}
+@media(hover:none){.aft-list li .aft-cat-edit{opacity:1}}

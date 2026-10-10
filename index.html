@@ -3112,7 +3112,7 @@
     $('dedicatedSidebarNav').setAttribute('aria-label', (config?.title || '') + ' 메뉴');
     $('scheduleSidebarNav').hidden = currentPage !== 'schedule';
     if (config?.tabs) {
-      host.innerHTML = [...$(config.tabs).querySelectorAll('button')].map(button => `<button type="button" class="navitem${button.classList.contains('active') ? ' active' : ''}" data-sidebar-tab="${button.dataset.tab}" aria-pressed="${button.classList.contains('active')}">${escapeHtml(button.textContent)}</button>${currentPage==='todos'&&button.dataset.tab==='board'?'<hr class="sidebar-divider">':''}`).join('');
+      host.innerHTML = [...$(config.tabs).querySelectorAll('button[data-tab]')].map(button => /* 탭 버튼만(월/주/일 공용 보기 버튼은 data-tab이 없어 제외) */ `<button type="button" class="navitem${button.classList.contains('active') ? ' active' : ''}" data-sidebar-tab="${button.dataset.tab}" aria-pressed="${button.classList.contains('active')}">${escapeHtml(button.textContent)}</button>${currentPage==='todos'&&button.dataset.tab==='board'?'<hr class="sidebar-divider">':''}`).join('');
     } else if (currentPage === 'timer') {
       host.innerHTML = tracking?.sidebar() || '';
     } else if (currentPage === 'work') {
@@ -3458,7 +3458,7 @@
     if (focused && focused !== document.body && !focused.getClientRects().length) {
       const target = scheduleSidebarMq.matches
         ? document.querySelector('.bottombar [data-page="' + currentPage + '"]') || $('navMoreBtn')
-        : sidebarDedicated ? $('sidebarRailToggle') : document.querySelector('#mainSidebarNav [data-page="' + currentPage + '"]') || document.querySelector('#sidebarHomeNav button');
+        : sidebarDedicated ? $('sidebarRailToggle') : document.querySelector('#todoIconRail [data-page="' + currentPage + '"]') || $('sidebarRailToggle'); // 아이콘 줄(보이는 메뉴)로 — 옛 전체 메뉴 목록은 숨겨져 있어 초점이 사라졌음
       target?.focus({ preventScroll: true });
     }
   });
@@ -3628,7 +3628,7 @@
     // "예정일 대비 며칠 지나서 완료했는지" 계산할 때 씀. 체크 해제하면 다시 비움.
     const completed_date = checked ? todayStr() : null;
     const { error } = await sb.from("tok_todos").update({ is_done: checked, completed_date }).eq("id", id);
-    if (error) { alert("변경 실패: " + error.message); return false; }
+    if (error) { alert("변경 실패: " + error.message); renderLoanHosts(); return false; } // 실패하면 빌린 화면(보드 등)의 체크도 원래대로
     if (checked) playCompleteSound(); // 할일(상위) 체크 시 완료 효과음 — 하위 행동보다 길게
     const t = todos.find(x => x.id === id);
     if (t) { t.is_done = checked; t.completed_date = completed_date; }
@@ -5055,6 +5055,7 @@
       ${skipChipHtml(it.kind, it.id, it.occurrence_date||dateStr)}
       ${it.chip ? `<span class="habit-due-chip">${escapeHtml(it.chip)}</span>` : ""}
       ${it.start_minute != null && (it.kind !== "event" || it.show_time) ? `<span class="plan-time">${minutesToHHMM(it.start_minute)}</span>` : ""}
+      ${it.extra || ""}
       ${moreBtnHtml(it.name)}
     </div>`;
   }
@@ -8007,9 +8008,7 @@
         }
       }
     }
-    const actionBtn = habitsTabView === "active"
-      ? `<button class="togglebtn" data-id="${t.id}" data-act="archive">보관하기</button>`
-      : `<button class="togglebtn on" data-id="${t.id}" data-act="resume">재개하기</button>`;
+    const actionBtn = habitToggleBtnHtml(t);
     return `
     <div class="todo-row ${habitsTabView === "active" ? "" : "inactive"}" data-id="${t.id}"${menuAttrs("habit", t.id)}>
       <div class="info">
@@ -8024,6 +8023,15 @@
       ${moreBtnHtml(t.name)}
     </div>
   `;
+  }
+  // 습관 원본 줄의 보관하기/재개하기 — 옛 목록 카드와 습관 탭 목록(지금 한칸 줄) 공용
+  function habitToggleBtnHtml(t) {
+    return habitsTabView === "active"
+      ? `<button class="togglebtn" data-id="${t.id}" data-act="archive">보관하기</button>`
+      : `<button class="togglebtn on" data-id="${t.id}" data-act="resume">재개하기</button>`;
+  }
+  function habitSourceActionsHtml(t) {
+    return `<button class="historybtn icon-btn" data-id="${t.id}" title="기록 보기" aria-label="${escapeHtml(t.name)} 기록 보기">${ICON_HISTORY_SVG}</button>${habitToggleBtnHtml(t)}`;
   }
   function renderTodo() {
     allViews?.render();
@@ -10423,7 +10431,7 @@
     color:e=>itemViewColor('habit',e),escape:escapeHtml,dateLabel:calDateLabel,
     menuAttrs:(id,date)=>menuAttrs('habit',id,date),edit:id=>openHabitSheet(tasks.find(h=>h.id===id)),
     add:context=>openHabitAddSheet(context.opener,context),sidebar:syncPageSidebar,
-    sourceCard:renderHabitRow,wireSource:wireHabitRows,setLifecycle:value=>{habitsTabView=value;},
+    sourceCard:renderHabitRow,wireSource:wireHabitRows,sourceActions:habitSourceActionsHtml,setLifecycle:value=>{habitsTabView=value;},
     refresh:()=>{renderHome();renderTodo();if(currentPage==='work')renderWork();},repeatText:h=>repeatSummaryText(h.repeat_unit,h.repeat_interval,h.repeat_days)
   });
   // 오른쪽 '다가오는 · 언젠가' 칸에 지금 한칸의 다가오는(#homeUpcomingPanel)·담아두기(#homeSomedayPanel)를 그대로 붙임.
@@ -10483,6 +10491,8 @@
     done:setTodoDone,reload:loadAll,refresh:()=>{renderHome();renderTodosPage();renderTodo();if(currentPage==='work')renderWork();},sidebar:syncPageSidebar,
     // 2026-10-10 '모두': 오른쪽 다가오는·언젠가와 일 보기는 지금 한칸 화면을 그대로 빌려 씀, 이미지 저장
     mountLists:mountHomeLists,homeDay:lendHomeDay,exportView:openAllExport,
+    // 일정 범주 추가·수정(옛 일정 화면 사이드바와 같은 창) — 통합 일정 화면 사이드바 '내 일정'에서 엶
+    categoryAdd:opener=>classification.open('group','event',opener),categoryEdit:(id,opener)=>classification.editGroup('event',id,opener),
     // 주간 보드도 지금 한칸과 같은 규칙: 빈칸(모양·입력), 제목 누르기 = 이름 수정
     addSlotHtml,addSlot:wireDateAddSlot,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone),
     rowHtml:homeTodayRowHtml,wireRows:wireHomeTodayChecks
