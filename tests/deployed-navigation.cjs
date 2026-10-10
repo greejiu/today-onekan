@@ -24,7 +24,7 @@ const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
   await page.goto(url+'?period='+sha);await page.waitForSelector('.upcoming-day');fs.mkdirSync('test-results',{recursive:true});
   await page.screenshot({path:'test-results/deployed-global.png'});
   for(const target of ['schedule','todos','habits','work','records','settings','all','community','together']){
-   if(await page.locator('#dedicatedSidebarNav').isVisible())await page.locator('#sidebarAllMenuBtn').click();await page.locator('#mainSidebarNav [data-page='+target+']').click();assert.equal(await page.evaluate(()=>currentPage),target);assert(await page.locator('#sidebarHomeNav button').isVisible());
+   if(await page.locator('#dedicatedSidebarNav').isVisible())await page.locator('#sidebarRailToggle').click();await page.locator('#mainSidebarNav [data-page='+target+']').click();assert.equal(await page.evaluate(()=>currentPage),target);assert(await page.locator('#sidebarHomeNav button').isVisible());
    if(target==='schedule')await page.screenshot({path:'test-results/deployed-dedicated.png'});
   }
   await page.locator('#pageSidebarItems [data-together-section=friends]').click();await page.screenshot({path:'test-results/deployed-together.png'});await page.locator('#pageSidebarItems [data-together-section=private]').click();await page.getByRole('button',{name:'방 만들기',exact:true}).waitFor();

@@ -36,16 +36,17 @@ window.createOnekanAllViews = api => {
  // ── 2026-10-10 '모두' 화면 설정(사용자별·이 화면 전용 저장) ──
  // 종류 눈(일정·할일·습관)은 월·주·일마다 따로, 범주·그룹 눈과 접힘은 기간과 관계없이 공통.
  // 주·일의 마지막 보기 방식(주=보드/타임라인, 일=시간블럭/타임라인)도 함께 기억. 다른 탭의 설정 키는 건드리지 않음.
- const LAYOUT_DEFAULTS={week:'board',day:'blocks',eyes:{month:{event:true,todo:false,habit:false},week:{event:true,todo:true,habit:true},day:{event:true,todo:true,habit:true}},hidden:{event:[],todo:[],habit:[]},folded:{event:false,todo:false,habit:false}};
+ const LAYOUT_DEFAULTS={week:'board',day:'blocks',eyes:{month:{event:true,todo:false,habit:false},week:{event:true,todo:true,habit:true},day:{event:true,todo:true,habit:true}},hidden:{event:[],todo:[],habit:[]},holidays:true};
  let layout=null,layoutOwner;
  const layoutKey=()=>'tok_all_layout:'+api.user();
  function prefs(){
   const owner=api.user();if(layout&&layoutOwner===owner)return layout;
   layoutOwner=owner;let saved={};try{saved=JSON.parse(localStorage.getItem(layoutKey()))||{};}catch(_){saved={};}
   const D=LAYOUT_DEFAULTS,bool=(v,d)=>typeof v==='boolean'?v:d;
-  layout={week:['board','timeline'].includes(saved.week)?saved.week:D.week,day:['blocks','timeline'].includes(saved.day)?saved.day:D.day,eyes:{},hidden:{},folded:{}};
+  layout={week:['board','timeline'].includes(saved.week)?saved.week:D.week,day:['blocks','timeline'].includes(saved.day)?saved.day:D.day,eyes:{},hidden:{},holidays:bool(saved.holidays,true)};
   for(const v of ['month','week','day']){layout.eyes[v]={};for(const t of types)layout.eyes[v][t.id]=bool(saved.eyes?.[v]?.[t.id],D.eyes[v][t.id]);}
-  for(const t of types){layout.hidden[t.id]=Array.isArray(saved.hidden?.[t.id])?saved.hidden[t.id].filter(x=>typeof x==='string'):[];layout.folded[t.id]=bool(saved.folded?.[t.id],false);}
+  for(const t of types)layout.hidden[t.id]=Array.isArray(saved.hidden?.[t.id])?saved.hidden[t.id].filter(x=>typeof x==='string'):[];
+  for(const v of ['month','week','day'])layout.eyes[v].event=true; // 일정은 범주 눈으로만 거름(종류 눈 없음)
   return layout;
  }
  function savePrefs(){try{if(api.user())localStorage.setItem(layoutKey(),JSON.stringify(prefs()));}catch(_){}}
@@ -53,28 +54,32 @@ window.createOnekanAllViews = api => {
  const subView=()=>view()==='week'?prefs().week:view()==='day'?prefs().day:'calendar';
  // 범주(일정)·그룹(할일·습관) 눈 — 원본 연결값 그대로, 연결 없음은 'default'(기본)
  const catKey=r=>(r.kind==='event'?r.category_id:r.kind==='todo'?r.tag_id:r.category_id)||'default';
- const catHidden=r=>(prefs().hidden[r.kind]||[]).includes(catKey(r));
+ const catHidden=r=>r.kind==='event'&&prefs().hidden.event.includes(catKey(r)); // 2026-10-10 범주 눈은 일정만(할일·습관은 종류 눈)
  const pools={event:()=>api.groups().filter(g=>g.kind==='event'),todo:()=>api.categories(),habit:()=>api.categories()};
  const eyesOf=v=>prefs().eyes[v||view()];
  // 엔진 상태를 현재 기간의 눈·보기 방식에 맞춤(렌더 직전마다). 완료·건너뛴 항목도 보여주고 체크로 상태를 구분.
  function syncEngine(){const s=engine.state(),e=eyesOf();s.mode='calendar';s.completion='all';s.status='all';for(const t of types)s['show_'+t.id]=e[t.id];s.format=view()==='day'&&prefs().day==='blocks'?'blocks':'timeline';}
 
+ // 2026-10-10 결 요청(구글 캘린더처럼): 접기 없이 제목 + 눈 목록.
+ //  내 일정: 일정 범주(기본·병원…)별 눈, 할일 눈, 습관 눈 / 다른 캘린더: 대한민국 휴일 눈.
+ //  할일·습관 눈은 월·주·일마다 따로(월 기본 꺼짐), 범주 눈·휴일 눈은 공통으로 기억. 일정은 범주 눈으로만 거름.
  function filterTree(){
   const L=prefs(),e=eyesOf(),v=view(),vName={month:'월',week:'주',day:'일'}[v];
-  return '<p class="aft-scope">'+vName+' 보기 표시</p>'+types.map(t=>{
-   const items=[{id:'default',name:'기본',color:null},...pools[t.id]().filter(g=>!g.is_archived).map(g=>({id:g.id,name:g.name,color:g.color}))];
-   const open=!L.folded[t.id],listId='aftList-'+t.id;
-   return '<section class="aft-kind'+(e[t.id]?'':' aft-off')+'" data-aft-kind="'+t.id+'"><div class="aft-head"><button type="button" class="aft-fold" data-aft-fold="'+t.id+'" aria-expanded="'+open+'" aria-controls="'+listId+'"><span class="aft-caret" aria-hidden="true">'+(open?'▾':'▸')+'</span>'+t.name+'</button>'+
-    '<button type="button" class="aft-eye" data-aft-eye="'+t.id+'" aria-pressed="'+e[t.id]+'" aria-label="'+t.name+' '+(e[t.id]?'표시 중 · 숨기기':'숨김 · 표시하기')+'" title="'+t.name+' '+(e[t.id]?'숨기기':'표시')+'">'+OnekanCalendarUI.eye(e[t.id])+'</button></div>'+
-    '<ul class="aft-list" id="'+listId+'"'+(open?'':' hidden')+'>'+items.map(g=>{const shown=!L.hidden[t.id].includes(g.id);return '<li><span class="aft-dot" style="background:'+esc(g.color||'var(--line)')+'"></span><span class="aft-name">'+esc(g.name)+'</span><button type="button" class="aft-eye aft-cat-eye" data-aft-cat="'+t.id+'|'+esc(g.id)+'" aria-pressed="'+shown+'" aria-label="'+t.name+' · '+esc(g.name)+' '+(shown?'표시 중 · 숨기기':'숨김 · 표시하기')+'">'+OnekanCalendarUI.eye(shown)+'</button></li>';}).join('')+'</ul></section>';
-  }).join('');
+  const eyeBtn=(attr,on,label,cls='')=>'<button type="button" class="aft-eye'+cls+'" '+attr+' aria-pressed="'+on+'" aria-label="'+esc(label)+' '+(on?'표시 중 · 숨기기':'숨김 · 표시하기')+'" title="'+esc(label)+' '+(on?'숨기기':'표시')+'">'+OnekanCalendarUI.eye(on)+'</button>';
+  const row=(color,name,eye,on)=>'<li'+(on?'':' class="aft-off"')+'><span class="aft-dot" style="background:'+esc(color||'var(--line)')+'"></span><span class="aft-name">'+esc(name)+'</span>'+eye+'</li>';
+  const section=(key,title,body)=>'<section class="aft-kind" data-aft-kind="'+key+'"><h3 class="aft-title">'+title+'</h3><ul class="aft-list" id="aftList-'+key+'">'+body+'</ul></section>';
+  const cats=[{id:'default',name:'기본',color:null},...pools.event().filter(g=>!g.is_archived).map(g=>({id:g.id,name:g.name,color:g.color}))];
+  return '<p class="aft-scope">'+vName+' 보기 표시</p>'+
+   section('mine','내 일정',cats.map(g=>{const shown=!L.hidden.event.includes(g.id);return row(g.color,g.name,eyeBtn('data-aft-cat="event|'+esc(g.id)+'"',shown,'일정 · '+g.name,' aft-cat-eye'),shown);}).join('')+
+    row('var(--accent)','할일',eyeBtn('data-aft-eye="todo"',e.todo,'할일'),e.todo)+row('#3fae6a','습관',eyeBtn('data-aft-eye="habit"',e.habit,'습관'),e.habit))+
+   section('other','다른 캘린더',row('#e57373','대한민국 휴일',eyeBtn('data-aft-holiday="1"',L.holidays,'대한민국 휴일'),L.holidays));
  }
  function wireTree(box){
   const focus=box.contains(document.activeElement)?[...box.querySelectorAll('button')].indexOf(document.activeElement):-1;
   box.innerHTML=filterTree();
   box.querySelectorAll('[data-aft-eye]').forEach(b=>b.onclick=()=>{const e=eyesOf();e[b.dataset.aftEye]=!e[b.dataset.aftEye];savePrefs();render();});
   box.querySelectorAll('[data-aft-cat]').forEach(b=>b.onclick=()=>{const [k,g]=b.dataset.aftCat.split('|'),list=prefs().hidden[k],i=list.indexOf(g);if(i<0)list.push(g);else list.splice(i,1);savePrefs();render();});
-  box.querySelectorAll('[data-aft-fold]').forEach(b=>b.onclick=()=>{const L=prefs();L.folded[b.dataset.aftFold]=!L.folded[b.dataset.aftFold];savePrefs();renderTrees();});
+  box.querySelectorAll('[data-aft-holiday]').forEach(b=>b.onclick=()=>{const L=prefs();L.holidays=!L.holidays;savePrefs();render();});
   if(focus>=0)box.querySelectorAll('button')[focus]?.focus({preventScroll:true});
  }
  function renderTrees(){sidebarTypes();if(!$('allFilterPanel').hidden)wireTree($('allFilterPanelBody'));}
@@ -99,7 +104,7 @@ window.createOnekanAllViews = api => {
   const box=$('allWeekBoard'),days=weekDays(),list=boardRows(),today=api.today(),scroller=box.querySelector('.awb-scroll'),keepX=scroller?scroller.scrollLeft:null,sameWeek=box.dataset.week===days[0];
   box.innerHTML='<div class="awb-scroll" tabindex="0" aria-label="주간 보드, 날짜 열을 가로로 넘겨 볼 수 있어요"><div class="awb-grid">'+days.map(d=>{
    const items=dayItems(list,d),label=Number(d.slice(5,7))+'/'+Number(d.slice(8));
-   return '<section class="awb-col'+(d===today?' is-today':'')+(d===date?' is-selected':'')+'" data-awb-col="'+d+'" aria-label="'+esc(api.dateLabel(d))+'"><header class="awb-head"><button type="button" data-awb-select="'+d+'"><span class="awb-dow">'+WD[new Date(d+'T12:00:00').getDay()]+'</span> <strong>'+label+'</strong>'+(d===today?' <span class="today-badge">오늘</span>':'')+'</button></header>'+
+   return '<section class="awb-col'+(d===today?' is-today':'')+(prefs().holidays&&OnekanCalendarUI.holiday(d)?' is-holiday':'')+(d===date?' is-selected':'')+'" data-awb-col="'+d+'" aria-label="'+esc(api.dateLabel(d))+'"><header class="awb-head"><button type="button" data-awb-select="'+d+'"><span class="awb-dow">'+WD[new Date(d+'T12:00:00').getDay()]+'</span> <strong>'+label+'</strong>'+(d===today?' <span class="today-badge">오늘</span>':'')+'</button>'+OnekanCalendarUI.holidayHtml(d,{holidays:()=>prefs().holidays},esc)+'</header>'+
     '<div class="awb-body">'+items.map(x=>boardCard(x.r,x.t,d)).join('')+api.addSlotHtml('data-awb-add="'+d+'"',!items.length)+'</div></section>';
   }).join('')+'</div></div>';
   box.dataset.week=days[0];
@@ -162,9 +167,9 @@ window.createOnekanAllViews = api => {
   const subBox=$('allSubTabs'),subs=v==='week'?[['board','보드'],['timeline','타임라인']]:v==='day'?[['blocks','시간블럭'],['timeline','타임라인']]:[];
   subBox.hidden=!subs.length;subBox.innerHTML=subs.map(([k,n])=>'<button type="button" data-all-sub="'+k+'" aria-pressed="'+(sub===k)+'" class="'+(sub===k?'active':'')+'">'+n+'</button>').join('');
   subBox.querySelectorAll('[data-all-sub]').forEach(b=>b.onclick=()=>{prefs()[view()]=b.dataset.allSub;savePrefs();render();});
-  const e=eyesOf(),allOff=types.every(t=>!e[t.id]);
+  const e=eyesOf(),catIds=['default',...pools.event().filter(g=>!g.is_archived).map(g=>g.id)],allOff=!e.todo&&!e.habit&&catIds.every(id=>prefs().hidden.event.includes(id)); // 일정 범주·할일·습관 눈이 모두 꺼짐
   $('allNotice').innerHTML=allOff?'<span>표시할 항목이 꺼져 있어요</span> <button type="button" class="btn-ghost" id="allShowAll">모두 표시</button>':'';
-  if(allOff)$('allShowAll').onclick=()=>{for(const t of types)e[t.id]=true;savePrefs();render();};
+  if(allOff)$('allShowAll').onclick=()=>{for(const t of types)e[t.id]=true;prefs().hidden.event=[];savePrefs();render();};
   const board=v==='week'&&sub==='board',homeDay=v==='day';
   $('allWeekBoard').hidden=!board;$('allCalendarMode').classList.toggle('all-board-mode',board||homeDay);$('allHomeDay').hidden=!homeDay;
   if(board){engine.controls();renderBoard();}else if(homeDay)engine.controls();else engine.calendar();
@@ -175,7 +180,7 @@ window.createOnekanAllViews = api => {
  }
  const preview=document.createElement('div');preview.id='allDragPreview';preview.className='sv-drag-preview';preview.hidden=true;preview.innerHTML='<span id="allDragText"></span><br><button type="button" id="allDragCancel">취소 (Esc)</button>';document.body.append(preview);
  engine=window.createOnekanItemViews({...api,pageName:'all',sharedRange:true,title:'항목',id,kindOf:r=>r.kind,types:()=>types,
-  allowDayBlocks:true,weekStartsMonday:true,singleMonthAdd:true,
+  allowDayBlocks:true,weekStartsMonday:true,singleMonthAdd:true,holidays:()=>prefs().holidays,
   // 월 달력(PC): 날짜 숫자 → 그날 일 보기, 빈 공간 → 그날 추가 창(singleMonthAdd)
   onMonthDate:d=>{const s=engine.state();s.span='day';s.days=1;engine.resetRange();date=d;engine.remember();render();},
   defaults:{mode:'calendar',span:'month',group:'type',board:'type',completion:'all',status:'all',undated:false,show_event:true,show_todo:true,show_habit:true},

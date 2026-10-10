@@ -23,7 +23,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
   await loadAll();mockWrites.length=0;
  });
  fs.mkdirSync('test-results',{recursive:true});
- const go=async page=>{if(page==='home')return p.locator('#sidebarHomeNav button').click();if(await p.locator('#dedicatedSidebarNav').isVisible())await p.locator('#sidebarAllMenuBtn').click();await p.locator('#mainSidebarNav [data-page='+page+']').click();};
+ const go=async page=>{if(page==='home')return p.locator('#sidebarHomeNav button').click();if(await p.locator('#dedicatedSidebarNav').isVisible())await p.locator('#sidebarRailToggle').click();await p.locator('#mainSidebarNav [data-page='+page+']').click();};
  const close=()=>p.locator('#classificationManageClose').click();
  const selected=async(kind,id)=>p.locator('#classificationSideHost [data-group-select='+id+']').click();
  await go('schedule');await p.locator('#classificationSideHost [data-group-eye=g1]').click();assert(!(await p.evaluate(()=>calEventsOn(todayStr()).some(e=>e.id==='e1'))));assert.equal(await p.evaluate(()=>classification.state('event').selected),'all');

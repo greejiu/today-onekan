@@ -6,13 +6,14 @@ window.createOnekanTodoSidebar = api => {
  const rail=document.createElement('nav');rail.id='todoIconRail';rail.hidden=true;rail.setAttribute('aria-label','전체 공간 이동');
  let collapsed=false;
  const toggle=document.createElement('button');toggle.type='button';toggle.id='sidebarRailToggle';toggle.className='navitem';toggle.setAttribute('aria-controls','mainSidebarNav dedicatedSidebarNav');
- toggle.onclick=()=>{collapsed=!collapsed;if(!collapsed)api.expand(false);sync();toggle.focus({preventScroll:true});};rail.prepend(toggle);
+ // 2026-10-10 왼쪽 화살표 하나로 통일: 세부 메뉴(탭 전용 사이드바)에서 누르면 전체 메뉴로, 전체 메뉴에서 한 번 더 누르면 접기, 접힌 상태에서 누르면 펼치기(전체 메뉴)
+ toggle.onclick=()=>{if(collapsed){collapsed=false;api.expand(false);}else if(api.dedicated())api.expand(false);else collapsed=true;sync();toggle.focus({preventScroll:true});};rail.prepend(toggle);
  const more=document.createElement('button');more.type='button';more.id='sidebarRailMore';more.className='navitem';more.title='더보기';more.setAttribute('aria-label','더보기');more.setAttribute('aria-expanded','false');more.innerHTML='<svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';rail.append(more);
  const popup=document.createElement('div');popup.id='sidebarRailMoreMenu';popup.setAttribute('popover','auto');popup.setAttribute('aria-label','더보기 메뉴');
  document.body.append(popup);more.setAttribute('aria-controls',popup.id);
  more.onclick=()=>{if(popup.matches(':popover-open'))popup.hidePopover();else{const r=more.getBoundingClientRect();popup.style.left=(r.right+8)+'px';popup.style.top=Math.max(8,Math.min(r.top,innerHeight-420))+'px';popup.showPopover();popup.querySelector('button')?.focus();}};
  popup.addEventListener('toggle',()=>more.setAttribute('aria-expanded',String(popup.matches(':popover-open'))));
- popup.addEventListener('keydown',e=>{if(e.key==='Escape'){popup.hidePopover();more.focus({preventScroll:true});e.preventDefault();}});
+ popup.addEventListener('keydown',e=>{if(e.key==='Escape'){popup.hidePopover();more.setAttribute('aria-expanded','false');more.focus({preventScroll:true});e.preventDefault();}}); // toggle 이벤트는 한 박자 늦게 와서 닫힘 상태를 바로 반영
  const moreLabel=document.createElement('span');moreLabel.className='todo-rail-label';moreLabel.textContent='더보기';more.append(moreLabel);
  sidebar.prepend(rail);
  const feedback=document.createElement('p');feedback.id='todoGroupMoveStatus';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');document.getElementById('dedicatedSidebarNav').append(feedback);
@@ -20,7 +21,7 @@ window.createOnekanTodoSidebar = api => {
  let drag=null,busy=false,suppressed=0,suppressedPage=null,owner=api.user();
  const enabled=()=>desktop.matches&&!collapsed&&!!activeHost()&&api.dedicated()&&api.projectsReady();
  function clear(){drag?.source.classList.remove('todo-group-dragging');document.querySelectorAll('.todo-group-target').forEach(el=>el.classList.remove('todo-group-target'));ghost.hidden=true;drag=null;}
- function sync(){sidebar.classList.add('todo-rail');sidebar.classList.toggle('view-sidebar',['all','schedule','todos','habits'].includes(api.page()));sidebar.classList.toggle('rail-collapsed',collapsed);sidebar.classList.toggle('rail-details',api.dedicated()&&!collapsed);sidebar.classList.toggle('todo-details',api.page()==='todos');rail.hidden=!desktop.matches;toggle.textContent=collapsed?'→':'←';toggle.title=collapsed?'전체 메뉴 펼치기':'사이드바 접기';toggle.setAttribute('aria-label',toggle.title);toggle.setAttribute('aria-expanded',String(!collapsed));more.classList.toggle('active',!OnekanNavigation.primary().some(r=>r.page===api.page()));feedback.hidden=!activeHost();if(popup.matches(':popover-open'))popup.hidePopover();if(!enabled())clear();if(owner!==api.user()){owner=api.user();clear();feedback.textContent='';}}
+ function sync(){sidebar.classList.add('todo-rail');sidebar.classList.toggle('view-sidebar',['all','schedule','todos','habits'].includes(api.page()));sidebar.classList.toggle('rail-collapsed',collapsed);sidebar.classList.toggle('rail-details',api.dedicated()&&!collapsed);sidebar.classList.toggle('todo-details',api.page()==='todos');rail.hidden=!desktop.matches;toggle.textContent=collapsed?'→':'←';toggle.title=collapsed?'사이드바 펼치기':api.dedicated()?'전체 메뉴로':'사이드바 접기';toggle.setAttribute('aria-label',toggle.title);toggle.setAttribute('aria-expanded',String(!collapsed));more.classList.toggle('active',!OnekanNavigation.primary().some(r=>r.page===api.page()));feedback.hidden=!activeHost();if(popup.matches(':popover-open'))popup.hidePopover();if(!enabled())clear();if(owner!==api.user()){owner=api.user();clear();feedback.textContent='';}}
  function target(x,y){
   const button=document.elementFromPoint(x,y)?.closest('#classificationSideHost [data-project-select]');
   if(!button||button.dataset.projectSelect==='all')return null;
