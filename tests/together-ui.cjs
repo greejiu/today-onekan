@@ -20,14 +20,14 @@ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42
    }catch(e){return {data:null,error:{message:e.message,code:e.code}};}
   });
   await page.route('**/*',route=>{const url=new URL(route.request().url());if(url.hostname==='localhost'){
-    const file=url.pathname==='/'?'index.html':url.pathname.slice(1);if(['index.html','assets/tracking.js','assets/tracking.css','assets/together.js','assets/together.css','assets/classification.js','assets/classification.css','assets/schedule-views.js','assets/item-views.js','assets/todo-views.js','assets/habit-views.js','assets/agenda-markup.js','assets/calendar-ui.js','assets/all-views.js','assets/schedule-views.css'].includes(file))return route.fulfill({contentType:file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html',body:fs.readFileSync(file)});
+    const file=url.pathname==='/'?'index.html':url.pathname.slice(1);if((file==='index.html'||/^assets\/[\w.-]+\.(js|css)$/.test(file))&&fs.existsSync(file)) /* 2026-10-10 목록에 없는 새 스크립트가 빈 파일로 가서 앱이 시작되지 않던 문제 — 저장소 안 assets 파일만 제공(외부 요청 없음 그대로) */return route.fulfill({contentType:file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html',body:fs.readFileSync(file)});
    }return route.fulfill({body:'',status:200});});
   await page.addInitScript(({user,png})=>{
    let current=user,callback;window.testChangeUser=id=>{current=id;callback?.('SIGNED_IN',{user:{id,email:'test@example.invalid'}});};
-   const auth={getSession:async()=>({data:{session:{user:{id:current,email:'test@example.invalid'}}}}),getUser:async()=>({data:{user:{id:current}}}),onAuthStateChange:fn=>{callback=fn;return {};}};
+   const auth={getSession:async()=>({data:{session:{user:{id:current,email:'test@example.invalid'}}}}),getUser:async()=>({data:{user:{id:current,app_metadata:{today_onekan_operator:true}}}}) /* 2026-10-10 같이한칸은 운영자 전용(release-policy) — 공용 fixture처럼 운영자로 */,onAuthStateChange:fn=>{callback=fn;return {};}};
    window.supabase={createClient:()=>({auth,from(table){const q=new Proxy({}, {get(_,key){if(key==='then')return resolve=>window.backend({user:current,op:'query',table}).then(resolve);return()=>q;}});return q;},rpc:(op,args)=>window.backend({user:current,op:args.op,p:args.p}),storage:{from:()=>({upload:(path)=>window.backend({user:current,op:'upload',path}),download:async path=>{const r=await window.backend({user:current,op:'download',path});return r.error?r:{data:new Blob([Uint8Array.from(atob(png),c=>c.charCodeAt(0))],{type:'image/png'})};}})}})};
   },{user,png:png.toString('base64')});
-  await page.goto('http://localhost/');await page.waitForFunction(()=>appSymbolReady);await page.waitForSelector('.upcoming-day');await page.locator('#navMoreBtn').click();await page.getByRole('menuitem',{name:'같이 한칸',exact:true}).click();return page;
+  await page.goto('http://localhost/');await page.waitForFunction(()=>appSymbolReady);await page.waitForSelector('.upcoming-day');await page.locator('#navMoreBtn').click();await page.getByRole('menuitem',{name:'같이한칸',exact:true}).click();return page;
  }
  const a=await pageFor(A),b=await pageFor(B);const dlg=p=>p.locator('#togetherDialog');
  const save=async(p,label='저장하기')=>{await dlg(p).getByRole('button',{name:label,exact:true}).click();await dlg(p).waitFor({state:'hidden'});};
@@ -90,7 +90,7 @@ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42
  const staleOwner=await a.evaluate(async B=>{try{await Together.receiveImage(new File(['x'],'x.png',{type:'image/png'}),todayStr(),B);return false;}catch{return true;}},B);assert(staleOwner);
  const cancelled=await a.evaluate(async A=>{try{await Together.receiveImage(new File(['x'],'x.png',{type:'image/png'}),todayStr(),A,()=>false);return false;}catch(e){return e.message.includes('취소');}},A);assert(cancelled);assert(!await dlg(a).isVisible());
  const oversize=await a.evaluate(async A=>{try{await Together.receiveImage(new File([new Uint8Array(8388609)],'big.png',{type:'image/png'}),todayStr(),A);return false;}catch(e){return e.message.includes('8MB');}},A);assert(oversize);
- await a.getByRole('button',{name:'계획 추가'}).click();await a.evaluate(id=>testChangeUser(id),C);await dlg(a).waitFor({state:'hidden'});assert.equal(await a.locator('#togetherRoot').textContent(),'');await a.evaluate(()=>Together.open());await a.getByRole('button',{name:'방 만들기',exact:true}).waitFor();
+ await a.getByRole('button',{name:'계획 추가'}).click();await a.evaluate(id=>testChangeUser(id),C);await dlg(a).waitFor({state:'hidden'});assert.equal(await a.locator('#togetherRoot').textContent(),'');assert.equal(await a.evaluate(()=>currentPage),'home','계정이 바뀌면 지금 한칸으로');await a.waitForFunction(()=>OnekanRelease.isOperator()); /* 계정이 바뀌면 운영자 확인을 다시 함 */await a.evaluate(()=>{showPage('together',true);Together.open();});await a.getByRole('button',{name:'방 만들기',exact:true}).waitFor();
  assert.equal(await a.locator('.pair-image').count(),0);
  const c=await pageFor(C);await c.getByRole('button',{name:'초대로 참여하기'}).click();await dlg(c).locator('[name=id]').fill(invite.id);await dlg(c).locator('[name=nickname]').fill('제3자');await dlg(c).getByRole('button',{name:'저장하기',exact:true}).click();await dlg(c).getByText('방 정원이 가득 찼어요 (2명)',{exact:true}).waitFor();
  await dlg(c).getByRole('button',{name:'닫기',exact:true}).click();
