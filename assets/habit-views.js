@@ -11,6 +11,8 @@ window.createOnekanHabitViews = api => {
  const source=row=>api.rows().find(h=>h.id===(row.habit_id||row.id));
  const endDate=row=>{const p=P.read('habit',row),end=p.endDate||p.startDate;return !p.allDay&&p.endTime==='00:00'&&end>p.startDate?P.addDays(end,-1):end;};
  function nextDue(h){const d=api.nextDue(h,api.today());return d&&(!h.end_date||d<=h.end_date)?d:'';}
+ // 2026-10-14 실천 기간 표시: 시작 예정이면 시작일, 기간이 끝났으면 종료일(보관 중이어도 날짜 기준으로 같이 보여줌)
+ function periodChip(h){const t=api.today();return h.start_date&&h.start_date>t?'시작일 '+h.start_date:h.end_date&&h.end_date<t?'종료일 '+h.end_date:'';}
  function paused(h,d){return api.pauses().some(p=>p.habit_id===h.id&&d>=p.paused_at&&(!p.resumed_at||d<p.resumed_at));}
  function occurrenceRows(range){
   const out=[],today=api.today();
@@ -45,7 +47,7 @@ window.createOnekanHabitViews = api => {
   return out;
  }
  function rows(){if(!calendarCache){calendarCache=occurrenceRows(engine.range());calendarRows=calendarCache;}return calendarCache;}
- function accept(row,state){const h=source(row);return !!h&&api.lifecycle(h,api.today())===state.lifecycle&&(state.status==='all'||row.status===state.status);}
+ function accept(row,state){const h=source(row);return !!h&&api.filterMatches(h,state.lifecycle,api.today())&&(state.status==='all'||row.status===state.status);}
  function note(row){return row.status==='done'?'완료 기록 · 수행일 '+row.record_date:row.status==='skipped'?'건너뜀 기록 · '+row.record_date:row.predicted?'예정 · 미래 회차':row.resolved?'예정 · 이후 수행 기록 있음 (회차 연결 미확정)':'예정 회차 · '+row.occurrence_date;}
  function check(row){
   if(row.block)return '<span class="hv-state">'+(row.resolved?'기록 참조':'예정')+'</span>';
@@ -65,31 +67,31 @@ window.createOnekanHabitViews = api => {
  function wire(node){api.wireSource(node);node.querySelectorAll('.todo-row .info').forEach(info=>{const row=api.rows().find(h=>h.id===info.closest('.todo-row').dataset.id);if(!row)return;info.querySelector('.name').onclick=null;info.tabIndex=0;info.setAttribute('role','button');info.setAttribute('aria-label',row.name+' 수정');info.onclick=()=>api.edit(row.id);info.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();api.edit(row.id);}};});node.querySelectorAll('[data-habit-action]').forEach(b=>b.onclick=e=>{e.stopPropagation();const row=calendarRows.find(r=>r.id===b.dataset.occurrence);if(row)act(row,b.dataset.habitAction,b);});}
  function detail(rowId){const row=calendarRows.find(r=>r.id===rowId);api.edit(row?.habit_id||rowId);}
  function overdue(){
-  const state=engine.state(),items=api.rows().filter(h=>api.visible(h)&&api.lifecycle(h,api.today())==='active'&&state.lifecycle==='active'&&api.overdue(h,api.today())>0&&!paused(h,api.today()));
+  const state=engine.state(),items=api.rows().filter(h=>api.visible(h)&&api.lifecycle(h,api.today())==='current'&&['current','all'].includes(state.lifecycle)&&api.overdue(h,api.today())>0&&!paused(h,api.today()));
   $('habitOverdueNotice').innerHTML=mode==='calendar'&&['all','open'].includes(state.status)?items.map(h=>'<div class="hv-overdue" data-overdue-habit="'+esc(h.id)+'"><span>'+esc(h.name)+' · '+api.overdue(h,api.today())+'일 지남 · 오늘 수행 기록</span><button type="button" data-hv-late="'+esc(h.id)+'">오늘 완료</button>'+(api.canSkip()?'<button type="button" data-hv-late-skip="'+esc(h.id)+'">오늘 건너뛰기</button>':'')+'</div>').join(''):'';
   for(const b of $('habitOverdueNotice').querySelectorAll('button'))b.onclick=()=>{const h=api.rows().find(h=>h.id===(b.dataset.hvLate||b.dataset.hvLateSkip));if(!h)return;act({habit_id:h.id,action_date:api.today(),id:h.id+'|late|'+api.today(),status:'open',block:api.blockReason(h,api.today())},b.dataset.hvLate?'done':'skip',b);};
  }
  function render(){
   calendarCache=null;renderVersion++;const state=engine.state();api.setLifecycle(state.lifecycle);
   for(const b of $('habitViewTabs').querySelectorAll('button[data-tab]')){b.classList.toggle('active',b.dataset.tab===mode);b.setAttribute('aria-pressed',String(b.dataset.tab===mode));}
-  for(const b of $('habitsTabRow').querySelectorAll('button')){b.classList.toggle('active',b.dataset.tab===state.lifecycle);b.setAttribute('aria-pressed',String(b.dataset.tab===state.lifecycle));}
+  $('habitPeriodFilter').value=state.lifecycle; // 2026-10-14 진행중/보관/종료 탭 → 현재/시작 예정/기간 종료/보관/전체 필터
   $('habitCollection').hidden=mode==='calendar';$('habitCalendarMode').hidden=mode!=='calendar';$('todoList').hidden=mode==='board';$('habitBoard').hidden=mode!=='board';
   $('habitDateNav').hidden=mode!=='calendar';$('habitStatusWrap').hidden=mode!=='calendar';$('habitStatus').value=state.status;$('habitMonthCount').hidden=mode==='calendar';$('habitJumpRow').hidden=true;
-  $('habitOccurrenceNotice').textContent=mode==='calendar'?'예정 회차는 계산한 표시입니다. 완료는 실제 수행일과 당시 저장한 시간을 표시합니다. 회차 이동은 수정창에서 원본을 확인해주세요.':'진행·보관·종료 상태별 습관 원본 목록입니다. 날짜를 바꿔도 원본이 여러 카드로 늘어나지 않습니다.';
+  $('habitOccurrenceNotice').textContent=mode==='calendar'?'예정 회차는 계산한 표시입니다. 완료는 실제 수행일과 당시 저장한 시간을 표시합니다. 회차 이동은 수정창에서 원본을 확인해주세요.':'습관 원본 목록입니다. 시작일·종료일(실천 기간)로 현재·시작 예정·기간 종료를 나누고, 보관한 습관은 보관에서만 보여요.';
   $('habitMonthLabel').textContent=date.slice(0,7);
   if(mode==='calendar')engine.calendar();else engine.collection();
   $('habitRangeLabel').hidden=mode!=='calendar';overdue();
  }
  function selectDate(value){date=value;engine?.remember();render();}
  const preview=document.createElement('div');preview.id='habitDragPreview';preview.className='sv-drag-preview';preview.hidden=true;preview.innerHTML='<span id="habitDragText"></span><br><button type="button" id="habitDragCancel">취소 (Esc)</button>';document.body.append(preview);
- engine=window.createOnekanItemViews({...api,kind:'habit',pageName:'habits',table:'tok_habits',title:'습관',id,defaults:{mode:'list',group:'none',lifecycle:'active',status:'all'},allowMove:false,allowResize:false,minLaneWidth:120,preferenceOptions:{group:['none','group','category','project']},
+ engine=window.createOnekanItemViews({...api,kind:'habit',pageName:'habits',table:'tok_habits',title:'습관',id,defaults:{mode:'list',group:'none',lifecycle:'current',status:'all'},allowMove:false,allowResize:false,minLaneWidth:120,preferenceOptions:{group:['none','group','category','project']},
   date:()=>date,month,mode:()=>mode,setMode:v=>{mode=v;},restoreDate:v=>{date=/^\d{4}-\d{2}-\d{2}$/.test(v)?v:api.today();},changeMode:v=>{mode=v;render();api.sidebar();},render,selectDate,
   goMonth:n=>{const [y,m]=date.split('-').map(Number),d=new Date(y,m-1+n,1);selectDate(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01');},rows,accept,endDate,check,wire,detail,edit:detail,
-  collectionRows:state=>api.rows().filter(h=>api.matches(h)&&api.lifecycle(h,api.today())===state.lifecycle),
+  collectionRows:state=>api.rows().filter(h=>api.matches(h)&&api.filterMatches(h,state.lifecycle,api.today())),
   sort:(a,b,state)=>state.sort==='name'?a.name.localeCompare(b.name,'ko'):(nextDue(a)||'9999').localeCompare(nextDue(b)||'9999')||a.name.localeCompare(b.name,'ko'),
-  rowChip:row=>'다음 예정일 '+(nextDue(row)||'없음'), // 목록 줄(지금 한칸 줄)의 보조 정보
+  rowChip:row=>periodChip(row)||'다음 예정일 '+(nextDue(row)||'없음'), // 목록 줄(지금 한칸 줄)의 보조 정보 — 시작 예정은 시작일, 기간 종료는 종료일
   rowExtra:row=>api.sourceActions?.(row)||'', // 기록 보기 · 보관하기/재개하기(옛 카드와 같은 버튼·처리)
-  card:row=>row.habit_id?null:api.sourceCard(row).replace('<div class="block-tag">','<div class="block-tag"><span class="hv-next">다음 예정일 '+esc(nextDue(row)||'없음')+' · </span>'),
+  card:row=>row.habit_id?null:api.sourceCard(row).replace('<div class="block-tag">','<div class="block-tag"><span class="hv-next">'+esc(periodChip(row)||'다음 예정일 '+(nextDue(row)||'없음'))+' · </span>'),
   info:row=>'<span class="hv-note">'+esc(note(row))+'</span>',
   menuAttrs:(rowId)=>{const row=calendarRows.find(r=>r.id===rowId);return api.menuAttrs(row?.habit_id||rowId,row?.action_date)+(row?.block?' data-habit-status-block="'+esc(row.block)+'"':'');},
   scrollDate:()=>{},paintRange:(a,b)=>host.querySelectorAll('.cal-cell[data-date]').forEach(el=>el.classList.toggle('cal-range',el.dataset.date>=a&&el.dataset.date<=b)),clearRange:()=>host.querySelectorAll('.cal-range').forEach(el=>el.classList.remove('cal-range')),

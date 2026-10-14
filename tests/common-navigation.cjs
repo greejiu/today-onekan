@@ -20,7 +20,7 @@ const {chromium}=require('playwright'),{fixture}=require('./home-layout.cjs');
  }
  await go('todos');await p.locator('#todoTopTabs [data-tab=someday]').click();await p.locator('#somedayInput').fill('담아두기 작성 중');await toFullMenu();assert.equal(await p.locator('#somedayInput').inputValue(),'담아두기 작성 중');await go('todos');assert(await p.locator('#todoSomedayView').isVisible());
  await p.locator('#todoTopTabs [data-tab=list]').click();await p.waitForFunction(()=>document.querySelector('#todoTopTabs [data-tab=list]').classList.contains('active'));await p.screenshot({path:'test-results/navigation-todos.png'});
- await go('habits');await p.locator('#habitsTabRow [data-tab=archived]').click();assert(await p.locator('#habitsTabRow [data-tab=archived]').evaluate(e=>e.classList.contains('active')));
+ await go('habits');await p.locator('#habitPeriodFilter').selectOption('archived');assert.equal(await p.locator('#habitPeriodFilter').inputValue(),'archived'); // 2026-10-14 탭 → 필터
  await go('all');assert(await p.locator('#allViewTabs').isVisible());assert.deepEqual(await p.locator('#allSidebarTypes .aft-title').allTextContents(),['내 일정','다른 캘린더']);await p.screenshot({path:'test-results/navigation-all.png'});
  await go('community');assert.equal(await p.locator('.page[data-page=community] :is(button,input)').count(),0);
  await go('together');for(const section of ['friends','guestbook','myroom']){await p.locator('#pageSidebarItems [data-together-section='+section+']').click();assert(await p.locator('#togetherPreparing').isVisible());assert(!(await p.locator('#togetherRoot').isVisible()));assert.match(await p.locator('#togetherPreparingText').textContent(),/준비/);}

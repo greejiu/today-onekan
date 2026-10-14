@@ -1681,11 +1681,8 @@
             <h1 class="page-title" style="margin:0;">습관</h1>
             <button type="button" class="sched-add-btn" id="habitAddBtn">+ 습관</button>
           </div>
-          <div class="view-toggle" id="habitsTabRow" style="margin-bottom:10px;">
-            <button type="button" data-tab="active" class="active">진행중</button>
-            <button type="button" data-tab="archived">보관</button>
-            <button type="button" data-tab="ended">종료</button>
-          </div>
+          <!-- 2026-10-14 진행중/보관/종료 탭 대신 날짜로 판단하는 필터(시작일·종료일 = 실천 기간, 보관 = 목록·오늘 할 일에서 숨김) -->
+          <label class="habit-period-filter" id="habitPeriodFilterWrap">보기 <select id="habitPeriodFilter" aria-label="습관 보기 필터"><option value="current">현재</option><option value="upcoming">시작 예정</option><option value="ended">기간 종료</option><option value="archived">보관</option><option value="all">전체</option></select></label>
           <div class="view-toggle" id="habitViewTabs" aria-label="습관 보기"><button type="button" data-tab="calendar">달력</button><button type="button" data-tab="list" class="active">목록</button><button type="button" data-tab="board">보드</button></div>
           <div class="sv-toolbar" id="habitDateNav"><button id="habitPrevBtn" type="button" aria-label="이전 기간">‹</button><span id="habitMonthLabel"></span><button id="habitNextBtn" type="button" aria-label="다음 기간">›</button><button id="habitTodayBtn" type="button">오늘</button></div>
           <label id="habitStatusWrap">회차 표시 <select id="habitStatus"><option value="all">전체</option><option value="open">예정</option><option value="done">완료 기록</option><option value="skipped">건너뜀 기록</option></select></label>
@@ -2904,8 +2901,8 @@
   // 2026-09-29 작업 탭: tok_projects(상위·하위 2단계) / tok_identities. projectsReady=false면 DB에 아직 없음 → 기능 숨김.
   let projects = [], identities = [], projectsReady = false;
   let habitPauses = []; // tok_habit_pauses 전체({habit_id, paused_at, resumed_at, reason}) — 보관/재개 이력(2026-09-12, 여러 번 가능)
-  let habitsTabView = "active"; // 습관 관리 목록 상단탭: "active"(진행중) | "archived"(보관) | "ended"(종료)
-  let habitListSettings = loadTabSettings("tok_habitListSettings", ["active", "archived", "ended"]); // 습관 탭별 정렬/그룹화 기억
+  let habitsTabView = "current"; // 습관 관리 목록 필터: "current"(현재 실천 기간) | "upcoming"(시작 예정) | "ended"(기간 종료) | "archived"(보관) | "all"(전체)
+  let habitListSettings = loadTabSettings("tok_habitListSettings", ["current", "upcoming", "ended", "archived", "all"]); // 습관 필터별 정렬/그룹화 기억
   let todoTabView = "all"; // 할일 탭 상단탭: "all"(모두) | "scheduled"(예정된) | "someday"(언젠가)
   let todoListSettings = loadTabSettings("tok_todoListSettings", ["all", "scheduled"]); // 할일 탭별 정렬/그룹화 기억(언젠가는 기존 정렬 그대로 유지)
   let currentPage = "home";
@@ -3464,7 +3461,7 @@
     // 습관 배너: 밀렸거나 오늘 예정인 진행중 습관 중 "매일 반복"은 제외(매일 하는 습관은 매일 새로 챙길 필요가
     // 없어서, 결 요청대로 이 배너에서만 뺌 — 습관 탭 배지·기록 통계 등 다른 곳은 그대로 포함해서 계산).
     const habitCount = tasks.filter(t =>
-      habitLifecycleState(t, todayS) === "active" &&
+      habitLifecycleState(t, todayS) === "current" &&
       habitOverdueDays(t, todayS) !== null &&
       !(t.repeat_unit === "day" && (t.repeat_interval || 1) === 1)
     ).length;
@@ -3615,12 +3612,17 @@
   // 보관(재개 가능한 일시정지)했다가 재개한 적이 있으면, 그 기간엔 "밀린 걸로" 안 치고 재개일부터
   // 앵커를 새로 잡음(2026-09-12) — 쉬었던 기간만큼 밀린 걸로 누적되면 억울하니까. 재개 이력이 여러 번
   // 있으면 그중 가장 최근 재개일을 씀. 재개 이력이 없으면 원래 start_date 그대로.
-  // 습관의 진행중/보관/종료 분류(2026-09-12) — 종료가 최우선(자동, end_date가 지나면 무조건 종료),
-  // 그 다음은 보관 여부(is_active, 수동 토글). 종료/보관 둘 다 재개 가능하고 차이는 발생 방식뿐.
+  // 습관 목록 분류(2026-10-14 재정리) — 따로 저장하는 상태 없이 보관 여부와 날짜로만 판단.
+  // 보관(is_active=false)이 먼저: 기본 목록·오늘 할 일에서 숨김. 그다음 실천 기간(start_date~end_date, 양끝 날 포함,
+  // 빈 값은 제한 없음): 시작일이 미래면 "upcoming", 종료일이 지났으면 "ended", 그 사이면 "current".
   function habitLifecycleState(habit, dateStr) {
+    if (!habit.is_active) return "archived";
+    if (habit.start_date && habit.start_date > dateStr) return "upcoming";
     if (habit.end_date && habit.end_date < dateStr) return "ended";
-    return habit.is_active ? "active" : "archived";
+    return "current";
   }
+  const HABIT_FILTER_LABEL = { current: "현재", upcoming: "시작 예정", ended: "기간 종료", archived: "보관", all: "전체" };
+  const habitFilterMatches = (habit, filter, dateStr) => filter === "all" || habitLifecycleState(habit, dateStr) === filter;
   function habitEffectiveStartDate(habit) {
     let latest = habit.occurrence_start_date && habit.occurrence_start_date>habit.start_date ? habit.occurrence_start_date : habit.start_date || (habit.created_at ? habit.created_at.slice(0, 10) : null);
     for (const p of habitPauses) {
@@ -7350,17 +7352,14 @@
   }
 
   // ── 습관 탭: 습관 관리 목록 (오늘 일정 확인·조절은 집 화면에서) ──
-  // 2026-09-12: 진행중/보관/종료 상단탭 추가 — 종료(end_date 자동)와 보관(수동, 여러 번 가능) 모두
-  // 재개 가능. 보관/재개는 tok_habit_pauses에 이력을 남겨서, 재개하면 그 시점부터 앵커를 새로 잡음
-  // (쉬었던 기간만큼 밀린 걸로 안 치게). 정렬/그룹화도 탭별로 기억됨(habitListSettings).
-  document.querySelectorAll("#habitsTabRow button").forEach(btn => {
-    btn.onclick = () => {
-      habitsTabView = btn.dataset.tab;
-      if(habitViews){habitViews.option('lifecycle',habitsTabView);return;}
-      document.querySelectorAll("#habitsTabRow button").forEach(b => b.classList.toggle("active", b === btn));
-      renderTodo();
-    };
-  });
+  // 2026-10-14: 진행중/보관/종료 탭 → 필터(현재/시작 예정/기간 종료/보관/전체). 기간은 시작일·종료일로만 판단하고,
+  // 보관/복원은 is_active만 바꿈(날짜는 그대로). tok_habit_pauses에 보관·복원 이력을 남겨서, 복원하면 그 시점부터
+  // 밀린 일수 계산 기준(앵커)을 새로 잡음(쉬었던 기간만큼 밀린 걸로 안 치게). 정렬/그룹화는 필터별로 기억됨.
+  $("habitPeriodFilter").onchange = e => {
+    habitsTabView = e.target.value;
+    if(habitViews){habitViews.option('lifecycle',habitsTabView);return;}
+    renderTodo();
+  };
   function renderHabitRow(t) {
     const todayS = todayStr();
     const cat = habitCategories.find(c => c.id === t.category_id);
@@ -7369,13 +7368,15 @@
     const catChip = cat ? `<span class="habit-cat-chip">${escapeHtml(cat.name)}</span>` : "";
     const projectName = projectsReady && t.project_id ? projectById(t.project_id)?.name : null;
     const projectLabel = projectName ? `<div class="habit-project-label" title="${escapeHtml(projectName)}">${escapeHtml(projectName)}</div>` : "";
-    // 시작일이 아직 안 왔거나 종료일이 있을 때만 기간을 같이 보여줌(평범하게 계속 진행 중인 습관은 굳이 안 보여줘서 안 복잡하게).
-    const windowText = t.end_date ? ` · ~${formatDateShort(t.end_date)}까지`
-      : (t.start_date && t.start_date > todayS) ? ` · ${formatDateShort(t.start_date)}부터 시작` : "";
+    // 시작 예정이면 시작일, 기간이 끝났으면 종료일, 지금 기간 중이면 종료일이 있을 때만 "~까지"(평범한 습관은 안 복잡하게)
+    const lifeState = habitLifecycleState(t, todayS);
+    const windowText = lifeState === "upcoming" || (!t.is_active && t.start_date > todayS) ? ` · ${formatDateShort(t.start_date)} 시작`
+      : t.end_date && t.end_date < todayS ? ` · ${formatDateShort(t.end_date)} 종료`
+      : t.end_date ? ` · ~${formatDateShort(t.end_date)}까지` : "";
     // 습관 예정 상태 배지: 앵커 기준 며칠 밀렸는지(N일 지남, 빨강) / 오늘이 예정일(오늘, 파랑) / 다음 회차까지 며칠(N일 남음, 파랑)
     // — 여러 날 밀려도 줄을 쌓지 않고 이 배지 하나로만 표시(2026-09-12). 진행중 탭에서만 보여줌.
     let dueChip = "";
-    if (habitsTabView === "active" && t.repeat_unit) {
+    if (lifeState === "current" && t.repeat_unit) {
       const overdue = habitOverdueDays(t, todayS);
       if (overdue !== null) {
         dueChip = overdue === 0
@@ -7391,7 +7392,7 @@
     }
     const actionBtn = habitToggleBtnHtml(t);
     return `
-    <div class="todo-row ${habitsTabView === "active" ? "" : "inactive"}" data-id="${t.id}"${menuAttrs("habit", t.id)}>
+    <div class="todo-row ${lifeState === "current" ? "" : "inactive"}" data-id="${t.id}"${menuAttrs("habit", t.id)}>
       <div class="info">
         <div class="name">${groupTitleHtml("habit-name", "habit", t.category_id, t.name)}${dueChip}</div>
         ${projectLabel}
@@ -7405,20 +7406,23 @@
     </div>
   `;
   }
-  // 습관 원본 줄의 보관하기/재개하기 — 옛 목록 카드와 습관 탭 목록(지금 한칸 줄) 공용
+  // 습관 원본 줄의 보관하기/복원하기 — 보관 여부(is_active)로만 정함(기간이 끝난 습관도 날짜는 수정 창에서만 바꿈)
   function habitToggleBtnHtml(t) {
-    return habitsTabView === "active"
+    return t.is_active
       ? `<button class="togglebtn" data-id="${t.id}" data-act="archive">보관하기</button>`
-      : `<button class="togglebtn on" data-id="${t.id}" data-act="resume">재개하기</button>`;
+      : `<button class="togglebtn on" data-id="${t.id}" data-act="resume">복원하기</button>`;
   }
   function habitSourceActionsHtml(t) {
     return `<button class="historybtn icon-btn" data-id="${t.id}" title="기록 보기" aria-label="${escapeHtml(t.name)} 기록 보기">${ICON_HISTORY_SVG}</button>${habitToggleBtnHtml(t)}`;
+  }
+  function habitEmptyText(filter) {
+    return ({ current: "지금 실천 기간인 습관이 없어요.<br/>[+ 습관]으로 추가해보세요.", upcoming: "시작 예정인 습관이 없어요.", ended: "기간이 끝난 습관이 없어요.", archived: "보관 중인 습관이 없어요." })[filter] || "습관이 없어요.";
   }
   function renderTodo() {
     allViews?.render();
     if(habitViews){habitViews.render();return;}
     const todayS = todayStr();
-    const visible = tasks.filter(t => habitLifecycleState(t, todayS) === habitsTabView && (!classification || classification.matches("habit",t)));
+    const visible = tasks.filter(t => habitFilterMatches(t, habitsTabView, todayS) && (!classification || classification.matches("habit",t)));
     const settings = habitListSettings[habitsTabView];
     renderSortGroupControls($("habitSortSelect"), $("habitGroupSelect"), settings, true, () => {
       saveTabSettings("tok_habitListSettings", habitListSettings);
@@ -7426,9 +7430,7 @@
     });
     const sorted = sortItemsBy(visible, settings.sort, "start_date", habitCategories, "category_id");
     const sections = groupItemsBy(sorted, settings.group, "start_date", habitCategories, "category_id");
-    const emptyText = habitsTabView === "active" ? "진행중인 습관이 없어요.<br/>[+ 습관]으로 추가해보세요."
-      : habitsTabView === "archived" ? "보관 중인 습관이 없어요."
-      : "종료된 습관이 없어요.";
+    const emptyText = habitEmptyText(habitsTabView);
     $("todoEmpty").style.display = "none"; // 빈 상태는 renderSections가 #todoList 안에 직접 그려줌
     renderSections($("todoList"), sections, renderHabitRow, emptyText);
     wireHabitRows($("todoList"));
@@ -7458,20 +7460,16 @@
           const { error: pErr } = await sb.from("tok_habit_pauses").insert({ habit_id: id, paused_at: todayStr(), reason: "manual" });
           if (pErr) { alert("보관 이력 저장 실패: " + pErr.message); return; }
         } else {
-          // 재개: 종료(end_date 지남)였으면 end_date를 지워서 다시 진행중으로, 보관이었으면 is_active를 켜고
-          // 열려있는(resumed_at이 비어있는) 가장 최근 보관 이력에 재개일을 채움 — 이 재개일이 다음 앵커 기준이 됨.
-          const state = habitLifecycleState(t, todayStr());
-          // 종료 상태였으면 end_date도 지우고(다음 재개엔 걸리지 않게), 어느 쪽이든 is_active는 켜고
-          // 열려있는 보관 이력이 있으면(둘 다 겹친 드문 경우 포함) 재개일을 채워서 앵커를 새로 잡음.
-          const patch = { is_active: true };
-          if (state === "ended") patch.end_date = null;
-          const { error } = await sb.from("tok_habits").update(patch).eq("id", id);
-          if (error) { alert("재개 실패: " + error.message); return; }
+          // 복원: is_active만 켬(시작일·종료일·완료 기록은 그대로 — 기간에 따라 다시 표시됨). 2026-10-14 전에는
+          // 기간이 끝난 습관을 "재개"하면 종료일을 지웠는데, 날짜를 임의로 바꾸지 않도록 없앰.
+          // 열려있는(resumed_at이 비어있는) 보관 이력에 복원일을 채움 — 밀린 일수 계산 기준(앵커)이 됨.
+          const { error } = await sb.from("tok_habits").update({ is_active: true }).eq("id", id);
+          if (error) { alert("복원 실패: " + error.message); return; }
           const openPauses = habitPauses.filter(p => p.habit_id === id && !p.resumed_at);
           if (openPauses.length) {
             const { error: pErr } = await sb.from("tok_habit_pauses").update({ resumed_at: todayStr() })
               .eq("habit_id", id).is("resumed_at", null);
-            if (pErr) { alert("재개 이력 저장 실패: " + pErr.message); return; }
+            if (pErr) { alert("복원 이력 저장 실패: " + pErr.message); return; }
           }
         }
         await loadAll();
@@ -8768,7 +8766,7 @@
     return true;
   }
   function projectHabitRowHtml(h) {
-    const state = !h.is_active ? "보관" : (h.end_date && h.end_date < todayStr() ? "종료" : "진행중");
+    const state = HABIT_FILTER_LABEL[habitLifecycleState(h, todayStr())];
     const meta = [repeatSummaryText(h.repeat_unit, h.repeat_interval, h.repeat_days), state].filter(Boolean).join(" · ");
     return `<div class="proj-row" data-kind="habit" data-id="${h.id}">
       <span class="proj-row-lead" aria-hidden="true">↻</span>
@@ -9787,7 +9785,7 @@
   habitViews = window.createOnekanHabitViews({rowHtml:homeTodayRowHtml,wireRows:wireHomeTodayChecks,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone),engineHomeDay:lendHomeDay,sideAgenda:true,
     period:OnekanPeriod,sb,user:()=>appSymbolUserId,page:()=>currentPage,today:todayStr,rows:()=>tasks,
     logs:()=>habitLogs,skips:()=>habitSkips,pauses:()=>habitPauses,periodRow:habitPeriodRow,occurrences:habitOccurrencesInRange,
-    effectiveStart:habitEffectiveStartDate,lifecycle:habitLifecycleState,nextDue:habitNextDueAfter,overdue:habitOverdueDays,
+    effectiveStart:habitEffectiveStartDate,lifecycle:habitLifecycleState,filterMatches:habitFilterMatches,nextDue:habitNextDueAfter,overdue:habitOverdueDays,
     resolved:habitResolvedSinceOccurrence,blockReason:habitStatusBlockReason,status:setHabitDayStatus,canSkip:()=>habitSkipsReady,
     groups:()=>classification.groups().filter(g=>g.kind==='habit'),categories:()=>habitCategories,projects:()=>projects,blocks:()=>timeBlocks,
     matches:e=>classification.matches('habit',e),visible:e=>classification.matches('habit',e)&&classification.calendarVisible(e,'habit'),
