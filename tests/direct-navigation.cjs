@@ -22,11 +22,11 @@ const {chromium}=require('playwright');const {fixture}=require('./home-layout.cj
  await page.screenshot({path:'test-results/direct-todos-1366.png'});
  await page.locator('#pageSidebarItems [data-sidebar-tab=someday]:visible, #todoTopTabs [data-tab=someday]:visible').click();await page.locator('#somedayInput').fill('보존할 입력');
  await go('habits');await check('habits');await page.screenshot({path:'test-results/direct-habits-1366.png'});
- await page.locator('#habitsTabRow [data-tab=archived]').click();await go('todos');
+ await page.locator('#habitPeriodFilter').selectOption('archived');await go('todos'); // 2026-10-14 탭 → 필터
  assert(await page.locator('#todoSomedayView').isVisible());assert.equal(await page.locator('#somedayInput').inputValue(),'보존할 입력');
  await page.locator('#pageSidebarItems [data-sidebar-tab=list]:visible, #todoTopTabs [data-tab=list]:visible').click();await page.locator('#todoQuickAddBtn').click();await page.locator('#td_title').fill('할일 작성 중');
  for(const width of [760,761,390,1366]){await page.setViewportSize({width,height:768});await check('todos');assert.equal(await page.locator('#td_title').inputValue(),'할일 작성 중');}
- await page.keyboard.press('Escape');await go('habits');assert(await page.locator('#habitsTabRow [data-tab=archived]').evaluate(e=>e.classList.contains('active')));
+ await page.keyboard.press('Escape');await go('habits');assert.equal(await page.locator('#habitPeriodFilter').inputValue(),'archived');
  await page.locator('#habitAddBtn').click();await page.locator('#ha_name').fill('습관 작성 중');
  for(const width of [760,761,390,1366]){await page.setViewportSize({width,height:768});await check('habits');assert.equal(await page.locator('#ha_name').inputValue(),'습관 작성 중');}
  await page.locator('#ha_cancel').click();await page.setViewportSize({width:390,height:844});await page.screenshot({path:'test-results/direct-mobile-390.png'});

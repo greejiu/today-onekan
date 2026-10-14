@@ -391,3 +391,6 @@
 .aft-list li .aft-cat-edit{margin-left:auto;opacity:0}
 .aft-list li:hover .aft-cat-edit,.aft-list li .aft-cat-edit:focus-visible{opacity:1}
 @media(hover:none){.aft-list li .aft-cat-edit{opacity:1}}
+/* 2026-10-14 습관 보기 필터(현재/시작 예정/기간 종료/보관/전체) — 정렬·그룹화 선택칸과 같은 모양 */
+.habit-period-filter{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;font-size:13px;color:var(--sub)}
+.habit-period-filter select{min-height:36px;min-width:120px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text);padding:6px 8px;font:inherit;font-size:14px}
