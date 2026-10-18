@@ -3,7 +3,7 @@
  * - 날짜만 옮기면 시간·기간 유지(여러 날 항목도 기간 유지), 잡은 날과 놓은 날의 차이만큼 이동
  * - 시간 칸: 놓은 시각이 시작(30분 단위, 확정 설계), 소요시간 유지(타임라인 안에서 끌면 잡은 위치와의 차이를 유지해 미리보기 윗변 = 시작)
  * - 하루종일 → 시간 칸: 놓은 날 그 시각부터 30분 / 시간 → 하루종일: 시간 지정 해제 / 시간블록: 블록 시작 시각
- * - 반복: 저장 전에 이번만·이번부터 이후·전체 선택. 고른 뜻 그대로 저장할 수 있는 선택만 켜고, 나머지는 이유와 함께 비활성
+ * - 반복: 저장 전에 이번만·이번부터 이후·전체 선택. 고른 뜻 그대로, 항목 한 건 저장으로 할 수 있는 선택만 켜고 나머지는 이유와 함께 비활성
  * - 완료·건너뜀·측정 기록은 쓰지 않음. 실패·취소·영역 밖·Esc는 원래대로. 성공 후 10초 실행 취소(그사이 바뀌었으면 덮어쓰지 않음). */
 (function(root){
  'use strict';
@@ -60,6 +60,8 @@
  }
  // 반복 범위: 고른 뜻 그대로 저장할 수 있을 때만 켬(ok). 아니면 이유를 보여 주고 끔.
  //  ctx.dateChanged = 날짜가 바뀌는 이동, ctx.weekdays = 요일을 정해 둔 반복(다음 회차가 요일 설정으로 계산됨)
+ //  ctx.others = {future,all}: 그 범위면 같이 옮겨야 하는 아직 안 한 다른 회차 수(반복 할일). 이번 PR은 항목 한 건 저장만 하므로
+ //  다른 회차까지 바꿔야 하면 끔(여러 회차를 한 번에 저장하는 DB 기능은 후속, 결 결정 2026-10-19)
  function scopes(kind,ctx={}){
   const one={id:'one',label:'이번만'};
   if(kind==='event')return [
@@ -68,10 +70,12 @@
    {id:'all',label:'전체',ok:true,note:'모든 회차를 같은 만큼 옮겨요. 반복 설정은 그대로예요.'}];
   if(kind==='todo'){
    const weekday=ctx.dateChanged&&ctx.weekdays?'요일을 정해 둔 반복은 다음 회차가 요일 설정으로 계산돼서, 날짜를 옮겨도 이후 회차에 반영되지 않아요. 수정창에서 요일을 바꿔 주세요.':'';
+   const many=n=>n>0?'아직 안 한 다른 회차 '+n+'개도 같이 옮겨야 해요. 여러 회차를 한 번에 저장하는 기능이 아직 없어서 지금은 할 수 없어요.':'';
+   const pick=(id,label,note)=>{const why=weekday||many(ctx.others?.[id]||0);return why?{id,label,reason:why}:{id,label,ok:true,note};};
    return [
     {...one,reason:'다음 회차가 이 회차 날짜로 계산돼서, 이 회차만 옮길 수 없어요.'},
-    weekday?{id:'future',label:'이번부터 이후',reason:weekday}:{id:'future',label:'이번부터 이후',ok:true,note:'이 회차와 아직 안 한 이후 회차를 옮기고, 다음 회차는 옮긴 날짜·시간 기준으로 생겨요. 지난 회차·완료한 회차는 그대로예요.'},
-    weekday?{id:'all',label:'전체',reason:weekday}:{id:'all',label:'전체',ok:true,note:'아직 안 한 회차를 모두 같은 만큼 옮겨요. 완료한 회차는 그대로예요.'}];
+    pick('future','이번부터 이후','이 회차를 옮기고, 다음 회차는 옮긴 날짜·시간 기준으로 생겨요. 지난 회차·완료한 회차는 그대로예요.'),
+    pick('all','전체','아직 안 한 회차는 이 회차뿐이라 이 회차를 옮겨요. 다음 회차는 옮긴 날짜·시간 기준으로 생기고, 완료한 회차는 그대로예요.')];
   }
   return [
    {...one,reason:'습관은 회차별 시간을 따로 저장할 칸이 아직 없어요.'},
@@ -248,29 +252,17 @@
 
   // ── 저장 · 실행 취소 ──
   const table=kind=>kind==='event'?'tok_events':kind==='todo'?'tok_todos':'tok_habits';
-  // 반복 할일의 다른 회차: '이번부터 이후' = 이 회차보다 뒤의 아직 안 한 회차, '전체' = 아직 안 한 회차 모두. 같은 만큼(날짜 차이·같은 시각) 옮김
-  function chainWrites(r,res,target,scope){
-   const chain=r.repeat_chain_id||r.source_id,base=P.read('todo',r),delta=P.days(base.startDate,res.period.startDate),out=[];
-   for(const t of api.todos()){
-    if(t.id===r.source_id||t.is_done||(t.repeat_chain_id||t.id)!==chain||!t.repeat_unit)continue;
-    const p=P.read('todo',t);if(!p.startDate||scope==='future'&&p.startDate<base.startDate)continue;
-    const moved=P.addDays(p.startDate,delta),tt=target.type==='date'||target.type==='allday'?{type:target.type,date:moved}:{type:'time',date:moved,minute:res.period.allDay?0:P.minutes(res.period.startTime)};
-    const x=OnekanDragRules.plan(P,'todo',t,p.startDate,tt,null);if(!x.error&&!x.same)out.push({kind:'todo',id:t.id,row:t,patch:x.patch});
-   }
-   return out;
+  // 반복 할일에서 그 범위면 같이 옮겨야 하는 아직 안 한 다른 회차 수('이번부터 이후' = 이 회차보다 뒤, '전체' = 모두)
+  function otherOpen(r,scope){
+   const chain=r.repeat_chain_id||r.source_id,start=P.read('todo',r).startDate;
+   return api.todos().filter(t=>t.id!==r.source_id&&!t.is_done&&t.repeat_unit&&(t.repeat_chain_id||t.id)===chain&&(scope==='all'||(P.read('todo',t).startDate||'')>=start)).length;
   }
-  // 조건부 저장: 지금 값이 from과 같을 때만 to로 바꿈(그사이 다른 곳에서 바뀌었으면 맞는 행이 없어 false). 옮기기·되돌리기·다시 옮기기 공용
+  // 조건부 저장: 지금 값이 from과 같을 때만 to로 바꿈(그사이 다른 곳에서 바뀌었으면 맞는 행이 없어 false). 옮기기·되돌리기 공용. 한 번에 한 항목만
   async function apply(w,owner,from,to){
    let q=api.sb.from(table(w.kind)).update(to).eq('id',w.id).eq('user_id',owner);
    for(const [k,v] of Object.entries(from))q=v==null?q.is(k,null):q.eq(k,v);
    const res=await q.select('id');if(res.error)throw Error(res.error.message);return !!res.data?.length;
   }
-  const CHANGED='그사이 다른 곳에서 바뀐 회차가 있어요.';
-  async function write(w,owner){if(!await apply(w,owner,w.before,w.patch))throw Error(CHANGED);}
-  // 되돌리기: 이번에 쓴 값 그대로일 때만 원래 값으로
-  const revert=(w,owner)=>apply(w,owner,w.patch,w.before);
-  // 여러 회차 중 일부만 바뀐 채로 남지 않게: 이미 처리한 회차를 반대로 되돌림. 모두 됐으면 true
-  async function compensate(list,owner,back){let ok=true;for(const w of list.slice().reverse()){try{if(!await (back?revert(w,owner):apply(w,owner,w.before,w.patch)))ok=false;}catch(_){ok=false;}}return ok;}
   async function commit(d){
    const t=d.target,res=d.result,r=d.row;
    if(!t){status('달력 밖에 놓아서 옮기지 않았어요.');return;}
@@ -282,39 +274,31 @@
    try{
     let scope='single';
     if(repeat){
-     const ctx={dateChanged:P.read(r.kind,r).startDate!==res.period.startDate,weekdays:!!source.repeat_days?.length};
+     const ctx={dateChanged:P.read(r.kind,r).startDate!==res.period.startDate,weekdays:!!source.repeat_days?.length,others:r.kind==='todo'?{future:otherOpen(r,'future'),all:otherOpen(r,'all')}:{}};
      scope=await chooseScope(r.kind,r,res,ctx);
      // 취소했거나, 지원하지 않는 범위면(창에서 꺼져 있어 고를 수 없지만 한 번 더 확인) 아무것도 저장하지 않음
      if(!scope||!OnekanDragRules.scopes(r.kind,ctx).find(x=>x.id===scope)?.ok){status('옮기지 않았어요. 원래대로 두었어요.');api.render();return;}
     }
-    const writes=[{kind:r.kind,id:r.source_id,row:source,patch:res.patch}];
-    if(r.kind==='todo'&&scope!=='single')writes.push(...chainWrites(r,res,t,scope));
-    writes.forEach(w=>{w.before=Object.fromEntries(Object.keys(w.patch).map(k=>[k,w.row[k]??null]));});
-    const owner=api.user(),done=[];status('저장 중…');host.setAttribute('aria-busy','true');d.sources.forEach(n=>n.classList.add('sd-saving'));
-    try{for(const w of writes){await write(w,owner);done.push(w);}}
-    catch(error){
-     if(owner!==api.user())return;
-     const clean=await compensate(done,owner,true); // 여러 회차 중 일부만 저장됐으면 저장된 것도 되돌림(전부 옮기거나 전부 그대로)
-     await api.reload();status(clean?'저장하지 못했어요. 원래 상태로 되돌렸어요. '+error.message:'저장하지 못했고, 일부 회차는 그사이 바뀌어 되돌리지 못했어요. 확인해 주세요. '+error.message);return;
-    }
+    // 저장은 항상 이 항목 한 건(요청 한 번). 그사이 다른 곳에서 바뀌었으면 덮어쓰지 않음
+    const w={kind:r.kind,id:r.source_id,patch:res.patch,before:Object.fromEntries(Object.keys(res.patch).map(k=>[k,source[k]??null]))};
+    const owner=api.user();status('저장 중…');host.setAttribute('aria-busy','true');d.sources.forEach(n=>n.classList.add('sd-saving'));
+    let saved;try{saved=await apply(w,owner,w.before,w.patch);}catch(error){if(owner===api.user()){api.render();status('저장하지 못했어요. 원래 상태를 유지합니다. '+error.message);}return;}
     if(owner!==api.user())return;
+    if(!saved){await api.reload();status('그사이 다른 곳에서 바뀌어서 옮기지 않았어요. 바뀐 내용을 확인해 주세요.');return;}
     await api.reload();
     const message=(r.title||'항목')+' → '+OnekanDragRules.describe(res.period);status('옮겼어요: '+message);
-    api.toast('옮겼어요',{label:'실행 취소',run:()=>undo(writes,owner,key)},10000); // 알림은 짧게(모바일 폭), 자세한 내용은 상태 줄
+    api.toast('옮겼어요',{label:'실행 취소',run:()=>undo(w,owner,key)},10000); // 알림은 짧게(모바일 폭), 자세한 내용은 상태 줄
    }finally{saving.delete(key);host.removeAttribute('aria-busy');}
   }
-  async function undo(writes,owner,key){
+  // 실행 취소: 이번에 쓴 값 그대로일 때만 원래 값으로(그사이 바뀌었으면 덮어쓰지 않음)
+  async function undo(w,owner,key){
    if(owner!==api.user())return;
    if(saving.has(key)){api.toast('저장 중이라 되돌리지 않았어요.');return;}
-   // 옮긴 회차 전체를 되돌림. 한 회차라도 그사이 바뀌었거나 실패하면, 이미 되돌린 회차를 다시 옮긴 상태로 돌려 일부만 되돌아가지 않게 함
-   saving.add(key);let conflict=false,failed='',clean=true;const back=[];
-   try{
-    for(const w of writes){try{if(await revert(w,owner))back.push(w);else{conflict=true;break;}}catch(error){failed=error.message;break;}}
-    if(conflict||failed)clean=await compensate(back,owner,false);
-   }finally{saving.delete(key);}
+   saving.add(key);let ok=false,failed='';
+   try{ok=await apply(w,owner,w.patch,w.before);}catch(error){failed=error.message;}finally{saving.delete(key);}
    if(owner!==api.user())return;
    await api.reload();
-   const m=!clean?'되돌리지 못했고, 일부 회차만 되돌아갔어요. 확인해 주세요.':failed?'되돌리지 못했어요. 옮긴 상태 그대로예요. '+failed:conflict?'그사이 바뀐 내용이 있어 덮어쓰지 않았어요. 옮긴 상태 그대로예요.':'원래대로 되돌렸어요.';status(m);api.toast(m);
+   const m=failed?'되돌리지 못했어요. 옮긴 상태 그대로예요. '+failed:ok?'원래대로 되돌렸어요.':'그사이 바뀐 내용이 있어 덮어쓰지 않았어요. 옮긴 상태 그대로예요.';status(m);api.toast(m);
   }
   return {cancel,busy:()=>!!drag||saving.size>0,targetAt,chooseScope};
  };
