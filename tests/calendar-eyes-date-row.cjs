@@ -1,6 +1,6 @@
 // 2026-10-18 설계확정서 1.18 1차 구현(공통 구조·달력 눈 설정·날짜별 이동) 검증. 가짜 Supabase만 씀(운영 데이터·외부 요청 없음).
 // 예전 저장값(범주 공통) 이어받기, 날짜별 = 지금 보기의 눈, 언젠가는 눈과 무관, 날짜 줄(월 칸 머리 전체·주 머리) → 날짜별 이동·강조(지난 날짜 포함),
-// 접힌 오른쪽 칸 다시 펼침, 지금 한칸 7일 창 복원, 모바일은 예전 동작 유지, 쓰기 요청 없음.
+// 접힌 오른쪽 칸 다시 펼침, 지금 한칸 7일 창 복원, 모바일 아래쪽 패널(2026-10-18 MOB-01·02), 쓰기 요청 없음.
 const assert=require('node:assert/strict'),{chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs');
 const ok=m=>console.log('PASS '+m);
 
@@ -56,6 +56,8 @@ async function seed(p){
  await p.waitForSelector('#allSideAgenda .upcoming-day.is-picked');
  assert.equal(await p.evaluate(()=>allViews.agenda.state().list),'upcoming','날짜별로 바뀜');
  assert.equal(await side.locator('.upcoming-day.is-picked').getAttribute('data-date'),past,'지난 날짜 강조');
+ assert.equal(await side.locator('.upcoming-day').first().getAttribute('data-date'),past.slice(0,7)+'-01','그 날짜가 있는 달의 1일부터');assert.equal(await side.locator('#homeUpcomingDateLabel').textContent(),Number(past.slice(0,4))+'년 '+Number(past.slice(5,7))+'월');
+ assert(await side.locator('.upcoming-day.is-picked').evaluate(e=>{const l=document.querySelector('#allSideAgenda .sa-body');const r=e.getBoundingClientRect(),lb=l.getBoundingClientRect();return r.top>=lb.top-2&&r.top<lb.bottom;}),'고른 날짜가 보이도록 스크롤');
  assert.equal(await up('e-past').count(),1,'지난 날짜 계획 보임');
  assert.equal(await p.locator('.item-menu:visible').count(),0,'줄 클릭에 추가 메뉴가 같이 열리지 않음');
  assert.equal(await p.locator('#allCalGrid .cal-cell.selected').getAttribute('data-date'),past,'달력 선택 날짜도 이동');
@@ -63,7 +65,7 @@ async function seed(p){
  const d3=await p.evaluate(()=>addDaysStr(todayStr(),3));await p.evaluate(d=>allViews.selectDate(d),d3);
  await p.locator('#allCalGrid [data-month-date="'+d3+'"]').focus();await p.keyboard.press('Enter');
  await p.waitForFunction(d=>document.querySelector('#allSideAgenda .upcoming-day.is-picked')?.dataset.date===d,d3);
- ok('월 날짜 줄(머리 줄 전체·숫자·Enter) → 날짜별로 전환·그 날짜부터·강조, 지난 날짜 포함, 호버 안내');
+ ok('월 날짜 줄(머리 줄 전체·숫자·Enter) → 날짜별로 전환·그 날짜의 달(1일부터)·스크롤·강조, 지난 날짜 포함, 호버 안내');
 
  // 4) 접혀 있어도 날짜 줄을 누르면 펼침
  await side.locator('.sa-close').click();assert(!(await side.isVisible()));
@@ -92,11 +94,39 @@ async function seed(p){
  ok('지금 한칸·할일 탭으로 돌려주면 눈과 강조를 풀고 7일 창 복원');
  assert.equal(await p.evaluate(()=>mockWrites.length),0,'쓰기 요청 없음');assert.deepEqual(errors,[]);await p.close();
 
- // 7) 모바일: 사이드바 구조 미정 → 예전처럼 날짜 숫자는 버튼이 아니고, 칸을 누르면 그 날짜 선택만
+ // 7) 모바일(2026-10-18 MOB-01·02): 계획 목록 = 아래쪽 패널(처음 약 60%·손잡이 탭/위로 끌기 90%·아래로 끌기 닫기),
+ //    날짜 줄 → 항상 날짜별의 그 날짜, 닫아도 달력 날짜·보기·스크롤 유지, '계획 목록' 버튼은 마지막 탭 복원.
  const m=await b.newPage({viewport:{width:390,height:844},timezoneId:'Asia/Seoul',hasTouch:true}),merr=[];m.on('pageerror',e=>merr.push(e.message));
  await fixture(m);await seed(m);await m.locator('#allViewTabs [data-common-view=month]').click();
- assert.equal(await m.locator('#allCalGrid .cal-date-row,#allCalGrid [data-month-date]').count(),0,'모바일 날짜 줄 버튼 없음');
- const md=await m.evaluate(()=>addDaysStr(todayStr(),1));await m.locator('#allCalGrid .cal-cell[data-date="'+md+'"]').tap();
- assert(!(await m.locator('#allSideAgenda').isVisible()),'모바일 오른쪽 패널은 열리지 않음');assert(await m.locator('.page[data-page=all] .cal-side .cal-day-add').isVisible(),'모바일 월: 날짜 목록');
- assert.deepEqual(merr,[]);ok('모바일: 예전 동작 유지(날짜 선택·아래 목록)');await m.close();
+ const ms=m.locator('#allSideAgenda'),ratio=()=>ms.evaluate(e=>e.getBoundingClientRect().height/innerHeight);
+ assert.equal(await m.locator('#allPanelBtn').getAttribute('aria-label'),'계획 목록');
+ // 칸의 날짜 줄 → 패널이 열리고 날짜별의 그 날짜(그 달 1일부터)
+ const md=await m.evaluate(()=>addDaysStr(todayStr(),1));
+ await m.evaluate(()=>{window.scrollTo(0,120);});const scrollY0=await m.evaluate(()=>scrollY);
+ await m.locator('#allCalGrid .cal-cell[data-date="'+md+'"] .cal-date-row').tap();
+ assert(await ms.isVisible(),'날짜 줄 → 패널 열림');await m.waitForFunction(d=>document.querySelector('#allSideAgenda .upcoming-day.is-picked')?.dataset.date===d,md);
+ assert.equal(await ms.locator('.upcoming-day').first().getAttribute('data-date'),md.slice(0,7)+'-01');
+ const r0=await ratio();assert(r0>0.55&&r0<0.65,'처음 약 60% '+r0.toFixed(2));
+ // 손잡이 탭 → 약 90%, 다시 탭 → 약 60%
+ const handle=ms.locator('.sa-handle');await handle.tap();await m.waitForTimeout(300);const r1=await ratio();assert(r1>0.85&&r1<0.95,'탭 → 약 90% '+r1.toFixed(2));
+ assert.equal(await handle.getAttribute('aria-expanded'),'true');await handle.tap();await m.waitForTimeout(300);assert((await ratio())<0.65,'다시 탭 → 약 60%');
+ // 목록 스크롤은 패널 높이를 바꾸지 않음
+ const list=ms.locator('#homeUpcomingList');await list.evaluate(e=>{e.scrollTop=300;});await m.waitForTimeout(100);assert((await ratio())<0.65,'목록 스크롤과 구분');
+ // 손잡이를 위로 끌면 90%, 아래로 끌면 닫힘
+ const drag=async dy=>{const hb=await handle.boundingBox(),x=hb.x+hb.width/2,y=hb.y+hb.height/2;await handle.dispatchEvent('pointerdown',{pointerId:7,clientX:x,clientY:y,isPrimary:true,pointerType:'touch'});
+  for(let i=1;i<=6;i++)await handle.dispatchEvent('pointermove',{pointerId:7,clientX:x,clientY:y+dy*i/6,isPrimary:true,pointerType:'touch'});await handle.dispatchEvent('pointerup',{pointerId:7,clientX:x,clientY:y+dy,isPrimary:true,pointerType:'touch'});await m.waitForTimeout(300);};
+ await drag(-300);const r2=await ratio();assert(r2>0.85,'위로 끌기 → 약 90% '+r2.toFixed(2));
+ await drag(600);assert(!(await ms.isVisible()),'아래로 끌기 → 닫힘');
+ // 닫아도 달력 날짜·보기·스크롤 유지
+ assert.equal(await m.evaluate(()=>allViews.view()),'month');assert.equal(await m.locator('#allCalGrid .cal-cell.selected').getAttribute('data-date'),md);
+ assert.equal(await m.evaluate(()=>scrollY),scrollY0,'달력 스크롤 유지');
+ // '계획 목록' 버튼: 마지막 탭 복원(언젠가로 바꾸고 닫았다 열기)
+ await m.locator('#allPanelBtn').tap();await ms.locator('[data-sa-list=someday]').tap();await ms.locator('.sa-close').tap();assert(!(await ms.isVisible()));
+ await m.locator('#allPanelBtn').tap();assert.equal(await ms.locator('[data-sa-list=someday]').getAttribute('aria-pressed'),'true','마지막 탭 복원');
+ const r3=await ratio();assert(r3<0.65,'다시 열면 약 60%');await ms.locator('.sa-close').tap();
+ // 칸의 나머지(날짜 줄 아래)는 예전처럼 날짜 선택 + 아래 날짜 목록
+ const cb=await m.locator('#allCalGrid .cal-cell[data-date="'+md+'"]').boundingBox();await m.touchscreen.tap(cb.x+cb.width/2,cb.y+cb.height-6);
+ assert(!(await ms.isVisible()),'칸 아래쪽은 패널을 열지 않음');assert(await m.locator('.page[data-page=all] .cal-side .cal-day-add').isVisible(),'모바일 월: 날짜 목록');
+ await m.screenshot({path:'test-results/calendar-eyes-date-row-m390.png'}).catch(()=>{});
+ assert.deepEqual(merr,[]);ok('모바일: 날짜 줄 → 날짜별 그 날짜, 60%·90% 손잡이(탭·끌기·닫기), 목록 스크롤 구분, 닫아도 달력 유지, 계획 목록 = 마지막 탭');await m.close();
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

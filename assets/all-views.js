@@ -33,8 +33,8 @@ window.createOnekanAllViews = api => {
  function add(context){engine.cancel();const owner=api.user();api.choose(context,kind=>{if(api.page()==='all'&&owner===api.user())api.add(kind,context);});}
  function selectDate(value){date=value;engine.remember();render();}
  // 2026-10-18 설계확정서 9: 날짜가 적힌 줄 클릭 → 오른쪽 날짜별 탭을 열고 그 날짜로 이동·강조(달력 선택 날짜도 같이 옮김).
- //  모바일 사이드바 구조는 아직 미정이라 모바일은 예전처럼 날짜 선택만.
- function openDate(value){selectDate(value);if(!matchMedia('(max-width:760px)').matches)agenda?.openDate(value);}
+ //  모바일(MOB-02)도 항상 날짜별의 그 날짜를 엶(아래쪽 패널).
+ function openDate(value){selectDate(value);agenda?.openDate(value);}
 
  // ── 2026-10-10 '모두' 화면 설정(사용자별·이 화면 전용 저장) ──
  // 2026-10-18 설계확정서 1.18(8. 달력 눈 설정): 일정 전체·개별 범주·할일·습관 눈을 모두 월·주·일마다 따로 기억.
@@ -231,7 +231,7 @@ window.createOnekanAllViews = api => {
  const tools=document.createElement('div');tools.className='all-tools';
  // 모바일은 글자를 숨기고 아이콘만(이름은 aria-label·title) — 위쪽 줄 높이 줄이기
  const ICON={filter:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="10" y1="17" x2="14" y2="17"></line></svg>',panel:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="14" y1="4" x2="14" y2="20"></line></svg>'};
- tools.innerHTML='<button type="button" id="allFilterBtn" class="all-chip-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="allFilterPanel" aria-label="표시 설정" title="표시 설정">'+ICON.filter+'<span class="all-chip-label">표시 설정</span></button><button type="button" id="allPanelBtn" class="all-chip-btn" aria-haspopup="dialog" aria-controls="allSideAgenda" aria-label="날짜별 · 언젠가" title="날짜별 · 언젠가">'+ICON.panel+'<span class="all-chip-label">날짜별 · 언젠가</span></button>';
+ tools.innerHTML='<button type="button" id="allFilterBtn" class="all-chip-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="allFilterPanel" aria-label="표시 설정" title="표시 설정">'+ICON.filter+'<span class="all-chip-label">표시 설정</span></button><button type="button" id="allPanelBtn" class="all-chip-btn" aria-haspopup="dialog" aria-controls="allSideAgenda" aria-label="계획 목록" title="계획 목록">'+ICON.panel+'<span class="all-chip-label">계획 목록</span></button>';
  tools.prepend(subTabs);tabs.after(tools); // 보조 보기(주: 보드/타임라인, 일: 시간블럭/타임라인)는 표시 설정 버튼과 같은 줄
  ['allCalendarOptions','allCollectionOptions','allRangeLabel','allMonthCount','allJumpRow'].forEach(k=>{const n=$(k);if(n){n.hidden=true;n.classList.add('all-retired');}});
  $('allFilters').querySelectorAll('label').forEach(l=>{l.hidden=true;l.classList.add('all-retired');});
@@ -281,14 +281,26 @@ window.createOnekanSideAgenda = api => {
  const main=document.createElement('div');main.className='sa-main';
  while(host.firstChild)main.append(host.firstChild);
  const aside=document.createElement('aside');aside.className='sa-panel';aside.id={all:'allSideAgenda',todos:'todoSideAgenda',habits:'habitSideAgenda'}[page]||page+'SideAgenda';aside.setAttribute('aria-label','날짜별 · 언젠가');
- aside.innerHTML='<header class="sa-head"><div class="view-toggle sa-tabs" role="group" aria-label="목록 선택"><button type="button" data-sa-list="upcoming">날짜별</button><button type="button" data-sa-list="someday">언젠가</button></div><button type="button" class="sa-close" aria-label="날짜별 · 언젠가 접기">→</button></header><div class="sa-body home-loan"></div>';
+ // 모바일 손잡이(MOB-01): 탭 = 약 60%↔90%, 위로 끌면 90%, 아래로 끌면 60% → 닫기. 목록 스크롤과 따로 움직임.
+ aside.innerHTML='<div class="sa-handle" role="button" tabindex="0" aria-label="목록 높이 바꾸기" aria-expanded="false"><span aria-hidden="true"></span></div><header class="sa-head"><div class="view-toggle sa-tabs" role="group" aria-label="목록 선택"><button type="button" data-sa-list="upcoming">날짜별</button><button type="button" data-sa-list="someday">언젠가</button></div><button type="button" class="sa-close" aria-label="날짜별 · 언젠가 접기">→</button></header><div class="sa-body home-loan"></div>';
  const reopen=document.createElement('button');reopen.type='button';reopen.className='sa-reopen';reopen.textContent='←';reopen.setAttribute('aria-label','날짜별 · 언젠가 펼치기');reopen.setAttribute('aria-controls',aside.id);
  shell.append(main,aside,reopen);host.append(shell);
  const body=aside.querySelector('.sa-body');
  aside.querySelectorAll('[data-sa-list]').forEach(b=>b.onclick=()=>{state.list=b.dataset.saList;save();render();});
  aside.querySelector('.sa-close').onclick=()=>{if(mobile.matches){setMobile(false);return;}state.closed=true;save();render();reopen.focus({preventScroll:true});};
  reopen.onclick=()=>{state.closed=false;save();render();aside.querySelector('.sa-close').focus({preventScroll:true});};
- function setMobile(open){mobileOpen=open;aside.classList.toggle('sa-mobile-open',open);api.openButton?.setAttribute('aria-expanded',String(open));if(open)aside.querySelector('.sa-close').focus({preventScroll:true});else api.openButton?.focus({preventScroll:true});render();}
+ const handle=aside.querySelector('.sa-handle');
+ function setExpanded(on){aside.classList.toggle('sa-expanded',on);handle.setAttribute('aria-expanded',String(on));}
+ handle.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setExpanded(!aside.classList.contains('sa-expanded'));}};
+ let pull=null;
+ handle.addEventListener('pointerdown',e=>{if(!mobile.matches)return;pull={id:e.pointerId,y:e.clientY,h:aside.getBoundingClientRect().height,moved:false,to:null};try{handle.setPointerCapture(e.pointerId);}catch(_){}});
+ handle.addEventListener('pointermove',e=>{if(!pull||e.pointerId!==pull.id)return;const dy=e.clientY-pull.y;if(!pull.moved&&Math.abs(dy)<6)return;pull.moved=true;aside.classList.add('sa-dragging');pull.to=Math.max(80,Math.min(innerHeight*0.95,pull.h-dy));aside.style.height=pull.to+'px';e.preventDefault();});
+ // 놓은 위치는 끈 거리로 계산(화면 다시 재기에 기대지 않음): 40% 미만 = 닫기, 75% 이상 = 약 90%, 그 사이 = 약 60%
+ const endPull=(e,cancel)=>{if(!pull||e.pointerId!==pull.id)return;const p=pull;pull=null;aside.classList.remove('sa-dragging');aside.style.height='';
+  if(cancel)return;if(!p.moved){setExpanded(!aside.classList.contains('sa-expanded'));return;}
+  const r=p.to/innerHeight;if(r<0.4)setMobile(false);else setExpanded(r>=0.75);};
+ handle.addEventListener('pointerup',e=>endPull(e,false));handle.addEventListener('pointercancel',e=>endPull(e,true));
+ function setMobile(open){mobileOpen=open;if(open)setExpanded(false);aside.classList.toggle('sa-mobile-open',open);api.openButton?.setAttribute('aria-expanded',String(open));if(open)aside.querySelector('.sa-close').focus({preventScroll:true});else api.openButton?.focus({preventScroll:true});render();}
  if(api.openButton)api.openButton.onclick=()=>setMobile(!mobileOpen);
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mobileOpen&&mobile.matches)setMobile(false);});
  mobile.addEventListener('change',()=>{if(!mobile.matches&&mobileOpen){mobileOpen=false;aside.classList.remove('sa-mobile-open');}render();});
@@ -304,6 +316,7 @@ window.createOnekanSideAgenda = api => {
   if(visible&&!aside.hidden)api.mountLists(state.list,body,api.listOptions?.());else api.mountLists(null,body);
  }
  // 날짜 줄 클릭(PC): 접혀 있어도 펼치고 날짜별로 바꾼 뒤 그 날짜로 이동·강조
- function openDate(d){if(mobile.matches)return;load();state.list='upcoming';state.closed=false;save();render();api.jump?.(d);}
+ // 모바일은 아래쪽 패널을 열고(처음 약 60%) 같은 동작
+ function openDate(d){load();state.list='upcoming';state.closed=false;save();if(mobile.matches&&!mobileOpen)setMobile(true);else render();api.jump?.(d);}
  return {render,state:()=>({...state}),open:setMobile,openDate,panelId:aside.id};
 };

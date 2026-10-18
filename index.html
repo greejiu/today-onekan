@@ -3555,7 +3555,7 @@
   let homeUpcomingStart = addDaysStr(todayStr(), 1);
   // 2026-10-18 설계확정서 1.18: 일정 화면 오른쪽 '날짜별'로 빌려 가 있는 동안만 쓰는 눈(달력과 같은 눈)과 달력에서 고른 날짜.
   // 돌려받으면 눈을 풀고 지금 한칸의 7일 창(homeStart)으로 되돌림. 지금 한칸·할일·습관 탭에서는 늘 비어 있음.
-  let upcomingLoan = null; // { homeStart, filter, key, picked }
+  let upcomingLoan = null; // { homeStart, filter, key, picked, month: 'YYYY-MM' }
   const upcomingShown = it => !upcomingLoan?.filter || upcomingLoan.filter(it);
   const homeRenderVersion = { allDay: 0, timed: 0, block: 0, upcoming: 0 };
   // 8-6단계: 타임블럭 보기를 없애고 타임라인 하나만 남겨서, "block"으로 바뀌는 경우가 이제 없음(토글 버튼 자체를 지움).
@@ -5491,10 +5491,13 @@
   ["homeUpcomingNextBtn"].forEach(id => $(id)?.addEventListener("click", () => goHomeUpcoming(7)));
   ["agendaDateLabel", "homeListDateLabel", "agendaTodayBtn"].forEach(id => $(id)?.addEventListener("click", resetAgendaDateToToday));
   function goHomeUpcoming(days) {
-    homeUpcomingStart = addDaysStr(homeUpcomingStart, days);
+    // 오른쪽 '날짜별'(한 달 보기)에서는 ‹ ›가 한 달씩
+    if (upcomingLoan) upcomingLoan.month = addMonthsStr(upcomingLoan.month + "-01", days < 0 ? -1 : 1).slice(0, 7);
+    else homeUpcomingStart = addDaysStr(homeUpcomingStart, days);
     renderHomeUpcomingList();
   }
   $('homeUpcomingDateLabel').onclick = () => {
+    if (upcomingLoan) { upcomingLoan.month = todayStr().slice(0, 7); upcomingLoan.picked = null; renderHomeUpcomingList().then(() => { const list = upcomingScroller(); if (list) list.scrollTop = 0; }); return; }
     homeUpcomingStart = addDaysStr(todayStr(), 1);
     renderHomeUpcomingList();
   };
@@ -5784,12 +5787,19 @@
     const version = ++homeRenderVersion.upcoming;
     const containerEl = $("homeUpcomingList");
     if (!containerEl) return;
-    // 가운데 날짜와 독립된 7일 창.
-    const rangeStart = homeUpcomingStart;
+    // 가운데 날짜와 독립된 7일 창. 2026-10-18: 오른쪽 '날짜별'로 빌려 가 있으면 한 달(1일~말일, 지난 날 포함).
+    const monthMode = !!upcomingLoan;
+    const rangeStart = monthMode ? upcomingLoan.month + "-01" : homeUpcomingStart;
     const days = [];
-    for (let i = 0; i < 7; i++) days.push(addDaysStr(rangeStart, i));
+    if (monthMode) for (let d = rangeStart; d.slice(0, 7) === upcomingLoan.month; d = addDaysStr(d, 1)) days.push(d);
+    else for (let i = 0; i < 7; i++) days.push(addDaysStr(rangeStart, i));
     const dateLabelEl = $("homeUpcomingDateLabel");
-    if (dateLabelEl) dateLabelEl.textContent = `${formatDateShort(days[0])} ~ ${formatDateShort(days[days.length - 1])}`;
+    if (dateLabelEl) dateLabelEl.textContent = monthMode ? `${Number(rangeStart.slice(0, 4))}년 ${Number(rangeStart.slice(5, 7))}월` : `${formatDateShort(days[0])} ~ ${formatDateShort(days[days.length - 1])}`;
+    if (dateLabelEl) dateLabelEl.setAttribute("aria-label", monthMode ? "이번 달로 돌아가기" : "내일부터 7일로 돌아가기");
+    $("homeUpcomingPrevBtn")?.setAttribute("aria-label", monthMode ? "이전 달" : "이전 7일");
+    $("homeUpcomingNextBtn")?.setAttribute("aria-label", monthMode ? "다음 달" : "다음 7일");
+    // 한 달 보기의 습관 = 달력과 같은 회차(예정 회차 + 그날 완료·건너뜀 기록). 7일 창은 예전처럼 '다음 차례'만.
+    const monthHabitRows = monthMode ? (habitViews?.occurrenceRows({ start: days[0], end: days[days.length - 1] }) || []) : null;
 
     const { data: logData } = await sb.from("tok_habit_logs").select("habit_id, done_date").in("done_date", days);
     if (version !== homeRenderVersion.upcoming) return;
@@ -5805,7 +5815,9 @@
       const dayTodos = todos.filter(td => OnekanPeriod.overlap("todo",td,dateStr) && upcomingShown({ kind: "todo", cat_id: td.tag_id }));
       const dayEvents = events.filter(e => OnekanPeriod.overlap("event",e,dateStr) && upcomingShown({ kind: "event", cat_id: e.category_id })).sort((a, b) => (a.event_time || "").localeCompare(b.event_time || ""));
       const doneSet = logsByDate[dateStr];
-      const dayHabits=upcomingHabitPeriods(active,dateStr,habitNextDate).filter(t => upcomingShown({ kind: "habit", cat_id: t.category_id }));
+      const dayHabits=(monthMode
+        ? monthHabitRows.filter(r => (r.action_date || r.occurrence_date) === dateStr).map(r => tasks.find(h => h.id === r.habit_id)).filter(Boolean).map(h => ({ ...h, _occurrenceDate: dateStr }))
+        : upcomingHabitPeriods(active,dateStr,habitNextDate)).filter(t => upcomingShown({ kind: "habit", cat_id: t.category_id }));
       const count = dayHabits.length + dayEvents.length + dayTodos.length;
       // 2026-09-20 — 결님 요청: 앞으로 7일을 전부 보여주고(전엔 항목 없는 날은 통째로 건너뜀),
       // 빈 날은 하루종일·타임블럭·언젠가와 같은 "일정 없음. 눌러서 추가" 빈칸(block-add-row)으로 보여줘서
@@ -9802,6 +9814,7 @@
   // 오른쪽 '다가오는 · 언젠가' 칸에 지금 한칸의 다가오는(#homeUpcomingPanel)·담아두기(#homeSomedayPanel)를 그대로 붙임.
   // 두 화면이 같은 DOM이라 클릭·끌기·추가·정렬·그룹 칩이 지금 한칸과 같고, 보이는 쪽(모두/할일)만 빌려 감.
   // 2026-10-18: opts.filter·filterKey = 일정 화면이 넘기는 달력 눈({kind, cat_id} → 보임 여부). 다가오는(날짜별)에만 걸고 담아두기(언젠가)는 그대로.
+  //  빌려 간 동안(일정·할일·습관 탭 오른쪽 '날짜별')은 한 달 보기: 기본 이번 달 1일부터, 지난 날 포함(결 확정 M1).
   function mountHomeLists(list, body, opts = {}) {
     const panels = { upcoming: $("homeUpcomingPanel"), someday: $("homeSomedayPanel") };
     if (!list) {
@@ -9811,10 +9824,18 @@
       return;
     }
     for (const [name, el] of Object.entries(panels)) { homeLoan.lend(el, body); el.hidden = name !== list; }
-    if (!opts.filter) { endUpcomingLoan(); return; }
-    if (!upcomingLoan) upcomingLoan = { homeStart: homeUpcomingStart, key: null, picked: null };
-    upcomingLoan.filter = opts.filter;
-    if (upcomingLoan.key !== opts.filterKey) { upcomingLoan.key = opts.filterKey; renderHomeUpcomingList(); }
+    if (!upcomingLoan) upcomingLoan = { homeStart: homeUpcomingStart, key: null, picked: null, month: todayStr().slice(0, 7) };
+    upcomingLoan.filter = opts.filter || null;
+    const key = opts.filterKey || "";
+    if (upcomingLoan.key !== key) { upcomingLoan.key = key; renderHomeUpcomingList(); }
+  }
+  // 날짜별 목록이 실제로 스크롤되는 상자(PC 오른쪽 칸·모바일 패널·지금 한칸 열에 따라 다름)
+  function upcomingScroller() {
+    for (let el = $("homeUpcomingList"); el && el !== document.body; el = el.parentElement) {
+      const y = getComputedStyle(el).overflowY;
+      if ((y === "auto" || y === "scroll") && el.scrollHeight > el.clientHeight) return el;
+    }
+    return null;
   }
   function endUpcomingLoan() {
     if (!upcomingLoan) return;
@@ -9822,13 +9843,14 @@
     upcomingLoan = null;
     renderHomeUpcomingList();
   }
-  // 일정 화면 날짜 줄 클릭 → 날짜별 7일 창을 그 날짜부터 보여 주고 그 날짜를 강조(과거 날짜도 그대로).
+  // 일정 화면 날짜 줄 클릭 → 날짜별을 그 날짜가 있는 달로 바꾸고 그 날짜를 맨 위로 스크롤·강조(지난 날짜도 그대로).
   async function jumpHomeUpcoming(date) {
     if (!upcomingLoan || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
     upcomingLoan.picked = date;
-    homeUpcomingStart = date;
+    upcomingLoan.month = date.slice(0, 7);
     await renderHomeUpcomingList();
-    document.querySelector(`#homeUpcomingList .upcoming-day[data-date="${date}"]`)?.scrollIntoView({ block: "nearest" });
+    const day = document.querySelector(`#homeUpcomingList .upcoming-day[data-date="${date}"]`), list = upcomingScroller();
+    if (day && list) list.scrollTop += day.getBoundingClientRect().top - list.getBoundingClientRect().top;
   }
   function returnHomeLists() {
     for (const id of ["homeUpcomingPanel", "homeSomedayPanel"]) { const el = $(id); homeLoan.giveBack(el); el.hidden = false; }
@@ -9887,7 +9909,7 @@
   // 할일·습관 탭 오른쪽 '날짜별 · 언젠가'(지금 한칸과 같은 목록, 눈 없음). 모바일은 상단 추가 버튼 옆 버튼으로 여는 아래쪽 패널.
   for (const [page, before, id] of [["todos", "todoQuickAddBtn", "todoPanelBtn"], ["habits", "habitAddBtn", "habitPanelBtn"]]) {
     const host = document.querySelector(`.page[data-page="${page}"]`), btn = document.createElement("button");
-    btn.type = "button"; btn.id = id; btn.className = "all-chip-btn"; btn.textContent = "날짜별 · 언젠가"; btn.setAttribute("aria-haspopup", "dialog");
+    btn.type = "button"; btn.id = id; btn.className = "all-chip-btn"; btn.textContent = "계획 목록"; btn.setAttribute("aria-label", "계획 목록"); btn.setAttribute("aria-haspopup", "dialog");
     $(before).before(btn);
     sideAgendas[page] = window.createOnekanSideAgenda({ pageName: page, host, openButton: btn, user: () => appSymbolUserId, page: () => currentPage, mountLists: mountHomeLists });
     btn.setAttribute("aria-controls", sideAgendas[page].panelId);
