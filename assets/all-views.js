@@ -109,7 +109,7 @@ window.createOnekanAllViews = api => {
   box.hidden=false;wireTree(box);
  }
 
- // ── 주간 보드: 월~일 7열, 하루종일 먼저 → 시간순. PC는 끌어서 날짜 이동(시간·기간 길이 유지), 모바일은 가로로 넘김 ──
+ // ── 주간 보드: 월~일 7열, 하루종일 먼저 → 시간순. 끌어서 날짜 이동(PC 마우스·모바일 길게 누르기, schedule-drag.js), 모바일은 가로로 넘김 ──
  const WD=['일','월','화','수','목','금','토'];
  const weekDays=()=>{const r=engine.range();return Array.from({length:7},(_,i)=>P.addDays(r.start,i));};
  const timeOn=(r,d)=>{const p=P.read(r.kind,r);if(p.allDay)return {all:true,label:'종일',min:-1};const c=P.clip(r.kind,r,d);return {all:false,label:p.startDate===d?p.startTime:'이어짐',min:c?c.start_minute:0};};
@@ -130,54 +130,16 @@ window.createOnekanAllViews = api => {
   box.dataset.week=days[0];
   // 지금 한칸과 같은 규칙: 줄 누르기 = 이름 수정(전체 수정·건너뛰기는 ⋯ 메뉴), 체크 = 완료, 빈칸 = 할일 입력창(오른쪽 클릭 = 종류 메뉴)
   api.wireRows(box);
-  box.querySelectorAll('[data-awb-id]').forEach(row=>row.addEventListener('click',e=>{if(performance.now()<suppressClick||e.target.closest('input,.item-more,.habit-skip-mark,.inline-add-wrap'))return;const r=lookup(row.dataset.awbId);if(r)api.rename(row,r.kind,r.source_id,()=>render());}));
+  box.querySelectorAll('[data-awb-id]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('input,.item-more,.habit-skip-mark,.inline-add-wrap'))return;const r=lookup(row.dataset.awbId);if(r)api.rename(row,r.kind,r.source_id,()=>render());}));
   box.querySelectorAll('[data-awb-add]').forEach(b=>wireAdd(b));
   box.querySelectorAll('[data-awb-select]').forEach(b=>{b.title='이날 계획 보기';b.onclick=()=>openDate(b.dataset.awbSelect);});
   const scroll=box.querySelector('.awb-scroll');
   if(keepX!=null&&sameWeek)scroll.scrollLeft=keepX;
   else if(matchMedia('(max-width:760px)').matches){const col=scroll.querySelector('[data-awb-col="'+(days.includes(date)?date:days.includes(today)?today:days[0])+'"]');if(col)scroll.scrollLeft=col.offsetLeft-scroll.firstElementChild.offsetLeft;}
  }
- // 끌어서 옮기기(마우스): 일정·할일만, 반복 항목·습관 회차는 수정창으로 안내. 같은 시각·같은 기간 길이로 날짜만 바꿈.
- let drag=null,suppressClick=0;
+ // 끌어서 옮기기는 schedule-drag.js(일정 화면 공용: 월·주 보드·주 타임라인·일 보기). 여기는 오른쪽 목록 줄을 놓을 날짜 칸만 알려 줌(지금한칸 끌기 규칙).
  const status=m=>{$('allSaveStatus').textContent=m;};
  function dropDate(x,y){const el=document.elementFromPoint(x,y);if(!el||!host.contains(el))return null;const c=el.closest('[data-awb-col],.cal-cell[data-date],[data-all-date],[data-sv-date]');return c?(c.dataset.awbCol||c.dataset.date||c.dataset.allDate||c.dataset.svDate):null;}
- async function moveRow(r,from,to){
-  if(r.kind==='habit'){status('습관은 날짜를 끌어서 옮길 수 없어요. 수정창에서 바꿔 주세요.');return;}
-  if(r.repeat_unit){status('반복 항목은 수정창에서 날짜를 바꿔 주세요.');api.edit(r.kind,r.source_id);return;}
-  const base=P.read(r.kind,r);if(!base.startDate)return;
-  const patch=P.shift(r.kind,r,P.addDays(base.startDate,P.days(from,to)),null);
-  const owner=api.user();status('저장 중…');host.setAttribute('aria-busy','true');
-  try{
-   const res=await api.sb.from(r.kind==='event'?'tok_events':'tok_todos').update(patch).eq('id',r.source_id).eq('user_id',owner).select('id').single();
-   if(res.error||!res.data)throw Error(res.error?.message||'항목을 찾을 수 없어요.');
-   if(owner!==api.user())return;
-   await api.reload();status('날짜를 옮겼어요.');
-  }catch(error){if(owner===api.user()){render();status('저장하지 못했어요. 원래 날짜를 유지합니다. '+error.message);}}
-  finally{host.removeAttribute('aria-busy');}
- }
- function dragDown(e){
-  if(api.page()!=='all'||e.button!==0||e.pointerType==='touch'||matchMedia('(max-width:760px)').matches)return;
-  const card=e.target.closest('#allWeekBoard [data-awb-id]');if(!card||e.target.closest('input,.item-more,.habit-skip-mark,.inline-add-wrap'))return;
-  drag={card,x:e.clientX,y:e.clientY,moved:false,pointer:e.pointerId};
- }
- function dragMove(e){
-  if(!drag||e.pointerId!==drag.pointer)return;if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;
-  if(!drag.moved){drag.moved=true;drag.card.classList.add('awb-dragging');drag.ghost=drag.card.cloneNode(true);drag.ghost.className+=' awb-ghost';drag.ghost.removeAttribute('id');document.body.append(drag.ghost);}
-  drag.ghost.style.left=e.clientX+10+'px';drag.ghost.style.top=e.clientY+10+'px';
-  host.querySelectorAll('.awb-drop').forEach(c=>c.classList.remove('awb-drop'));const d=dropDate(e.clientX,e.clientY);
-  if(d)host.querySelector('[data-awb-col="'+d+'"],.cal-cell[data-date="'+d+'"],[data-all-date="'+d+'"]')?.classList.add('awb-drop');
-  e.preventDefault();
- }
- function dragEnd(e,cancelled){
-  if(!drag||(e&&e.pointerId!==drag.pointer))return;const d=drag;drag=null;
-  d.card.classList.remove('awb-dragging');d.ghost?.remove();host.querySelectorAll('.awb-drop').forEach(c=>c.classList.remove('awb-drop'));
-  if(!d.moved||cancelled)return;suppressClick=performance.now()+400;
-  const to=dropDate(e.clientX,e.clientY);if(!to)return;
-  const r=lookup(d.card.dataset.awbId),from=d.card.dataset.awbDate;if(r&&from!==to)moveRow(r,from,to);
- }
- document.addEventListener('pointerdown',dragDown,true);document.addEventListener('pointermove',dragMove,{passive:false});
- document.addEventListener('pointerup',e=>dragEnd(e,false),true);document.addEventListener('pointercancel',e=>dragEnd(e,true));
- document.addEventListener('keydown',e=>{if(e.key==='Escape'&&drag){e.preventDefault();dragEnd(null,true);}},true);
 
  function render(){
   if(!engine||!$('allSubTabs'))return;cache=null;syncEngine();const state=engine.state(),v=view(),sub=subView();
@@ -200,7 +162,8 @@ window.createOnekanAllViews = api => {
  }
  const preview=document.createElement('div');preview.id='allDragPreview';preview.className='sv-drag-preview';preview.hidden=true;preview.innerHTML='<span id="allDragText"></span><br><button type="button" id="allDragCancel">취소 (Esc)</button>';document.body.append(preview);
  engine=window.createOnekanItemViews({...api,pageName:'all',sharedRange:true,title:'항목',id,kindOf:r=>r.kind,types:()=>types,
-  allowDayBlocks:true,weekStartsMonday:true,singleMonthAdd:true,holidays:()=>prefs().holidays,
+  allowDayBlocks:true,weekStartsMonday:true,singleMonthAdd:true,externalMove:true, // 기존 항목 이동은 schedule-drag.js(새 칸 끌어 추가·끝 늘리기는 그대로)
+  holidays:()=>prefs().holidays,
   // 월 달력(PC): 날짜 줄 → 오른쪽 날짜별(그 날짜로 이동·강조), 빈 공간 → 그날 추가 창(singleMonthAdd). 주 타임라인 날짜 머리도 같음.
   onDateRow:openDate,
   defaults:{mode:'calendar',span:'month',group:'type',board:'type',completion:'all',status:'all',undated:false,show_event:true,show_todo:true,show_habit:true},
@@ -216,6 +179,10 @@ window.createOnekanAllViews = api => {
   scrollDate:d=>host.querySelector('[data-date="'+d+'"]')?.scrollIntoView({block:'start'}),paintRange:(a,b)=>host.querySelectorAll('.cal-cell[data-date]').forEach(c=>c.classList.toggle('cal-range',c.dataset.date>=a&&c.dataset.date<=b)),clearRange:()=>host.querySelectorAll('.cal-range').forEach(c=>c.classList.remove('cal-range')),
   focusTarget:()=>$('allViewTabs').querySelector('[data-common-view].active')||$('allViewTabs').querySelector('[data-tab="'+mode+'"]')
  });
+ // 2026-10-18 3단계: 일정 화면의 기존 항목 끌어 옮기기(월·주 보드·주 타임라인·일 보기 — 일정·할일·습관)
+ const mover=window.createOnekanScheduleDrag?.({period:P,escape:esc,host,sb:api.sb,user:api.user,page:api.page,todos:api.todos,reload:api.reload,render:()=>render(),toast:(m,a,ms)=>api.toast?.(m,a,ms),status,
+  lookup,find:(kind,id,d)=>rows().find(r=>r.kind===kind&&String(r.source_id)===String(id)&&(kind!=='habit'||!d||r.action_date===d)),
+  dayDate:()=>date,habitSource:id=>api.habitSource?.(id),blockName:m=>{const b=api.blocks?.().find(x=>x.start_minute===m);return b?(b.title||b.name||''):'';}});
  $('allTodoStatus').onchange=e=>engine.option('completion',e.target.value);$('allHabitStatus').onchange=e=>engine.option('status',e.target.value);$('allUndated').onchange=e=>engine.option('undated',e.target.checked);
  $('allPrevBtn').onclick=()=>engine.navigate(-1);$('allNextBtn').onclick=()=>engine.navigate(1);$('allTodayBtn').onclick=()=>{engine.resetRange();selectDate(api.today());};
  $('allViewTabs').querySelectorAll('button[data-tab]').forEach(b=>b.onclick=()=>engine.option('mode',b.dataset.tab));$('allAddBtn').onclick=e=>add({startDate:date,endDate:date,allDay:true,opener:e.currentTarget});
@@ -263,7 +230,7 @@ window.createOnekanAllViews = api => {
  //  2026-10-18: 날짜별에는 지금 보고 있는 달력 보기(월·주·일)의 눈을 같이 적용. 언젠가는 눈과 무관.
  agenda=window.createOnekanSideAgenda({pageName:'all',host,openButton:$('allPanelBtn'),user:api.user,page:api.page,mountLists:api.mountLists,
   listOptions:()=>{const s=shownBy();return {filter:s.test,filterKey:s.key};},jump:d=>api.upcomingJump?.(d)});
- return {...engine,render,selectDate,sidebarTypes,displayRows:rows,prefs,view,exportModel,agenda,dropDate:(x,y)=>api.page()==='all'&&view()!=='day'?dropDate(x,y):null};
+ return {...engine,render,selectDate,sidebarTypes,displayRows:rows,prefs,view,exportModel,agenda,mover,dropDate:(x,y)=>api.page()==='all'&&view()!=='day'?dropDate(x,y):null};
 };
 
 /* 오른쪽 '날짜별 · 언젠가' 칸 — '모두'·'할일' 공용 껍데기(목록 전환·접기·모바일 패널)만 둠.
