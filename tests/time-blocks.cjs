@@ -54,29 +54,55 @@ const ok=m=>console.log('PASS '+m);
  await add('겹침','10:00','13:00');assert(/‘오전’.*겹쳐요/.test(dialogs.pop()||''),'겹침 막음');
  await add('역순','21:00','20:00');assert(/종료 시간이 시작 시간보다/.test(dialogs.pop()||''),'종료 < 시작 막음');
  assert.equal(await p.evaluate(()=>mockWrites.filter(w=>w.table==='tok_time_blocks').length),0,'막힌 추가는 저장 안 함');
- await add('밤','18:00','00:00');await p.waitForFunction(()=>mockRows.tok_time_blocks.some(b=>b.title==='밤'&&b.start_minute===1080&&b.end_minute===1440));
- ok('추가: 30분 미만·겹침·역순 막고 입력 유지, 18:00~24:00 추가');
- // 5) 시간 수정할 때 검사: 겹치게 바꾸면 막고 원래 값, 고쳐 저장하면 경고 사라짐. 이름만 바꾸는 건 허용
- const setTime=async(id,cls,v)=>{const i=row(id).locator(cls);await i.fill(v);await i.dispatchEvent('change');await p.waitForTimeout(150);};
- await setTime('b1','.hs-block-end-input','13:00');assert(/‘오후’.*겹쳐요/.test(dialogs.pop()||''));assert.equal(await row('b1').locator('.hs-block-end-input').inputValue(),'12:00','원래 값');
+ await add('새벽','00:00','05:00');await p.waitForFunction(()=>mockRows.tok_time_blocks.some(b=>b.title==='새벽'&&b.start_minute===0&&b.end_minute===300));
+ ok('추가: 30분 미만·겹침·역순 막고 입력 유지, 00:00~05:00 추가');
+ // 5) 시작·종료를 함께 고치고 [저장]에서 한 번에 검사·저장(2026-10-18 결 요청)
+ const blockWrites=()=>p.evaluate(()=>mockWrites.filter(w=>w.table==='tok_time_blocks'));
+ const startIn=id=>row(id).locator('.hs-block-start-input'),endIn=id=>row(id).locator('.hs-block-end-input'),saveBtn=id=>row(id).locator('.hs-block-save'),cancelBtn=id=>row(id).locator('.hs-block-cancel');
+ const blk=id=>p.evaluate(i=>{const b=mockRows.tok_time_blocks.find(x=>x.id===i);return [b.start_minute,b.end_minute];},id);
+ // a) 06~12 → 18~24: 시작을 먼저 18:00으로 바꿔도(중간 값 18~12) 막히거나 저장되지 않고, 종료까지 바꾼 뒤 한 번에 저장
+ let w0=(await blockWrites()).length;dialogs.length=0;
+ await startIn('b1').fill('18:00');assert(await saveBtn('b1').isVisible(),'고치는 중 → 저장·취소 버튼');assert.equal((await blockWrites()).length,w0,'중간 값은 저장 안 함');assert.equal(dialogs.length,0,'중간 값으로 막지 않음');
+ await endIn('b1').fill('00:00');await saveBtn('b1').click();await p.waitForFunction(()=>{const b=mockRows.tok_time_blocks.find(x=>x.id==='b1');return b.start_minute===1080&&b.end_minute===1440;});
+ const wb1=(await blockWrites()).slice(w0);assert.equal(wb1.length,1,'요청 한 번');assert.deepEqual(wb1[0].values,{start_minute:1080,end_minute:1440},'시작·종료 함께');
+ assert(await saveBtn('b1').isHidden(),'저장 후 버튼 숨김');assert.equal(await startIn('b1').inputValue(),'18:00');
+ // b) [취소] → 원래 값, 저장 없음 / Esc도 같음
+ w0=(await blockWrites()).length;
+ await startIn('b2').fill('13:00');await cancelBtn('b2').click();assert.equal(await startIn('b2').inputValue(),'12:00','취소 → 원래 값');assert(await saveBtn('b2').isHidden());
+ await endIn('b2').fill('15:00');await endIn('b2').press('Escape');assert.equal(await endIn('b2').inputValue(),'18:00','Esc → 원래 값');
+ assert.equal((await blockWrites()).length,w0,'취소는 저장 안 함');assert.deepEqual(await blk('b2'),[720,1080]);
+ // c) 검사에 걸리면: 저장 안 함, 이유 표시, 입력 유지(고쳐서 다시 저장 가능) → 취소하면 원래 값
+ await endIn('b2').fill('19:00');await saveBtn('b2').click();await p.waitForTimeout(100);
+ const msg=await row('b2').locator('.hs-block-msg').textContent();assert(/‘오전’\(18:00~24:00\)과 시간이 겹쳐요/.test(msg)&&/원래 시간\(12:00~18:00\) 그대로/.test(msg),'검사 실패 안내: '+msg);
+ assert.equal(await endIn('b2').inputValue(),'19:00','입력 유지');assert.equal((await blockWrites()).length,w0);assert.deepEqual(await blk('b2'),[720,1080],'블록 원래 시간');
+ await cancelBtn('b2').click();assert.equal(await endIn('b2').inputValue(),'18:00');assert.equal(await row('b2').locator('.hs-block-msg').count(),0);
+ // d) 저장 실패: 블록은 원래 시간, 입력·안내 유지(목록이 다시 그려져도), 다시 저장하면 성공
+ await p.evaluate(()=>{mockFailure='simulated failure';});await endIn('b2').fill('17:00');await saveBtn('b2').click();
+ await p.waitForSelector('#settingsBlockList .hs-block-row[data-id="b2"] .hs-block-msg');
+ assert(/저장하지 못했어요.*원래 시간\(12:00~18:00\) 그대로/.test(await row('b2').locator('.hs-block-msg').textContent()));assert.deepEqual(await blk('b2'),[720,1080],'실패 → 블록 원래 시간');
+ await p.evaluate(()=>renderSettingsBlockList());assert.equal(await endIn('b2').inputValue(),'17:00','다시 그려져도 고치던 값 유지');assert(await saveBtn('b2').isVisible());
+ await saveBtn('b2').click();await p.waitForFunction(()=>mockRows.tok_time_blocks.find(x=>x.id==='b2').end_minute===1020);assert.equal(await row('b2').locator('.hs-block-msg').count(),0);
+ // e) 이름만 바꾸기는 그대로 허용, Enter로 저장, 고쳐 저장하면 경고 사라짐
  await row('b3').locator('.hs-block-name-input').fill('저녁 산책');await row('b3').locator('.hs-block-name-input').press('Enter');await p.waitForFunction(()=>mockRows.tok_time_blocks.find(b=>b.id==='b3').title==='저녁 산책');
- await setTime('b2','.hs-block-end-input','17:00');await p.waitForFunction(()=>mockRows.tok_time_blocks.find(b=>b.id==='b2').end_minute===1020);
- await setTime('b3','.hs-block-end-input','17:30');await p.waitForFunction(()=>mockRows.tok_time_blocks.find(b=>b.id==='b3').end_minute===1050);
+ await endIn('b3').fill('17:30');await endIn('b3').press('Enter');await p.waitForFunction(()=>mockRows.tok_time_blocks.find(b=>b.id==='b3').end_minute===1050);
  assert.equal(await p.locator('#settingsBlockList .hs-block-warn').count(),0,'고친 뒤 경고 없음');
- ok('수정: 겹치게 바꾸면 막고 원래 값, 이름만 변경은 허용, 고쳐 저장하면 경고 사라짐');
- // 6) 블록 수정·삭제 → 항목 날짜·시간은 그대로, 보이는 자리만 다시 계산
+ // 항목 날짜·시간은 어떤 경우에도 그대로(취소·검사 실패·저장 실패·성공 모두)
+ const mid=JSON.parse(await p.evaluate(()=>JSON.stringify({t:mockRows.tok_todos,e:mockRows.tok_events}))),orig=JSON.parse(before);
+ assert.deepEqual(mid,{t:orig.t,e:orig.e},'항목 날짜·시간 그대로');assert(await p.evaluate(()=>mockWrites.every(w=>w.table==='tok_time_blocks')),'블록 외 쓰기 없음');
+ await p.screenshot({path:'test-results/time-blocks-settings.png'}).catch(()=>{});
+ ok('시작·종료 함께 편집: 06~12 → 18~24 한 번에 저장, 취소·Esc = 원래 값, 검사·저장 실패 = 블록 원래 시간·입력 유지·재시도, 항목 불변');
+ // 6) 블록 수정·삭제 → 보이는 자리만 다시 계산
  await p.evaluate(()=>showPage('all'));await p.waitForTimeout(200);
- assert.equal(await inCard(1020,'t1710'),1,'17:10 → 이제 저녁 산책(17:00~17:30)');
- await p.evaluate(()=>showPage('settings'));await row('b1').locator('.hs-cat-del').click();await p.waitForFunction(()=>!mockRows.tok_time_blocks.some(b=>b.id==='b1'));
+ assert.equal(await body.locator('.ag-block-outside ~ .agenda-flat '+R('t9')).count(),1,'오전을 18~24로 옮김 → 09:00은 구간 밖');
+ assert.equal(await inCard(1020,'t1710'),1,'17:10 → 저녁 산책(17:00~17:30)');
+ await p.evaluate(()=>showPage('settings'));await row('b2').locator('.hs-cat-del').click();await p.waitForFunction(()=>!mockRows.tok_time_blocks.some(b=>b.id==='b2'));
  assert(/날짜·시간은 그대로/.test(dialogs.pop()||''),'삭제 확인 문구');
  await p.evaluate(()=>showPage('all'));await p.waitForTimeout(200);
- assert.equal(await card(360).count(),0);assert.equal(await body.locator('.ag-block-outside ~ .agenda-flat '+R('t9')).count(),1,'오전 삭제 → 09:00은 구간 밖');
- const after=JSON.parse(await p.evaluate(()=>JSON.stringify({t:mockRows.tok_todos,e:mockRows.tok_events}))),orig=JSON.parse(before);
- assert.deepEqual(after,{t:orig.t,e:orig.e},'항목 날짜·시간 그대로');
- assert(await p.evaluate(()=>mockWrites.every(w=>w.table==='tok_time_blocks')),'블록 외 쓰기 없음');
- // 빈칸 입력 = 블록 시작부터 30분(기존 규칙 유지)
- await card(1080).locator('.add-slot').click();const inp=card(1080).locator('.inline-add-input');await inp.fill('밤 블록 할일');await inp.press('Enter');
- await p.waitForFunction(()=>mockRows.tok_todos.some(t=>t.title==='밤 블록 할일'));const nt=await p.evaluate(()=>mockRows.tok_todos.find(t=>t.title==='밤 블록 할일'));
+ assert.equal(await card(720).count(),0);assert.equal(await body.locator('.ag-block-outside ~ .agenda-flat '+R('t12')).count(),1,'오후 삭제 → 12:00은 구간 밖');
+ const after=JSON.parse(await p.evaluate(()=>JSON.stringify({t:mockRows.tok_todos,e:mockRows.tok_events})));assert.deepEqual(after,{t:orig.t,e:orig.e},'삭제 후에도 항목 그대로');
+ // 빈칸 입력 = 블록 시작부터 30분(기존 규칙 유지) — 18~24로 옮긴 오전 블록
+ await card(1080).locator('.add-slot').click();const inp=card(1080).locator('.inline-add-input');await inp.fill('저녁 블록 할일');await inp.press('Enter');
+ await p.waitForFunction(()=>mockRows.tok_todos.some(t=>t.title==='저녁 블록 할일'));const nt=await p.evaluate(()=>mockRows.tok_todos.find(t=>t.title==='저녁 블록 할일'));
  assert.equal(nt.todo_time.slice(0,5),'18:00');assert.equal(nt.end_time.slice(0,5),'18:30','블록 시작부터 30분');await p.keyboard.press('Escape');
  await p.screenshot({path:'test-results/time-blocks-day.png'}).catch(()=>{});
  ok('블록 수정·삭제: 항목 날짜·시간 그대로, 표시 자리만 재계산 / 빈칸 = 블록 시작부터 30분');

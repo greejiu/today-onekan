@@ -825,6 +825,11 @@
   .hs-block-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
   .hs-block-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
   .hs-block-warn{flex-basis:100%;margin:0 0 4px 26px;font-size:12px;color:#b4541a;}
+  .hs-block-edit{display:inline-flex;gap:4px;flex:none;}
+  .hs-block-edit[hidden]{display:none;}
+  .hs-block-edit button{min-height:36px;padding:0 10px;border-radius:10px;font-size:13px;}
+  .hs-block-row.is-editing input[type="time"]{border-color:var(--accent);}
+  .hs-block-msg{flex-basis:100%;margin:0 0 4px 26px;font-size:12px;color:#c62828;}
   .hs-block-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .hs-block-row input[type="time"]{flex:none;width:96px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .historybtn{border:1px solid var(--line);background:var(--card);border-radius:999px;font-size:12px;width:26px;height:26px;line-height:1;cursor:pointer;color:var(--sub);flex-shrink:0;}
@@ -8513,18 +8518,26 @@
     if (others.length) notes.push(others.map(o => `‘${o.title}’`).join(", ") + withGwa(others[others.length - 1].title) + " 겹쳐요");
     return notes.length ? `${notes.join(" · ")}. 시간을 고쳐 저장하면 해결돼요.` : "";
   }
+  // 2026-10-18 결 요청: 시작·종료를 함께 고친 뒤 [저장]에서 한 번에 검사·저장(06~12 → 18~24처럼 옮길 때 중간 값에 막히지 않게).
+  // 고치는 중인 값은 blockDrafts에 따로 두어 목록이 다시 그려져도 남음. 취소 = 원래 값. 검사·저장 실패 = 블록은 원래 시간 그대로,
+  // 입력은 남겨 고쳐서 다시 저장할 수 있음. 항목의 날짜·시간은 어떤 경우에도 건드리지 않음.
+  const blockDrafts = new Map(); // id → { start: "HH:MM", end: "HH:MM", message?, saving? }
   function renderSettingsBlockList() {
     const host = $("settingsBlockList");
     if (!host) return;
+    for (const id of blockDrafts.keys()) if (!timeBlocks.some(b => b.id === id)) blockDrafts.delete(id);
     host.innerHTML = timeBlocks.length ? timeBlocks.map(b => {
-      const warn = timeBlockWarning(b);
+      const warn = timeBlockWarning(b), draft = blockDrafts.get(b.id);
+      const startVal = draft ? draft.start : minutesToHHMM(b.start_minute), endVal = draft ? draft.end : minutesToHHMM(b.end_minute);
       return `
-      <div class="hs-block-row hs-cat-row${warn ? " has-warning" : ""}" data-id="${b.id}">
+      <div class="hs-block-row hs-cat-row${warn ? " has-warning" : ""}${draft ? " is-editing" : ""}" data-id="${b.id}">
         ${DRAG_HANDLE_SVG}
         <input type="text" class="hs-block-name-input" data-id="${b.id}" value="${escapeHtml(b.title)}" aria-label="시간블록 이름" />
-        <input type="time" step="900" class="hs-block-start-input" data-id="${b.id}" value="${minutesToHHMM(b.start_minute)}" aria-label="${escapeHtml(b.title)} 시작" />
-        <input type="time" step="900" class="hs-block-end-input" data-id="${b.id}" value="${minutesToHHMM(b.end_minute)}" aria-label="${escapeHtml(b.title)} 종료" />
+        <input type="time" step="900" class="hs-block-start-input" data-id="${b.id}" value="${startVal}" aria-label="${escapeHtml(b.title)} 시작" />
+        <input type="time" step="900" class="hs-block-end-input" data-id="${b.id}" value="${endVal}" aria-label="${escapeHtml(b.title)} 종료" />
+        <span class="hs-block-edit"${draft ? "" : " hidden"}><button type="button" class="hs-block-save" data-id="${b.id}"${draft?.saving ? " disabled" : ""}>저장</button><button type="button" class="hs-block-cancel btn-ghost" data-id="${b.id}"${draft?.saving ? " disabled" : ""}>취소</button></span>
         <button type="button" class="hs-cat-del" data-id="${b.id}" title="삭제">✕</button>
+        ${draft?.message ? `<p class="hs-block-msg" role="alert">${escapeHtml(draft.message)}</p>` : ""}
         ${warn ? `<p class="hs-block-warn" role="note">⚠ ${escapeHtml(warn)}</p>` : ""}
       </div>`;
     }).join("") : `<div class="empty" style="font-size:12px;padding:4px 0;">아직 없어요. 아래에서 추가해보세요.</div>`;
@@ -8542,26 +8555,59 @@
       inp.onblur = commit;
       inp.onkeydown = (e) => { if (e.key === "Enter") inp.blur(); };
     });
-    const commitTime = async (inp, field) => {
-      const id = inp.dataset.id;
-      const b = timeBlocks.find(x => x.id === id);
-      if (!inp.value) { if (b) inp.value = minutesToHHMM(b[field]); return; }
-      const minutes = field === "end_minute" ? endInputToMinutes(inp.value) : hhmmToMinutes(inp.value);
-      if (b && b[field] === minutes) return;
-      if (b) {
-        const start = field === "start_minute" ? minutes : b.start_minute, end = field === "end_minute" ? minutes : b.end_minute;
-        const problem = timeBlockProblem(start, end, id);
-        if (problem) { alert(problem); inp.value = minutesToHHMM(b[field]); return; }
-      }
-      const { error } = await sb.from("tok_time_blocks").update({ [field]: minutes }).eq("id", id);
-      if (error) { alert("시간 변경 실패: " + error.message); if (b) inp.value = minutesToHHMM(b[field]); return; }
-      const warningsBefore = timeBlocks.map(timeBlockWarning).join("|");
-      if (b) b[field] = minutes;
-      if (timeBlocks.map(timeBlockWarning).join("|") !== warningsBefore) renderSettingsBlockList(); // 경고가 바뀔 때만(입력 초점 유지)
-      renderTodo();
+    const rowOf = id => host.querySelector(`.hs-block-row[data-id="${id}"]`);
+    const focusAfter = (id, cls) => rowOf(id)?.querySelector(cls)?.focus({ preventScroll: true });
+    // 입력이 바뀌면 고치는 중으로 표시만(저장하지 않음). 원래 값과 같아지면 고치는 중 해제.
+    const track = inp => {
+      const id = inp.dataset.id, b = timeBlocks.find(x => x.id === id), row = rowOf(id);
+      if (!b || !row) return;
+      const start = row.querySelector(".hs-block-start-input").value, end = row.querySelector(".hs-block-end-input").value;
+      const same = start === minutesToHHMM(b.start_minute) && end === minutesToHHMM(b.end_minute);
+      if (same) blockDrafts.delete(id); else blockDrafts.set(id, { start, end });
+      row.classList.toggle("is-editing", !same);
+      row.querySelector(".hs-block-edit").hidden = same;
+      row.querySelector(".hs-block-msg")?.remove();
     };
-    host.querySelectorAll(".hs-block-start-input").forEach(inp => { inp.onchange = () => commitTime(inp, "start_minute"); });
-    host.querySelectorAll(".hs-block-end-input").forEach(inp => { inp.onchange = () => commitTime(inp, "end_minute"); });
+    const cancelBlockEdit = (id, focusCls = ".hs-block-start-input") => {
+      if (blockDrafts.get(id)?.saving) return; // 저장 요청이 끝날 때까지는 취소하지 않음(화면과 저장값이 어긋나지 않게)
+      blockDrafts.delete(id);
+      renderSettingsBlockList();
+      focusAfter(id, focusCls);
+    };
+    async function saveBlockTimes(id) {
+      const b = timeBlocks.find(x => x.id === id), draft = blockDrafts.get(id);
+      if (!b || !draft || draft.saving) return;
+      const fail = message => { draft.message = message; draft.saving = false; renderSettingsBlockList(); focusAfter(id, ".hs-block-save"); };
+      if (!draft.start || !draft.end) { fail("시작·종료 시간을 모두 입력해 주세요."); return; }
+      const start_minute = hhmmToMinutes(draft.start), end_minute = endInputToMinutes(draft.end); // 종료 00:00 = 자정(1440)
+      const problem = timeBlockProblem(start_minute, end_minute, id);
+      if (problem) { fail(problem + ` 블록은 원래 시간(${minutesToHHMM(b.start_minute)}~${endMinuteLabel(b.end_minute)}) 그대로예요.`); return; }
+      draft.saving = true; delete draft.message; renderSettingsBlockList();
+      let result;
+      // 시작·종료를 한 번에 저장. 다른 곳에서 먼저 바뀌었으면(원래 값이 달라짐) 덮어쓰지 않음.
+      try { result = await sb.from("tok_time_blocks").update({ start_minute, end_minute }).eq("id", id).eq("start_minute", b.start_minute).eq("end_minute", b.end_minute).select("id"); }
+      catch (error) { result = { error }; }
+      if (blockDrafts.get(id) !== draft) return; // 저장 중에 취소·삭제됨
+      if (result.error || !result.data || !result.data.length) {
+        fail(`저장하지 못했어요${result.error ? ": " + result.error.message : " — 다른 곳에서 먼저 바뀌었을 수 있어요"}. 블록은 원래 시간(${minutesToHHMM(b.start_minute)}~${endMinuteLabel(b.end_minute)}) 그대로예요. 다시 저장하거나 취소해 주세요.`);
+        return;
+      }
+      b.start_minute = start_minute; b.end_minute = end_minute;
+      blockDrafts.delete(id);
+      renderSettingsBlockList();
+      focusAfter(id, ".hs-block-start-input");
+      renderTodo(); // 항목은 그대로, 시간블록 보기의 자리만 다시 계산
+    }
+    host.querySelectorAll(".hs-block-start-input, .hs-block-end-input").forEach(inp => {
+      inp.oninput = () => track(inp);
+      inp.onchange = () => track(inp);
+      inp.onkeydown = e => {
+        if (e.key === "Enter") { e.preventDefault(); track(inp); saveBlockTimes(inp.dataset.id); }
+        else if (e.key === "Escape" && blockDrafts.has(inp.dataset.id)) { e.preventDefault(); e.stopPropagation(); cancelBlockEdit(inp.dataset.id, inp.classList.contains("hs-block-end-input") ? ".hs-block-end-input" : ".hs-block-start-input"); }
+      };
+    });
+    host.querySelectorAll(".hs-block-save").forEach(btn => { btn.onclick = () => saveBlockTimes(btn.dataset.id); });
+    host.querySelectorAll(".hs-block-cancel").forEach(btn => { btn.onclick = () => cancelBlockEdit(btn.dataset.id); });
     host.querySelectorAll(".hs-cat-del").forEach(btn => {
       btn.onclick = async () => {
         const id = btn.dataset.id;
@@ -8571,6 +8617,7 @@
         if (error) { alert("삭제 실패: " + error.message); return; }
         const idx = timeBlocks.findIndex(x => x.id === id);
         if (idx >= 0) timeBlocks.splice(idx, 1);
+        blockDrafts.delete(id);
         renderSettingsBlockList();
         renderTodo();
       };
