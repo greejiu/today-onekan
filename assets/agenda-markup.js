@@ -1,6 +1,6 @@
 /* Approved home markup, shared without home state or event handlers. */
 (function(root){
-const AG_TL_SLOT_MIN=15,AG_TL_ROW_PX=9,AG_TL_MIN_ITEM_PX=20;
+const AG_TL_SLOT_MIN=15,AG_TL_ROW_PX=9,AG_TL_MIN_ITEM_PX=24; // 2026-10-18 항목명 14px(줄 높이 18px + 위아래 여백)이 들어가는 최소 높이
 function timeline(items,dateStr,options){
     let minM = options.min, maxM = options.max; // 설정 페이지에서 정한 하루 범위(기본 06:00~24:00) — 항목이 범위 밖이면 자동으로 더 넓어짐
     items.forEach(it => {
@@ -35,8 +35,8 @@ function timeline(items,dateStr,options){
     let itemsHtml = "";
     placements.forEach(({ item: it, col, colCount }) => {
       const { top, height } = boxOf(it);
-      // 제목이 보일 수 있는 줄 수(패딩·테두리 6px 제외, 줄 높이 12px×1.3 — 2px까지는 살짝 넘쳐도 한 줄로 쳐줌)
-      const titleLines = Math.max(1, Math.floor((height - 6 + 2) / (12 * 1.3)));
+      // 제목이 보일 수 있는 줄 수(패딩·테두리 6px 제외, 줄 높이 14px×1.3 — 2px까지는 살짝 넘쳐도 한 줄로 쳐줌)
+      const titleLines = Math.max(1, Math.floor((height - 6 + 2) / (14 * 1.3)));
       const widthPct = 100 / colCount;
       const leftPct = widthPct * col;
       itemsHtml += `<div class="ag-tl-task ${it.kind} ${it.done ? "done" : ""}${options.skipped(it,dateStr)}" data-id="${it.id}" data-kind="${it.kind}"${options.attrs(it,dateStr)} data-period-label="${options.escape(it.period_label||'')}" title="${options.escape(it.period_label||'')}" data-occurrence="${it.occurrence_date||''}" data-start="${it.start_minute}" data-duration="${it.duration_minutes}" style="top:${top}px;height:${height}px;left:${leftPct}%;width:calc(${widthPct}% - 4px);${options.style(it)}">
@@ -62,7 +62,7 @@ function blocks(items,dateStr,options){
         const inBlock = items.filter(it => owner.get(it) === block);
         const bs = options.blockStyle(block.title);
         html += `<div class="ag-section-head">
-          <span class="label"><span class="ag-dot" style="background:${bs.dot};"></span>${options.escape(block.title)} <span style="color:var(--sub);font-weight:400;">(${options.time(block.start_minute)}~${options.endTime(block.end_minute)})</span></span>
+          <span class="label"><span class="ag-dot" style="background:${bs.dot};"></span>${options.escape(block.title)} <span style="color:var(--sub);font-weight:400;font-size:var(--fs-meta);">(${options.time(block.start_minute)}~${options.endTime(block.end_minute)})</span></span>
         </div>`;
         // 비어있을 땐 "일정 없음" 안내문구 자체가 곧 클릭해서 추가하는 빈칸(하루종일·언젠가와 동일 규칙),
         // 이미 항목이 있으면 그 아래에 "+ 추가" 줄만 따로 붙임.
@@ -79,7 +79,7 @@ function blocks(items,dateStr,options){
     } else if (items.length) {
       html += `<div class="agenda-flat">${items.map(it => options.row(it,dateStr)).join("")}</div>`;
     }
-    return html || `<div class="empty" style="padding:20px 0;font-size:12px;">시간이 있는 항목이 없어요.</div>`;
+    return html || `<div class="empty" style="padding:20px 0;font-size:var(--fs-meta);">시간이 있는 항목이 없어요.</div>`;
 }
 function colorStyle(color){if(!color)return `background:var(--card);border-color:var(--line);`;return `background:color-mix(in srgb, ${color} 24%, var(--card));border-color:color-mix(in srgb, ${color} 50%, var(--line));`;}
 root.OnekanAgendaMarkup={timeline,blocks,blockOwner,colorStyle};
