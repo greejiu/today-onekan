@@ -15,6 +15,8 @@ async function seed(p){
    {id:'t-all',user_id:'test',title:'종일 할일',is_done:false,...A('todo',d(1))},
    {id:'t-rdone',user_id:'test',title:'반복 할일',is_done:true,repeat_unit:'day',repeat_interval:1,...A('todo',d(2))},
    {id:'t-repeat',user_id:'test',title:'반복 할일',is_done:false,repeat_unit:'day',repeat_interval:1,repeat_chain_id:'t-rdone',repeat_source_id:'t-rdone',...A('todo',d(3))},
+   {id:'t-rearly',user_id:'test',title:'반복 할일',is_done:false,repeat_unit:'day',repeat_interval:1,repeat_chain_id:'t-rdone',...A('todo',d(0))}, // 같은 반복의 아직 안 한 앞 회차('전체'에만 포함)
+   {id:'t-weekly',user_id:'test',title:'수요일 반복',is_done:false,repeat_unit:'week',repeat_interval:1,repeat_days:[3],...T('todo',d(2),'08:00','08:30')}, // 요일을 정해 둔 반복
    {id:'t-repeat2',user_id:'test',title:'반복 할일',is_done:false,repeat_unit:'day',repeat_interval:1,repeat_chain_id:'t-rdone',repeat_source_id:'t-repeat',...A('todo',d(10))}, // 같은 반복의 아직 안 한 다른 회차
    {id:'t-day-all',user_id:'test',title:'블록에 넣을 할일',is_done:false,...A('todo',d(4))},
    {id:'t-day-timed',user_id:'test',title:'오전 할일',is_done:false,...T('todo',d(4),'10:00','11:00')},
@@ -27,7 +29,7 @@ async function seed(p){
    {id:'e-legacy',user_id:'test',title:'끝 없는 옛 일정',event_date:d(5),event_time:'09:00:00'},
   ];
   mockRows.tok_habits=[{id:'h1',user_id:'test',name:'스트레칭',is_active:true,start_date:d(0),repeat_unit:'day',repeat_interval:1,...T('habit',d(0),'07:00','07:30')}];
-  mockRows.tok_habit_logs=[{id:'l1',habit_id:'h1',done_date:d(1),start_minute:420,duration_minutes:30}];mockRows.tok_habit_skips=[];
+  mockRows.tok_habit_logs=[{id:'l1',habit_id:'h1',done_date:d(1),start_minute:420,duration_minutes:30}];mockRows.tok_habit_skips=[{habit_id:'h1',skip_date:d(5)}];
   await loadAll();showPage('all');
   return Array.from({length:14},(_,i)=>d(i));
  });
@@ -98,32 +100,57 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  assert.equal((await row(p,'tok_todos','t-all')).start_date,D[1],'실패 = 원래 날짜');assert.equal(await card('todo|t-all',D[1]).count(),1,'원래 자리에 다시 표시');
  ok('습관 날짜 이동·완료 기록·반복 완료 회차·종료 없는 옛 항목은 막고 안내, Esc·영역 밖·저장 실패는 원래대로');
 
- // ── 4. 반복: 범위 선택(이번만 비활성 + 이유), 취소 = 원본, 이번부터 이후 / 전체, 완료 회차 보존 ──
+ // ── 4. 반복: 고른 뜻 그대로 저장할 수 있는 범위만 켬(꺼진 범위는 이유), 이번부터 이후 / 전체, 완료 회차 보존 ──
+ const snap=()=>p.evaluate(()=>JSON.stringify({t:mockRows.tok_todos,e:mockRows.tok_events,h:mockRows.tok_habits,l:mockRows.tok_habit_logs,s:mockRows.tok_habit_skips}));
  w=await writes(p);const done0=await row(p,'tok_todos','t-rdone');
  await drag(p,await center(card('todo|t-repeat')),await center(col(D[5]).locator('.awb-head')));
- const scope=p.locator('#allScopeBg');assert(await scope.evaluate(e=>e.classList.contains('open')),'범위 선택 창');
- assert(await scope.locator('[data-scope=one]').isDisabled(),'이번만 비활성');assert.match(await scope.locator('[data-scope=one]').textContent(),/다음 회차가 이 회차 날짜로 계산/);
- assert(!(await scope.locator('[data-scope=future]').isDisabled()));assert(!(await scope.locator('[data-scope=all]').isDisabled()));
+ const scope=p.locator('#allScopeBg'),opt=id=>scope.locator('[data-scope='+id+']');assert(await scope.evaluate(e=>e.classList.contains('open')),'범위 선택 창');
+ assert(await opt('one').isDisabled(),'이번만 비활성');assert.match(await opt('one').textContent(),/다음 회차가 이 회차 날짜로 계산/);
+ assert(!(await opt('future').isDisabled()));assert(!(await opt('all').isDisabled()));
  await p.screenshot({path:OUT+'/scope-dialog.png'});
- await p.keyboard.press('Escape');await p.waitForTimeout(150);assert.equal((await row(p,'tok_todos','t-repeat')).start_date,D[3],'취소 = 원본');assert.equal(await writes(p),w);
- await drag(p,await center(card('todo|t-repeat')),await center(col(D[5]).locator('.awb-head')));
- await scope.locator('[data-scope=future]').click();
- await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-repeat').start_date===d,D[5]);
- assert.deepEqual(await row(p,'tok_todos','t-rdone'),done0,'완료한 회차(기록)는 그대로');assert.equal((await row(p,'tok_todos','t-repeat2')).start_date,D[10],'이번부터 이후 = 이 회차만(다음은 옮긴 날 기준)');
- // 전체: 아직 안 한 회차를 모두 같은 만큼, 실행 취소도 모두
- await drag(p,await center(card('todo|t-repeat')),await center(col(D[6]).locator('.awb-head')));await scope.locator('[data-scope=all]').click();
- await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-repeat2').start_date===d,D[11]);assert.equal((await row(p,'tok_todos','t-repeat')).start_date,D[6]);assert.deepEqual(await row(p,'tok_todos','t-rdone'),done0);
- await toastUndo(p).click();await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-repeat2').start_date===d,D[10]);assert.equal((await row(p,'tok_todos','t-repeat')).start_date,D[5]);
+ await opt('future').click();
+ // 이번부터 이후 = 이 회차와 아직 안 한 이후 회차(앞 회차·완료 회차는 그대로)
+ await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-repeat').start_date===d,D[5]);await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-repeat2').start_date===d,D[12]);
+ assert.equal((await row(p,'tok_todos','t-rearly')).start_date,D[0],'앞 회차는 그대로');assert.deepEqual(await row(p,'tok_todos','t-rdone'),done0,'완료한 회차(기록)는 그대로');
+ assert.equal((await row(p,'tok_todos','t-repeat')).repeat_unit,'day');
+ // 전체 = 아직 안 한 회차 모두(앞 회차 포함), 실행 취소도 모두
+ await drag(p,await center(card('todo|t-repeat')),await center(col(D[6]).locator('.awb-head')));await opt('all').click();
+ await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-repeat2').start_date===d,D[13]);assert.equal((await row(p,'tok_todos','t-repeat')).start_date,D[6]);assert.equal((await row(p,'tok_todos','t-rearly')).start_date,D[1]);assert.deepEqual(await row(p,'tok_todos','t-rdone'),done0);
+ await toastUndo(p).click();await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-repeat2').start_date===d,D[12]);assert.equal((await row(p,'tok_todos','t-repeat')).start_date,D[5]);assert.equal((await row(p,'tok_todos','t-rearly')).start_date,D[0]);
+ // 반복 일정: 한 건 저장이라 '이번부터 이후'는 전체가 바뀜 → 끄고 이유, '전체'만
  await p.evaluate(d=>allViews.selectDate(d),D[8]);await p.waitForTimeout(120);
  await drag(p,await center(card('event|e-repeat')),await center(col(D[9]).locator('.awb-head')));
- assert(await scope.locator('[data-scope=one]').isDisabled());assert.match(await scope.locator('[data-scope=all]').textContent(),/결과가 '이번부터 이후'와 같아요/);
- await scope.locator('[data-scope=all]').click();await p.waitForFunction(d=>mockRows.tok_events.find(r=>r.id==='e-repeat').event_date===d,D[9]);
+ assert(await opt('one').isDisabled());assert(await opt('future').isDisabled(),'일정 이번부터 이후 비활성');assert.match(await opt('future').textContent(),/전체가 바뀌어요/);
+ await opt('all').click();await p.waitForFunction(d=>mockRows.tok_events.find(r=>r.id==='e-repeat').event_date===d,D[9]);
  await p.evaluate(d=>allViews.selectDate(d),D[1]);await p.waitForTimeout(120);
  assert.equal((await row(p,'tok_events','e-repeat')).repeat_unit,'week','반복 설정 유지');
- ok('반복: 범위 선택(이번만 비활성·이유), 취소 = 원본, 이번부터 이후 = 이 회차, 전체 = 안 한 회차 모두(실행 취소도 모두), 완료 회차 보존');
+ ok('반복: 고른 뜻 그대로일 때만 켬(이번만·일정 이번부터 이후는 이유와 함께 끔), 할일 이후 = 이 회차부터·전체 = 안 한 회차 모두(실행 취소도 모두), 완료 회차·반복 설정 보존');
+
+ // ── 4-2. 지원하지 않는 범위를 누르거나 취소하면 날짜·시간·반복 설정·기록이 하나도 안 바뀜 ──
+ const before=await snap();w=await writes(p);
+ const unchanged=async m=>{await p.waitForTimeout(200);assert.equal(await snap(),before,m+': 데이터 그대로');assert.equal(await writes(p),w,m+': 저장 없음');};
+ // 요일 반복 할일을 다른 날로: 이번만·이번부터 이후·전체 모두 꺼짐(이유), 눌러도 그대로, 취소 버튼
+ await drag(p,await center(card('todo|t-weekly')),await center(col(D[4]).locator('.awb-head')));
+ for(const id of ['one','future','all'])assert(await opt(id).isDisabled(),'요일 반복 '+id+' 비활성');assert.match(await opt('all').textContent(),/요일 설정으로 계산/);
+ for(const id of ['one','future','all'])await opt(id).click({force:true});assert(await scope.evaluate(e=>e.classList.contains('open')),'꺼진 범위를 눌러도 창 유지');
+ await scope.locator('[data-scope-cancel]').click();await unchanged('요일 반복 취소');
+ // 반복 일정: 꺼진 '이번만'·'이번부터 이후'를 눌러도 그대로, Esc
+ await p.evaluate(d=>allViews.selectDate(d),D[9]);await p.waitForTimeout(120);
+ await drag(p,await center(card('event|e-repeat')),await center(col(D[11]).locator('.awb-head')));
+ await opt('one').click({force:true});await opt('future').click({force:true});await p.keyboard.press('Escape');assert.equal(await scope.evaluate(e=>e.classList.contains('open')),false,'꺼진 범위를 누른 뒤에도 Esc로 닫힘');await unchanged('반복 일정 Esc');
+ // 반복 할일: 창 바깥 누르기 = 취소
+ await p.evaluate(d=>allViews.selectDate(d),D[1]);await p.waitForTimeout(120);
+ await drag(p,await center(card('todo|t-repeat')),await center(col(D[6]).locator('.awb-head')));await scope.click({position:{x:5,y:5}});await unchanged('반복 할일 바깥 누르기');
+ // 끄는 중 Esc, 영역 밖에 놓기
+ await drag(p,await center(card('todo|t-repeat')),await center(col(D[6]).locator('.awb-head')),{esc:true});await unchanged('끄는 중 Esc');
+ await drag(p,await center(card('todo|t-repeat')),await center(p.locator('#allViewTabs')));await unchanged('영역 밖');
+ // 습관: 다른 날(지원 안 함) / 같은 날 시간 변경 창에서 꺼진 범위 누르고 취소 — 완료·건너뜀 기록 포함 그대로
+ await drag(p,await center(card('habit|h1|planned|'+D[3])),await center(col(D[4]).locator('.awb-head')));await unchanged('습관 다른 날');
+ assert.equal(await scope.evaluate(e=>e.classList.contains('open')),false,'습관 다른 날은 창 없이 안내만');
+ ok('지원하지 않는 범위(눌러도 무시)·취소 버튼·Esc·바깥 누르기·끄는 중 Esc·영역 밖·습관 다른 날: 날짜·시간·반복 설정·완료·건너뜀 기록 모두 그대로, 저장 없음');
 
  // ── 5. 저장 중 같은 항목 중복 변경 막기 ──
- w=await writes(p);await p.evaluate(()=>{mockDelay=900;});
+ w=await writes(p);await p.evaluate(()=>{mockDelay=2500;});
  await drag(p,await center(card('todo|t-all')),await center(col(D[2]).locator('.awb-head')));
  assert.match(await p.locator('#allSaveStatus').textContent(),/저장 중/);
  await drag(p,await center(card('todo|t-all')),await center(col(D[5]).locator('.awb-head')));
@@ -139,10 +166,10 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  // ── 6. 주 타임라인: 하루종일 → 시간 칸(30분), 시간 → 하루종일(해제), 시간 안에서 끌기(소요시간 유지) ──
  await go('week','timeline');await p.evaluate(d=>allViews.selectDate(d),D[1]);await p.waitForTimeout(150);
  const tl=d=>'#allTimeDays .ag-tl-content[data-time-date="'+d+'"]';
- let target=await axis(p,tl(D[1]),11*60+10,.3);
+ let target=await axis(p,tl(D[1]),12*60+10,.3);
  await drag(p,await center(p.locator('#allTimeDays [data-event-id="todo|t-timed"]'),false),target,{check:async()=>{assert.equal(await p.locator(tl(D[1])+' .sd-slot').count(),1,'시간 칸 미리보기');await p.screenshot({path:OUT+'/timeline-dragging.png'});}});
  await p.waitForFunction(()=>mockRows.tok_todos.find(r=>r.id==='t-timed').todo_time!=='10:00:00');r=await row(p,'tok_todos','t-timed');
- assert.equal(r.duration_minutes,90,'소요시간 유지');assert.equal(r.start_date,D[1]);const movedStart=OnekanPeriodMinutes(r.todo_time);assert(movedStart>600&&movedStart%15===0,'타임라인 안 이동 '+r.todo_time);
+ assert.equal(r.duration_minutes,90,'소요시간 유지');assert.equal(r.start_date,D[1]);const movedStart=OnekanPeriodMinutes(r.todo_time);assert(movedStart>600&&movedStart%30===0,'타임라인 안 이동 30분 단위 '+r.todo_time);
  const rangeRow=p.locator('#allTimeDays [data-event-id="event|e-range"]').first();await rangeRow.evaluate(e=>e.scrollIntoView({block:'center'})); // 위쪽 고정 날짜 머리에 가리지 않게
  const srcPt=await center(rangeRow,false);target=await axis(p,tl(D[5]),7*60,.6,false); // 하루종일 줄과 아침 시간이 같이 보이는 자리
  assert(target.y>0&&target.y<900,'놓을 자리가 화면 안');
@@ -154,7 +181,7 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  await drag(p,timedPt,zonePt);
  await p.waitForFunction(()=>mockRows.tok_events.find(r=>r.id==='e-timed').all_day===true);r=await row(p,'tok_events','e-timed');
  assert.equal(r.event_date,D[3]);assert.equal(r.end_date,D[3]);assert.equal(r.event_time,null);assert.equal(r.end_time,null);
- ok('주 타임라인: 시간 안 이동(소요시간 유지·15분 단위), 하루종일 → 시간 칸 30분(여러 날도 놓은 날 하루), 시간 → 하루종일 해제');
+ ok('주 타임라인: 시간 안 이동(소요시간 유지·30분 단위), 하루종일 → 시간 칸 30분(여러 날도 놓은 날 하루), 시간 → 하루종일 해제');
 
  // ── 7. 일 보기 시간블록: 하루종일 → 블록(블록 시작·30분), 시간 항목 → 다른 블록(블록 시작·소요시간 유지), 짧게 누르기 = 이름 수정 ──
  await go('day','blocks');await p.evaluate(d=>allViews.selectDate(d),D[4]);await p.waitForTimeout(250);
@@ -185,10 +212,16 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  await hb.evaluate(e=>e.scrollIntoView({block:'center'}));const hbox2=await hb.boundingBox(),hy=hbox2.y+hbox2.height/2; // 끝부분(위아래 8px)은 길이 조절이라 가운데를 잡음
  await drag(p,{x:hbox2.x+hbox2.width*.4,y:hy},{x:hbox2.x+hbox2.width*.4,y:hy+36},{check:async()=>{assert.equal(await p.locator(dayAxis+' .sd-slot').count(),1,'일 보기 타임라인 미리보기');}});
  assert(await scope.evaluate(e=>e.classList.contains('open')),'습관도 범위 선택');assert(await scope.locator('[data-scope=one]').isDisabled());assert(await scope.locator('[data-scope=future]').isDisabled());
+ // 꺼진 범위(이번만·이번부터 이후)를 누르고 취소 → 습관·완료·건너뜀 기록 그대로, 저장 없음
+ const hsnap=()=>p.evaluate(()=>JSON.stringify([mockRows.tok_habits,mockRows.tok_habit_logs,mockRows.tok_habit_skips])),h0=await hsnap(),hw=await writes(p);
+ await scope.locator('[data-scope=one]').click({force:true});await scope.locator('[data-scope=future]').click({force:true});await scope.locator('[data-scope-cancel]').click();await p.waitForTimeout(200);
+ assert.equal(await hsnap(),h0,'습관 꺼진 범위·취소 = 그대로');assert.equal(await writes(p),hw);
+ await hb.evaluate(e=>e.scrollIntoView({block:'center'}));const hbox3=await hb.boundingBox(),hy3=hbox3.y+hbox3.height/2;
+ await drag(p,{x:hbox3.x+hbox3.width*.4,y:hy3},{x:hbox3.x+hbox3.width*.4,y:hy3+36});
  await scope.locator('[data-scope=all]').click();await p.waitForFunction(()=>mockRows.tok_habits[0].start_minute!==420);
  const h=await row(p,'tok_habits','h1');assert.equal(h.start_minute,480);assert.equal(h.end_time,'08:30:00');assert.equal(h.duration_minutes,30);
  assert.equal(await p.evaluate(()=>JSON.stringify(mockRows.tok_habit_logs)),logs0,'완료 기록 그대로');
- ok('일 보기 타임라인: 일정 시간 이동(소요시간 유지), 습관은 같은 날 시간만·전체 범위·완료 기록 보존');
+ ok('일 보기 타임라인: 일정 시간 이동(소요시간 유지), 습관은 같은 날 시간만·전체 범위(꺼진 범위·취소는 그대로)·완료 기록 보존');
 
  // ── 9. 월: 막대를 다른 날로(미리보기는 도착 칸 안) ──
  await go('month');await p.evaluate(d=>allViews.selectDate(d),D[1]);await p.waitForTimeout(150);
@@ -196,7 +229,7 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  const to=p.locator('#allCalGrid .cal-cell[data-date="'+D[6]+'"]');
  const e0=await row(p,'tok_events','e-repeat');
  await drag(p,await center(chip),await center(to),{check:async()=>{assert(await to.evaluate(e=>e.classList.contains('sd-drop')),'도착 칸 표시');assert(await p.locator('#allMoveLabel .sd-preview').isVisible());}});
- await p.locator('#allScopeBg [data-scope=future]').click();await p.waitForFunction(d=>mockRows.tok_events.find(r=>r.id==='e-repeat').event_date===d,D[6]);
+ await p.locator('#allScopeBg [data-scope=all]').click();await p.waitForFunction(d=>mockRows.tok_events.find(r=>r.id==='e-repeat').event_date===d,D[6]);
  assert.equal((await row(p,'tok_events','e-repeat')).all_day,e0.all_day);
  await p.screenshot({path:OUT+'/month-after.png'});
  ok('월: 막대를 다른 날로(도착 칸 미리보기), 반복 일정은 범위 선택 후 저장');

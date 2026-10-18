@@ -1,13 +1,13 @@
 /* 2026-10-18 3단계: 일정 화면(월·주 보드·주 타임라인·일 보기)의 기존 항목 끌어 옮기기.
  * 규칙(OnekanDragRules)과 화면 동작(createOnekanScheduleDrag)을 나눔. 지금한칸·오른쪽 목록·언젠가는 이 파일이 다루지 않음(후속).
  * - 날짜만 옮기면 시간·기간 유지(여러 날 항목도 기간 유지), 잡은 날과 놓은 날의 차이만큼 이동
- * - 시간 칸: 놓은 시각이 시작, 소요시간 유지(타임라인 안에서 끌면 잡은 위치와의 차이를 유지해 미리보기 윗변 = 시작)
+ * - 시간 칸: 놓은 시각이 시작(30분 단위, 확정 설계), 소요시간 유지(타임라인 안에서 끌면 잡은 위치와의 차이를 유지해 미리보기 윗변 = 시작)
  * - 하루종일 → 시간 칸: 놓은 날 그 시각부터 30분 / 시간 → 하루종일: 시간 지정 해제 / 시간블록: 블록 시작 시각
- * - 반복: 저장 전에 이번만·이번부터 이후·전체 선택(지금 저장 구조로 못 하는 선택은 이유와 함께 비활성)
+ * - 반복: 저장 전에 이번만·이번부터 이후·전체 선택. 고른 뜻 그대로 저장할 수 있는 선택만 켜고, 나머지는 이유와 함께 비활성
  * - 완료·건너뜀·측정 기록은 쓰지 않음. 실패·취소·영역 밖·Esc는 원래대로. 성공 후 10초 실행 취소(그사이 바뀌었으면 덮어쓰지 않음). */
 (function(root){
  'use strict';
- const STEP=15,NEW_TIMED=30;
+ const STEP=30,NEW_TIMED=30; // 시간 이동 간격 30분(설계확정서), 하루종일 → 시간 칸은 30분
  const round=m=>Math.round(m/STEP)*STEP;
  // 저장할 칸만 비교(시간은 'HH:MM:SS'와 'HH:MM'을 같게 봄)
  const same=(a,b)=>(a??null)===(b??null)||typeof a==='string'&&typeof b==='string'&&a.slice(0,5)===b.slice(0,5)&&/^\d\d:\d\d/.test(a);
@@ -58,18 +58,23 @@
   const period=P.read('habit',{...source,...patch});
   return {patch,period,error:invalid(P.validate(period)),same:!changed(source,patch)};
  }
- // 반복 범위: 지금 저장 구조(회차 예외 칸 없음)로 정확히 할 수 있는 것만 켬
- function scopes(kind){
+ // 반복 범위: 고른 뜻 그대로 저장할 수 있을 때만 켬(ok). 아니면 이유를 보여 주고 끔.
+ //  ctx.dateChanged = 날짜가 바뀌는 이동, ctx.weekdays = 요일을 정해 둔 반복(다음 회차가 요일 설정으로 계산됨)
+ function scopes(kind,ctx={}){
+  const one={id:'one',label:'이번만'};
   if(kind==='event')return [
-   {id:'one',label:'이번만',reason:'반복 일정은 한 건으로 저장돼서, 이 회차만 따로 옮길 저장 칸이 아직 없어요.'},
-   {id:'future',label:'이번부터 이후',ok:true,note:'이 회차부터 반복 기준이 옮겨져요.'},
-   {id:'all',label:'전체',ok:true,note:'지난 회차는 따로 저장되지 않아 결과가 \'이번부터 이후\'와 같아요.'}];
-  if(kind==='todo')return [
-   {id:'one',label:'이번만',reason:'다음 회차가 이 회차 날짜로 계산돼서, 이 회차만 옮길 수 없어요.'},
-   {id:'future',label:'이번부터 이후',ok:true,note:'이 회차를 옮기고, 다음 회차는 옮긴 날짜 기준으로 생겨요.'},
-   {id:'all',label:'전체',ok:true,note:'아직 안 한 회차를 모두 같은 만큼 옮겨요. 완료한 회차는 그대로예요.'}];
+   {...one,reason:'반복 일정은 한 건으로 저장돼서, 이 회차만 따로 옮길 저장 칸이 아직 없어요.'},
+   {id:'future',label:'이번부터 이후',reason:'반복 일정은 한 건으로 저장돼서, 그대로 저장하면 지난 회차까지 포함한 전체가 바뀌어요. 전체를 바꾸려면 \'전체\'를 골라 주세요.'},
+   {id:'all',label:'전체',ok:true,note:'모든 회차를 같은 만큼 옮겨요. 반복 설정은 그대로예요.'}];
+  if(kind==='todo'){
+   const weekday=ctx.dateChanged&&ctx.weekdays?'요일을 정해 둔 반복은 다음 회차가 요일 설정으로 계산돼서, 날짜를 옮겨도 이후 회차에 반영되지 않아요. 수정창에서 요일을 바꿔 주세요.':'';
+   return [
+    {...one,reason:'다음 회차가 이 회차 날짜로 계산돼서, 이 회차만 옮길 수 없어요.'},
+    weekday?{id:'future',label:'이번부터 이후',reason:weekday}:{id:'future',label:'이번부터 이후',ok:true,note:'이 회차와 아직 안 한 이후 회차를 옮기고, 다음 회차는 옮긴 날짜·시간 기준으로 생겨요. 지난 회차·완료한 회차는 그대로예요.'},
+    weekday?{id:'all',label:'전체',reason:weekday}:{id:'all',label:'전체',ok:true,note:'아직 안 한 회차를 모두 같은 만큼 옮겨요. 완료한 회차는 그대로예요.'}];
+  }
   return [
-   {id:'one',label:'이번만',reason:'습관은 회차별 시간을 따로 저장할 칸이 아직 없어요.'},
+   {...one,reason:'습관은 회차별 시간을 따로 저장할 칸이 아직 없어요.'},
    {id:'future',label:'이번부터 이후',reason:'습관을 둘로 나눠야 해서 먼저 결정이 필요해요.'},
    {id:'all',label:'전체',ok:true,note:'습관 시간을 바꿔요. 완료·건너뜀 기록은 그때 시간 그대로 남아요.'}];
  }
@@ -224,29 +229,31 @@
   bg.innerHTML='<div class="sheet confirm-sheet sd-scope" role="dialog" aria-modal="true" aria-labelledby="allScopeTitle" aria-describedby="allScopeMsg"><h2 id="allScopeTitle">반복 항목 옮기기</h2><p id="allScopeMsg"></p><div class="sd-scope-list" role="group" aria-label="적용 범위"></div><div class="sheet-actions"><button type="button" class="btn-ghost" data-scope-cancel>취소</button></div></div>';
   doc.body.append(bg);
   let scopeDone=null;
-  function chooseScope(kind,row,res){
+  function chooseScope(kind,row,res,ctx){
    return new Promise(resolve=>{
     const prev=doc.activeElement;scopeDone=v=>{scopeDone=null;bg.classList.remove('open');if(prev?.isConnected&&prev.getClientRects().length)prev.focus({preventScroll:true});resolve(v);};
     bg.querySelector('#allScopeMsg').textContent='\''+(row.title||'')+'\'을(를) '+OnekanDragRules.describe(res.period)+'(으)로 옮겨요. 어디까지 적용할까요?';
     const list=bg.querySelector('.sd-scope-list');
-    list.innerHTML=OnekanDragRules.scopes(kind).map(s=>'<button type="button" class="sd-scope-opt" data-scope="'+s.id+'"'+(s.ok?'':' disabled aria-disabled="true"')+' aria-describedby="allScopeNote-'+s.id+'"><strong>'+esc(s.label)+'</strong><span id="allScopeNote-'+s.id+'">'+esc(s.ok?s.note:'지금은 안 돼요 · '+s.reason)+'</span></button>').join('');
+    list.innerHTML=OnekanDragRules.scopes(kind,ctx).map(s=>'<button type="button" class="sd-scope-opt" data-scope="'+s.id+'"'+(s.ok?'':' disabled aria-disabled="true"')+' aria-describedby="allScopeNote-'+s.id+'"><strong>'+esc(s.label)+'</strong><span id="allScopeNote-'+s.id+'">'+esc(s.ok?s.note:'지금은 안 돼요 · '+s.reason)+'</span></button>').join('');
     list.querySelectorAll('[data-scope]:not([disabled])').forEach(b=>b.onclick=()=>scopeDone(b.dataset.scope));
     bg.classList.add('open');(list.querySelector('[data-scope]:not([disabled])')||bg.querySelector('[data-scope-cancel]')).focus({preventScroll:true});
    });
   }
   bg.querySelector('[data-scope-cancel]').onclick=()=>scopeDone?.(null);
+  // 꺼진 범위를 눌러 초점이 창 밖으로 나가도 Esc = 취소(창 안 초점일 때는 아래 keydown이 먼저 처리)
+  doc.addEventListener('keydown',e=>{if(e.key==='Escape'&&scopeDone){e.preventDefault();e.stopImmediatePropagation();scopeDone(null);}},true);
   bg.addEventListener('click',e=>{if(e.target===bg)scopeDone?.(null);});
   bg.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();scopeDone?.(null);return;}
    if(e.key==='Tab'){const f=[...bg.querySelectorAll('button:not([disabled])')];const i=f.indexOf(doc.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();f[f.length-1].focus();}else if(!e.shiftKey&&i===f.length-1){e.preventDefault();f[0].focus();}}});
 
   // ── 저장 · 실행 취소 ──
   const table=kind=>kind==='event'?'tok_events':kind==='todo'?'tok_todos':'tok_habits';
-  // '전체'(반복 할일): 같은 반복의 아직 안 한 다른 회차도 같은 만큼(날짜 차이·같은 시각 규칙) 옮김
-  function chainWrites(r,res,target){
+  // 반복 할일의 다른 회차: '이번부터 이후' = 이 회차보다 뒤의 아직 안 한 회차, '전체' = 아직 안 한 회차 모두. 같은 만큼(날짜 차이·같은 시각) 옮김
+  function chainWrites(r,res,target,scope){
    const chain=r.repeat_chain_id||r.source_id,base=P.read('todo',r),delta=P.days(base.startDate,res.period.startDate),out=[];
    for(const t of api.todos()){
     if(t.id===r.source_id||t.is_done||(t.repeat_chain_id||t.id)!==chain||!t.repeat_unit)continue;
-    const p=P.read('todo',t);if(!p.startDate)continue;
+    const p=P.read('todo',t);if(!p.startDate||scope==='future'&&p.startDate<base.startDate)continue;
     const moved=P.addDays(p.startDate,delta),tt=target.type==='date'||target.type==='allday'?{type:target.type,date:moved}:{type:'time',date:moved,minute:res.period.allDay?0:P.minutes(res.period.startTime)};
     const x=OnekanDragRules.plan(P,'todo',t,p.startDate,tt,null);if(!x.error&&!x.same)out.push({kind:'todo',id:t.id,row:t,patch:x.patch});
    }
@@ -266,9 +273,14 @@
    saving.add(key); // 범위 선택 중에도 같은 항목 중복 변경 막기
    try{
     let scope='single';
-    if(repeat){scope=await chooseScope(r.kind,r,res);if(!scope){status('옮기지 않았어요. 원래대로 두었어요.');api.render();return;}}
+    if(repeat){
+     const ctx={dateChanged:P.read(r.kind,r).startDate!==res.period.startDate,weekdays:!!source.repeat_days?.length};
+     scope=await chooseScope(r.kind,r,res,ctx);
+     // 취소했거나, 지원하지 않는 범위면(창에서 꺼져 있어 고를 수 없지만 한 번 더 확인) 아무것도 저장하지 않음
+     if(!scope||!OnekanDragRules.scopes(r.kind,ctx).find(x=>x.id===scope)?.ok){status('옮기지 않았어요. 원래대로 두었어요.');api.render();return;}
+    }
     const writes=[{kind:r.kind,id:r.source_id,row:source,patch:res.patch}];
-    if(r.kind==='todo'&&scope==='all')writes.push(...chainWrites(r,res,t));
+    if(r.kind==='todo'&&scope!=='single')writes.push(...chainWrites(r,res,t,scope));
     writes.forEach(w=>{w.before=Object.fromEntries(Object.keys(w.patch).map(k=>[k,w.row[k]??null]));});
     const owner=api.user(),done=[];status('저장 중…');host.setAttribute('aria-busy','true');d.sources.forEach(n=>n.classList.add('sd-saving'));
     try{for(const w of writes){await write(w,owner);done.push(w);}}
