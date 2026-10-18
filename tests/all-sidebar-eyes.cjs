@@ -1,4 +1,5 @@
-// 2026-10-10 '모두' 개편 반영: 종류 눈은 월·주·일별, 범주·그룹 눈은 공통. 본문 옛 종류 버튼(#allTypes)은 숨김.
+// 2026-10-10 '모두' 개편 반영: 본문 옛 종류 버튼(#allTypes)은 숨김.
+// 2026-10-18 설계확정서 1.18: 일정 전체·범주·할일·습관 눈 모두 월·주·일별로 따로 기억.
 // 검증 의도는 그대로: 사이드바에만 눈이 있고, 눈으로 항목이 걸러지며, 화면 이동·사이드바 접기·모바일에서 상태가 맞고, 쓰기 요청이 없음.
 const assert=require('node:assert/strict'),{chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs');
 const collapseRail=async page=>{for(let i=0;i<3&&!(await page.evaluate(()=>document.querySelector('.sidebar').classList.contains('rail-collapsed')));i++)await page.locator('#sidebarRailToggle').click();}; // 2026-10-10 왼쪽 화살표: 세부 메뉴 → 전체 메뉴 → 접기
@@ -17,11 +18,11 @@ const collapseRail=async page=>{for(let i=0;i<3&&!(await page.evaluate(()=>docum
  assert(await p.locator('#allCalGrid [data-menu-kind=event]').count());assert.equal(await p.locator('#allCalGrid [data-menu-kind=todo]').count(),0);
  await cat.click();await eye('todo').click();assert.equal(await cat.getAttribute('aria-pressed'),'false');
  assert.equal(await p.locator('#allCalGrid [data-menu-kind=event]').count(),0);assert(await p.locator('#allCalGrid [data-menu-kind=todo]').count());
- // 범주 눈은 기간 공통, 할일 눈은 기간마다 따로(일 보기 기본 켬)
- await p.locator('#allViewTabs [data-common-view=day]').click();assert.equal(await cat.getAttribute('aria-pressed'),'false');assert.equal(await p.locator('#allHomeDay [data-kind=event]').count(),0);
- await cat.click();assert(await p.locator('#allHomeDay [data-kind=event]').count()); // 2026-10-10 일 보기 = 지금 한칸 화면
+ // 범주 눈도 할일 눈도 기간마다 따로(일 보기 기본 켬) — 월에서 끈 범주가 일 보기에는 영향 없음
+ await p.locator('#allViewTabs [data-common-view=day]').click();assert.equal(await cat.getAttribute('aria-pressed'),'true','범주 눈은 기간마다 따로');assert(await p.locator('#allHomeDay [data-kind=event]').count()); // 2026-10-10 일 보기 = 지금 한칸 화면
+ await cat.click();assert.equal(await p.locator('#allHomeDay [data-kind=event]').count(),0);await cat.click();assert(await p.locator('#allHomeDay [data-kind=event]').count());
  await eye('todo').click();assert.equal(await eye('todo').getAttribute('aria-pressed'),'false');
- await p.locator('#allViewTabs [data-common-view=month]').click();assert.equal(await eye('todo').getAttribute('aria-pressed'),'true','월 할일 눈은 월 설정 유지');
+ await p.locator('#allViewTabs [data-common-view=month]').click();assert.equal(await eye('todo').getAttribute('aria-pressed'),'true','월 할일 눈은 월 설정 유지');assert.equal(await cat.getAttribute('aria-pressed'),'false','월 범주 눈은 월 설정 유지');
  // 다른 화면으로 가면 숨고, 돌아오면 다시 보임
  await p.locator('#todoIconRail [data-page=todos]').click();assert.equal(await side.isVisible(),false);await p.locator('#todoIconRail [data-page=all]').click();assert(await side.isVisible()); // 2026-10-10 일정 메뉴 = 통합 화면
  // 사이드바 접기 → 숨김(본문 '표시 설정' 버튼으로 열 수 있음), 펼친 뒤 '모두'로 오면 상태 유지
@@ -32,5 +33,5 @@ const collapseRail=async page=>{for(let i=0;i<3&&!(await page.evaluate(()=>docum
  await p.setViewportSize({width:390,height:844});await p.locator('#allFilterBtn').click();const panel=p.locator('#allFilterPanel');assert(await panel.isVisible());
  assert.equal(await panel.locator('[data-aft-eye=todo]').getAttribute('aria-pressed'),'true');await panel.locator('[data-aft-eye=todo]').click();await p.keyboard.press('Escape');
  await p.setViewportSize({width:1440,height:900});assert.equal(await eye('todo').getAttribute('aria-pressed'),'false');
- assert.equal(await p.evaluate(()=>mockWrites.length),0);assert.deepEqual(errors,[]);console.log('all sidebar (내 일정·다른 캘린더) eyes, category common and todo per month/week/day, body duplicate hidden, event/todo filtering, navigation/collapse/mobile state sync and zero writes PASS');
+ assert.equal(await p.evaluate(()=>mockWrites.length),0);assert.deepEqual(errors,[]);console.log('all sidebar (내 일정·다른 캘린더) eyes, category and todo per month/week/day, body duplicate hidden, event/todo filtering, navigation/collapse/mobile state sync and zero writes PASS');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

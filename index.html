@@ -3553,6 +3553,10 @@
 
   let homeAgendaDate = todayStr();
   let homeUpcomingStart = addDaysStr(todayStr(), 1);
+  // 2026-10-18 설계확정서 1.18: 일정 화면 오른쪽 '날짜별'로 빌려 가 있는 동안만 쓰는 눈(달력과 같은 눈)과 달력에서 고른 날짜.
+  // 돌려받으면 눈을 풀고 지금 한칸의 7일 창(homeStart)으로 되돌림. 지금 한칸·할일·습관 탭에서는 늘 비어 있음.
+  let upcomingLoan = null; // { homeStart, filter, key, picked }
+  const upcomingShown = it => !upcomingLoan?.filter || upcomingLoan.filter(it);
   const homeRenderVersion = { allDay: 0, timed: 0, block: 0, upcoming: 0 };
   // 8-6단계: 타임블럭 보기를 없애고 타임라인 하나만 남겨서, "block"으로 바뀌는 경우가 이제 없음(토글 버튼 자체를 지움).
   // 그래도 renderAgendaTimed/renderAgendaAllDay 등 곳곳에서 이 값을 참조하므로 변수 자체는 남겨두고 "timeline"로 고정.
@@ -5798,10 +5802,10 @@
 
     let html = "";
     days.forEach(dateStr => {
-      const dayTodos = todos.filter(td => OnekanPeriod.overlap("todo",td,dateStr));
-      const dayEvents = events.filter(e => OnekanPeriod.overlap("event",e,dateStr)).sort((a, b) => (a.event_time || "").localeCompare(b.event_time || ""));
+      const dayTodos = todos.filter(td => OnekanPeriod.overlap("todo",td,dateStr) && upcomingShown({ kind: "todo", cat_id: td.tag_id }));
+      const dayEvents = events.filter(e => OnekanPeriod.overlap("event",e,dateStr) && upcomingShown({ kind: "event", cat_id: e.category_id })).sort((a, b) => (a.event_time || "").localeCompare(b.event_time || ""));
       const doneSet = logsByDate[dateStr];
-      const dayHabits=upcomingHabitPeriods(active,dateStr,habitNextDate);
+      const dayHabits=upcomingHabitPeriods(active,dateStr,habitNextDate).filter(t => upcomingShown({ kind: "habit", cat_id: t.category_id }));
       const count = dayHabits.length + dayEvents.length + dayTodos.length;
       // 2026-09-20 — 결님 요청: 앞으로 7일을 전부 보여주고(전엔 항목 없는 날은 통째로 건너뜀),
       // 빈 날은 하루종일·타임블럭·언젠가와 같은 "일정 없음. 눌러서 추가" 빈칸(block-add-row)으로 보여줘서
@@ -5844,7 +5848,7 @@
         : addSlotHtml(`data-upcomingadd="${dateStr}"`, true);
       // 2026-09-20 — 결님 요청으로 언젠가/목록/타임라인과 서로 드래그 이동 가능해짐: 날짜별 묶음을
       // .upcoming-day(data-date)로 감싸서 homeDropZone이 "이 날짜의 하루종일 항목"으로 인식하게 함.
-      html += `<div class="upcoming-day" data-date="${dateStr}">
+      html += `<div class="upcoming-day${upcomingLoan?.picked === dateStr ? " is-picked" : ""}" data-date="${dateStr}">
         <div class="ag-section-head"><span class="label">${formatDateShort(dateStr)}</span>${count ? `<span class="count">${count}건</span>` : ""}</div>
         <div class="agenda-flat">${habitHtml}${eventHtml}${todoHtml}${addRowHtml}</div>
       </div>`;
@@ -9797,16 +9801,38 @@
   });
   // 오른쪽 '다가오는 · 언젠가' 칸에 지금 한칸의 다가오는(#homeUpcomingPanel)·담아두기(#homeSomedayPanel)를 그대로 붙임.
   // 두 화면이 같은 DOM이라 클릭·끌기·추가·정렬·그룹 칩이 지금 한칸과 같고, 보이는 쪽(모두/할일)만 빌려 감.
-  function mountHomeLists(list, body) {
+  // 2026-10-18: opts.filter·filterKey = 일정 화면이 넘기는 달력 눈({kind, cat_id} → 보임 여부). 다가오는(날짜별)에만 걸고 담아두기(언젠가)는 그대로.
+  function mountHomeLists(list, body, opts = {}) {
     const panels = { upcoming: $("homeUpcomingPanel"), someday: $("homeSomedayPanel") };
     if (!list) {
-      for (const el of Object.values(panels)) if (el.parentNode === body) { el.hidden = false; homeLoan.giveBack(el); }
+      let returned = false;
+      for (const el of Object.values(panels)) if (el.parentNode === body) { el.hidden = false; homeLoan.giveBack(el); returned = true; }
+      if (returned) endUpcomingLoan();
       return;
     }
     for (const [name, el] of Object.entries(panels)) { homeLoan.lend(el, body); el.hidden = name !== list; }
+    if (!opts.filter) { endUpcomingLoan(); return; }
+    if (!upcomingLoan) upcomingLoan = { homeStart: homeUpcomingStart, key: null, picked: null };
+    upcomingLoan.filter = opts.filter;
+    if (upcomingLoan.key !== opts.filterKey) { upcomingLoan.key = opts.filterKey; renderHomeUpcomingList(); }
+  }
+  function endUpcomingLoan() {
+    if (!upcomingLoan) return;
+    homeUpcomingStart = upcomingLoan.homeStart;
+    upcomingLoan = null;
+    renderHomeUpcomingList();
+  }
+  // 일정 화면 날짜 줄 클릭 → 날짜별 7일 창을 그 날짜부터 보여 주고 그 날짜를 강조(과거 날짜도 그대로).
+  async function jumpHomeUpcoming(date) {
+    if (!upcomingLoan || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    upcomingLoan.picked = date;
+    homeUpcomingStart = date;
+    await renderHomeUpcomingList();
+    document.querySelector(`#homeUpcomingList .upcoming-day[data-date="${date}"]`)?.scrollIntoView({ block: "nearest" });
   }
   function returnHomeLists() {
     for (const id of ["homeUpcomingPanel", "homeSomedayPanel"]) { const el = $(id); homeLoan.giveBack(el); el.hidden = false; }
+    endUpcomingLoan();
   }
   // '모두' 일 보기 = 지금 한칸의 타임라인·시간블럭을 그대로 빌려 씀(날짜는 '모두'의 날짜, 표시는 '모두'의 눈).
   // 지금 한칸에서 보던 날짜·보기는 따로 저장해 두었다가 돌려줄 때 되살림(지금 한칸 설정 tok_home_view는 바꾸지 않음).
@@ -9851,17 +9877,17 @@
     choose:(context,onSelect)=>showAddKindMenu(context.opener?.getBoundingClientRect?.().left||innerWidth/2,context.opener?.getBoundingClientRect?.().bottom||150,kind=>onSelect(kind)),
     done:setTodoDone,reload:loadAll,refresh:()=>{renderHome();renderTodosPage();renderTodo();if(currentPage==='work')renderWork();},sidebar:syncPageSidebar,
     // 2026-10-10 '모두': 오른쪽 다가오는·언젠가와 일 보기는 지금 한칸 화면을 그대로 빌려 씀, 이미지 저장
-    mountLists:mountHomeLists,homeDay:lendHomeDay,exportView:openAllExport,
+    mountLists:mountHomeLists,upcomingJump:jumpHomeUpcoming,homeDay:lendHomeDay,exportView:openAllExport,
     // 일정 범주 추가·수정(옛 일정 화면 사이드바와 같은 창) — 통합 일정 화면 사이드바 '내 일정'에서 엶
     categoryAdd:opener=>classification.open('group','event',opener),categoryEdit:(id,opener)=>classification.editGroup('event',id,opener),
     // 주간 보드도 지금 한칸과 같은 규칙: 빈칸(모양·입력), 제목 누르기 = 이름 수정
     addSlotHtml,addSlot:wireDateAddSlot,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone),
     rowHtml:homeTodayRowHtml,wireRows:wireHomeTodayChecks
   });
-  // 할일·습관 탭 오른쪽 '다가오는 · 언젠가'(지금 한칸과 같은 목록). 모바일은 상단 추가 버튼 옆 버튼으로 여는 아래쪽 패널.
+  // 할일·습관 탭 오른쪽 '날짜별 · 언젠가'(지금 한칸과 같은 목록, 눈 없음). 모바일은 상단 추가 버튼 옆 버튼으로 여는 아래쪽 패널.
   for (const [page, before, id] of [["todos", "todoQuickAddBtn", "todoPanelBtn"], ["habits", "habitAddBtn", "habitPanelBtn"]]) {
     const host = document.querySelector(`.page[data-page="${page}"]`), btn = document.createElement("button");
-    btn.type = "button"; btn.id = id; btn.className = "all-chip-btn"; btn.textContent = "다가오는 · 언젠가"; btn.setAttribute("aria-haspopup", "dialog");
+    btn.type = "button"; btn.id = id; btn.className = "all-chip-btn"; btn.textContent = "날짜별 · 언젠가"; btn.setAttribute("aria-haspopup", "dialog");
     $(before).before(btn);
     sideAgendas[page] = window.createOnekanSideAgenda({ pageName: page, host, openButton: btn, user: () => appSymbolUserId, page: () => currentPage, mountLists: mountHomeLists });
     btn.setAttribute("aria-controls", sideAgendas[page].panelId);

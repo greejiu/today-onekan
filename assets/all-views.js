@@ -32,46 +32,62 @@ window.createOnekanAllViews = api => {
  }
  function add(context){engine.cancel();const owner=api.user();api.choose(context,kind=>{if(api.page()==='all'&&owner===api.user())api.add(kind,context);});}
  function selectDate(value){date=value;engine.remember();render();}
+ // 2026-10-18 설계확정서 9: 날짜가 적힌 줄 클릭 → 오른쪽 날짜별 탭을 열고 그 날짜로 이동·강조(달력 선택 날짜도 같이 옮김).
+ //  모바일 사이드바 구조는 아직 미정이라 모바일은 예전처럼 날짜 선택만.
+ function openDate(value){selectDate(value);if(!matchMedia('(max-width:760px)').matches)agenda?.openDate(value);}
 
  // ── 2026-10-10 '모두' 화면 설정(사용자별·이 화면 전용 저장) ──
- // 종류 눈(일정·할일·습관)은 월·주·일마다 따로, 범주·그룹 눈과 접힘은 기간과 관계없이 공통.
+ // 2026-10-18 설계확정서 1.18(8. 달력 눈 설정): 일정 전체·개별 범주·할일·습관 눈을 모두 월·주·일마다 따로 기억.
+ //  일정 전체 눈(eyes[v].event)과 숨긴 범주 목록(cats[v])은 따로 저장해서, 일정 전체를 껐다 켜도 범주 선택이 그대로 남음.
+ //  예전에 공통으로 저장한 숨긴 범주(hidden.event)는 처음 읽을 때 세 보기에 똑같이 옮겨 이어 씀.
  // 주·일의 마지막 보기 방식(주=보드/타임라인, 일=시간블럭/타임라인)도 함께 기억. 다른 탭의 설정 키는 건드리지 않음.
- const LAYOUT_DEFAULTS={week:'board',day:'blocks',eyes:{month:{event:true,todo:false,habit:false},week:{event:true,todo:true,habit:true},day:{event:true,todo:true,habit:true}},hidden:{event:[],todo:[],habit:[]},holidays:true};
+ const VIEWS=['month','week','day'];
+ const LAYOUT_DEFAULTS={week:'board',day:'blocks',eyes:{month:{event:true,todo:false,habit:false},week:{event:true,todo:true,habit:true},day:{event:true,todo:true,habit:true}},holidays:true};
  let layout=null,layoutOwner;
  const layoutKey=()=>'tok_all_layout:'+api.user();
  function prefs(){
   const owner=api.user();if(layout&&layoutOwner===owner)return layout;
   layoutOwner=owner;let saved={};try{saved=JSON.parse(localStorage.getItem(layoutKey()))||{};}catch(_){saved={};}
-  const D=LAYOUT_DEFAULTS,bool=(v,d)=>typeof v==='boolean'?v:d;
-  layout={week:['board','timeline'].includes(saved.week)?saved.week:D.week,day:['blocks','timeline'].includes(saved.day)?saved.day:D.day,eyes:{},hidden:{},holidays:bool(saved.holidays,true)};
-  for(const v of ['month','week','day']){layout.eyes[v]={};for(const t of types)layout.eyes[v][t.id]=bool(saved.eyes?.[v]?.[t.id],D.eyes[v][t.id]);}
-  for(const t of types)layout.hidden[t.id]=Array.isArray(saved.hidden?.[t.id])?saved.hidden[t.id].filter(x=>typeof x==='string'):[];
-  for(const v of ['month','week','day'])layout.eyes[v].event=true; // 일정은 범주 눈으로만 거름(종류 눈 없음)
+  const D=LAYOUT_DEFAULTS,bool=(v,d)=>typeof v==='boolean'?v:d,ids=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'):null;
+  layout={week:['board','timeline'].includes(saved.week)?saved.week:D.week,day:['blocks','timeline'].includes(saved.day)?saved.day:D.day,eyes:{},cats:{},holidays:bool(saved.holidays,true)};
+  for(const v of VIEWS){layout.eyes[v]={};for(const t of types)layout.eyes[v][t.id]=bool(saved.eyes?.[v]?.[t.id],D.eyes[v][t.id]);}
+  // 예전 저장에는 일정 종류 눈이 없었고(항상 켬) 범주는 공통이었음 → 일정 전체는 켬, 범주는 세 보기에 복사
+  if(!saved.cats)for(const v of VIEWS)layout.eyes[v].event=true;
+  for(const v of VIEWS)layout.cats[v]=ids(saved.cats?.[v])||ids(saved.hidden?.event)||[];
   return layout;
  }
  function savePrefs(){try{if(api.user())localStorage.setItem(layoutKey(),JSON.stringify(prefs()));}catch(_){}}
  const view=()=>{const s=engine.state();return s.span==='month'?'month':s.days===7?'week':'day';};
  const subView=()=>view()==='week'?prefs().week:view()==='day'?prefs().day:'calendar';
- // 범주(일정)·그룹(할일·습관) 눈 — 원본 연결값 그대로, 연결 없음은 'default'(기본)
+ // 범주(일정) 눈 — 원본 연결값 그대로, 연결 없음은 'default'(기본). 할일·습관은 종류 눈만(달력에서 그룹·프로젝트 목록은 펼치지 않음).
  const catKey=r=>(r.kind==='event'?r.category_id:r.kind==='todo'?r.tag_id:r.category_id)||'default';
- const catHidden=r=>r.kind==='event'&&prefs().hidden.event.includes(catKey(r)); // 2026-10-10 범주 눈은 일정만(할일·습관은 종류 눈)
+ const catsOf=v=>prefs().cats[v||view()];
+ const catHidden=r=>r.kind==='event'&&catsOf().includes(catKey(r));
  const pools={event:()=>api.groups().filter(g=>g.kind==='event'),todo:()=>api.categories(),habit:()=>api.categories()};
  const eyesOf=v=>prefs().eyes[v||view()];
+ const eventCats=()=>[{id:'default',name:'기본',color:null},...pools.event().filter(g=>!g.is_archived).map(g=>({id:g.id,name:g.name,color:g.color}))];
+ // 일정 전체 눈 상태: 꺼짐 / 일부 범주만 켜짐 / 켜짐
+ const eventEye=v=>{if(!eyesOf(v).event)return 'off';const hidden=catsOf(v);return eventCats().some(g=>hidden.includes(g.id))?'mixed':'on';};
+ // 날짜별 목록(오른쪽)·일 보기에 넘기는 같은 눈: {kind, cat_id}
+ const shownBy=(v=view())=>{const e={...eyesOf(v)},cats=[...catsOf(v)];return {test:it=>!!e[it.kind]&&!(it.kind==='event'&&cats.includes(it.cat_id||'default')),key:JSON.stringify([v,e,cats])};};
  // 엔진 상태를 현재 기간의 눈·보기 방식에 맞춤(렌더 직전마다). 완료·건너뛴 항목도 보여주고 체크로 상태를 구분.
  function syncEngine(){const s=engine.state(),e=eyesOf();s.mode='calendar';s.completion='all';s.status='all';for(const t of types)s['show_'+t.id]=e[t.id];s.format=view()==='day'&&prefs().day==='blocks'?'blocks':'timeline';}
 
  // 2026-10-10 결 요청(구글 캘린더처럼): 접기 없이 제목 + 눈 목록.
- //  내 일정: 일정 범주(기본·병원…)별 눈, 할일 눈, 습관 눈 / 다른 캘린더: 대한민국 휴일 눈.
- //  할일·습관 눈은 월·주·일마다 따로(월 기본 꺼짐), 범주 눈·휴일 눈은 공통으로 기억. 일정은 범주 눈으로만 거름.
+ //  내 일정: 일정 전체 눈 아래 범주(기본·병원…)별 눈, 할일 눈, 습관 눈 / 다른 캘린더: 대한민국 휴일 눈(공통 기억).
+ //  2026-10-18: 일정 전체·범주·할일·습관 눈은 월·주·일마다 따로. 일정 전체가 꺼져 있으면 범주 줄은 흐리게, 선택은 그대로 둠.
  function filterTree(){
-  const L=prefs(),e=eyesOf(),v=view(),vName={month:'월',week:'주',day:'일'}[v];
+  const L=prefs(),e=eyesOf(),v=view(),vName={month:'월',week:'주',day:'일'}[v],hidden=catsOf(),ev=eventEye();
   const eyeBtn=(attr,on,label,cls='')=>'<button type="button" class="aft-eye'+cls+'" '+attr+' aria-pressed="'+on+'" aria-label="'+esc(label)+' '+(on?'표시 중 · 숨기기':'숨김 · 표시하기')+'" title="'+esc(label)+' '+(on?'숨기기':'표시')+'">'+OnekanCalendarUI.eye(on)+'</button>';
-  const row=(color,name,eye,on)=>'<li'+(on?'':' class="aft-off"')+'><span class="aft-dot" style="background:'+esc(color||'var(--line)')+'"></span><span class="aft-name">'+esc(name)+'</span>'+eye+'</li>';
+  const row=(color,name,eye,on,cls='')=>'<li class="'+(on?'':'aft-off')+cls+'"><span class="aft-dot" style="background:'+esc(color||'var(--line)')+'"></span><span class="aft-name">'+esc(name)+'</span>'+eye+'</li>';
   const section=(key,title,body,action='')=>'<section class="aft-kind" data-aft-kind="'+key+'"><div class="aft-title-row"><h3 class="aft-title">'+title+'</h3>'+action+'</div><ul class="aft-list" id="aftList-'+key+'">'+body+'</ul></section>';
   const catEdit=g=>'<button type="button" class="aft-cat-edit" data-aft-cat-edit="'+esc(g.id)+'" aria-label="'+esc(g.name)+' 범주 '+(g.id==='default'?'색상 수정':'이름·색상 수정')+'" title="수정">⋯</button>';
-  const cats=[{id:'default',name:'기본',color:null},...pools.event().filter(g=>!g.is_archived).map(g=>({id:g.id,name:g.name,color:g.color}))];
+  // 일정 전체 눈: 일부 범주만 켜진 상태는 aria-pressed="mixed"와 다른 아이콘으로 구분
+  const evLabel={on:'일정 전체 표시 중 · 숨기기',mixed:'일정 일부 범주만 표시 중 · 일정 숨기기',off:'일정 숨김 · 표시하기'}[ev];
+  const eventBtn='<button type="button" class="aft-eye aft-event-eye'+(ev==='mixed'?' is-mixed':'')+'" data-aft-eye="event" aria-pressed="'+(ev==='on'?'true':ev==='mixed'?'mixed':'false')+'" aria-label="'+evLabel+'" title="'+(ev==='off'?'일정 표시':'일정 숨기기')+'">'+OnekanCalendarUI.eye(ev!=='off',ev==='mixed')+'</button>';
   return '<p class="aft-scope">'+vName+' 보기 표시</p>'+
-   section('mine','내 일정',cats.map(g=>{const shown=!L.hidden.event.includes(g.id);return row(g.color,g.name,catEdit(g)+eyeBtn('data-aft-cat="event|'+esc(g.id)+'"',shown,'일정 · '+g.name,' aft-cat-eye'),shown);}).join('')+
+   section('mine','내 일정',row('var(--sub)','일정',eventBtn,ev!=='off',' aft-parent')+
+    eventCats().map(g=>{const shown=!hidden.includes(g.id);return row(g.color,g.name,catEdit(g)+eyeBtn('data-aft-cat="event|'+esc(g.id)+'"',shown,'일정 · '+g.name,' aft-cat-eye'),shown,' aft-child'+(e.event?'':' aft-muted'));}).join('')+
     row('var(--accent)','할일',eyeBtn('data-aft-eye="todo"',e.todo,'할일'),e.todo)+row('#3fae6a','습관',eyeBtn('data-aft-eye="habit"',e.habit,'습관'),e.habit),
     '<button type="button" class="aft-add" data-aft-add-cat aria-label="일정 범주 추가" title="범주 추가">＋</button>')+
    section('other','다른 캘린더',row('#e57373','대한민국 휴일',eyeBtn('data-aft-holiday="1"',L.holidays,'대한민국 휴일'),L.holidays));
@@ -80,7 +96,7 @@ window.createOnekanAllViews = api => {
   const focus=box.contains(document.activeElement)?[...box.querySelectorAll('button')].indexOf(document.activeElement):-1;
   box.innerHTML=filterTree();
   box.querySelectorAll('[data-aft-eye]').forEach(b=>b.onclick=()=>{const e=eyesOf();e[b.dataset.aftEye]=!e[b.dataset.aftEye];savePrefs();render();});
-  box.querySelectorAll('[data-aft-cat]').forEach(b=>b.onclick=()=>{const [k,g]=b.dataset.aftCat.split('|'),list=prefs().hidden[k],i=list.indexOf(g);if(i<0)list.push(g);else list.splice(i,1);savePrefs();render();});
+  box.querySelectorAll('[data-aft-cat]').forEach(b=>b.onclick=()=>{const g=b.dataset.aftCat.split('|')[1],list=catsOf(),i=list.indexOf(g);if(i<0)list.push(g);else list.splice(i,1);savePrefs();render();});
   box.querySelector('[data-aft-add-cat]')?.addEventListener('click',e=>api.categoryAdd?.(e.currentTarget)); // 범주 추가·수정은 옛 일정 사이드바와 같은 창
   box.querySelectorAll('[data-aft-cat-edit]').forEach(b=>b.onclick=()=>api.categoryEdit?.(b.dataset.aftCatEdit,b));
   box.querySelectorAll('[data-aft-holiday]').forEach(b=>b.onclick=()=>{const L=prefs();L.holidays=!L.holidays;savePrefs();render();});
@@ -116,7 +132,7 @@ window.createOnekanAllViews = api => {
   api.wireRows(box);
   box.querySelectorAll('[data-awb-id]').forEach(row=>row.addEventListener('click',e=>{if(performance.now()<suppressClick||e.target.closest('input,.item-more,.habit-skip-mark,.inline-add-wrap'))return;const r=lookup(row.dataset.awbId);if(r)api.rename(row,r.kind,r.source_id,()=>render());}));
   box.querySelectorAll('[data-awb-add]').forEach(b=>wireAdd(b));
-  box.querySelectorAll('[data-awb-select]').forEach(b=>b.onclick=()=>selectDate(b.dataset.awbSelect));
+  box.querySelectorAll('[data-awb-select]').forEach(b=>{b.title='이날 계획 보기';b.onclick=()=>openDate(b.dataset.awbSelect);});
   const scroll=box.querySelector('.awb-scroll');
   if(keepX!=null&&sameWeek)scroll.scrollLeft=keepX;
   else if(matchMedia('(max-width:760px)').matches){const col=scroll.querySelector('[data-awb-col="'+(days.includes(date)?date:days.includes(today)?today:days[0])+'"]');if(col)scroll.scrollLeft=col.offsetLeft-scroll.firstElementChild.offsetLeft;}
@@ -171,22 +187,22 @@ window.createOnekanAllViews = api => {
   const subBox=$('allSubTabs'),subs=v==='week'?[['board','보드'],['timeline','타임라인']]:v==='day'?[['blocks','시간블럭'],['timeline','타임라인']]:[];
   subBox.hidden=!subs.length;subBox.innerHTML=subs.map(([k,n])=>'<button type="button" data-all-sub="'+k+'" aria-pressed="'+(sub===k)+'" class="'+(sub===k?'active':'')+'">'+n+'</button>').join('');
   subBox.querySelectorAll('[data-all-sub]').forEach(b=>b.onclick=()=>{prefs()[view()]=b.dataset.allSub;savePrefs();render();});
-  const e=eyesOf(),catIds=['default',...pools.event().filter(g=>!g.is_archived).map(g=>g.id)],allOff=!e.todo&&!e.habit&&catIds.every(id=>prefs().hidden.event.includes(id)); // 일정 범주·할일·습관 눈이 모두 꺼짐
+  const e=eyesOf(),allOff=!e.todo&&!e.habit&&(!e.event||eventCats().every(g=>catsOf().includes(g.id))); // 일정(전체 또는 모든 범주)·할일·습관 눈이 모두 꺼짐
   $('allNotice').innerHTML=allOff?'<span>표시할 항목이 꺼져 있어요</span> <button type="button" class="btn-ghost" id="allShowAll">모두 표시</button>':'';
-  if(allOff)$('allShowAll').onclick=()=>{for(const t of types)e[t.id]=true;prefs().hidden.event=[];savePrefs();render();};
+  if(allOff)$('allShowAll').onclick=()=>{for(const t of types)e[t.id]=true;catsOf().length=0;savePrefs();render();};
   const board=v==='week'&&sub==='board',homeDay=v==='day';
   $('allWeekBoard').hidden=!board;$('allCalendarMode').classList.toggle('all-board-mode',board||homeDay);$('allHomeDay').hidden=!homeDay;
   if(board){engine.controls();renderBoard();}else if(homeDay)engine.controls();else engine.calendar();
-  // 일 보기 = 지금 한칸의 타임라인·시간블럭을 그대로 빌려 씀(클릭·끌기·추가 규칙이 같음). 표시는 이 화면의 종류·범주·그룹 눈.
-  const hidden=prefs().hidden;
-  api.homeDay?.(homeDay&&api.page()==='all'?$('allHomeDay'):null,{owner:'all',date,sub,filter:it=>!!e[it.kind]&&!(hidden[it.kind]||[]).includes(it.cat_id||'default'),filterKey:JSON.stringify([e,hidden])});
+  // 일 보기 = 지금 한칸의 타임라인·시간블럭을 그대로 빌려 씀(클릭·끌기·추가 규칙이 같음). 표시는 이 화면의 일 보기 눈.
+  const shown=shownBy();
+  api.homeDay?.(homeDay&&api.page()==='all'?$('allHomeDay'):null,{owner:'all',date,sub,filter:shown.test,filterKey:shown.key});
   renderTrees();agenda?.render();
  }
  const preview=document.createElement('div');preview.id='allDragPreview';preview.className='sv-drag-preview';preview.hidden=true;preview.innerHTML='<span id="allDragText"></span><br><button type="button" id="allDragCancel">취소 (Esc)</button>';document.body.append(preview);
  engine=window.createOnekanItemViews({...api,pageName:'all',sharedRange:true,title:'항목',id,kindOf:r=>r.kind,types:()=>types,
   allowDayBlocks:true,weekStartsMonday:true,singleMonthAdd:true,holidays:()=>prefs().holidays,
-  // 월 달력(PC): 날짜 숫자 → 그날 일 보기, 빈 공간 → 그날 추가 창(singleMonthAdd)
-  onMonthDate:d=>{const s=engine.state();s.span='day';s.days=1;engine.resetRange();date=d;engine.remember();render();},
+  // 월 달력(PC): 날짜 줄 → 오른쪽 날짜별(그 날짜로 이동·강조), 빈 공간 → 그날 추가 창(singleMonthAdd). 주 타임라인 날짜 머리도 같음.
+  onDateRow:openDate,
   defaults:{mode:'calendar',span:'month',group:'type',board:'type',completion:'all',status:'all',undated:false,show_event:true,show_todo:true,show_habit:true},
   preferenceOptions:{group:['none','date','type','group','category','project'],board:['type','group','category','project'],show_event:[true,false],show_todo:[true,false],show_habit:[true,false]},
   date:()=>date,month,mode:()=>mode,setMode:v=>{mode='calendar';},restoreDate:v=>{date=/^\d{4}-\d{2}-\d{2}$/.test(v)?v:api.today();},changeMode:v=>{mode='calendar';render();api.sidebar();},render,selectDate,
@@ -215,7 +231,7 @@ window.createOnekanAllViews = api => {
  const tools=document.createElement('div');tools.className='all-tools';
  // 모바일은 글자를 숨기고 아이콘만(이름은 aria-label·title) — 위쪽 줄 높이 줄이기
  const ICON={filter:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="10" y1="17" x2="14" y2="17"></line></svg>',panel:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="14" y1="4" x2="14" y2="20"></line></svg>'};
- tools.innerHTML='<button type="button" id="allFilterBtn" class="all-chip-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="allFilterPanel" aria-label="표시 설정" title="표시 설정">'+ICON.filter+'<span class="all-chip-label">표시 설정</span></button><button type="button" id="allPanelBtn" class="all-chip-btn" aria-haspopup="dialog" aria-controls="allSideAgenda" aria-label="다가오는 · 언젠가" title="다가오는 · 언젠가">'+ICON.panel+'<span class="all-chip-label">다가오는 · 언젠가</span></button>';
+ tools.innerHTML='<button type="button" id="allFilterBtn" class="all-chip-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="allFilterPanel" aria-label="표시 설정" title="표시 설정">'+ICON.filter+'<span class="all-chip-label">표시 설정</span></button><button type="button" id="allPanelBtn" class="all-chip-btn" aria-haspopup="dialog" aria-controls="allSideAgenda" aria-label="날짜별 · 언젠가" title="날짜별 · 언젠가">'+ICON.panel+'<span class="all-chip-label">날짜별 · 언젠가</span></button>';
  tools.prepend(subTabs);tabs.after(tools); // 보조 보기(주: 보드/타임라인, 일: 시간블럭/타임라인)는 표시 설정 버튼과 같은 줄
  ['allCalendarOptions','allCollectionOptions','allRangeLabel','allMonthCount','allJumpRow'].forEach(k=>{const n=$(k);if(n){n.hidden=true;n.classList.add('all-retired');}});
  $('allFilters').querySelectorAll('label').forEach(l=>{l.hidden=true;l.classList.add('all-retired');});
@@ -236,19 +252,22 @@ window.createOnekanAllViews = api => {
  // 이미지 저장용 현재 화면 모델(기간·보기·필터 그대로, 스크롤 밖 항목 포함)
  function exportModel(){
   cache=null;syncEngine();const v=view(),s=engine.state(),list=rows().filter(r=>!catHidden(r)&&accept(r,s)),item=(r,d)=>{const t=timeOn(r,d);return {kind:r.kind,title:r.title||'',time:t.label,done:!!(r.is_done||r.status==='done'),skipped:r.status==='skipped',color:api.color(r)||null,cat_id:r.kind==='event'?r.category_id:r.kind==='todo'?r.tag_id:r.category_id,id:r.source_id};};
-  if(v==='day')return {view:'day',date,sub:prefs().day,eyes:{...eyesOf()},hidden:{event:[...prefs().hidden.event],todo:[...prefs().hidden.todo],habit:[...prefs().hidden.habit]}};
+  if(v==='day')return {view:'day',date,sub:prefs().day,eyes:{...eyesOf()},hidden:{event:[...catsOf()],todo:[],habit:[]}};
   if(v==='week')return {view:'week',sub:prefs().week,days:weekDays().map(d=>({date:d,items:dayItems(list,d).map(x=>item(x.r,d))}))};
   const {ms,me}=month(),first=P.addDays(ms,-new Date(ms+'T12:00:00').getDay()),last=P.addDays(me,6-new Date(me+'T12:00:00').getDay()),days=[];
   for(let d=first;d<=last;d=P.addDays(d,1))days.push({date:d,outside:d<ms||d>me,items:dayItems(list,d).map(x=>item(x.r,d))});
   return {view:'month',month:ms,days};
  }
 
- // ── 오른쪽 '다가오는 · 언젠가' = 지금 한칸의 다가오는·담아두기를 그대로 빌려 씀 ──
- agenda=window.createOnekanSideAgenda({pageName:'all',host,openButton:$('allPanelBtn'),user:api.user,page:api.page,mountLists:api.mountLists});
+ // ── 오른쪽 '날짜별 · 언젠가' = 지금 한칸의 다가오는·담아두기를 그대로 빌려 씀 ──
+ //  2026-10-18: 날짜별에는 지금 보고 있는 달력 보기(월·주·일)의 눈을 같이 적용. 언젠가는 눈과 무관.
+ agenda=window.createOnekanSideAgenda({pageName:'all',host,openButton:$('allPanelBtn'),user:api.user,page:api.page,mountLists:api.mountLists,
+  listOptions:()=>{const s=shownBy();return {filter:s.test,filterKey:s.key};},jump:d=>api.upcomingJump?.(d)});
  return {...engine,render,selectDate,sidebarTypes,displayRows:rows,prefs,view,exportModel,agenda,dropDate:(x,y)=>api.page()==='all'&&view()!=='day'?dropDate(x,y):null};
 };
 
-/* 오른쪽 '다가오는 · 언젠가' 칸 — '모두'·'할일' 공용 껍데기(목록 전환·접기·모바일 패널)만 둠.
+/* 오른쪽 '날짜별 · 언젠가' 칸 — '모두'·'할일' 공용 껍데기(목록 전환·접기·모바일 패널)만 둠.
+   2026-10-18 설계확정서: 오른쪽 '다가오는' 이름은 '날짜별'로 통일(저장 키 값 'upcoming'은 그대로).
    안의 목록은 새로 그리지 않고 지금 한칸의 다가오는·담아두기를 api.mountLists로 그대로 옮겨 붙임(같은 모양·클릭·끌기·추가 규칙).
    마지막 목록과 접힘 상태는 화면·사용자별로 기억(tok_side_agenda:<화면>:<사용자>). 모바일은 버튼으로 여는 아래쪽 패널. */
 window.createOnekanSideAgenda = api => {
@@ -261,9 +280,9 @@ window.createOnekanSideAgenda = api => {
  const shell=document.createElement('div');shell.className='sa-shell';
  const main=document.createElement('div');main.className='sa-main';
  while(host.firstChild)main.append(host.firstChild);
- const aside=document.createElement('aside');aside.className='sa-panel';aside.id={all:'allSideAgenda',todos:'todoSideAgenda',habits:'habitSideAgenda'}[page]||page+'SideAgenda';aside.setAttribute('aria-label','다가오는 · 언젠가');
- aside.innerHTML='<header class="sa-head"><div class="view-toggle sa-tabs" role="group" aria-label="목록 선택"><button type="button" data-sa-list="upcoming">다가오는</button><button type="button" data-sa-list="someday">언젠가</button></div><button type="button" class="sa-close" aria-label="다가오는 · 언젠가 접기">→</button></header><div class="sa-body home-loan"></div>';
- const reopen=document.createElement('button');reopen.type='button';reopen.className='sa-reopen';reopen.textContent='←';reopen.setAttribute('aria-label','다가오는 · 언젠가 펼치기');reopen.setAttribute('aria-controls',aside.id);
+ const aside=document.createElement('aside');aside.className='sa-panel';aside.id={all:'allSideAgenda',todos:'todoSideAgenda',habits:'habitSideAgenda'}[page]||page+'SideAgenda';aside.setAttribute('aria-label','날짜별 · 언젠가');
+ aside.innerHTML='<header class="sa-head"><div class="view-toggle sa-tabs" role="group" aria-label="목록 선택"><button type="button" data-sa-list="upcoming">날짜별</button><button type="button" data-sa-list="someday">언젠가</button></div><button type="button" class="sa-close" aria-label="날짜별 · 언젠가 접기">→</button></header><div class="sa-body home-loan"></div>';
+ const reopen=document.createElement('button');reopen.type='button';reopen.className='sa-reopen';reopen.textContent='←';reopen.setAttribute('aria-label','날짜별 · 언젠가 펼치기');reopen.setAttribute('aria-controls',aside.id);
  shell.append(main,aside,reopen);host.append(shell);
  const body=aside.querySelector('.sa-body');
  aside.querySelectorAll('[data-sa-list]').forEach(b=>b.onclick=()=>{state.list=b.dataset.saList;save();render();});
@@ -279,9 +298,12 @@ window.createOnekanSideAgenda = api => {
   aside.hidden=!visible||(desktop?state.closed:!mobileOpen);reopen.hidden=!visible||!desktop||!state.closed;
   if(api.openButton){api.openButton.hidden=!visible||desktop;}
   aside.querySelectorAll('[data-sa-list]').forEach(b=>{const on=b.dataset.saList===state.list;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
-  aside.querySelector('.sa-close').textContent=desktop?'→':'✕';aside.querySelector('.sa-close').setAttribute('aria-label',desktop?'다가오는 · 언젠가 접기':'다가오는 · 언젠가 닫기');
+  aside.querySelector('.sa-close').textContent=desktop?'→':'✕';aside.querySelector('.sa-close').setAttribute('aria-label',desktop?'날짜별 · 언젠가 접기':'날짜별 · 언젠가 닫기');
   // 보이는 쪽만 빌려 가고, 숨으면 이 칸에 있던 목록은 지금 한칸 제자리로
-  if(visible&&!aside.hidden)api.mountLists(state.list,body);else api.mountLists(null,body);
+  //  listOptions: 날짜별에 걸 눈(부르는 화면이 정함, 없으면 지금 한칸과 같은 내용)
+  if(visible&&!aside.hidden)api.mountLists(state.list,body,api.listOptions?.());else api.mountLists(null,body);
  }
- return {render,state:()=>({...state}),open:setMobile,panelId:aside.id};
+ // 날짜 줄 클릭(PC): 접혀 있어도 펼치고 날짜별로 바꾼 뒤 그 날짜로 이동·강조
+ function openDate(d){if(mobile.matches)return;load();state.list='upcoming';state.closed=false;save();render();api.jump?.(d);}
+ return {render,state:()=>({...state}),open:setMobile,openDate,panelId:aside.id};
 };

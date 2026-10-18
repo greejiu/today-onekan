@@ -394,3 +394,18 @@
 /* 2026-10-14 습관 보기 필터(현재/시작 예정/기간 종료/보관/전체) — 정렬·그룹화 선택칸과 같은 모양 */
 .habit-period-filter{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;font-size:13px;color:var(--sub)}
 .habit-period-filter select{min-height:36px;min-width:120px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text);padding:6px 8px;font:inherit;font-size:14px}
+/* 2026-10-18 설계확정서 1.18 — 검토용(최종 디자인 전, 기존 색·간격 재사용) */
+/* 일정 전체 눈 아래 범주: 들여쓰기, 일정 전체가 꺼지면 흐리게(선택은 그대로 남음) */
+.aft-list li.aft-parent .aft-name{font-weight:600}
+.aft-list li.aft-child{padding-left:16px}
+.aft-list li.aft-muted{opacity:.5}
+.aft-eye[aria-pressed=mixed]{color:var(--text)}
+/* 월 칸 날짜 줄 = 오른쪽 날짜별 열기(PC). 줄 전체가 클릭 대상, 호버 시 배경과 '이날 계획 보기' */
+#allCalGrid .cal-date-row{position:relative;cursor:pointer;border-radius:8px;margin:-2px -4px 0;padding:2px 4px 0}
+#allCalGrid .cal-date-row:hover{background:var(--accent-soft)}
+#allCalGrid .cal-date-row:hover .cal-date-button{background:transparent}
+.cal-row-hint{display:none;margin-left:auto;min-width:0;font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#allCalGrid .cal-date-row:hover .cal-row-hint{display:block}
+/* 오른쪽 날짜별: 달력에서 고른 날짜 강조 */
+.sa-body .upcoming-day{border-radius:10px;padding:4px 6px}
+.sa-body .upcoming-day.is-picked{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)}
