@@ -830,6 +830,10 @@
   .hs-block-edit button{min-height:36px;padding:0 10px;border-radius:10px;font-size:13px;}
   .hs-block-row.is-editing input[type="time"]{border-color:var(--accent);}
   .hs-block-msg{flex-basis:100%;margin:0 0 4px 26px;font-size:12px;color:#c62828;}
+  .hs-block-row.is-saving{opacity:.7;}
+  .hs-block-row.is-saving .drag-handle-dots{pointer-events:none;opacity:.4;}
+  .hs-block-row.is-saving :is(button,input):disabled{cursor:progress;}
+  .hs-block-row.is-saving :is(.hs-block-cancel,.hs-cat-del){opacity:.4;}
   .hs-block-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .hs-block-row input[type="time"]{flex:none;width:96px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .historybtn{border:1px solid var(--line);background:var(--card);border-radius:999px;font-size:12px;width:26px;height:26px;line-height:1;cursor:pointer;color:var(--sub);flex-shrink:0;}
@@ -8522,6 +8526,7 @@
   // 고치는 중인 값은 blockDrafts에 따로 두어 목록이 다시 그려져도 남음. 취소 = 원래 값. 검사·저장 실패 = 블록은 원래 시간 그대로,
   // 입력은 남겨 고쳐서 다시 저장할 수 있음. 항목의 날짜·시간은 어떤 경우에도 건드리지 않음.
   const blockDrafts = new Map(); // id → { start: "HH:MM", end: "HH:MM", message?, saving? }
+  const blockSaving = id => !!blockDrafts.get(id)?.saving;
   function renderSettingsBlockList() {
     const host = $("settingsBlockList");
     if (!host) return;
@@ -8529,14 +8534,16 @@
     host.innerHTML = timeBlocks.length ? timeBlocks.map(b => {
       const warn = timeBlockWarning(b), draft = blockDrafts.get(b.id);
       const startVal = draft ? draft.start : minutesToHHMM(b.start_minute), endVal = draft ? draft.end : minutesToHHMM(b.end_minute);
+      // 저장 중에는 이 블록의 시간·이름·저장·취소·삭제·순서 손잡이를 잠금(응답 후 다시 그리며 풀림)
+      const lock = draft?.saving ? " disabled" : "";
       return `
-      <div class="hs-block-row hs-cat-row${warn ? " has-warning" : ""}${draft ? " is-editing" : ""}" data-id="${b.id}">
+      <div class="hs-block-row hs-cat-row${warn ? " has-warning" : ""}${draft ? " is-editing" : ""}${lock ? " is-saving" : ""}" data-id="${b.id}"${lock ? ' aria-busy="true"' : ""}>
         ${DRAG_HANDLE_SVG}
-        <input type="text" class="hs-block-name-input" data-id="${b.id}" value="${escapeHtml(b.title)}" aria-label="시간블록 이름" />
-        <input type="time" step="900" class="hs-block-start-input" data-id="${b.id}" value="${startVal}" aria-label="${escapeHtml(b.title)} 시작" />
-        <input type="time" step="900" class="hs-block-end-input" data-id="${b.id}" value="${endVal}" aria-label="${escapeHtml(b.title)} 종료" />
-        <span class="hs-block-edit"${draft ? "" : " hidden"}><button type="button" class="hs-block-save" data-id="${b.id}"${draft?.saving ? " disabled" : ""}>저장</button><button type="button" class="hs-block-cancel btn-ghost" data-id="${b.id}"${draft?.saving ? " disabled" : ""}>취소</button></span>
-        <button type="button" class="hs-cat-del" data-id="${b.id}" title="삭제">✕</button>
+        <input type="text" class="hs-block-name-input" data-id="${b.id}" value="${escapeHtml(b.title)}" aria-label="시간블록 이름"${lock} />
+        <input type="time" step="900" class="hs-block-start-input" data-id="${b.id}" value="${startVal}" aria-label="${escapeHtml(b.title)} 시작"${lock} />
+        <input type="time" step="900" class="hs-block-end-input" data-id="${b.id}" value="${endVal}" aria-label="${escapeHtml(b.title)} 종료"${lock} />
+        <span class="hs-block-edit"${draft ? "" : " hidden"}><button type="button" class="hs-block-save" data-id="${b.id}"${lock}>${lock ? "저장 중…" : "저장"}</button><button type="button" class="hs-block-cancel btn-ghost" data-id="${b.id}"${lock}>취소</button></span>
+        <button type="button" class="hs-cat-del" data-id="${b.id}" title="삭제"${lock}>✕</button>
         ${draft?.message ? `<p class="hs-block-msg" role="alert">${escapeHtml(draft.message)}</p>` : ""}
         ${warn ? `<p class="hs-block-warn" role="note">⚠ ${escapeHtml(warn)}</p>` : ""}
       </div>`;
@@ -8545,6 +8552,7 @@
       const commit = async () => {
         const id = inp.dataset.id, title = inp.value.trim();
         const b = timeBlocks.find(x => x.id === id);
+        if (blockSaving(id)) { inp.value = b ? b.title : ""; return; } // 시간 저장 중에는 이름도 잠금
         if (!title) { inp.value = b ? b.title : ""; return; }
         if (b && b.title === title) return;
         const { error } = await sb.from("tok_time_blocks").update({ title }).eq("id", id);
@@ -8561,6 +8569,7 @@
     const track = inp => {
       const id = inp.dataset.id, b = timeBlocks.find(x => x.id === id), row = rowOf(id);
       if (!b || !row) return;
+      if (blockSaving(id)) { const d = blockDrafts.get(id); inp.value = inp.classList.contains("hs-block-end-input") ? d.end : d.start; return; } // 저장 중 입력은 무시(고치던 값을 바꾸지 않음)
       const start = row.querySelector(".hs-block-start-input").value, end = row.querySelector(".hs-block-end-input").value;
       const same = start === minutesToHHMM(b.start_minute) && end === minutesToHHMM(b.end_minute);
       if (same) blockDrafts.delete(id); else blockDrafts.set(id, { start, end });
@@ -8569,14 +8578,14 @@
       row.querySelector(".hs-block-msg")?.remove();
     };
     const cancelBlockEdit = (id, focusCls = ".hs-block-start-input") => {
-      if (blockDrafts.get(id)?.saving) return; // 저장 요청이 끝날 때까지는 취소하지 않음(화면과 저장값이 어긋나지 않게)
+      if (blockSaving(id)) return; // 저장 요청이 끝날 때까지는 취소하지 않음(화면과 저장값이 어긋나지 않게)
       blockDrafts.delete(id);
       renderSettingsBlockList();
       focusAfter(id, focusCls);
     };
     async function saveBlockTimes(id) {
       const b = timeBlocks.find(x => x.id === id), draft = blockDrafts.get(id);
-      if (!b || !draft || draft.saving) return;
+      if (!b || !draft || draft.saving) return; // 저장 중 Enter·클릭 반복 = 무시(요청은 한 번)
       const fail = message => { draft.message = message; draft.saving = false; renderSettingsBlockList(); focusAfter(id, ".hs-block-save"); };
       if (!draft.start || !draft.end) { fail("시작·종료 시간을 모두 입력해 주세요."); return; }
       const start_minute = hhmmToMinutes(draft.start), end_minute = endInputToMinutes(draft.end); // 종료 00:00 = 자정(1440)
@@ -8585,14 +8594,16 @@
       draft.saving = true; delete draft.message; renderSettingsBlockList();
       let result;
       // 시작·종료를 한 번에 저장. 다른 곳에서 먼저 바뀌었으면(원래 값이 달라짐) 덮어쓰지 않음.
-      try { result = await sb.from("tok_time_blocks").update({ start_minute, end_minute }).eq("id", id).eq("start_minute", b.start_minute).eq("end_minute", b.end_minute).select("id"); }
+      const from = { start: b.start_minute, end: b.end_minute };
+      try { result = await sb.from("tok_time_blocks").update({ start_minute, end_minute }).eq("id", id).eq("start_minute", from.start).eq("end_minute", from.end).select("id"); }
       catch (error) { result = { error }; }
-      if (blockDrafts.get(id) !== draft) return; // 저장 중에 취소·삭제됨
+      // 저장 중에는 이 블록 조작이 잠겨 있어 draft는 그대로. 그 사이 목록을 다시 불러왔을 수 있으니 블록은 새로 찾아 서버 값에 맞춤.
+      const cur = timeBlocks.find(x => x.id === id);
       if (result.error || !result.data || !result.data.length) {
-        fail(`저장하지 못했어요${result.error ? ": " + result.error.message : " — 다른 곳에서 먼저 바뀌었을 수 있어요"}. 블록은 원래 시간(${minutesToHHMM(b.start_minute)}~${endMinuteLabel(b.end_minute)}) 그대로예요. 다시 저장하거나 취소해 주세요.`);
+        fail(`저장하지 못했어요${result.error ? ": " + result.error.message : " — 다른 곳에서 먼저 바뀌었을 수 있어요"}. 블록은 원래 시간(${minutesToHHMM(from.start)}~${endMinuteLabel(from.end)}) 그대로예요. 다시 저장하거나 취소해 주세요.`);
         return;
       }
-      b.start_minute = start_minute; b.end_minute = end_minute;
+      if (cur) { cur.start_minute = start_minute; cur.end_minute = end_minute; }
       blockDrafts.delete(id);
       renderSettingsBlockList();
       focusAfter(id, ".hs-block-start-input");
@@ -8612,6 +8623,7 @@
       btn.onclick = async () => {
         const id = btn.dataset.id;
         const b = timeBlocks.find(x => x.id === id);
+        if (blockSaving(id)) return; // 시간 저장 중에는 삭제 잠금
         if (!confirm(`"${b ? b.title : "시간블록"}"을 삭제할까요?\n항목의 날짜·시간은 그대로이고, 시간블록 보기에서 보이는 자리만 다시 정해져요.`)) return;
         const { error } = await sb.from("tok_time_blocks").delete().eq("id", id);
         if (error) { alert("삭제 실패: " + error.message); return; }

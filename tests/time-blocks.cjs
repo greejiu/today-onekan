@@ -106,6 +106,41 @@ const ok=m=>console.log('PASS '+m);
  assert.equal(nt.todo_time.slice(0,5),'18:00');assert.equal(nt.end_time.slice(0,5),'18:30','블록 시작부터 30분');await p.keyboard.press('Escape');
  await p.screenshot({path:'test-results/time-blocks-day.png'}).catch(()=>{});
  ok('블록 수정·삭제: 항목 날짜·시간 그대로, 표시 자리만 재계산 / 빈칸 = 블록 시작부터 30분');
+ // 6-2) 저장 중 잠금(2026-10-18 결 검토): 응답을 늦춰 두고 재입력·중복 저장·취소·이름·삭제를 시도 → 모두 무시, 응답 뒤 서버·로컬·화면 값 일치
+ await p.evaluate(()=>showPage('settings'));await p.waitForTimeout(100);
+ const b4=await p.evaluate(()=>mockRows.tok_time_blocks.find(b=>b.title==='새벽').id);
+ const ui=async id=>({s:await startIn(id).inputValue(),e:await endIn(id).inputValue()}),local=id=>p.evaluate(i=>{const b=timeBlocks.find(x=>x.id===i);return [b.start_minute,b.end_minute];},id);
+ const tryEverything=id=>p.evaluate(id=>{const row=document.querySelector('#settingsBlockList .hs-block-row[data-id="'+id+'"]'),q=c=>row.querySelector(c),fire=(el,t,o)=>el.dispatchEvent(o?new KeyboardEvent(t,{key:o,bubbles:true}):new Event(t,{bubbles:true}));
+  const st=q('.hs-block-start-input'),en=q('.hs-block-end-input'),nm=q('.hs-block-name-input');
+  st.value='09:00';fire(st,'input');fire(st,'change');en.value='11:00';fire(en,'input');   // 저장 중 다시 입력
+  fire(en,'keydown','Enter');q('.hs-block-save').click();q('.hs-block-save').dispatchEvent(new MouseEvent('click',{bubbles:true})); // 중복 저장
+  fire(en,'keydown','Escape');q('.hs-block-cancel').click();                                // 취소
+  nm.value='바뀐 이름';fire(nm,'blur');                                                       // 이름
+  q('.hs-cat-del').click();q('.hs-cat-del').onclick?.();                                       // 삭제(잠긴 버튼 + 처리 함수 직접)
+  const r=document.querySelector('#settingsBlockList .hs-block-row[data-id="'+id+'"]'),g=c=>r.querySelector(c);
+  return {busy:r.getAttribute('aria-busy'),disabled:['.hs-block-start-input','.hs-block-end-input','.hs-block-name-input','.hs-block-save','.hs-block-cancel','.hs-cat-del'].every(c=>g(c).disabled),label:g('.hs-block-save').textContent,start:g('.hs-block-start-input').value,end:g('.hs-block-end-input').value};},id);
+ // a) 성공: 00~05 → 06~08, 응답 700ms 지연 + 그 사이 전체 다시 불러오기(loadAll)
+ let w1=(await blockWrites()).length,d1=dialogs.length;
+ await startIn(b4).fill('06:00');await endIn(b4).fill('08:00');await p.evaluate(()=>{window.mockDelay=700;});await saveBtn(b4).click();await p.waitForTimeout(80);
+ const during=await tryEverything(b4);
+ assert.equal(during.busy,'true','저장 중 표시');assert(during.disabled,'시간·이름·저장·취소·삭제 잠금');assert.equal(during.label,'저장 중…');
+ assert.deepEqual([during.start,during.end],['06:00','08:00'],'저장 중 재입력은 무시');
+ await p.evaluate(()=>loadAll());                                                             // 저장 중에 목록을 다시 불러와도
+ await p.waitForFunction(id=>!document.querySelector('#settingsBlockList .hs-block-row[data-id="'+id+'"][aria-busy]'),b4,{timeout:5000});
+ const wA=(await blockWrites()).slice(w1);assert.equal(wA.length,1,'요청 한 번(중복 저장·이름·삭제 없음)');assert.deepEqual(wA[0].values,{start_minute:360,end_minute:480});assert.equal(dialogs.length,d1,'삭제 확인창 안 뜸');
+ assert.deepEqual(await blk(b4),[360,480],'서버');assert.deepEqual(await local(b4),[360,480],'로컬');assert.deepEqual(await ui(b4),{s:'06:00',e:'08:00'},'화면');
+ assert.equal(await row(b4).locator('.hs-block-name-input').inputValue(),'새벽','이름 그대로');assert(await saveBtn(b4).isHidden(),'고치는 중 아님');
+ assert(!(await startIn(b4).isDisabled())&&!(await row(b4).locator('.hs-cat-del').isDisabled()),'성공 후 잠금 해제');
+ // b) 실패: 06~08 → 09~10, 응답 지연 + 저장 실패 → 잠금 중 시도 무시, 실패 후 잠금 해제·안내·고치던 값 유지, 서버·로컬은 원래 값
+ w1=(await blockWrites()).length;
+ await startIn(b4).fill('09:00');await endIn(b4).fill('10:00');await p.evaluate(()=>{window.mockDelay=700;window.mockFailure='simulated failure';});await saveBtn(b4).click();await p.waitForTimeout(80);
+ const during2=await tryEverything(b4);assert(during2.disabled&&during2.busy==='true','실패 응답 전에도 잠금');assert.deepEqual([during2.start,during2.end],['09:00','10:00']);
+ await p.waitForSelector('#settingsBlockList .hs-block-row[data-id="'+b4+'"] .hs-block-msg',{timeout:5000});
+ assert(/저장하지 못했어요.*원래 시간\(06:00~08:00\) 그대로/.test(await row(b4).locator('.hs-block-msg').textContent()));
+ assert.equal((await blockWrites()).length,w1,'실패한 저장은 기록 없음');assert.deepEqual(await blk(b4),[360,480],'서버 원래 값');assert.deepEqual(await local(b4),[360,480],'로컬 원래 값');
+ assert.deepEqual(await ui(b4),{s:'09:00',e:'10:00'},'고치던 값 유지');assert(!(await startIn(b4).isDisabled())&&await saveBtn(b4).isEnabled(),'실패 후 잠금 해제');
+ await cancelBtn(b4).click();assert.deepEqual(await ui(b4),{s:'06:00',e:'08:00'},'취소 → 화면 = 서버 값');
+ ok('저장 중 잠금: 재입력·중복 저장·취소·이름·삭제 무시, 성공·실패 후 잠금 해제, 서버·로컬·화면 값 일치(저장 중 다시 불러오기 포함)');
  // 7) 같은 규칙 모듈: 공유 이미지·여러 날 열에서 쓰는 배정 함수
  const unit=await p.evaluate(()=>{const bl=[{start_minute:0,end_minute:600},{start_minute:300,end_minute:900}],its=[{start_minute:400},{start_minute:600},{start_minute:950}];const o=OnekanAgendaMarkup.blockOwner(its,bl);
   const html=OnekanAgendaMarkup.blocks([{start_minute:30,duration_minutes:30,continued:true,id:'c'}],todayStr(),{blocks:[{title:'x',start_minute:0,end_minute:600}],blockStyle:()=>({dot:'#000'}),escape:s=>s,time:()=>'',endTime:()=>'',row:it=>'<i data-x="'+it.id+'"></i>',addSlot:()=>''});
