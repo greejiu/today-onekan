@@ -101,6 +101,7 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await p.screenshot({path:OUT+'/pc-week-board.png'});
  ok('보드: 월~일, 오늘 강조, 종일 먼저·시간순, 일정 체크 없음, 날짜 없는 할일 제외, 중복 없음');
  // 5) 완료 → 가운데 보드와 오른쪽(지금 한칸 다가오는) 함께 반영
+ await p.evaluate(()=>jumpHomeUpcoming(addDaysStr(todayStr(),1))); // 2026-10-18 날짜별은 한 달 보기 — 말일에 돌려도 내일이 보이게 그 달로
  const upCheck=p.locator('#allSideAgenda #homeUpcomingList .upcoming-todo-check[data-id="t-next"]');
  const tomorrowCol=col(tomorrow);
  await upCheck.check();await p.waitForFunction(()=>mockRows.tok_todos.find(t=>t.id==='t-next').is_done===true);await p.waitForTimeout(150);
@@ -146,11 +147,16 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  if(await side.locator('[data-sa-list=upcoming]').getAttribute('aria-pressed')!=='true')await side.locator('[data-sa-list=upcoming]').click();
  assert.equal(await p.locator('#allSideAgenda #homeUpcomingPanel').count(),1,'지금 한칸 다가오는을 그대로 옮겨 붙임');
  assert.equal(await p.locator('#homeCol3 #homeUpcomingPanel').count(),0,'복제가 아니라 같은 화면 하나');
- assert.equal(await side.locator('.upcoming-day').count(),7,'지금 한칸과 같은 7일');
+ // 2026-10-18 결 확정 M1: 오른쪽 날짜별 = 이번 달 1일부터 말일까지(지난 날 포함). 지금 한칸 화면 자체는 내일부터 7일 그대로.
+ await side.locator('#homeUpcomingDateLabel').click();await p.waitForTimeout(100);
+ const monthDays=await p.evaluate(()=>{const m=todayStr().slice(0,7);let n=0;for(let d=m+'-01';d.slice(0,7)===m;d=addDaysStr(d,1))n++;return n;});
+ assert.equal(await side.locator('.upcoming-day').count(),monthDays,'이번 달 전체');assert.equal(await side.locator('.upcoming-day').first().getAttribute('data-date'),await p.evaluate(()=>todayStr().slice(0,7)+'-01'),'1일부터');
+ await p.evaluate(()=>jumpHomeUpcoming(addDaysStr(todayStr(),1)));
  assert.equal(await side.locator('.sa-overdue-toggle').count(),0,'지난 할일 접힘 없음');
  const label0=await side.locator('#homeUpcomingDateLabel').textContent();await side.locator('#homeUpcomingNextBtn').click();await p.waitForTimeout(100);
- assert.notEqual(await side.locator('#homeUpcomingDateLabel').textContent(),label0,'‹ › 7일 이동');await side.locator('#homeUpcomingDateLabel').click();await p.waitForTimeout(100);
- assert.equal(await side.locator('#homeUpcomingDateLabel').textContent(),label0,'날짜 누르면 처음으로');
+ assert.notEqual(await side.locator('#homeUpcomingDateLabel').textContent(),label0,'‹ › 한 달 이동');await side.locator('#homeUpcomingDateLabel').click();await p.waitForTimeout(100);
+ assert.equal(await side.locator('#homeUpcomingDateLabel').textContent(),await p.evaluate(()=>Number(todayStr().slice(0,4))+'년 '+Number(todayStr().slice(5,7))+'월'),'이름 누르면 이번 달로');
+ await p.evaluate(()=>jumpHomeUpcoming(addDaysStr(todayStr(),1)));
  assert.deepEqual(await side.locator('[data-sa-list]').allTextContents(),['날짜별','언젠가'],'오른쪽 이름 날짜별');
  await eye(p,'todo').click();await p.waitForTimeout(100);assert.equal(await side.locator('.plan-row[data-id="t-next"]').count(),0,'날짜별은 달력 눈을 따름');await eye(p,'todo').click();await p.waitForTimeout(100);assert.equal(await side.locator('.plan-row[data-id="t-next"]').count(),1);
  // 제목 누르기 = 이름 수정(지금 한칸 규칙)
@@ -162,6 +168,7 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  // 다가오는 행 → 주간 보드 열로 끌기(지금 한칸 끌기 + 기존 이동 규칙: 그 날짜 종일)
  await p.setViewportSize({width:1800,height:900});await p.waitForTimeout(100);
  const dragHome=async(sel,targetSel)=>{const a=await p.locator(sel).first().boundingBox(),b=await p.locator(targetSel).boundingBox();await p.mouse.move(a.x+a.width/2,a.y+a.height/2);await p.mouse.down();await p.mouse.move(a.x+a.width/2+15,a.y+a.height/2+15,{steps:3});await p.mouse.move(b.x+b.width/2,b.y+b.height-30,{steps:8});await p.mouse.up();};
+ await p.locator('#allSideAgenda .plan-row[data-id="t-next"]').scrollIntoViewIfNeeded(); // 한 달 목록은 길어서 보이게 스크롤한 뒤 끌기
  await dragHome('#allSideAgenda .plan-row[data-id="t-next"]','#allWeekBoard [data-awb-col="'+target+'"]');
  await p.waitForFunction(t=>mockRows.tok_todos.find(x=>x.id==='t-next').start_date===t,target);await p.waitForTimeout(150);
  assert.equal(await col(target).locator('[data-awb-id="todo|t-next"]').count(),1,'다가오는 → 보드 열');
@@ -227,7 +234,7 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  assert.equal(await p.evaluate(()=>allViews.agenda.state().list),'someday','언젠가를 보던 중');
  await p.locator('#allCalGrid [data-month-date="'+d10+'"]').click();assert.equal(await view(p),'month','달력 보기는 그대로');
  assert.equal(await p.evaluate(()=>allViews.agenda.state().list),'upcoming','날짜별로 바뀜');await p.waitForSelector('#allSideAgenda .upcoming-day.is-picked');
- assert.equal(await side.locator('.upcoming-day').first().getAttribute('data-date'),d10,'그 날짜부터');assert.equal(await side.locator('.upcoming-day.is-picked').getAttribute('data-date'),d10,'그 날짜 강조');
+ assert.equal(await side.locator('.upcoming-day').first().getAttribute('data-date'),d10.slice(0,7)+'-01','그 날짜가 있는 달의 1일부터');assert.equal(await side.locator('.upcoming-day.is-picked').getAttribute('data-date'),d10,'그 날짜 강조');
  await go(p,'month');const cell=p.locator('#allCalGrid .cal-cell[data-date="'+d10+'"]');const cb=await cell.boundingBox();await p.mouse.click(cb.x+cb.width/2,cb.y+cb.height-8);
  await p.waitForTimeout(150);assert(await p.locator('.item-menu').isVisible(),'빈 공간 클릭 → 추가 종류 메뉴');assert.deepEqual(await p.locator('.item-menu [role=menuitem]').allTextContents().then(t=>t.map(x=>x.trim())),['할일 추가','습관 추가','일정 추가']);
  await p.keyboard.press('Escape');await p.evaluate(()=>{document.querySelectorAll('.sheet-bg.open').forEach(b=>b.classList.remove('open'));});

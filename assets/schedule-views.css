@@ -409,3 +409,14 @@
 /* 오른쪽 날짜별: 달력에서 고른 날짜 강조 */
 .sa-body .upcoming-day{border-radius:10px;padding:4px 6px}
 .sa-body .upcoming-day.is-picked{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)}
+/* 2026-10-18 MOB-01 모바일 계획 목록 패널: 처음 약 60%, 확장 약 90%, 손잡이로 높이 조절·닫기(검토용 모양) */
+.sa-handle{display:none}
+@media(max-width:760px){
+ .sa-panel{height:60vh;height:60dvh;max-height:95vh;padding-top:0;transition:height .18s ease}
+ .sa-panel.sa-expanded{height:90vh;height:90dvh}
+ .sa-panel.sa-dragging{transition:none}
+ .sa-handle{display:flex;justify-content:center;align-items:center;flex:none;height:28px;margin:0 -14px;cursor:grab;touch-action:none;border-radius:18px 18px 0 0}
+ .sa-handle span{width:40px;height:5px;border-radius:3px;background:var(--line)}
+ .sa-handle:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+ .sa-body #homeUpcomingList,.sa-body #somedayZone{overflow-y:auto}
+}
