@@ -149,6 +149,43 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  assert.equal(await scope.evaluate(e=>e.classList.contains('open')),false,'습관 다른 날은 창 없이 안내만');
  ok('지원하지 않는 범위(눌러도 무시)·취소 버튼·Esc·바깥 누르기·끄는 중 Esc·영역 밖·습관 다른 날: 날짜·시간·반복 설정·완료·건너뜀 기록 모두 그대로, 저장 없음');
 
+ // ── 4-3. 반복 할일 여러 회차: 일부만 이동하지 않음, 실행 취소는 전체 복원, 기록 보존, 후속 변경은 덮어쓰지 않음 ──
+ const chain=()=>p.evaluate(()=>Object.fromEntries(['t-repeat','t-rearly','t-repeat2'].map(id=>[id,mockRows.tok_todos.find(r=>r.id===id).start_date])));
+ const records=()=>p.evaluate(()=>JSON.stringify([mockRows.tok_todos.find(r=>r.id==='t-rdone'),mockRows.tok_habit_logs,mockRows.tok_habit_skips]));
+ const rec0=await records();
+ // n번째 tok_todos 저장(update)을 실패시킴(네트워크 오류 흉내)
+ const failNth=n=>p.evaluate(n=>{const orig=sb.from;let c=0;sb.from=t=>{const q=orig(t);return new Proxy(q,{get(o,k){if(k==='update'&&t==='tok_todos'&&++c===n){window.mockFailure='network down';sb.from=orig;}return o[k];}});};},n);
+ const moveAll=async to=>{await drag(p,await center(card('todo|t-repeat')),await center(col(to).locator('.awb-head')));await opt('all').click();};
+ // (1) 저장 도중 실패: 첫 회차는 저장됐다가 둘째에서 실패 → 저장된 첫 회차도 되돌려 전부 그대로
+ let c0=await chain();const all0=await snap();await failNth(2);await moveAll(D[6]);
+ await p.waitForFunction(()=>/저장하지 못했어요. 원래 상태로 되돌렸어요/.test(document.getElementById('allSaveStatus').textContent));
+ assert.equal(await snap(),all0,'저장 도중 실패: 날짜·시간·반복 설정·기록 전부 그대로');assert.deepEqual(await chain(),c0);
+ // (2) 범위를 고르는 사이 다른 곳에서 한 회차가 바뀜 → 그 회차는 덮어쓰지 않고, 이미 옮긴 회차도 되돌림
+ await drag(p,await center(card('todo|t-repeat')),await center(col(D[6]).locator('.awb-head')));
+ await p.evaluate(()=>{const r=mockRows.tok_todos.find(x=>x.id==='t-repeat2');r.start_date=addDaysStr(r.start_date,1);r.occurrence_end_date=r.start_date;});const elsewhere=await chain();
+ await opt('all').click();await p.waitForFunction(()=>/그사이 다른 곳에서 바뀐 회차가 있어요/.test(document.getElementById('allSaveStatus').textContent));
+ assert.deepEqual(await chain(),elsewhere,'후속 변경은 덮어쓰지 않고 나머지도 그대로');assert.equal(await records(),rec0);
+ await p.evaluate(async c=>{const r=mockRows.tok_todos.find(x=>x.id==='t-repeat2');r.start_date=c;r.occurrence_end_date=c;await loadAll();},c0['t-repeat2']);await p.waitForTimeout(150);
+ // (3) 정상 저장: 세 회차 모두 같은 만큼, 완료 회차·완료·건너뜀 기록 그대로
+ await moveAll(D[6]);await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-repeat').start_date===d,D[6]);
+ let c1=await chain();for(const id of Object.keys(c0))assert.equal(c1[id],await p.evaluate(([d,n])=>addDaysStr(d,n),[c0[id],1]),id+' 하루 뒤로');assert.equal(await records(),rec0,'완료·건너뜀 기록 그대로');
+ // (4) 실행 취소 중 한 회차가 그사이 바뀜 → 하나도 되돌리지 않음(이미 되돌린 회차는 다시 옮긴 상태로), 바뀐 회차 덮어쓰지 않음
+ await p.evaluate(()=>{const r=mockRows.tok_todos.find(x=>x.id==='t-rearly');r.start_date=addDaysStr(r.start_date,3);r.occurrence_end_date=r.start_date;});const c2=await chain();
+ await toastUndo(p).click();await p.waitForFunction(()=>/덮어쓰지 않았어요/.test(document.getElementById('allSaveStatus').textContent));
+ assert.deepEqual(await chain(),c2,'실행 취소 충돌: 일부만 되돌아가지 않음');assert.equal(await records(),rec0);
+ await p.evaluate(async c=>{const r=mockRows.tok_todos.find(x=>x.id==='t-rearly');r.start_date=c;r.occurrence_end_date=c;await loadAll();},c1['t-rearly']);await p.waitForTimeout(150);
+ // (5) 실행 취소 중 저장 실패 → 되돌린 회차를 다시 옮긴 상태로(일부만 되돌아가지 않음)
+ await moveAll(D[4]);await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-repeat').start_date===d,D[4]);const c3=await chain();
+ await failNth(2);await toastUndo(p).click();await p.waitForFunction(()=>/되돌리지 못했어요/.test(document.getElementById('allSaveStatus').textContent));
+ assert.deepEqual(await chain(),c3,'실행 취소 실패: 옮긴 상태 그대로');
+ // (6) 실행 취소 정상: 변경한 회차 전체 복원
+ await moveAll(D[5]);await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-repeat').start_date===d,D[5]);
+ await toastUndo(p).click();await p.waitForFunction(()=>/원래대로 되돌렸어요/.test(document.getElementById('allSaveStatus').textContent));
+ assert.deepEqual(await chain(),c3,'실행 취소 = 세 회차 모두 복원');assert.equal(await records(),rec0,'완료·건너뜀 기록 그대로');
+ // 이후 단계가 쓰는 원래 자리로
+ await p.evaluate(async c=>{for(const [id,d] of Object.entries(c)){const r=mockRows.tok_todos.find(x=>x.id===id);r.start_date=d;r.occurrence_end_date=d;}await loadAll();},c0);await p.waitForTimeout(150);
+ ok('반복 할일 여러 회차: 저장 도중 실패·범위 선택 중 다른 곳 변경 = 전부 그대로, 실행 취소 = 전체 복원, 실행 취소 충돌·실패 = 일부만 되돌아가지 않음, 완료·건너뜀 기록 보존');
+
  // ── 5. 저장 중 같은 항목 중복 변경 막기 ──
  w=await writes(p);await p.evaluate(()=>{mockDelay=2500;});
  await drag(p,await center(card('todo|t-all')),await center(col(D[2]).locator('.awb-head')));
@@ -227,7 +264,7 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  await go('month');await p.evaluate(d=>allViews.selectDate(d),D[1]);await p.waitForTimeout(150);
  const chip=p.locator('#allCalGrid .cal-chip[data-id="event|e-repeat"]').first();
  const to=p.locator('#allCalGrid .cal-cell[data-date="'+D[6]+'"]');
- const e0=await row(p,'tok_events','e-repeat');
+ const e0=await row(p,'tok_events','e-repeat');await p.evaluate(()=>document.getElementById('appToast')?.classList.remove('show')); // 앞 단계 실행 취소 알림(10초)이 아래 줄 막대를 가리지 않게
  await drag(p,await center(chip),await center(to),{check:async()=>{assert(await to.evaluate(e=>e.classList.contains('sd-drop')),'도착 칸 표시');assert(await p.locator('#allMoveLabel .sd-preview').isVisible());}});
  await p.locator('#allScopeBg [data-scope=all]').click();await p.waitForFunction(d=>mockRows.tok_events.find(r=>r.id==='e-repeat').event_date===d,D[6]);
  assert.equal((await row(p,'tok_events','e-repeat')).all_day,e0.all_day);

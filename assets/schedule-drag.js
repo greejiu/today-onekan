@@ -259,10 +259,18 @@
    }
    return out;
   }
-  async function write(w,owner){
-   const res=await api.sb.from(table(w.kind)).update(w.patch).eq('id',w.id).eq('user_id',owner).select('id').single();
-   if(res.error||!res.data)throw Error(res.error?.message||'항목을 찾을 수 없어요.');
+  // 조건부 저장: 지금 값이 from과 같을 때만 to로 바꿈(그사이 다른 곳에서 바뀌었으면 맞는 행이 없어 false). 옮기기·되돌리기·다시 옮기기 공용
+  async function apply(w,owner,from,to){
+   let q=api.sb.from(table(w.kind)).update(to).eq('id',w.id).eq('user_id',owner);
+   for(const [k,v] of Object.entries(from))q=v==null?q.is(k,null):q.eq(k,v);
+   const res=await q.select('id');if(res.error)throw Error(res.error.message);return !!res.data?.length;
   }
+  const CHANGED='그사이 다른 곳에서 바뀐 회차가 있어요.';
+  async function write(w,owner){if(!await apply(w,owner,w.before,w.patch))throw Error(CHANGED);}
+  // 되돌리기: 이번에 쓴 값 그대로일 때만 원래 값으로
+  const revert=(w,owner)=>apply(w,owner,w.patch,w.before);
+  // 여러 회차 중 일부만 바뀐 채로 남지 않게: 이미 처리한 회차를 반대로 되돌림. 모두 됐으면 true
+  async function compensate(list,owner,back){let ok=true;for(const w of list.slice().reverse()){try{if(!await (back?revert(w,owner):apply(w,owner,w.before,w.patch)))ok=false;}catch(_){ok=false;}}return ok;}
   async function commit(d){
    const t=d.target,res=d.result,r=d.row;
    if(!t){status('달력 밖에 놓아서 옮기지 않았어요.');return;}
@@ -286,8 +294,8 @@
     try{for(const w of writes){await write(w,owner);done.push(w);}}
     catch(error){
      if(owner!==api.user())return;
-     for(const w of done.reverse())await revert(w,owner).catch(()=>false); // 여러 건 중 일부만 저장됐으면 저장된 것도 되돌림
-     await api.reload();status('저장하지 못했어요. 원래 상태로 되돌렸어요. '+error.message);return;
+     const clean=await compensate(done,owner,true); // 여러 회차 중 일부만 저장됐으면 저장된 것도 되돌림(전부 옮기거나 전부 그대로)
+     await api.reload();status(clean?'저장하지 못했어요. 원래 상태로 되돌렸어요. '+error.message:'저장하지 못했고, 일부 회차는 그사이 바뀌어 되돌리지 못했어요. 확인해 주세요. '+error.message);return;
     }
     if(owner!==api.user())return;
     await api.reload();
@@ -295,21 +303,18 @@
     api.toast('옮겼어요',{label:'실행 취소',run:()=>undo(writes,owner,key)},10000); // 알림은 짧게(모바일 폭), 자세한 내용은 상태 줄
    }finally{saving.delete(key);host.removeAttribute('aria-busy');}
   }
-  // 그사이 다른 곳에서 바뀌었으면(이번에 쓴 값과 다르면) 조건에 맞는 행이 없어 되돌리지 않음
-  async function revert(w,owner){
-   let q=api.sb.from(table(w.kind)).update(w.before).eq('id',w.id).eq('user_id',owner);
-   for(const [k,v] of Object.entries(w.patch))q=v==null?q.is(k,null):q.eq(k,v);
-   const res=await q.select('id');if(res.error)throw Error(res.error.message);return !!res.data?.length;
-  }
   async function undo(writes,owner,key){
    if(owner!==api.user())return;
    if(saving.has(key)){api.toast('저장 중이라 되돌리지 않았어요.');return;}
-   saving.add(key);let conflict=false,failed='';
-   try{for(const w of writes){try{if(!await revert(w,owner))conflict=true;}catch(error){failed=error.message;}}}
-   finally{saving.delete(key);}
+   // 옮긴 회차 전체를 되돌림. 한 회차라도 그사이 바뀌었거나 실패하면, 이미 되돌린 회차를 다시 옮긴 상태로 돌려 일부만 되돌아가지 않게 함
+   saving.add(key);let conflict=false,failed='',clean=true;const back=[];
+   try{
+    for(const w of writes){try{if(await revert(w,owner))back.push(w);else{conflict=true;break;}}catch(error){failed=error.message;break;}}
+    if(conflict||failed)clean=await compensate(back,owner,false);
+   }finally{saving.delete(key);}
    if(owner!==api.user())return;
    await api.reload();
-   const m=failed?'되돌리지 못했어요. '+failed:conflict?'그사이 바뀐 내용이 있어 덮어쓰지 않았어요.':'원래대로 되돌렸어요.';status(m);api.toast(m);
+   const m=!clean?'되돌리지 못했고, 일부 회차만 되돌아갔어요. 확인해 주세요.':failed?'되돌리지 못했어요. 옮긴 상태 그대로예요. '+failed:conflict?'그사이 바뀐 내용이 있어 덮어쓰지 않았어요. 옮긴 상태 그대로예요.':'원래대로 되돌렸어요.';status(m);api.toast(m);
   }
   return {cancel,busy:()=>!!drag||saving.size>0,targetAt,chooseScope};
  };
