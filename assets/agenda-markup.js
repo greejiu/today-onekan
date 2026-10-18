@@ -48,13 +48,18 @@ function timeline(items,dateStr,options){
     const html = `<div class="ag-tl-grid" style="grid-template-rows:repeat(${slotCount},${AG_TL_ROW_PX}px)">${rowsHtml}<div class="ag-tl-content" data-date="${dateStr}" data-min-m="${minM}" data-max-m="${maxM}">${itemsHtml}</div></div>`;
     return {html,min:minM,max:maxM};
 }
+// 시간블록 배정(BLOCK-01): 시작 시각이 들어가는 첫 블록(보이는 순서) 하나. 없으면 null = '구간 밖'. 공유 이미지도 같은 규칙.
+function blockOwner(items,blocks){return new Map(items.map(it=>[it,blocks.find(b=>it.start_minute>=b.start_minute&&it.start_minute<b.end_minute)||null]));}
 function blocks(items,dateStr,options){
     let html = "";
+    // 2026-10-18 BLOCK-01·03: 여러 날에 걸친 항목은 시작일에만(이어지는 날의 조각 continued는 타임라인에만 보임).
+    // 항목은 시작 시각이 들어가는 블록 하나에만 배정(시작 포함·종료 제외). 예전에 겹치게 만든 블록이 있으면
+    // 보이는 순서상 첫 블록에만 넣어 한 번만 표시. 어느 블록에도 안 들어가면 '구간 밖'.
+    items = items.filter(it => !it.continued);
     if (options.blocks.length) {
-      const covered = new Set();
+      const owner = blockOwner(items, options.blocks);
       options.blocks.forEach(block => {
-        const inBlock = items.filter(it => it.start_minute >= block.start_minute && it.start_minute < block.end_minute);
-        inBlock.forEach(it => covered.add(it));
+        const inBlock = items.filter(it => owner.get(it) === block);
         const bs = options.blockStyle(block.title);
         html += `<div class="ag-section-head">
           <span class="label"><span class="ag-dot" style="background:${bs.dot};"></span>${options.escape(block.title)} <span style="color:var(--sub);font-weight:400;">(${options.time(block.start_minute)}~${options.endTime(block.end_minute)})</span></span>
@@ -66,9 +71,9 @@ function blocks(items,dateStr,options){
           ? `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}">${inBlock.map(it => options.row(it,dateStr)).join("")}${options.addSlot(`data-block-start="${block.start_minute}"`, false)}</div>`
           : `<div class="agenda-flat ag-block-card" data-block-start="${block.start_minute}" data-date="${dateStr}">${options.addSlot(`data-block-start="${block.start_minute}"`, true)}</div>`;
       });
-      const uncovered = items.filter(it => !covered.has(it));
+      const uncovered = items.filter(it => !owner.get(it));
       if (uncovered.length) {
-        html += `<div class="ag-section-head"><span class="label">그 외 시간</span></div>`;
+        html += `<div class="ag-section-head ag-block-outside"><span class="label">구간 밖</span></div>`;
         html += `<div class="agenda-flat">${uncovered.map(it => options.row(it,dateStr)).join("")}</div>`;
       }
     } else if (items.length) {
@@ -77,5 +82,5 @@ function blocks(items,dateStr,options){
     return html || `<div class="empty" style="padding:20px 0;font-size:12px;">시간이 있는 항목이 없어요.</div>`;
 }
 function colorStyle(color){if(!color)return `background:var(--card);border-color:var(--line);`;return `background:color-mix(in srgb, ${color} 24%, var(--card));border-color:color-mix(in srgb, ${color} 50%, var(--line));`;}
-root.OnekanAgendaMarkup={timeline,blocks,colorStyle};
+root.OnekanAgendaMarkup={timeline,blocks,blockOwner,colorStyle};
 })(window);

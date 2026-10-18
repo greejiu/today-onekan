@@ -823,7 +823,8 @@
   .color-preset-dot:active{transform:scale(.95);}
   /* 설정 페이지 "시간블럭 구간" 목록(이름+시작+종료, 2026-09-09 추가) — .hs-cat-row와 같은 톤이되 입력칸이 하나 더 있음 */
   .hs-block-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
-  .hs-block-row{display:flex;align-items:center;gap:6px;}
+  .hs-block-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .hs-block-warn{flex-basis:100%;margin:0 0 4px 26px;font-size:12px;color:#b4541a;}
   .hs-block-row input[type="text"]{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .hs-block-row input[type="time"]{flex:none;width:96px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;}
   .historybtn{border:1px solid var(--line);background:var(--card);border-radius:999px;font-size:12px;width:26px;height:26px;line-height:1;cursor:pointer;color:var(--sub);flex-shrink:0;}
@@ -1827,7 +1828,7 @@
           <button class="btn-ghost" id="settingsDaySaveBtn" type="button" style="flex:none;padding:0 12px;height:38px;">저장</button>
         </div>
 
-        <div class="section-label" style="margin-top:20px;">시간블럭 구간 <span style="color:var(--sub);font-weight:400;">(시간블럭 탭의 시간 구간 · 손잡이로 순서 변경 · 종료 00:00 = 자정 24:00)</span></div>
+        <div class="section-label" style="margin-top:20px;">시간블럭 구간 <span style="color:var(--sub);font-weight:400;">(30분 이상 · 블록끼리 겹치지 않게 · 손잡이로 순서 변경 · 종료 00:00 = 자정 24:00)</span></div>
         <div class="hs-block-list" id="settingsBlockList"></div>
         <div class="field" style="display:flex;gap:6px;align-items:flex-end;">
           <div style="flex:1;"><label>이름</label><input id="settingsBlockName" type="text" placeholder="예: 오전" /></div>
@@ -4515,16 +4516,17 @@
         if(p.allDay!==allDay) continue;
         const clip=allDay?{start_minute:null,duration_minutes:null}:OnekanPeriod.clip('habit',row,dateStr);
         if(!clip)continue;
-        items.push({kind:'habit',id:h.id,name:h.name,...clip,done:!!log,cat_id:h.category_id,occurrence_date:o.date,period_label:periodLabel('habit',row)});
+        items.push({kind:'habit',id:h.id,name:h.name,...clip,continued:!allDay&&p.startDate!==dateStr,done:!!log,cat_id:h.category_id,occurrence_date:o.date,period_label:periodLabel('habit',row)});
       }
     }
     return items;
   }
+  // continued: 여러 날에 걸친 시간 항목의 이어지는 날 조각(시작일이 아님) — 타임라인엔 날짜별 구간으로 보이고, 시간블록에서는 뺌(BLOCK-03)
   async function timedItemsForDate(dateStr) {
-    const eventItems=events.filter(e=>!OnekanPeriod.read('event',e).allDay&&OnekanPeriod.overlap('event',e,dateStr)).map(e=>({kind:'event',id:e.id,name:e.title,...OnekanPeriod.clip('event',e,dateStr),done:false,cat_id:e.category_id,period_label:periodLabel('event',e)}));
+    const eventItems=events.filter(e=>!OnekanPeriod.read('event',e).allDay&&OnekanPeriod.overlap('event',e,dateStr)).map(e=>({kind:'event',id:e.id,name:e.title,...OnekanPeriod.clip('event',e,dateStr),continued:OnekanPeriod.read('event',e).startDate!==dateStr,done:false,cat_id:e.category_id,period_label:periodLabel('event',e)}));
     const direct=todos.filter(t=>!OnekanPeriod.read('todo',t).allDay&&OnekanPeriod.overlap('todo',t,dateStr));
     const overdue=overdueTodosForToday(dateStr).filter(t=>!OnekanPeriod.read('todo',t).allDay&&!direct.some(x=>x.id===t.id));
-    const todoItems=[...direct,...overdue].map(t=>({kind:'todo',id:t.id,name:t.title,proj:todoProjectName(t),...(OnekanPeriod.clip('todo',t,dateStr)||{start_minute:OnekanPeriod.minutes(t.todo_time),duration_minutes:t.duration_minutes||30}),done:t.is_done,cat_id:t.tag_id,period_label:periodLabel('todo',t),overdue:direct.includes(t)?null:daysBetween(t.start_date,dateStr)}));
+    const todoItems=[...direct,...overdue].map(t=>({kind:'todo',id:t.id,name:t.title,proj:todoProjectName(t),...(OnekanPeriod.clip('todo',t,dateStr)||{start_minute:OnekanPeriod.minutes(t.todo_time),duration_minutes:t.duration_minutes||30}),continued:direct.includes(t)&&OnekanPeriod.read('todo',t).startDate!==dateStr,done:t.is_done,cat_id:t.tag_id,period_label:periodLabel('todo',t),overdue:direct.includes(t)?null:daysBetween(t.start_date,dateStr)}));
     return [...habitItemsForDate(dateStr,false),...eventItems,...todoItems].filter(i=>i.duration_minutes>0&&homeItemShown(i)).sort((a,b)=>a.start_minute-b.start_minute);
   }
 
@@ -8488,18 +8490,44 @@
   };
 
   // ── 설정 페이지: 타임블럭 구간(이름+시작+종료) 목록 관리 ──
+  // 2026-10-18 BLOCK-01·04: 시간블록은 하루 안(00:00~24:00), 30분 이상, 다른 블록과 겹치지 않게.
+  // 저장(추가·시간 변경)할 때만 검사하고, 이미 규칙에 안 맞는 기존 블록은 고치지 않고 경고만 보여 줌.
+  const TIME_BLOCK_MIN = 30;
+  // 이름 뒤 '과/와'(받침 있으면 과). 한글이 아니면 '과(와)'
+  const withGwa = name => { const c = String(name).trim().slice(-1).charCodeAt(0); return c >= 0xAC00 && c <= 0xD7A3 ? ((c - 0xAC00) % 28 ? "과" : "와") : "과(와)"; };
+  function timeBlockOverlaps(start, end, id) {
+    return timeBlocks.filter(o => o.id !== id && start < o.end_minute && o.start_minute < end);
+  }
+  function timeBlockProblem(start, end, id = null) {
+    if (!(start >= 0 && end <= 1440)) return "하루 안(00:00~24:00)에서 정해 주세요.";
+    if (end <= start) return "종료 시간이 시작 시간보다 늦어야 해요. (종료 00:00 = 자정 24:00)";
+    if (end - start < TIME_BLOCK_MIN) return `시간블록은 ${TIME_BLOCK_MIN}분 이상이어야 해요.`;
+    const other = timeBlockOverlaps(start, end, id)[0];
+    if (other) return `‘${other.title}’(${minutesToHHMM(other.start_minute)}~${endMinuteLabel(other.end_minute)})${withGwa(other.title)} 시간이 겹쳐요. 블록끼리는 겹칠 수 없어요.`;
+    return null;
+  }
+  function timeBlockWarning(b) {
+    const notes = [];
+    if (b.end_minute - b.start_minute < TIME_BLOCK_MIN) notes.push(`${TIME_BLOCK_MIN}분보다 짧아요`);
+    const others = timeBlockOverlaps(b.start_minute, b.end_minute, b.id);
+    if (others.length) notes.push(others.map(o => `‘${o.title}’`).join(", ") + withGwa(others[others.length - 1].title) + " 겹쳐요");
+    return notes.length ? `${notes.join(" · ")}. 시간을 고쳐 저장하면 해결돼요.` : "";
+  }
   function renderSettingsBlockList() {
     const host = $("settingsBlockList");
     if (!host) return;
-    host.innerHTML = timeBlocks.length ? timeBlocks.map(b => `
-      <div class="hs-block-row hs-cat-row" data-id="${b.id}">
+    host.innerHTML = timeBlocks.length ? timeBlocks.map(b => {
+      const warn = timeBlockWarning(b);
+      return `
+      <div class="hs-block-row hs-cat-row${warn ? " has-warning" : ""}" data-id="${b.id}">
         ${DRAG_HANDLE_SVG}
-        <input type="text" class="hs-block-name-input" data-id="${b.id}" value="${escapeHtml(b.title)}" />
-        <input type="time" step="900" class="hs-block-start-input" data-id="${b.id}" value="${minutesToHHMM(b.start_minute)}" />
-        <input type="time" step="900" class="hs-block-end-input" data-id="${b.id}" value="${minutesToHHMM(b.end_minute)}" />
+        <input type="text" class="hs-block-name-input" data-id="${b.id}" value="${escapeHtml(b.title)}" aria-label="시간블록 이름" />
+        <input type="time" step="900" class="hs-block-start-input" data-id="${b.id}" value="${minutesToHHMM(b.start_minute)}" aria-label="${escapeHtml(b.title)} 시작" />
+        <input type="time" step="900" class="hs-block-end-input" data-id="${b.id}" value="${minutesToHHMM(b.end_minute)}" aria-label="${escapeHtml(b.title)} 종료" />
         <button type="button" class="hs-cat-del" data-id="${b.id}" title="삭제">✕</button>
-      </div>
-    `).join("") : `<div class="empty" style="font-size:12px;padding:4px 0;">아직 없어요. 아래에서 추가해보세요.</div>`;
+        ${warn ? `<p class="hs-block-warn" role="note">⚠ ${escapeHtml(warn)}</p>` : ""}
+      </div>`;
+    }).join("") : `<div class="empty" style="font-size:12px;padding:4px 0;">아직 없어요. 아래에서 추가해보세요.</div>`;
     host.querySelectorAll(".hs-block-name-input").forEach(inp => {
       const commit = async () => {
         const id = inp.dataset.id, title = inp.value.trim();
@@ -8520,15 +8548,16 @@
       if (!inp.value) { if (b) inp.value = minutesToHHMM(b[field]); return; }
       const minutes = field === "end_minute" ? endInputToMinutes(inp.value) : hhmmToMinutes(inp.value);
       if (b && b[field] === minutes) return;
-      const other = b ? (field === "end_minute" ? b.start_minute : b.end_minute) : null;
-      if (b && (field === "end_minute" ? minutes <= other : minutes >= other)) {
-        alert("종료 시간이 시작 시간보다 늦어야 해요. (종료 00:00 = 자정 24:00)");
-        inp.value = minutesToHHMM(b[field]);
-        return;
+      if (b) {
+        const start = field === "start_minute" ? minutes : b.start_minute, end = field === "end_minute" ? minutes : b.end_minute;
+        const problem = timeBlockProblem(start, end, id);
+        if (problem) { alert(problem); inp.value = minutesToHHMM(b[field]); return; }
       }
       const { error } = await sb.from("tok_time_blocks").update({ [field]: minutes }).eq("id", id);
       if (error) { alert("시간 변경 실패: " + error.message); if (b) inp.value = minutesToHHMM(b[field]); return; }
+      const warningsBefore = timeBlocks.map(timeBlockWarning).join("|");
       if (b) b[field] = minutes;
+      if (timeBlocks.map(timeBlockWarning).join("|") !== warningsBefore) renderSettingsBlockList(); // 경고가 바뀔 때만(입력 초점 유지)
       renderTodo();
     };
     host.querySelectorAll(".hs-block-start-input").forEach(inp => { inp.onchange = () => commitTime(inp, "start_minute"); });
@@ -8537,7 +8566,7 @@
       btn.onclick = async () => {
         const id = btn.dataset.id;
         const b = timeBlocks.find(x => x.id === id);
-        if (!confirm(`"${b ? b.title : "구간"}"을 삭제할까요? 이 구간을 쓰던 습관은 "구간 없음"으로 바뀌어요.`)) return;
+        if (!confirm(`"${b ? b.title : "시간블록"}"을 삭제할까요?\n항목의 날짜·시간은 그대로이고, 시간블록 보기에서 보이는 자리만 다시 정해져요.`)) return;
         const { error } = await sb.from("tok_time_blocks").delete().eq("id", id);
         if (error) { alert("삭제 실패: " + error.message); return; }
         const idx = timeBlocks.findIndex(x => x.id === id);
@@ -8555,7 +8584,8 @@
     if (!title) { alert("구간 이름을 입력해주세요."); return; }
     if (!startVal || !endVal) { alert("시작·종료 시간을 모두 입력해주세요."); return; }
     const start_minute = hhmmToMinutes(startVal), end_minute = endInputToMinutes(endVal); // 종료 00:00 = 자정(1440)
-    if (end_minute <= start_minute) { alert("종료 시간이 시작 시간보다 늦어야 해요. (종료 00:00 = 자정 24:00)"); return; }
+    const problem = timeBlockProblem(start_minute, end_minute);
+    if (problem) { alert(problem); return; } // 입력은 그대로 둬서 고쳐서 다시 추가
     const { data, error } = await sb.from("tok_time_blocks").insert({ title, start_minute, end_minute, sort_order: timeBlocks.reduce((m, b) => Math.max(m, (b.sort_order ?? 0) + 1), 0) }).select().single();
     if (error) { alert("추가 실패: " + error.message); return; }
     timeBlocks.push(data); // 새 구간은 맨 뒤에 추가(순서는 손잡이로 변경)
@@ -9316,11 +9346,12 @@
     }
 
     if (m.view === "block") {
+      // 화면의 시간블록과 같은 규칙(BLOCK-01·03): 시작일에만, 시작 시각이 들어가는 첫 블록 하나, 나머지는 '구간 밖'
+      const blockTimed = m.timed.filter(it => !it.continued);
       if (timeBlocks.length) {
-        const covered = new Set();
+        const owner = OnekanAgendaMarkup.blockOwner(blockTimed, timeBlocks);
         timeBlocks.forEach(block => {
-          const inBlock = m.timed.filter(it => it.start_minute >= block.start_minute && it.start_minute < block.end_minute);
-          inBlock.forEach(it => covered.add(it));
+          const inBlock = blockTimed.filter(it => owner.get(it) === block);
           if (!inBlock.length && m.hideEmpty) return; // 빈 시간 숨기기: 필터 후 빈 블럭은 통째로 숨김
           const bs = agBlockStyle(block.title);
           sectionHead(block.title, `${minutesToHHMM(block.start_minute)}~${endMinuteLabel(block.end_minute)}`, shareCss(shareRgb(bs.dot, T.accent)));
@@ -9328,10 +9359,10 @@
           else emptyRow("비어 있음", X0, CW);
           y += 8;
         });
-        const rest = m.timed.filter(it => !covered.has(it));
-        if (rest.length) { sectionHead("그 외 시간", "", shareCss(T.sub)); cardList(rest, X0, CW, false); y += 16; }
-      } else if (m.timed.length) {
-        cardList(m.timed, X0, CW, false); y += 16;
+        const rest = blockTimed.filter(it => !owner.get(it));
+        if (rest.length) { sectionHead("구간 밖", "", shareCss(T.sub)); cardList(rest, X0, CW, false); y += 16; }
+      } else if (blockTimed.length) {
+        cardList(blockTimed, X0, CW, false); y += 16;
       }
     } else if (m.timed.length || !m.hideEmpty) {
       // 타임라인: 앱 화면과 같은 모양 — 시간 눈금(정시 진하게·30분 연하게), 항목은 시작·길이에 맞는 위치와 높이,
