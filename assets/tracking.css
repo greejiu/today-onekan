@@ -3,3 +3,6 @@
 .page[data-page="timer"] :is(input,select){font:inherit;min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text)}
 :is(.page[data-page="timer"],.tracking-progress) button:not(.navitem){font:inherit;min-height:36px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
 :is(.page[data-page="timer"],.tracking-progress) button:disabled{opacity:.55;cursor:default}
+
+/* 2026-10-18 글자 크기 통일: 추적 화면 안 제목(오늘 저장한 시간 기록 등) = 영역 제목 */
+.page[data-page="timer"] h2{font-size:var(--fs-section)}
