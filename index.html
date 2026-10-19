@@ -693,6 +693,7 @@
   .sched-more:hover{background:var(--accent-soft);}
   .cev-opt{color:var(--sub);font-weight:400;}
   .cev-hint{font-size:var(--fs-meta);color:var(--sub);margin:-4px 2px 10px;line-height:1.4;}
+  .cev-hint[hidden]{display:none;}
   .cal-ev-sheet-bg .field textarea{background:var(--card);color:var(--text);resize:vertical;}
   .cal-today-btn{flex:none;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;font-size:var(--fs-body);font-family:inherit;padding:0 14px;height:32px;cursor:pointer;white-space:nowrap;}
   .cal-today-btn:hover{background:var(--accent-soft);}
@@ -1973,6 +1974,7 @@
       <div class="field"><label for="td_tag">그룹</label><select id="td_tag"></select></div>
       <div class="field split"><div><label for="td_repeat_unit">반복</label><select id="td_repeat_unit"><option value="">반복 없음</option><option value="day">일마다</option><option value="week">주마다</option><option value="month">개월마다</option></select></div><div id="td_repeat_interval_wrap"><label for="td_repeat_interval">주기</label><input id="td_repeat_interval" type="number" min="1" value="1" /></div></div>
       <div id="td_repeat_days_row" class="field" hidden><label>반복 요일</label><div class="weekday-picker"><label><input type="checkbox" value="0" />일</label><label><input type="checkbox" value="1" />월</label><label><input type="checkbox" value="2" />화</label><label><input type="checkbox" value="3" />수</label><label><input type="checkbox" value="4" />목</label><label><input type="checkbox" value="5" />금</label><label><input type="checkbox" value="6" />토</label></div></div>
+      <div class="cev-hint" id="td_repeat_help" hidden>반복 할일은 여기서 이 회차의 날짜·시간과 반복 설정을 바꿀 수 있어요. 다음 회차는 바꾼 날짜 기준으로 생기고, 이미 만들어진 다른 회차는 바뀌지 않아요. 일정 화면에서 끌어 옮기기는 아직 지원하지 않아요.</div>
       <div id="td_repeat_dates" class="field split"><div><label for="td_repeat_start">반복 시작일</label><input id="td_repeat_start" type="date" /></div><div><label for="td_repeat_end">반복 종료일 (선택)</label><input id="td_repeat_end" type="date" /></div></div>
       <div class="field project-field" id="td_project_wrap" hidden><label for="td_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="td_project"></select></div>
       <div class="cal-ev-error" id="td_error" role="alert"></div>
@@ -6468,7 +6470,7 @@
     sel.value = selectedId || "";
   }
   function openTodoSheet(existing, prefill) {
-    todoSheetState = { saving: false, opener: document.activeElement && document.activeElement !== document.body ? document.activeElement : null };
+    todoSheetState = { saving: false, repeatEdit: !!existing?.repeat_unit, opener: document.activeElement && document.activeElement !== document.body ? document.activeElement : null };
     const start = existing ? existing.start_date : (prefill?.startDate || todayStr());
     $("todoSheetTitle").textContent = existing ? "할일 수정" : todoSheetTitleFor(start);
     $("td_title").value = existing ? existing.title : "";
@@ -6495,6 +6497,8 @@
   function syncTodoRepeatForm() {
     const unit=$('td_repeat_unit').value;
     $('td_repeat_dates').hidden=!unit;
+    // 2026-10-19 도움말: 반복 할일을 고칠 때만(끌어 옮기기 대신 여기서 날짜·시간을 바꿈 — 저장은 이 회차 한 건)
+    $('td_repeat_help').hidden=!(unit&&todoSheetState?.repeatEdit);
     $('td_repeat_days_row').hidden=unit!=='week';
     toggleRepeatUiFor('td',unit);
   }

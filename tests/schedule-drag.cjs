@@ -106,10 +106,10 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  await p.evaluate(()=>{window.saveCalls=0;const orig=sb.from;sb.from=t=>{const q=orig(t);return new Proxy(q,{get(o,k){if(['insert','update','upsert','delete'].includes(k))window.saveCalls++;return o[k];}});};});
  const calls=()=>p.evaluate(()=>window.saveCalls);
  const scope=p.locator('#allScopeBg'),opt=id=>scope.locator('[data-scope='+id+']'),isOpen=()=>scope.evaluate(e=>e.classList.contains('open'));
- const REPEAT=/반복 할일의 날짜·시간 변경은 상세 수정에서 해주세요/;
+ const REPEAT=/^반복 할일은 상세 화면에서 날짜·시간을 변경해 주세요\.$/;
  // (a) 다른 회차가 있는 반복 할일(앞 t-rearly·뒤 t-repeat2) / (b) 다른 회차가 없는 반복 할일 / (c) 요일 반복 할일: 모두 끌어도 범위 창 없이 안내, 저장 요청 0
  const blocked=async(id,to,m)=>{const s0=await snap(),c0=await calls();
-  await drag(p,await center(card(id)),await center(col(to).locator('.awb-head')),{check:async()=>{assert.match(await p.locator('#allMoveLabel').textContent(),REPEAT,m+': 끄는 중 안내');}});
+  await drag(p,await center(card(id)),await center(col(to).locator('.awb-head')),{check:async()=>{assert.match(await p.locator('#allMoveLabel .sd-ghost-text').textContent(),/· 반복 할일은 상세 화면에서 날짜·시간을 변경해 주세요\. \(Esc 취소\)$/,m+': 끄는 중 짧은 안내');}});
   assert.equal(await isOpen(),false,m+': 범위 창 없음');assert.match(await p.locator('#allSaveStatus').textContent(),REPEAT,m+': 놓은 뒤 안내');
   assert.equal(await calls(),c0,m+': 저장 요청 0');assert.equal(await snap(),s0,m+': 데이터 그대로');};
  await blocked('todo|t-repeat',D[5],'다른 회차 있는 반복 할일');
@@ -123,7 +123,12 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  await p.evaluate(async d=>{const r=mockRows.tok_todos.find(x=>x.id==='t-repeat');r.start_date=d;r.occurrence_end_date=d;await loadAll();},D[3]);await p.waitForTimeout(150);
  await p.evaluate(async()=>{mockRows.tok_todos=mockRows.tok_todos.filter(r=>r.id!=='t-repeat2'&&r.id!=='t-rearly');await loadAll();});await p.waitForTimeout(150);
  await blocked('todo|t-repeat',D[5],'다른 회차 없는 반복 할일');
- assert.match(await p.locator('#allSaveStatus').textContent(),/이 회차의 날짜·시간과 반복 설정을 바꿀 수 있고, 다음 회차는 바꾼 날짜 기준으로 생겨요. 이미 만들어진 다른 회차는 바뀌지 않아요/,'상세 수정이 실제로 하는 일만 안내');
+ // 긴 설명은 상세 화면 도움말: 반복 할일 수정창에만 보임(일반 할일·새 할일에는 없음)
+ const help=p.locator('#td_repeat_help');
+ await p.evaluate(()=>openTodoSheet(todos.find(t=>t.id==='t-repeat')));assert(await help.isVisible(),'반복 할일 상세 화면 도움말');
+ assert.match(await help.textContent(),/이 회차의 날짜·시간과 반복 설정을 바꿀 수 있어요. 다음 회차는 바꾼 날짜 기준으로 생기고, 이미 만들어진 다른 회차는 바뀌지 않아요/);await p.screenshot({path:OUT+'/repeat-todo-help.png'});await p.evaluate(()=>closeTodoSheet());
+ await p.evaluate(()=>openTodoSheet(todos.find(t=>t.id==='t-all')));assert(await help.isHidden(),'일반 할일에는 도움말 없음');await p.evaluate(()=>closeTodoSheet());
+ await p.evaluate(()=>openTodoSheet(null,{startDate:todayStr()}));await p.locator('#td_repeat_unit').selectOption('day');assert(await help.isHidden(),'새 할일에는 도움말 없음');await p.evaluate(()=>closeTodoSheet());
  // 일반 할일은 그대로 한 건 저장
  let c0=await calls();await drag(p,await center(card('todo|t-all')),await center(col(D[2]).locator('.awb-head')));
  await p.waitForFunction(d=>mockRows.tok_todos.find(r=>r.id==='t-all').start_date===d,D[2]);assert.equal(await calls(),c0+1,'일반 할일: 요청 한 번');

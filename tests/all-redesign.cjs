@@ -139,10 +139,10 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  // 2026-10-19 3단계: 반복 할일은 끌어 옮기지 않음 — 상세 수정 안내, 저장 없음(자세한 검증은 schedule-drag.cjs)
  const repeatWrites=await p.evaluate(()=>mockWrites.length);
  await dragTo('#allWeekBoard [data-awb-col="'+today+'"] [data-awb-id="todo|t-repeat"]','#allWeekBoard [data-awb-col="'+target+'"]');await p.waitForTimeout(200);
- assert.equal(await p.locator('#allScopeBg').evaluate(e=>e.classList.contains('open')),false,'반복 할일은 범위 창 없음');assert.match(await p.locator('#allSaveStatus').textContent(),/상세 수정에서 해주세요/);
+ assert.equal(await p.locator('#allScopeBg').evaluate(e=>e.classList.contains('open')),false,'반복 할일은 범위 창 없음');assert.match(await p.locator('#allSaveStatus').textContent(),/반복 할일은 상세 화면에서 날짜·시간을 변경해 주세요/);
  assert.equal(await p.evaluate(()=>mockRows.tok_todos.find(t=>t.id==='t-repeat').start_date),today,'반복 할일 그대로');assert.equal(await p.evaluate(()=>mockWrites.length),repeatWrites,'저장 없음');
  await p.setViewportSize({width:1440,height:900});
- ok('보드 끌어 옮기기: 시간·길이 보존, 기간 일정 길이 보존, 실패 시 원래 상태·안내, 반복 할일은 상세 수정 안내(저장 없음)');
+ ok('보드 끌어 옮기기: 시간·길이 보존, 기간 일정 길이 보존, 실패 시 원래 상태·안내, 반복 할일은 상세 화면 안내(저장 없음)');
  // 8) 오른쪽 = 지금 한칸 다가오는·담아두기 그 자체(같은 DOM, 같은 클릭·끌기·추가 규칙). '지난 할일' 접힘 없음.
  //    2026-10-18: 이름은 '날짜별', 날짜별에는 지금 달력 보기의 눈을 같이 적용.
  const side=p.locator('#allSideAgenda');
