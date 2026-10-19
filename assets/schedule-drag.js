@@ -3,7 +3,8 @@
  * - 날짜만 옮기면 시간·기간 유지(여러 날 항목도 기간 유지), 잡은 날과 놓은 날의 차이만큼 이동
  * - 시간 칸: 놓은 시각이 시작(30분 단위, 확정 설계), 소요시간 유지(타임라인 안에서 끌면 잡은 위치와의 차이를 유지해 미리보기 윗변 = 시작)
  * - 하루종일 → 시간 칸: 놓은 날 그 시각부터 30분 / 시간 → 하루종일: 시간 지정 해제 / 시간블록: 블록 시작 시각
- * - 반복: 저장 전에 이번만·이번부터 이후·전체 선택. 고른 뜻 그대로, 항목 한 건 저장으로 할 수 있는 선택만 켜고 나머지는 이유와 함께 비활성
+ * - 반복 일정·습관: 저장 전에 이번만·이번부터 이후·전체 선택. 고른 뜻 그대로, 항목 한 건 저장으로 할 수 있는 선택만 켜고 나머지는 이유와 함께 비활성
+ * - 반복 할일: 끌어 옮기지 않음(저장 요청 없음). 상세 수정으로 안내
  * - 완료·건너뜀·측정 기록은 쓰지 않음. 실패·취소·영역 밖·Esc는 원래대로. 성공 후 10초 실행 취소(그사이 바뀌었으면 덮어쓰지 않음). */
 (function(root){
  'use strict';
@@ -58,37 +59,29 @@
   const period=P.read('habit',{...source,...patch});
   return {patch,period,error:invalid(P.validate(period)),same:!changed(source,patch)};
  }
- // 반복 범위: 고른 뜻 그대로 저장할 수 있을 때만 켬(ok). 아니면 이유를 보여 주고 끔.
- //  ctx.dateChanged = 날짜가 바뀌는 이동, ctx.weekdays = 요일을 정해 둔 반복(다음 회차가 요일 설정으로 계산됨)
- //  ctx.others = {future,all}: 그 범위면 같이 옮겨야 하는 아직 안 한 다른 회차 수(반복 할일). 이번 PR은 항목 한 건 저장만 하므로
- //  다른 회차까지 바꿔야 하면 끔(여러 회차를 한 번에 저장하는 DB 기능은 후속, 결 결정 2026-10-19)
- function scopes(kind,ctx={}){
+ // 반복 범위: 고른 뜻 그대로, 항목 한 건 저장(요청 한 번)으로 할 수 있을 때만 켬(ok). 아니면 이유를 보여 주고 끔.
+ //  반복 할일은 끌어 옮기지 않으므로(REPEAT_TODO) 여기 오지 않음 — 일정·습관만
+ function scopes(kind){
   const one={id:'one',label:'이번만'};
   if(kind==='event')return [
    {...one,reason:'반복 일정은 한 건으로 저장돼서, 이 회차만 따로 옮길 저장 칸이 아직 없어요.'},
    {id:'future',label:'이번부터 이후',reason:'반복 일정은 한 건으로 저장돼서, 그대로 저장하면 지난 회차까지 포함한 전체가 바뀌어요. 전체를 바꾸려면 \'전체\'를 골라 주세요.'},
    {id:'all',label:'전체',ok:true,note:'모든 회차를 같은 만큼 옮겨요. 반복 설정은 그대로예요.'}];
-  if(kind==='todo'){
-   const weekday=ctx.dateChanged&&ctx.weekdays?'요일을 정해 둔 반복은 다음 회차가 요일 설정으로 계산돼서, 날짜를 옮겨도 이후 회차에 반영되지 않아요. 수정창에서 요일을 바꿔 주세요.':'';
-   const many=n=>n>0?'아직 안 한 다른 회차 '+n+'개도 같이 옮겨야 해요. 여러 회차를 한 번에 저장하는 기능이 아직 없어서 지금은 할 수 없어요.':'';
-   const pick=(id,label,note)=>{const why=weekday||many(ctx.others?.[id]||0);return why?{id,label,reason:why}:{id,label,ok:true,note};};
-   return [
-    {...one,reason:'다음 회차가 이 회차 날짜로 계산돼서, 이 회차만 옮길 수 없어요.'},
-    pick('future','이번부터 이후','이 회차를 옮기고, 다음 회차는 옮긴 날짜·시간 기준으로 생겨요. 지난 회차·완료한 회차는 그대로예요.'),
-    pick('all','전체','아직 안 한 회차는 이 회차뿐이라 이 회차를 옮겨요. 다음 회차는 옮긴 날짜·시간 기준으로 생기고, 완료한 회차는 그대로예요.')];
-  }
   return [
    {...one,reason:'습관은 회차별 시간을 따로 저장할 칸이 아직 없어요.'},
    {id:'future',label:'이번부터 이후',reason:'습관을 둘로 나눠야 해서 먼저 결정이 필요해요.'},
    {id:'all',label:'전체',ok:true,note:'습관 시간을 바꿔요. 완료·건너뜀 기록은 그때 시간 그대로 남아요.'}];
  }
+ // 반복 할일은 이번 범위에서 끌어 옮기지 않음(결 결정 2026-10-19). 상세 수정이 실제로 하는 일만 안내:
+ //  상세 수정 저장 = 이 회차 한 행의 날짜·시간·반복 설정을 바꿈, 다음 회차는 완료할 때 이 회차 날짜로 계산, 이미 있는 다른 회차는 그대로
+ const REPEAT_TODO='반복 할일의 날짜·시간 변경은 상세 수정에서 해주세요. 상세 수정에서는 이 회차의 날짜·시간과 반복 설정을 바꿀 수 있고, 다음 회차는 바꾼 날짜 기준으로 생겨요. 이미 만들어진 다른 회차는 바뀌지 않아요.';
  const WD=['일','월','화','수','목','금','토'];
  const day=d=>Number(d.slice(5,7))+'/'+Number(d.slice(8))+'('+WD[new Date(d+'T12:00:00').getDay()]+')';
  function describe(p){
   if(p.allDay)return day(p.startDate)+(p.endDate&&p.endDate!==p.startDate?' ~ '+day(p.endDate):'')+' 종일';
   return day(p.startDate)+' '+p.startTime+(p.endDate&&p.endDate!==p.startDate?' ~ '+day(p.endDate)+' ':'~')+p.endTime;
  }
- root.OnekanDragRules={plan,habitPlan,scopes,describe,changed};
+ root.OnekanDragRules={plan,habitPlan,scopes,describe,changed,REPEAT_TODO};
 
  root.createOnekanScheduleDrag=api=>{
   const P=api.period,esc=api.escape,host=api.host,doc=document;
@@ -135,7 +128,7 @@
     const s=sourceOf(r);if(!s)return {error:'습관을 찾지 못했어요.'};
     return OnekanDragRules.habitPlan(P,s,d.from,t,d.grab);
    }
-   if(r.kind==='todo'&&r.repeat_unit&&r.is_done)return {error:'완료한 반복 회차는 기록이라 옮기지 않아요.'};
+   if(r.kind==='todo'&&r.repeat_unit)return {error:r.is_done?'완료한 반복 회차는 기록이라 옮기지 않아요.':OnekanDragRules.REPEAT_TODO,repeatTodo:true}; // 저장 요청 없음
    return OnekanDragRules.plan(P,r.kind,r,d.from,t,d.grab);
   }
   function previewText(d,res){
@@ -233,12 +226,12 @@
   bg.innerHTML='<div class="sheet confirm-sheet sd-scope" role="dialog" aria-modal="true" aria-labelledby="allScopeTitle" aria-describedby="allScopeMsg"><h2 id="allScopeTitle">반복 항목 옮기기</h2><p id="allScopeMsg"></p><div class="sd-scope-list" role="group" aria-label="적용 범위"></div><div class="sheet-actions"><button type="button" class="btn-ghost" data-scope-cancel>취소</button></div></div>';
   doc.body.append(bg);
   let scopeDone=null;
-  function chooseScope(kind,row,res,ctx){
+  function chooseScope(kind,row,res){
    return new Promise(resolve=>{
     const prev=doc.activeElement;scopeDone=v=>{scopeDone=null;bg.classList.remove('open');if(prev?.isConnected&&prev.getClientRects().length)prev.focus({preventScroll:true});resolve(v);};
     bg.querySelector('#allScopeMsg').textContent='\''+(row.title||'')+'\'을(를) '+OnekanDragRules.describe(res.period)+'(으)로 옮겨요. 어디까지 적용할까요?';
     const list=bg.querySelector('.sd-scope-list');
-    list.innerHTML=OnekanDragRules.scopes(kind,ctx).map(s=>'<button type="button" class="sd-scope-opt" data-scope="'+s.id+'"'+(s.ok?'':' disabled aria-disabled="true"')+' aria-describedby="allScopeNote-'+s.id+'"><strong>'+esc(s.label)+'</strong><span id="allScopeNote-'+s.id+'">'+esc(s.ok?s.note:'지금은 안 돼요 · '+s.reason)+'</span></button>').join('');
+    list.innerHTML=OnekanDragRules.scopes(kind).map(s=>'<button type="button" class="sd-scope-opt" data-scope="'+s.id+'"'+(s.ok?'':' disabled aria-disabled="true"')+' aria-describedby="allScopeNote-'+s.id+'"><strong>'+esc(s.label)+'</strong><span id="allScopeNote-'+s.id+'">'+esc(s.ok?s.note:'지금은 안 돼요 · '+s.reason)+'</span></button>').join('');
     list.querySelectorAll('[data-scope]:not([disabled])').forEach(b=>b.onclick=()=>scopeDone(b.dataset.scope));
     bg.classList.add('open');(list.querySelector('[data-scope]:not([disabled])')||bg.querySelector('[data-scope-cancel]')).focus({preventScroll:true});
    });
@@ -252,11 +245,6 @@
 
   // ── 저장 · 실행 취소 ──
   const table=kind=>kind==='event'?'tok_events':kind==='todo'?'tok_todos':'tok_habits';
-  // 반복 할일에서 그 범위면 같이 옮겨야 하는 아직 안 한 다른 회차 수('이번부터 이후' = 이 회차보다 뒤, '전체' = 모두)
-  function otherOpen(r,scope){
-   const chain=r.repeat_chain_id||r.source_id,start=P.read('todo',r).startDate;
-   return api.todos().filter(t=>t.id!==r.source_id&&!t.is_done&&t.repeat_unit&&(t.repeat_chain_id||t.id)===chain&&(scope==='all'||(P.read('todo',t).startDate||'')>=start)).length;
-  }
   // 조건부 저장: 지금 값이 from과 같을 때만 to로 바꿈(그사이 다른 곳에서 바뀌었으면 맞는 행이 없어 false). 옮기기·되돌리기 공용. 한 번에 한 항목만
   async function apply(w,owner,from,to){
    let q=api.sb.from(table(w.kind)).update(to).eq('id',w.id).eq('user_id',owner);
@@ -274,10 +262,10 @@
    try{
     let scope='single';
     if(repeat){
-     const ctx={dateChanged:P.read(r.kind,r).startDate!==res.period.startDate,weekdays:!!source.repeat_days?.length,others:r.kind==='todo'?{future:otherOpen(r,'future'),all:otherOpen(r,'all')}:{}};
-     scope=await chooseScope(r.kind,r,res,ctx);
+     if(r.kind==='todo'){status(OnekanDragRules.REPEAT_TODO);api.render();return;} // 반복 할일은 저장하지 않음(끄는 중에 이미 막히지만 한 번 더)
+     scope=await chooseScope(r.kind,r,res);
      // 취소했거나, 지원하지 않는 범위면(창에서 꺼져 있어 고를 수 없지만 한 번 더 확인) 아무것도 저장하지 않음
-     if(!scope||!OnekanDragRules.scopes(r.kind,ctx).find(x=>x.id===scope)?.ok){status('옮기지 않았어요. 원래대로 두었어요.');api.render();return;}
+     if(!scope||!OnekanDragRules.scopes(r.kind).find(x=>x.id===scope)?.ok){status('옮기지 않았어요. 원래대로 두었어요.');api.render();return;}
     }
     // 저장은 항상 이 항목 한 건(요청 한 번). 그사이 다른 곳에서 바뀌었으면 덮어쓰지 않음
     const w={kind:r.kind,id:r.source_id,patch:res.patch,before:Object.fromEntries(Object.keys(res.patch).map(k=>[k,source[k]??null]))};

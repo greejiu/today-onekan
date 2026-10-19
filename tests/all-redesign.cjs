@@ -1,4 +1,4 @@
-// '모두' 개편(2026-10-10) 검증: 월·주·일 보기, 기간별 눈(2026-10-18: 일정 전체·범주·할일·습관 모두 기간별) 저장, 주간 보드(이동·실패 복원·반복 범위 선택·습관),
+// '모두' 개편(2026-10-10) 검증: 월·주·일 보기, 기간별 눈(2026-10-18: 일정 전체·범주·할일·습관 모두 기간별) 저장, 주간 보드(이동·실패 복원·반복 할일 안내·습관),
 // 오른쪽 다가오는·언젠가와 일 보기 = 지금 한칸 화면 그대로(같은 DOM·같은 규칙), 주간 보드 빈칸·이름 수정 규칙, 월 달력 입력, 이미지 저장, PC 패널 접기·모바일 390px. 가짜 Supabase만 씀(운영 데이터·외부 요청 없음).
 const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs');
 const OUT='test-results/all-redesign';
@@ -136,12 +136,13 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await dragTo('#allWeekBoard [data-awb-col="'+today+'"] [data-awb-id="todo|t-all"]','#allWeekBoard [data-awb-col="'+target+'"]');
  await p.waitForFunction(()=>/저장하지 못했어요/.test(document.getElementById('allSaveStatus').textContent));
  assert.deepEqual(await p.evaluate(()=>({...mockRows.tok_todos.find(t=>t.id==='t-all')})),allBefore);assert.equal(await col(today).locator('[data-awb-id="todo|t-all"]').count(),1,'실패 시 원래 자리');
- // 2026-10-18 3단계: 반복은 수정창 대신 범위 선택 창(이번만·이번부터 이후·전체). 취소하면 원본 그대로(자세한 검증은 schedule-drag.cjs)
+ // 2026-10-19 3단계: 반복 할일은 끌어 옮기지 않음 — 상세 수정 안내, 저장 없음(자세한 검증은 schedule-drag.cjs)
+ const repeatWrites=await p.evaluate(()=>mockWrites.length);
  await dragTo('#allWeekBoard [data-awb-col="'+today+'"] [data-awb-id="todo|t-repeat"]','#allWeekBoard [data-awb-col="'+target+'"]');await p.waitForTimeout(200);
- assert(await p.locator('#allScopeBg').evaluate(e=>e.classList.contains('open')),'반복 할일은 범위 선택 창');await p.keyboard.press('Escape');await p.waitForTimeout(150);
- assert.equal(await p.evaluate(()=>mockRows.tok_todos.find(t=>t.id==='t-repeat').start_date),today,'취소하면 반복 할일 그대로');
+ assert.equal(await p.locator('#allScopeBg').evaluate(e=>e.classList.contains('open')),false,'반복 할일은 범위 창 없음');assert.match(await p.locator('#allSaveStatus').textContent(),/상세 수정에서 해주세요/);
+ assert.equal(await p.evaluate(()=>mockRows.tok_todos.find(t=>t.id==='t-repeat').start_date),today,'반복 할일 그대로');assert.equal(await p.evaluate(()=>mockWrites.length),repeatWrites,'저장 없음');
  await p.setViewportSize({width:1440,height:900});
- ok('보드 끌어 옮기기: 시간·길이 보존, 기간 일정 길이 보존, 실패 시 원래 상태·안내, 반복은 범위 선택(취소 = 원본)');
+ ok('보드 끌어 옮기기: 시간·길이 보존, 기간 일정 길이 보존, 실패 시 원래 상태·안내, 반복 할일은 상세 수정 안내(저장 없음)');
  // 8) 오른쪽 = 지금 한칸 다가오는·담아두기 그 자체(같은 DOM, 같은 클릭·끌기·추가 규칙). '지난 할일' 접힘 없음.
  //    2026-10-18: 이름은 '날짜별', 날짜별에는 지금 달력 보기의 눈을 같이 적용.
  const side=p.locator('#allSideAgenda');
