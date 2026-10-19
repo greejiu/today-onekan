@@ -693,6 +693,7 @@
   .sched-more:hover{background:var(--accent-soft);}
   .cev-opt{color:var(--sub);font-weight:400;}
   .cev-hint{font-size:var(--fs-meta);color:var(--sub);margin:-4px 2px 10px;line-height:1.4;}
+  .cev-hint[hidden]{display:none;}
   .cal-ev-sheet-bg .field textarea{background:var(--card);color:var(--text);resize:vertical;}
   .cal-today-btn{flex:none;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;font-size:var(--fs-body);font-family:inherit;padding:0 14px;height:32px;cursor:pointer;white-space:nowrap;}
   .cal-today-btn:hover{background:var(--accent-soft);}
@@ -1973,6 +1974,7 @@
       <div class="field"><label for="td_tag">그룹</label><select id="td_tag"></select></div>
       <div class="field split"><div><label for="td_repeat_unit">반복</label><select id="td_repeat_unit"><option value="">반복 없음</option><option value="day">일마다</option><option value="week">주마다</option><option value="month">개월마다</option></select></div><div id="td_repeat_interval_wrap"><label for="td_repeat_interval">주기</label><input id="td_repeat_interval" type="number" min="1" value="1" /></div></div>
       <div id="td_repeat_days_row" class="field" hidden><label>반복 요일</label><div class="weekday-picker"><label><input type="checkbox" value="0" />일</label><label><input type="checkbox" value="1" />월</label><label><input type="checkbox" value="2" />화</label><label><input type="checkbox" value="3" />수</label><label><input type="checkbox" value="4" />목</label><label><input type="checkbox" value="5" />금</label><label><input type="checkbox" value="6" />토</label></div></div>
+      <div class="cev-hint" id="td_repeat_help" hidden>반복 할일은 여기서 이 회차의 날짜·시간과 반복 설정을 바꿀 수 있어요. 다음 회차는 바꾼 날짜 기준으로 생기고, 이미 만들어진 다른 회차는 바뀌지 않아요. 일정 화면에서 끌어 옮기기는 아직 지원하지 않아요.</div>
       <div id="td_repeat_dates" class="field split"><div><label for="td_repeat_start">반복 시작일</label><input id="td_repeat_start" type="date" /></div><div><label for="td_repeat_end">반복 종료일 (선택)</label><input id="td_repeat_end" type="date" /></div></div>
       <div class="field project-field" id="td_project_wrap" hidden><label for="td_project">프로젝트 <span class="cev-opt">(선택)</span></label><select id="td_project"></select></div>
       <div class="cal-ev-error" id="td_error" role="alert"></div>
@@ -2286,6 +2288,7 @@
 <script src="assets/navigation.js"></script>
 <script src="assets/todo-sidebar.js"></script>
 <script src="assets/habit-views.js"></script>
+<script src="assets/schedule-drag.js"></script>
 <script src="assets/all-views.js"></script>
 <script src="assets/tracking.js"></script>
 <script>
@@ -4474,7 +4477,7 @@
       });
       row.addEventListener("pointermove", (e) => {
         if (!dragEl) return;
-        if (!moved && touchGate.allow(e, startX, startY) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+        if (!moved && touchGate.allow(e, startX, startY) && !loanMoveOwned(dragEl) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
           dragEl.classList.add("dragging");
         }
@@ -4497,7 +4500,7 @@
         el.classList.remove("dragging");
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (!wasMoved) { if (touchGate.consumeCancelled()) return; startAgendaItemInlineEdit(el, id, kind, renderAgendaAllDay); return; }
+        if (!wasMoved) { if (loanMoveTaken(el) || touchGate.consumeCancelled()) return; startAgendaItemInlineEdit(el, id, kind, renderAgendaAllDay); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         if (!drop) return;
         // 8-6단계 버그 수정: 여러 날짜 열이 나란히 있는 지금은 "하루종일" 존이 열마다 따로 있으므로,
@@ -4738,7 +4741,7 @@
       });
       row.addEventListener("pointermove", (e) => {
         if (!dragEl) return;
-        if (!moved && touchGate.allow(e, startX, startY) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+        if (!moved && touchGate.allow(e, startX, startY) && !loanMoveOwned(dragEl) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
           dragEl.classList.add("dragging");
           ghost = document.createElement("div");
@@ -4763,7 +4766,7 @@
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (!wasMoved) { if (touchGate.consumeCancelled()) return; startAgendaItemInlineEdit(el, id, kind, rerender); return; }
+        if (!wasMoved) { if (loanMoveTaken(el) || touchGate.consumeCancelled()) return; startAgendaItemInlineEdit(el, id, kind, rerender); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
         await moveItemToZone(kind,id,drop?{...drop,sourceDate:el.closest('[data-date]')?.dataset.date}:null);
       };
@@ -4863,7 +4866,7 @@
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
-        if (!moved && touchGate.allow(e, startX, startY) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+        if (!moved && touchGate.allow(e, startX, startY) && !loanMoveOwned(row) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
           row.classList.add("dragging");
           ghost = document.createElement("div");
@@ -4891,7 +4894,7 @@
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (!wasMoved) { if (touchGate.consumeCancelled()) return;
+        if (!wasMoved) { if (loanMoveTaken(row) || touchGate.consumeCancelled()) return;
           if (skipInlineEditKinds.includes(kind)) return; // 다른 곳(예: 제목 클릭)이 처리하도록 그대로 둠
           startAgendaItemInlineEdit(row, id, kind, onRerender);
           return;
@@ -5010,6 +5013,10 @@
       arm() { touch = true; armed = true; }, // 다른 곳(타임라인 항목)이 자체 롱프레스로 이동을 시작했을 때 스크롤만 막음
     };
   })();
+  // 2026-10-18 3단계: 일정 화면 일 보기(#allHomeDay)에 빌려 간 줄의 '이동'은 일정 화면 끌기(schedule-drag.js)가 맡음.
+  // 여기서는 짧게 누르기(이름 수정)와 타임라인 끝부분 길이 조절만 그대로. 지금한칸 화면 자체의 끌기는 바뀌지 않음.
+  const loanMoveOwned = el => !!el.closest("#allHomeDay");
+  const loanMoveTaken = el => { if (!el.dataset.sdMoved) return false; delete el.dataset.sdMoved; return true; }; // 일정 화면 끌기가 방금 옮긴 줄 = 탭 아님
   const TL_EDGE_ZONE_PX = 8;
   // 8-3단계: dateStr/containerEl로 일반화 — 여러 날짜 열이 나란히 렌더되므로 각 열은 자기 min/max를
   // .ag-tl-content의 data-min-m/data-max-m에 저장해두고(homeDropZone·현재시각선이 열마다 따로 읽어씀).
@@ -5154,6 +5161,7 @@
         startY = e.clientY;
         startScrollTop = timelineScroller?.scrollTop || 0;
         edgeAtStart = zoneAt(e.clientY);
+        if (edgeAtStart) task.dataset.edgeAtStart = edgeAtStart; else delete task.dataset.edgeAtStart; // 일정 화면 끌기가 끝부분(길이 조절)은 건드리지 않게
         dragKind = null;
         isMouse = e.pointerType === "mouse";
         task.setPointerCapture?.(e.pointerId);
@@ -5163,7 +5171,7 @@
         // 이 타이머는 "짧은 항목이라 끝부분밖에 못 눌렀는데 이동시키고 싶을 때"의 보완 수단으로 항상 켜둠.
         longPressTimer = setTimeout(() => {
           longPressTimer = null;
-          if (cancelled) return;
+          if (cancelled || loanMoveOwned(task)) return;
           dragKind = "move";
           if (!isMouse) { touchGate.arm(); navigator.vibrate?.(15); }
           task.classList.add("dragging");
@@ -5186,6 +5194,9 @@
             clearTimer();
             if (edgeAtStart) {
               dragKind = edgeAtStart === "top" ? "resize-top" : "resize-bottom";
+            } else if (loanMoveOwned(task)) {
+              if (!isMouse) cancelled = true; // 이동은 일정 화면 끌기가 맡음. 터치로 길게 누르기 전에 움직이면 스크롤(이름 수정 아님)
+              return;
             } else if (isMouse) {
               dragKind = "move";
               task.classList.add("dragging");
@@ -5242,7 +5253,7 @@
         clearHoverHint();
 
         if (k === null) {
-          if (!cancelled) startEditTitle();
+          if (!loanMoveTaken(task) && !cancelled) startEditTitle();
           return;
         }
         if (!moved) return;
@@ -6459,7 +6470,7 @@
     sel.value = selectedId || "";
   }
   function openTodoSheet(existing, prefill) {
-    todoSheetState = { saving: false, opener: document.activeElement && document.activeElement !== document.body ? document.activeElement : null };
+    todoSheetState = { saving: false, repeatEdit: !!existing?.repeat_unit, opener: document.activeElement && document.activeElement !== document.body ? document.activeElement : null };
     const start = existing ? existing.start_date : (prefill?.startDate || todayStr());
     $("todoSheetTitle").textContent = existing ? "할일 수정" : todoSheetTitleFor(start);
     $("td_title").value = existing ? existing.title : "";
@@ -6486,6 +6497,8 @@
   function syncTodoRepeatForm() {
     const unit=$('td_repeat_unit').value;
     $('td_repeat_dates').hidden=!unit;
+    // 2026-10-19 도움말: 반복 할일을 고칠 때만(끌어 옮기기 대신 여기서 날짜·시간을 바꿈 — 저장은 이 회차 한 건)
+    $('td_repeat_help').hidden=!(unit&&todoSheetState?.repeatEdit);
     $('td_repeat_days_row').hidden=unit!=='week';
     toggleRepeatUiFor('td',unit);
   }
@@ -8462,7 +8475,7 @@
   // 09-24: 저장 완료 같은 짧은 알림을 화면 아래에 잠깐(1.6초) 띄움. 연달아 불러도 요소 하나를 재사용.
   // 2026-10-01: action({ label, run })을 넘기면 오른쪽에 버튼(예: 실행 취소)을 붙이고 더 오래(6초) 보여 줌. 버튼은 한 번만 눌림.
   let toastTimer = null;
-  function showToast(msg, action = null) {
+  function showToast(msg, action = null, ms = null) {
     let el = $("appToast");
     if (!el) {
       el = document.createElement("div");
@@ -8488,7 +8501,7 @@
     }
     requestAnimationFrame(() => el.classList.add("show"));
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove("show"), action ? 6000 : 1600);
+    toastTimer = setTimeout(() => el.classList.remove("show"), ms || (action ? 6000 : 1600));
   }
   $("settingsDaySaveBtn").onclick = async () => {
     const startVal = $("settingsDayStart").value, endVal = $("settingsDayEnd").value;
@@ -9995,6 +10008,8 @@
     done:setTodoDone,reload:loadAll,refresh:()=>{renderHome();renderTodosPage();renderTodo();if(currentPage==='work')renderWork();},sidebar:syncPageSidebar,
     // 2026-10-10 '모두': 오른쪽 다가오는·언젠가와 일 보기는 지금 한칸 화면을 그대로 빌려 씀, 이미지 저장
     mountLists:mountHomeLists,upcomingJump:jumpHomeUpcoming,homeDay:lendHomeDay,exportView:openAllExport,
+    // 2026-10-18 3단계 끌어 옮기기: 습관 원본(회차 → 원본 시간 변경), 10초 실행 취소 알림
+    habitSource:id=>tasks.find(h=>h.id===id),toast:(msg,action,ms)=>showToast(msg,action,ms),
     // 일정 범주 추가·수정(옛 일정 화면 사이드바와 같은 창) — 통합 일정 화면 사이드바 '내 일정'에서 엶
     categoryAdd:opener=>classification.open('group','event',opener),categoryEdit:(id,opener)=>classification.editGroup('event',id,opener),
     // 주간 보드도 지금 한칸과 같은 규칙: 빈칸(모양·입력), 제목 누르기 = 이름 수정

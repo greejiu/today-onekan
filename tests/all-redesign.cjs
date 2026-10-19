@@ -1,4 +1,4 @@
-// '모두' 개편(2026-10-10) 검증: 월·주·일 보기, 기간별 눈(2026-10-18: 일정 전체·범주·할일·습관 모두 기간별) 저장, 주간 보드(이동·실패 복원·습관),
+// '모두' 개편(2026-10-10) 검증: 월·주·일 보기, 기간별 눈(2026-10-18: 일정 전체·범주·할일·습관 모두 기간별) 저장, 주간 보드(이동·실패 복원·반복 할일 안내·습관),
 // 오른쪽 다가오는·언젠가와 일 보기 = 지금 한칸 화면 그대로(같은 DOM·같은 규칙), 주간 보드 빈칸·이름 수정 규칙, 월 달력 입력, 이미지 저장, PC 패널 접기·모바일 390px. 가짜 Supabase만 씀(운영 데이터·외부 요청 없음).
 const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=require('playwright'),{fixture}=require('./period-fixture.cjs');
 const OUT='test-results/all-redesign';
@@ -136,11 +136,13 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await dragTo('#allWeekBoard [data-awb-col="'+today+'"] [data-awb-id="todo|t-all"]','#allWeekBoard [data-awb-col="'+target+'"]');
  await p.waitForFunction(()=>/저장하지 못했어요/.test(document.getElementById('allSaveStatus').textContent));
  assert.deepEqual(await p.evaluate(()=>({...mockRows.tok_todos.find(t=>t.id==='t-all')})),allBefore);assert.equal(await col(today).locator('[data-awb-id="todo|t-all"]').count(),1,'실패 시 원래 자리');
+ // 2026-10-19 3단계: 반복 할일은 끌어 옮기지 않음 — 상세 수정 안내, 저장 없음(자세한 검증은 schedule-drag.cjs)
+ const repeatWrites=await p.evaluate(()=>mockWrites.length);
  await dragTo('#allWeekBoard [data-awb-col="'+today+'"] [data-awb-id="todo|t-repeat"]','#allWeekBoard [data-awb-col="'+target+'"]');await p.waitForTimeout(200);
- assert.equal(await p.evaluate(()=>mockRows.tok_todos.find(t=>t.id==='t-repeat').start_date),today,'반복 할일은 끌어서 안 바뀜');
- assert(/반복 항목은 수정창/.test(await p.locator('#allSaveStatus').textContent()));await p.keyboard.press('Escape');await p.evaluate(()=>{document.querySelectorAll('.sheet-bg.open').forEach(b=>b.classList.remove('open'));});
+ assert.equal(await p.locator('#allScopeBg').evaluate(e=>e.classList.contains('open')),false,'반복 할일은 범위 창 없음');assert.match(await p.locator('#allSaveStatus').textContent(),/반복 할일은 상세 화면에서 날짜·시간을 변경해 주세요/);
+ assert.equal(await p.evaluate(()=>mockRows.tok_todos.find(t=>t.id==='t-repeat').start_date),today,'반복 할일 그대로');assert.equal(await p.evaluate(()=>mockWrites.length),repeatWrites,'저장 없음');
  await p.setViewportSize({width:1440,height:900});
- ok('보드 끌어 옮기기: 시간·길이 보존, 기간 일정 길이 보존, 실패 시 원래 상태·안내, 반복은 수정창 안내');
+ ok('보드 끌어 옮기기: 시간·길이 보존, 기간 일정 길이 보존, 실패 시 원래 상태·안내, 반복 할일은 상세 화면 안내(저장 없음)');
  // 8) 오른쪽 = 지금 한칸 다가오는·담아두기 그 자체(같은 DOM, 같은 클릭·끌기·추가 규칙). '지난 할일' 접힘 없음.
  //    2026-10-18: 이름은 '날짜별', 날짜별에는 지금 달력 보기의 눈을 같이 적용.
  const side=p.locator('#allSideAgenda');
@@ -235,7 +237,8 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await p.locator('#allCalGrid [data-month-date="'+d10+'"]').click();assert.equal(await view(p),'month','달력 보기는 그대로');
  assert.equal(await p.evaluate(()=>allViews.agenda.state().list),'upcoming','날짜별로 바뀜');await p.waitForSelector('#allSideAgenda .upcoming-day.is-picked');
  assert.equal(await side.locator('.upcoming-day').first().getAttribute('data-date'),d10.slice(0,7)+'-01','그 날짜가 있는 달의 1일부터');assert.equal(await side.locator('.upcoming-day.is-picked').getAttribute('data-date'),d10,'그 날짜 강조');
- await go(p,'month');const cell=p.locator('#allCalGrid .cal-cell[data-date="'+d10+'"]');const cb=await cell.boundingBox();await p.mouse.click(cb.x+cb.width/2,cb.y+cb.height-8);
+ await go(p,'month');await p.evaluate(()=>document.getElementById('appToast')?.classList.remove('show')); // 앞의 끌기 실행 취소 알림(10초)이 칸을 가리지 않게
+ const cell=p.locator('#allCalGrid .cal-cell[data-date="'+d10+'"]');const cb=await cell.boundingBox();await p.mouse.click(cb.x+cb.width/2,cb.y+cb.height-8);
  await p.waitForTimeout(150);assert(await p.locator('.item-menu').isVisible(),'빈 공간 클릭 → 추가 종류 메뉴');assert.deepEqual(await p.locator('.item-menu [role=menuitem]').allTextContents().then(t=>t.map(x=>x.trim())),['할일 추가','습관 추가','일정 추가']);
  await p.keyboard.press('Escape');await p.evaluate(()=>{document.querySelectorAll('.sheet-bg.open').forEach(b=>b.classList.remove('open'));});
  ok('월: 날짜 줄 → 날짜별 이동·강조, 빈 공간 → 추가');
