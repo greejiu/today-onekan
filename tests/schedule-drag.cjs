@@ -256,7 +256,13 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  await scope.locator('[data-scope=all]').click();await p.waitForFunction(()=>mockRows.tok_habits[0].start_minute!==420);
  const h=await row(p,'tok_habits','h1');assert.equal(h.start_minute,480);assert.equal(h.end_time,'08:30:00');assert.equal(h.duration_minutes,30);
  assert.equal(await p.evaluate(()=>JSON.stringify(mockRows.tok_habit_logs)),logs0,'완료 기록 그대로');
- ok('일 보기 타임라인: 일정 시간 이동(소요시간 유지), 습관은 같은 날 시간만·전체 범위(꺼진 범위·취소는 그대로)·완료 기록 보존');
+ // 짧게 누르기 = 이름 수정 유지, 0.3초 넘게 눌렀다 그대로 떼기 = 이름 수정 안 열림(지금한칸과 같게)
+ await p.waitForTimeout(600);const evTitle=ev.locator('.ag-tl-title');await ev.evaluate(e=>e.scrollIntoView({block:'center'}));
+ let tb=await evTitle.boundingBox();await p.mouse.move(tb.x+tb.width/2,tb.y+tb.height/2);await p.mouse.down();await p.waitForTimeout(450);await p.mouse.up();await p.waitForTimeout(250);
+ assert.equal(await ev.locator('.inline-add-input').count(),0,'일 보기 타임라인: 길게 눌렀다 떼기 = 이름 수정 안 열림');assert.equal(await row(p,'tok_events','e-day').then(r=>r.event_time),'16:00:00','길게 누르기만 = 이동 아님');
+ tb=await evTitle.boundingBox();await p.mouse.click(tb.x+tb.width/2,tb.y+tb.height/2);await p.waitForTimeout(200);
+ assert(await ev.locator('.inline-add-input').isVisible(),'일 보기 타임라인: 짧게 누르기 = 이름 수정');await p.keyboard.press('Escape');await p.waitForTimeout(200);
+ ok('일 보기 타임라인: 일정 시간 이동(소요시간 유지), 습관은 같은 날 시간만·전체 범위(꺼진 범위·취소는 그대로)·완료 기록 보존, 짧게 누르기 = 이름 수정, 길게 눌렀다 떼기 = 열리지 않음');
 
  // ── 9. 월: 막대를 다른 날로(미리보기는 도착 칸 안) ──
  await go('month');await p.evaluate(d=>allViews.selectDate(d),D[1]);await p.waitForTimeout(150);

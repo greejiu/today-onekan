@@ -133,6 +133,12 @@ const dismissToast=p=>p.evaluate(()=>document.querySelector('#appToast')?.classL
  // ── 11. 고유 조작 유지: 짧게 누르기 = 이름 수정(하루종일·타임라인·시간블록), 빈칸 추가 ──
  await p.waitForTimeout(500);
  await task('t-short').locator('.ag-tl-title').click();assert(await task('t-short').locator('.inline-add-input').isVisible(),'타임라인 이름 수정');await p.keyboard.press('Escape');await p.waitForTimeout(150);
+ { // 0.3초 넘게 눌렀다 그대로 떼기 = 이름 수정 안 열림, 이동도 아님
+  const before0=await snap(p),tt=task('t-short').locator('.ag-tl-title');await tt.evaluate(e=>e.scrollIntoView({block:'center'}));const tb=await tt.boundingBox();
+  await p.mouse.move(tb.x+tb.width/2,tb.y+tb.height/2);await p.mouse.down();await p.waitForTimeout(450);await p.mouse.up();await p.waitForTimeout(250);
+  assert.equal(await task('t-short').locator('.inline-add-input').count(),0,'타임라인: 길게 눌렀다 떼기 = 이름 수정 안 열림');assert.equal(await snap(p),before0,'길게 누르기만 = 이동 아님');
+  await p.mouse.click(tb.x+tb.width/2,tb.y+tb.height/2);await p.waitForTimeout(200);assert(await task('t-short').locator('.inline-add-input').isVisible(),'그 뒤 짧게 누르기 = 이름 수정');await p.keyboard.press('Escape');await p.waitForTimeout(150);
+ }
  await p.evaluate(()=>{mockRows.tok_todos.push({id:'t-all2',user_id:'test',title:'오늘 종일',is_done:false,...OnekanPeriod.patch('todo',{allDay:true,startDate:todayStr(),endDate:todayStr()})});return loadAll();});await p.waitForTimeout(200);
  await allday('t-all2').locator('.agenda-title').click();assert(await allday('t-all2').locator('.inline-add-input').isVisible(),'하루종일 이름 수정');await p.keyboard.press('Escape');await p.waitForTimeout(150);
  const emptyAt=await axis(p,1260,true);await p.mouse.click(emptyAt.x,emptyAt.y);await p.waitForTimeout(200);
@@ -141,7 +147,7 @@ const dismissToast=p=>p.evaluate(()=>document.querySelector('#appToast')?.classL
  await p.locator('[data-col2tab=block]').click();await p.waitForTimeout(250);
  const blockRow=p.locator('#homeTodayBlockBody .ag-block-row[data-id="t-short"]');await blockRow.locator('.agenda-title').click();assert(await blockRow.locator('.inline-add-input').isVisible(),'시간블록 이름 수정');await p.keyboard.press('Escape');await p.waitForTimeout(150);
  await p.locator('[data-blockallday]').first().click();assert(await p.locator('#homeTodayBlockAllDay .inline-add-input').isVisible(),'시간블록 하루종일 빈칸 추가');await p.keyboard.press('Escape');
- ok('고유 조작 유지: 짧게 누르기 = 이름 수정(타임라인·하루종일·시간블록), 빈칸 누르기 = 추가');
+ ok('고유 조작 유지: 짧게 누르기 = 이름 수정(타임라인·하루종일·시간블록), 타임라인 길게 눌렀다 떼기 = 열리지 않음, 빈칸 누르기 = 추가');
 
  // ── 12. 시간블록: 블록 시작 시각, 블록 하루종일 줄 끌기 ──
  a=await center(p.locator('#homeTodayBlockAllDay .home-today-row[data-id="t-all2"]'));const card=await center(p.locator('.ag-block-card[data-block-start="780"]').first());
@@ -176,8 +182,10 @@ const dismissToast=p=>p.evaluate(()=>document.querySelector('#appToast')?.classL
  assert(await m.locator('#allMoveLabel').isVisible(),'모바일 미리보기');await touch('touchEnd');
  await m.waitForFunction(()=>mockRows.tok_todos[0].todo_time==='10:30:00');assert.equal((await row(m,'tok_todos','m1')).end_time,'11:30:00'); // 20px ≈ 33분 → 30분 단위로 10:30
  assert.equal(await m.locator('#agendaTimeWrap .inline-add-input').count(),0,'끈 뒤 이름 수정 안 열림');
- await m.evaluate(()=>document.querySelector('#appToast')?.classList.remove('show'));await m.waitForTimeout(500);ma=await center(mt);await touch('touchStart',ma.x,ma.y);await touch('touchEnd');await m.waitForTimeout(250);
+ await m.evaluate(()=>document.querySelector('#appToast')?.classList.remove('show'));await m.waitForTimeout(500);ma=await center(mt);await touch('touchStart',ma.x,ma.y);await m.waitForTimeout(450);await touch('touchEnd');await m.waitForTimeout(300);
+ assert.equal(await mt.locator('.inline-add-input').count(),0,'모바일: 길게 눌렀다 떼기 = 이름 수정 안 열림');assert.equal((await row(m,'tok_todos','m1')).todo_time,'10:30:00','길게 누르기만 = 이동 아님');
+ await m.waitForTimeout(500);ma=await center(mt);await touch('touchStart',ma.x,ma.y);await touch('touchEnd');await m.waitForTimeout(250);
  assert(await mt.locator('.inline-add-input').isVisible(),'짧게 누르기 = 이름 수정');
  await m.screenshot({path:OUT+'/home-drag-mobile.png'});assert.deepEqual(merr,[]);
- ok('모바일 390: 짧은 밀기 = 이동 아님, 0.3초 누른 뒤 끌기 = 30분 단위 이동, 짧게 누르기 = 이름 수정');
+ ok('모바일 390: 짧은 밀기 = 이동 아님, 0.3초 누른 뒤 끌기 = 30분 단위 이동, 길게 눌렀다 떼기 = 이름 수정 안 열림, 짧게 누르기 = 이름 수정');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exit(1);});
