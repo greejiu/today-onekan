@@ -38,11 +38,11 @@ async function fixture(page, source = html) {
     window.mockWrites=[]; window.mockDelay=0;
     window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:'test',email:'test@example.invalid'}}}}),getUser:async()=>({data:{user:{id:'test',app_metadata:{today_onekan_operator:true}}}})},from(table){
       let op='select',values,filters=[],single=false;const q=new Proxy({}, {get(_,key){
-        if(key==='then')return async resolve=>{ const data=(rows[table]||[]).filter(r=>filters.every(([k,v])=>Array.isArray(v)?v.includes(r[k]):r[k]===v)).map(r=>({...r})); const delay=window.mockDelay; window.mockDelay=0; if(delay) await new Promise(r=>setTimeout(r,delay));
-          if(op==='update') { (rows[table]||[]).filter(r=>filters.every(([k,v])=>r[k]===v)).forEach(r=>Object.assign(r,values));window.mockWrites.push({table,op,values}); }
+        if(key==='then')return async resolve=>{ const match=r=>filters.every(([k,v,is])=>is?(r[k]??null)===v:Array.isArray(v)?v.includes(r[k]):r[k]===v||k==='user_id'&&r[k]==null); /* 끌어 옮기기 조건부 저장: is(null)은 없는 칸도 null, 이 가짜 데이터는 user_id가 없음 */ const data=(rows[table]||[]).filter(match).map(r=>({...r})); const delay=window.mockDelay; window.mockDelay=0; if(delay) await new Promise(r=>setTimeout(r,delay));
+          if(op==='update') { (rows[table]||[]).filter(match).forEach(r=>Object.assign(r,values));window.mockWrites.push({table,op,values}); }
           if(op==='insert'){const added=(Array.isArray(values)?values:[values]).map((r,i)=>({id:`new${Date.now()}${i}`,...r}));rows[table]||=[];rows[table].push(...added);window.mockWrites.push({table,op,values});}
           resolve({data:single?(data[0]||null):data,error:null});};
-        return (...args)=>{if(['insert','update','delete','upsert'].includes(key)){op=key;values=args[0];}if(key==='eq'||key==='in')filters.push(args);if(key==='single'||key==='maybeSingle')single=true;return q;};
+        return (...args)=>{if(['insert','update','delete','upsert'].includes(key)){op=key;values=args[0];}if(key==='eq'||key==='in')filters.push(args);if(key==='is')filters.push([args[0],args[1],true]);if(key==='single'||key==='maybeSingle')single=true;return q;};
       }});return q;
     }})};
   });
@@ -109,7 +109,7 @@ if (require.main === module) (async()=>{
   const sourceBox=await source.boundingBox();const targetBox=await page.locator('.upcoming-day').first().boundingBox();
   await page.mouse.move(sourceBox.x+sourceBox.width/2,sourceBox.y+sourceBox.height/2);await page.mouse.down();
   await page.mouse.move(targetBox.x+targetBox.width/2,targetBox.y+30,{steps:12});await page.mouse.up();
-  await page.waitForFunction(()=>mockRows.tok_todos.find(t=>t.id==='t0').start_date===homeUpcomingStart);
+  await page.waitForFunction(()=>todos.find(t=>t.id==='t0')?.start_date===homeUpcomingStart);await page.waitForTimeout(150); // 저장 뒤 다시 불러와 그린 것까지
   console.log('actual center-to-upcoming pointer drag / displayed date saved PASS');
   await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);
   before=await count();await page.locator('[data-somedaymore]').click();assert.equal(await count(),before+5);

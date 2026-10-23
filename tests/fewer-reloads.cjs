@@ -28,7 +28,7 @@ try{
  r=await reads();assert.deepEqual(data(r),['tok_someday','tok_todos'],'옮기기 '+r);
  assert(await p.evaluate(()=>todos.some(t=>t.title==='포트폴리오 정리')&&!somedayItems.length));ok('담아두기 → 날짜 옮기기: 두 테이블만, 상태 반영');
  // 3) 습관 이동 → tok_habits만
- await p.evaluate(()=>moveItemToZone('habit','h1',{zone:'today-timed',date:todayStr(),startMinute:540}));r=await reads();assert.deepEqual(data(r),['tok_habits'],'습관 '+r);
+ await p.evaluate(()=>{window.habitMove=moveItemToZone('habit','h1',{zone:'today-timed',date:todayStr(),startMinute:540});});await p.locator('#allScopeBg [data-scope=all]').click();await p.evaluate(()=>habitMove); /* 반복 습관 = 범위 '전체'(공통 끌기 규칙) */r=await reads();assert.deepEqual(data(r),['tok_habits'],'습관 '+r);
  assert.equal(await p.evaluate(()=>tasks.find(t=>t.id==='h1').start_minute),540);ok('습관 시간 옮기기: 습관 테이블만');
  // 4) 겹친 전체 불러오기 3번 → 지금 것 + 끝난 뒤 1번 = 2번
  await p.evaluate(()=>Promise.all([loadAll(),loadAll(),loadAll()]));r=await reads();assert.equal(fulls(r),2,'전체 불러오기 횟수');

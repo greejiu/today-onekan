@@ -238,7 +238,7 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  await go('day','timeline');await p.waitForTimeout(250);
  const dayAxis='#allHomeDay .ag-tl-content[data-date="'+D[4]+'"]';
  const ev=p.locator('#allHomeDay .ag-tl-task[data-id="e-day"]');
- const evBox=await (async()=>{await ev.scrollIntoViewIfNeeded();return ev.boundingBox();})();
+ const evBox=await (async()=>{await ev.evaluate(e=>e.scrollIntoView({block:'center'}));return ev.boundingBox();})(); // 가운데로(스크롤 상자 끝이면 가장자리 자동 넘김이 끼어듦)
  await drag(p,{x:evBox.x+evBox.width*.4,y:evBox.y+evBox.height/2},{x:evBox.x+evBox.width*.4,y:evBox.y+evBox.height/2+36});
  await p.waitForFunction(()=>mockRows.tok_events.find(r=>r.id==='e-day').event_time!=='15:00:00');r=await row(p,'tok_events','e-day');
  assert.equal(r.event_time,'16:00:00');assert.equal(r.end_time,'17:00:00','소요시간 유지');

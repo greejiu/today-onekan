@@ -1,5 +1,6 @@
 /* 2026-10-18 3단계: 일정 화면(월·주 보드·주 타임라인·일 보기)의 기존 항목 끌어 옮기기.
- * 규칙(OnekanDragRules)과 화면 동작(createOnekanScheduleDrag)을 나눔. 지금한칸·오른쪽 목록·언젠가는 이 파일이 다루지 않음(후속).
+ * 2026-10-22: 지금한칸 화면도 같은 엔진을 씀(screen:'home'). 화면마다 끌 수 있는 줄·놓을 자리·안내만 다르고, 규칙·저장·실행 취소는 하나.
+ * 규칙(OnekanDragRules)과 화면 동작(createOnekanScheduleDrag)을 나눔. 언젠가 → 날짜(종류 선택·추가창)와 오른쪽 목록 끌기는 후속.
  * - 날짜만 옮기면 시간·기간 유지(여러 날 항목도 기간 유지), 잡은 날과 놓은 날의 차이만큼 이동
  * - 시간 칸: 놓은 시각이 시작(30분 단위, 확정 설계), 소요시간 유지(타임라인 안에서 끌면 잡은 위치와의 차이를 유지해 미리보기 윗변 = 시작)
  * - 하루종일 → 시간 칸: 놓은 날 그 시각부터 30분 / 시간 → 하루종일: 시간 지정 해제 / 시간블록: 블록 시작 시각
@@ -13,6 +14,11 @@
  // 저장할 칸만 비교(시간은 'HH:MM:SS'와 'HH:MM'을 같게 봄)
  const same=(a,b)=>(a??null)===(b??null)||typeof a==='string'&&typeof b==='string'&&a.slice(0,5)===b.slice(0,5)&&/^\d\d:\d\d/.test(a);
  const changed=(row,patch)=>Object.keys(patch).some(k=>!same(row[k],patch[k]));
+ // 타임라인 세로 위치 → 시각(30분 단위, 열의 시작·끝 안으로)
+ function axisMinute(content,y){
+  const min=Number(content.dataset.minM),max=Number(content.dataset.maxM)||1440,scale=Number(content.dataset.timeScale)||0.6,top=content.getBoundingClientRect().top;
+  return Math.max(0,Math.min(Math.min(max,1440)-STEP,min+round((y-top)/scale)));
+ }
  const invalid=m=>m?'이 항목의 기간 정보가 완전하지 않아요. 수정창에서 확인해 주세요. ('+m+')':'';
  // 놓은 자리(target)로 옮긴 새 저장값. from = 잡은 조각이 있던 날짜, grab = 타임라인에서 잡은 시각({date,minute}, 없으면 놓은 시각이 곧 시작)
  function plan(P,kind,row,from,target,grab){
@@ -75,22 +81,62 @@
  // 반복 할일은 이번 범위에서 끌어 옮기지 않음(결 결정 2026-10-19). 끄는 중에는 짧게 안내하고, 상세 화면 도움말이 실제로 하는 일을 설명:
  //  상세 수정 저장 = 이 회차 한 행의 날짜·시간·반복 설정을 바꿈, 다음 회차는 완료할 때 이 회차 날짜로 계산, 이미 있는 다른 회차는 그대로
  const REPEAT_TODO='반복 할일은 상세 화면에서 날짜·시간을 변경해 주세요.'; // 긴 설명은 상세 화면(할일 수정창) 도움말 #td_repeat_help
+ // 할일 → 언젠가는 표(tok_todos → tok_someday)가 달라 새로 만들고 지우는 두 번의 저장이 필요함. 중간에 실패하면 둘 다 남거나 사라질 수 있어
+ //  한 번에 저장하는 방법(DB 함수)이 생길 때까지 막음(결 결정 2026-10-22)
+ const SOMEDAY_TODO='할일을 언젠가로 옮기기는 잠시 막아 두었어요. 한 번에 안전하게 저장하는 방법이 준비되면 열어 드릴게요. 지금은 할일 상세 화면에서 날짜를 지워 주세요.';
+ const SOMEDAY_OTHER='언젠가에는 할일만 둘 수 있어요.';
  const WD=['일','월','화','수','목','금','토'];
  const day=d=>Number(d.slice(5,7))+'/'+Number(d.slice(8))+'('+WD[new Date(d+'T12:00:00').getDay()]+')';
  function describe(p){
   if(p.allDay)return day(p.startDate)+(p.endDate&&p.endDate!==p.startDate?' ~ '+day(p.endDate):'')+' 종일';
   return day(p.startDate)+' '+p.startTime+(p.endDate&&p.endDate!==p.startDate?' ~ '+day(p.endDate)+' ':'~')+p.endTime;
  }
- root.OnekanDragRules={plan,habitPlan,scopes,describe,changed,REPEAT_TODO};
+ root.OnekanDragRules={plan,habitPlan,scopes,describe,changed,axisMinute,REPEAT_TODO,SOMEDAY_TODO};
+
+ // ── 두 화면이 함께 쓰는 것: 저장 중 잠금(같은 항목), 미리보기 라벨, 반복 범위 창. 끌기는 한 번에 하나뿐이라 하나씩만 만듦 ──
+ const saving=new Set();
+ const escHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ let shared=null;
+ function ui(){
+  if(shared)return shared;
+  const doc=document;
+  const label=doc.createElement('div');label.id='allMoveLabel';label.className='sd-label';label.hidden=true;label.innerHTML='<div class="sd-ghost-card" aria-hidden="true"></div><div class="sd-ghost-text"></div>';doc.body.append(label);
+  // 반복 범위 선택 창
+  const bg=doc.createElement('div');bg.id='allScopeBg';bg.className='sheet-bg confirm-bg sd-scope-bg';
+  bg.innerHTML='<div class="sheet confirm-sheet sd-scope" role="dialog" aria-modal="true" aria-labelledby="allScopeTitle" aria-describedby="allScopeMsg"><h2 id="allScopeTitle">반복 항목 옮기기</h2><p id="allScopeMsg"></p><div class="sd-scope-list" role="group" aria-label="적용 범위"></div><div class="sheet-actions"><button type="button" class="btn-ghost" data-scope-cancel>취소</button></div></div>';
+  doc.body.append(bg);
+  let scopeDone=null;
+  function chooseScope(kind,row,res){
+   return new Promise(resolve=>{
+    const prev=doc.activeElement;scopeDone=v=>{scopeDone=null;bg.classList.remove('open');if(prev?.isConnected&&prev.getClientRects().length)prev.focus({preventScroll:true});resolve(v);};
+    bg.querySelector('#allScopeMsg').textContent='\''+(row.title||'')+'\'을(를) '+describe(res.period)+'(으)로 옮겨요. 어디까지 적용할까요?';
+    const list=bg.querySelector('.sd-scope-list');
+    list.innerHTML=scopes(kind).map(s=>'<button type="button" class="sd-scope-opt" data-scope="'+s.id+'"'+(s.ok?'':' disabled aria-disabled="true"')+' aria-describedby="allScopeNote-'+s.id+'"><strong>'+escHtml(s.label)+'</strong><span id="allScopeNote-'+s.id+'">'+escHtml(s.ok?s.note:'지금은 안 돼요 · '+s.reason)+'</span></button>').join('');
+    list.querySelectorAll('[data-scope]:not([disabled])').forEach(b=>b.onclick=()=>scopeDone(b.dataset.scope));
+    bg.classList.add('open');(list.querySelector('[data-scope]:not([disabled])')||bg.querySelector('[data-scope-cancel]')).focus({preventScroll:true});
+   });
+  }
+  bg.querySelector('[data-scope-cancel]').onclick=()=>scopeDone?.(null);
+  // 꺼진 범위를 눌러 초점이 창 밖으로 나가도 Esc = 취소(창 안 초점일 때는 아래 keydown이 먼저 처리)
+  doc.addEventListener('keydown',e=>{if(e.key==='Escape'&&scopeDone){e.preventDefault();e.stopImmediatePropagation();scopeDone(null);}},true);
+  bg.addEventListener('click',e=>{if(e.target===bg)scopeDone?.(null);});
+  bg.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();scopeDone?.(null);return;}
+   if(e.key==='Tab'){const f=[...bg.querySelectorAll('button:not([disabled])')];const i=f.indexOf(doc.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();f[f.length-1].focus();}else if(!e.shiftKey&&i===f.length-1){e.preventDefault();f[0].focus();}}});
+  return shared={label,chooseScope};
+ }
 
  root.createOnekanScheduleDrag=api=>{
   const P=api.period,esc=api.escape,host=api.host,doc=document;
   const LONG_PRESS=300,MOUSE_SLOP=6,TOUCH_SLOP=8,EDGE=44;
-  const DRAGGABLE='#allCalGrid .cal-chip[data-id], #allWeekBoard [data-awb-id], #allTimeDays [data-event-id], #allHomeDay .ag-tl-task[data-id], #allHomeDay .plan-row[data-id]';
+  // 화면별 차이: 'home' = 지금한칸(하루종일·시간블록·타임라인·다가오는 목록의 일정·할일·습관 줄), 기본 = 일정 화면
+  const home=api.screen==='home',PAGE=home?'home':'all';
+  const DRAGGABLE=home?'.ag-tl-task[data-id], .plan-row[data-id][data-kind]':'#allCalGrid .cal-chip[data-id], #allWeekBoard [data-awb-id], #allTimeDays [data-event-id], #allHomeDay .ag-tl-task[data-id], #allHomeDay .plan-row[data-id]';
+  const CLICK_AREA=home?'.home2-grid':'#allCalGrid,#allWeekBoard,#allTimeDays,#allHomeDay';
+  const SCROLLERS=home?'#homeTimelineScroll,#homeTodayBlockWrap,#homeUpcomingList,#somedayZone':'.awb-scroll,#allTimeScroll,#homeTimelineScroll';
+  const OUTSIDE=home?'놓을 수 있는 칸 밖이에요. 놓으면 옮기지 않아요.':'달력 밖이에요. 놓으면 옮기지 않아요.';
   const IGNORE='input,textarea,select,.item-more,.habit-skip-mark,[data-sv-resize],.cal-end-handle,.inline-add-wrap,.add-slot,.ag-habit-check,.ag-todo-check,.iv-check';
-  const saving=new Set();
-  let press=null,drag=null,suppressUntil=0,frame=0;
-  const label=doc.createElement('div');label.id='allMoveLabel';label.className='sd-label';label.hidden=true;label.innerHTML='<div class="sd-ghost-card" aria-hidden="true"></div><div class="sd-ghost-text"></div>';doc.body.append(label);
+  const {label,chooseScope}=ui();
+  let press=null,drag=null,suppressUntil=0,suppressEl=null,frame=0;
   const status=m=>api.status(m);
   const keyOf=(kind,id)=>kind+'|'+id;
   // 화면 조각 → 항목(일정 화면의 통합 행). 주 보드·월·주 타임라인은 통합 id, 일 보기는 지금한칸 줄(종류+원본 id)
@@ -102,12 +148,9 @@
   }
   function fromDate(el){return el.dataset.awbDate||el.dataset.date||el.closest('[data-date]')?.dataset.date||api.dayDate();}
   function sourceOf(r){return r.kind==='habit'?api.habitSource(r.source_id):r;}
-  function axisMinute(content,y){
-   const min=Number(content.dataset.minM),max=Number(content.dataset.maxM),scale=Number(content.dataset.timeScale)||0.6,top=content.getBoundingClientRect().top;
-   return Math.max(0,Math.min(Math.min(max,1440)-STEP,min+round((y-top)/scale)));
-  }
-  // 놓을 수 있는 자리. 오른쪽 목록(날짜별·언젠가)과 화면 밖은 자리 없음
+  // 놓을 수 있는 자리. 일정 화면: 오른쪽 목록(날짜별·언젠가)과 화면 밖은 자리 없음. 지금한칸: 화면이 알려 줌(api.targetAt)
   function targetAt(x,y){
+   if(api.targetAt){const el=doc.elementFromPoint(x,y);return el&&host.contains(el)?api.targetAt(x,y):null;}
    const el=doc.elementFromPoint(x,y);if(!el||!host.contains(el)||el.closest('.sa-panel,#allSideAgenda'))return null;
    const cell=el.closest('#allCalGrid .cal-cell[data-date]');if(cell)return {type:'date',date:cell.dataset.date,box:cell};
    const col=el.closest('#allWeekBoard [data-awb-col]');if(col)return {type:'date',date:col.dataset.awbCol,box:col.querySelector('.awb-body')||col,zone:col};
@@ -121,8 +164,9 @@
   }
   // 이 항목을 이 자리로 옮기면 무엇이 저장되는지(막힌 이유 포함)
   function evaluate(d,t){
-   if(!t)return {error:'달력 밖이에요. 놓으면 옮기지 않아요.',outside:true};
+   if(!t)return {error:OUTSIDE,outside:true};
    const r=d.row;
+   if(t.type==='someday')return {error:r.kind==='todo'?SOMEDAY_TODO:SOMEDAY_OTHER}; // 저장 요청 없음
    if(r.kind==='habit'){
     if(r.status==='done'||r.status==='skipped'||r.record_date)return {error:'완료·건너뜀 기록은 옮기지 않아요.'};
     const s=sourceOf(r);if(!s)return {error:'습관을 찾지 못했어요.'};
@@ -179,24 +223,25 @@
    cancelAnimationFrame(frame);frame=0;clearPreview();label.hidden=true;label.querySelector('.sd-ghost-card').replaceChildren();host.classList.remove('sd-dragging');
    drag?.sources.forEach(n=>n.classList.remove('sd-source'));const d=drag;drag=null;return d;
   }
-  function cancel(message){if(press){clearTimeout(press.timer);press=null;}if(!drag)return;stop();suppressUntil=performance.now()+400;if(message)status(message);}
+  function cancel(message){if(press){clearTimeout(press.timer);press=null;}if(!drag)return;suppressEl=drag.el;stop();suppressUntil=performance.now()+400;if(message)status(message);}
   // 가장자리 자동 스크롤(창 세로, 주 보드·타임라인 가로·세로)
   function edgeScroll(){
    frame=0;if(!drag)return;const {x,y}=drag;let moved=false;
    const vy=y<EDGE?-12:y>innerHeight-EDGE?12:0;if(vy){const before=scrollY;scrollBy(0,vy);moved=moved||scrollY!==before;}
-   const SCROLLERS='.awb-scroll,#allTimeScroll,#homeTimelineScroll',box=doc.elementFromPoint(x,y)?.closest(SCROLLERS)||drag.el.closest(SCROLLERS); // 손가락이 상자 밖(화면 끝)으로 나가도 처음 상자를 넘김
+   const box=doc.elementFromPoint(x,y)?.closest(SCROLLERS)||drag.el.closest(SCROLLERS); // 손가락이 상자 밖(화면 끝)으로 나가도 처음 상자를 넘김
    if(box){const r=box.getBoundingClientRect(),vx=x<r.left+EDGE?-14:x>r.right-EDGE?14:0,v2=y<r.top+EDGE?-12:y>r.bottom-EDGE?12:0;const bx=box.scrollLeft,by=box.scrollTop;if(vx)box.scrollLeft+=vx;if(v2)box.scrollTop+=v2;moved=moved||bx!==box.scrollLeft||by!==box.scrollTop;}
    if(moved){drag.key=null;update(x,y);}if(vy||moved)frame=requestAnimationFrame(edgeScroll);
   }
   function down(e){
-   if(api.page()!=='all'||e.button!==0||press||drag)return;
+   if(api.page()!==PAGE||e.button!==0||press||drag)return;
    let el=e.target.closest?.(DRAGGABLE);
    // 모바일 월 칸의 막대는 누르기를 칸이 받으므로(칸 탭 = 날짜 선택) 누른 자리 아래 막대를 찾아 끌기만 시작
    if(!el){const cell=e.target.closest?.('#allCalGrid .cal-cell');if(cell)el=[...cell.querySelectorAll('.cal-chip[data-id]')].find(c=>{const r=c.getBoundingClientRect();return e.clientX>=r.left-2&&e.clientX<=r.right+2&&e.clientY>=r.top-3&&e.clientY<=r.bottom+3;});}
    if(!el||!host.contains(el)||e.target.closest(IGNORE))return;
    const touch=e.pointerType==='touch';
-   press={el,pointer:e.pointerId,x:e.clientX,y:e.clientY,touch,armed:!touch,timer:0};
-   if(touch)press.timer=setTimeout(()=>{if(!press)return;press.armed=true;press.el.classList.add('sd-armed');navigator.vibrate?.(15);},LONG_PRESS);
+   press={el,pointer:e.pointerId,x:e.clientX,y:e.clientY,touch,armed:!touch,held:false,timer:0};
+   // 0.3초 누르고 있으면: 터치는 끌 준비, 타임라인 끝부분(짧은 항목)도 길이 조절 대신 이동(지금한칸 규칙)
+   press.timer=setTimeout(()=>{if(!press)return;press.held=true;if(!touch)return;press.armed=true;press.el.classList.add('sd-armed');navigator.vibrate?.(15);},LONG_PRESS);
   }
   function move(e){
    if(drag){if(e.pointerId!==drag.pointer)return;e.preventDefault();update(e.clientX,e.clientY);if(!frame)frame=requestAnimationFrame(edgeScroll);return;}
@@ -204,13 +249,13 @@
    const dist=Math.hypot(e.clientX-press.x,e.clientY-press.y);
    if(!press.armed){if(dist>TOUCH_SLOP){clearTimeout(press.timer);press=null;}return;} // 길게 누르기 전에 움직이면 스크롤
    if(dist<(press.touch?TOUCH_SLOP:MOUSE_SLOP))return;
-   if(press.el.dataset.edgeAtStart){press=null;return;} // 일 보기 타임라인 끝부분 = 길이 조절(지금한칸 규칙 그대로)
+   if(press.el.dataset.edgeAtStart&&!press.held){clearTimeout(press.timer);press=null;return;} // 타임라인 끝부분 = 길이 조절(15분 단위, 지금한칸 규칙 그대로)
    press.el.classList.remove('sd-armed');begin();if(!drag)return;e.preventDefault();update(e.clientX,e.clientY);
   }
   function up(e){
    if(press&&e.pointerId===press.pointer){clearTimeout(press.timer);press.el.classList.remove('sd-armed');press=null;return;}
    if(!drag||e.pointerId!==drag.pointer)return;
-   update(e.clientX,e.clientY);const d=stop();suppressUntil=performance.now()+450;commit(d);
+   update(e.clientX,e.clientY);const d=stop();suppressUntil=performance.now()+450;suppressEl=d.el;commit(d);
   }
   doc.addEventListener('pointerdown',down,true);doc.addEventListener('pointermove',move,{capture:true,passive:false});doc.addEventListener('pointerup',up,true);
   doc.addEventListener('pointercancel',e=>{if(press&&e.pointerId===press.pointer){clearTimeout(press.timer);press.el.classList.remove('sd-armed');press=null;}if(drag&&e.pointerId===drag.pointer)cancel('옮기지 않았어요.');},true);
@@ -218,30 +263,9 @@
   // 길게 누른 뒤(끌 준비)에는 휴대폰 길게 누르기 메뉴가 끌기를 끊지 않게 막음(메뉴는 ⋯ 버튼으로)
   doc.addEventListener('contextmenu',e=>{if(drag||press?.armed&&press.touch){e.preventDefault();e.stopPropagation();}},true);
   doc.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(drag){e.preventDefault();e.stopImmediatePropagation();cancel('옮기지 않았어요.');}else if(press)cancel();},true); // 끄는 중의 Esc만 가로챔(다른 창 닫기는 그대로)
-  doc.addEventListener('click',e=>{if(performance.now()<suppressUntil&&e.target.closest?.('#allCalGrid,#allWeekBoard,#allTimeDays,#allHomeDay')){/* 끌기 직후 달력 안 클릭(상세·이름 수정)만 한 번 무시 */e.preventDefault();e.stopImmediatePropagation();suppressUntil=0;}},true);
+  // 끌기 직후 그 손짓이 만든 클릭(끈 항목이나 그 항목을 품은 칸 = 상세·이름 수정·날짜 선택)만 한 번 무시. 다른 버튼 클릭은 그대로
+  doc.addEventListener('click',e=>{const t=e.target;if(performance.now()<suppressUntil&&t.closest?.(CLICK_AREA)&&suppressEl&&(t.contains(suppressEl)||suppressEl.contains(t))){e.preventDefault();e.stopImmediatePropagation();suppressUntil=0;suppressEl=null;}},true);
   addEventListener('blur',()=>cancel());addEventListener('resize',()=>cancel());
-
-  // ── 반복 범위 선택 창 ──
-  const bg=doc.createElement('div');bg.id='allScopeBg';bg.className='sheet-bg confirm-bg sd-scope-bg';
-  bg.innerHTML='<div class="sheet confirm-sheet sd-scope" role="dialog" aria-modal="true" aria-labelledby="allScopeTitle" aria-describedby="allScopeMsg"><h2 id="allScopeTitle">반복 항목 옮기기</h2><p id="allScopeMsg"></p><div class="sd-scope-list" role="group" aria-label="적용 범위"></div><div class="sheet-actions"><button type="button" class="btn-ghost" data-scope-cancel>취소</button></div></div>';
-  doc.body.append(bg);
-  let scopeDone=null;
-  function chooseScope(kind,row,res){
-   return new Promise(resolve=>{
-    const prev=doc.activeElement;scopeDone=v=>{scopeDone=null;bg.classList.remove('open');if(prev?.isConnected&&prev.getClientRects().length)prev.focus({preventScroll:true});resolve(v);};
-    bg.querySelector('#allScopeMsg').textContent='\''+(row.title||'')+'\'을(를) '+OnekanDragRules.describe(res.period)+'(으)로 옮겨요. 어디까지 적용할까요?';
-    const list=bg.querySelector('.sd-scope-list');
-    list.innerHTML=OnekanDragRules.scopes(kind).map(s=>'<button type="button" class="sd-scope-opt" data-scope="'+s.id+'"'+(s.ok?'':' disabled aria-disabled="true"')+' aria-describedby="allScopeNote-'+s.id+'"><strong>'+esc(s.label)+'</strong><span id="allScopeNote-'+s.id+'">'+esc(s.ok?s.note:'지금은 안 돼요 · '+s.reason)+'</span></button>').join('');
-    list.querySelectorAll('[data-scope]:not([disabled])').forEach(b=>b.onclick=()=>scopeDone(b.dataset.scope));
-    bg.classList.add('open');(list.querySelector('[data-scope]:not([disabled])')||bg.querySelector('[data-scope-cancel]')).focus({preventScroll:true});
-   });
-  }
-  bg.querySelector('[data-scope-cancel]').onclick=()=>scopeDone?.(null);
-  // 꺼진 범위를 눌러 초점이 창 밖으로 나가도 Esc = 취소(창 안 초점일 때는 아래 keydown이 먼저 처리)
-  doc.addEventListener('keydown',e=>{if(e.key==='Escape'&&scopeDone){e.preventDefault();e.stopImmediatePropagation();scopeDone(null);}},true);
-  bg.addEventListener('click',e=>{if(e.target===bg)scopeDone?.(null);});
-  bg.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();scopeDone?.(null);return;}
-   if(e.key==='Tab'){const f=[...bg.querySelectorAll('button:not([disabled])')];const i=f.indexOf(doc.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();f[f.length-1].focus();}else if(!e.shiftKey&&i===f.length-1){e.preventDefault();f[0].focus();}}});
 
   // ── 저장 · 실행 취소 ──
   const table=kind=>kind==='event'?'tok_events':kind==='todo'?'tok_todos':'tok_habits';
@@ -253,7 +277,7 @@
   }
   async function commit(d){
    const t=d.target,res=d.result,r=d.row;
-   if(!t){status('달력 밖에 놓아서 옮기지 않았어요.');return;}
+   if(!t){status(home?'놓을 수 있는 칸 밖이라 옮기지 않았어요.':'달력 밖에 놓아서 옮기지 않았어요.');return;}
    if(res.error){status(res.error);api.render();return;}
    if(res.same)return;
    const key=keyOf(r.kind,r.source_id);if(saving.has(key)){status('저장 중이에요. 끝난 뒤 다시 옮겨 주세요.');return;}
@@ -272,8 +296,8 @@
     const owner=api.user();status('저장 중…');host.setAttribute('aria-busy','true');d.sources.forEach(n=>n.classList.add('sd-saving'));
     let saved;try{saved=await apply(w,owner,w.before,w.patch);}catch(error){if(owner===api.user()){api.render();status('저장하지 못했어요. 원래 상태를 유지합니다. '+error.message);}return;}
     if(owner!==api.user())return;
-    if(!saved){await api.reload();status('그사이 다른 곳에서 바뀌어서 옮기지 않았어요. 바뀐 내용을 확인해 주세요.');return;}
-    await api.reload();
+    if(!saved){await api.reload(table(r.kind));status('그사이 다른 곳에서 바뀌어서 옮기지 않았어요. 바뀐 내용을 확인해 주세요.');return;}
+    await api.reload(table(r.kind));
     const message=(r.title||'항목')+' → '+OnekanDragRules.describe(res.period);status('옮겼어요: '+message);
     api.toast('옮겼어요',{label:'실행 취소',run:()=>undo(w,owner,key)},10000); // 알림은 짧게(모바일 폭), 자세한 내용은 상태 줄
    }finally{saving.delete(key);host.removeAttribute('aria-busy');}
@@ -285,9 +309,15 @@
    saving.add(key);let ok=false,failed='';
    try{ok=await apply(w,owner,w.patch,w.before);}catch(error){failed=error.message;}finally{saving.delete(key);}
    if(owner!==api.user())return;
-   await api.reload();
+   await api.reload(table(w.kind));
    const m=failed?'되돌리지 못했어요. 옮긴 상태 그대로예요. '+failed:ok?'원래대로 되돌렸어요.':'그사이 바뀐 내용이 있어 덮어쓰지 않았어요. 옮긴 상태 그대로예요.';status(m);api.toast(m);
   }
-  return {cancel,busy:()=>!!drag||saving.size>0,targetAt,chooseScope};
+  // 손짓 없이 옮기기: 지금한칸 목록을 다른 화면에 빌려 가서 끈 경우(오른쪽 목록 등) 같은 규칙·저장으로 처리
+  function drop(kind,id,from,target){
+   const row=api.find(kind,id,from);if(!row){status('항목을 찾지 못했어요.');return Promise.resolve();}
+   // 잡은 날을 모르면 항목 시작일 기준(습관은 보고 있는 날)
+   const d={row,from:from||(kind==='habit'?api.dayDate():P.read(kind,row).startDate),grab:null,target,sources:[]};d.result=evaluate(d,target);return commit(d);
+  }
+  return {cancel,busy:()=>!!drag||saving.size>0,targetAt,chooseScope,drop};
  };
 })(typeof window==='undefined'?globalThis:window);
