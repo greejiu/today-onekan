@@ -11,15 +11,18 @@ const assert=require('node:assert/strict');const {chromium}=require('playwright'
    mockRows.tok_habits=[{id:'h1',name:'시간 습관',is_active:true,start_date:d,repeat_unit:'day',repeat_interval:1,...OnekanPeriod.patch('habit',tm)}];
    mockRows.tok_habit_logs=[];await loadAll();
    const out={d,d2};
-   for(const [k,id] of [['todo','t1'],['event','e1'],['event','e2'],['event','e3'],['habit','h1']]){
+   for(const [k,id] of [['todo','t1'],['event','e1'],['event','e2'],['event','e3']]){
     await moveItemToZone(k,id,{zone:'today-allday',date:d2,sourceDate:d});out[id]=OnekanPeriod.read(k,agendaItemById(k,id));}
+   // 습관: 다른 날로는 옮기지 않음(습관 전체가 바뀌던 문제), 같은 날 하루종일 = 반복 범위 '전체'로 시간 해제
+   const habitBefore=JSON.stringify(mockRows.tok_habits);await moveItemToZone('habit','h1',{zone:'today-allday',date:d2,sourceDate:d});out.habitOther=JSON.stringify(mockRows.tok_habits)===habitBefore;
+   const same=moveItemToZone('habit','h1',{zone:'today-allday',date:d,sourceDate:d});await new Promise(r=>setTimeout(r,50));document.querySelector('#allScopeBg [data-scope=all]').click();await same;out.h1=OnekanPeriod.read('habit',agendaItemById('habit','h1'));
    out.row=agendaItemById('todo','t1');out.names=(await todayAllDayItems(d2)).map(x=>x.name);return out;});
   for(const id of ['t1','e1','e2','e3'])assert.equal(r[id].allDay,true,id+' allDay');
   for(const id of ['t1','e1','e3'])assert.equal(r[id].startDate,r.d2),assert.equal(r[id].endDate,r.d2);
   assert.equal(r.e2.endDate,r.d2.slice(0,8)+String(Number(r.d2.slice(8))+1).padStart(2,'0')); // 01:00 끝은 다음 날까지 걸침
-  assert.equal(r.h1.allDay,true);assert.equal(r.h1.startDate,r.d); // 습관은 날짜를 유지
+  assert.equal(r.habitOther,true,'습관 다른 날 하루종일 = 그대로');assert.equal(r.h1.allDay,true);assert.equal(r.h1.startDate,r.d); // 같은 날이면 시간 해제, 날짜 유지
   assert.equal(r.row.todo_time,null);assert.equal(r.row.end_time,null);assert.equal(r.row.duration_minutes,null);
   for(const n of ['시간 할일','시간 일정','밤 일정','레거시'])assert(r.names.includes(n),n);
-  assert.deepEqual(errors,[]);console.log('allday-move: timed→all-day for todo/event/overnight/legacy/habit PASS');
+  assert.deepEqual(errors,[]);console.log('allday-move: timed→all-day for todo/event/overnight/legacy, habit same day only PASS');
  }finally{await b.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

@@ -2929,6 +2929,7 @@
   let todoSidebar = null;
   let habitViews = null;
   let allViews = null;
+  let homeMover = null; // 지금한칸 끌어 옮기기(공통 엔진 schedule-drag.js, screen:'home')
   const sideAgendas = {}; // 오른쪽 '다가오는 · 언젠가' 칸(일정·할일·습관 탭) — 모두 지금 한칸 목록을 빌려 씀
   // 2026-10-10 지금 한칸 화면 빌려 쓰기 — '모두'·'할일'에서 같은 기능(다가오는·담아두기·타임라인·시간블럭)은 새로 만들지 않고
   // 지금 한칸의 DOM을 그대로 옮겨 붙임. 그리기·클릭(이름 수정)·끌기(모바일 길게 누르기)·추가 규칙이 모두 같고, 지금 한칸으로 돌아가면 제자리로.
@@ -4360,161 +4361,123 @@
   document.addEventListener('pointercancel', stopHomeEdgeScroll);
   window.addEventListener('blur', stopHomeEdgeScroll);
 
+  // 2026-10-22: 일정·할일·습관 이동은 공통 끌기(schedule-drag.js)의 규칙을 따르도록 type을 같이 돌려줌
+  //   type: "date"(날짜만, 시간·기간 유지) / "allday"(시간 지정 해제) / "time"(그 시각부터, 30분 단위 minute) /
+  //         "block"(블록 시작 시각) / "someday". box = 미리보기 테두리를 그릴 칸.
+  //   zone·startMinute(15분 칸)은 언젠가 → 날짜(아직 옛 규칙, 후속)가 그대로 씀.
   function homeDropZone(x, y) {
     const el = document.elementFromPoint(x, y);
     if (!el) return null;
     // 2026-09-20 — 결님 요청: 언젠가/다가오는/목록/타임라인 네 탭 사이에서 자유롭게 드래그 가능해짐.
-    // "다가오는" 탭은 날짜별로 감싼 .upcoming-day(data-date)를 놓으면 그 날짜의 하루종일 항목으로 옮김.
+    // "다가오는" 탭은 날짜별로 감싼 .upcoming-day(data-date). 일정·할일·습관은 날짜만 바뀜(언젠가 항목은 그 날짜의 하루종일 할일).
     const upcomingDay = el.closest(".upcoming-day[data-date]");
-    if (upcomingDay) return { zone: "today-allday", date: upcomingDay.dataset.date };
+    if (upcomingDay) return { zone: "today-allday", type: "date", date: upcomingDay.dataset.date, box: upcomingDay };
     const planDay = el.closest(".planup-day[data-idx]");
     if (planDay) {
       const date = homePlanDays[parseInt(planDay.dataset.idx, 10)];
-      return date ? { zone: "planday", date } : null;
+      return date ? { zone: "planday", type: "date", date, box: planDay } : null;
     }
     const blockCard = el.closest(".ag-block-card[data-block-start]");
-    if (blockCard) return { zone: "today-timed", date: blockCard.dataset.date || homeAgendaDate, startMinute: parseInt(blockCard.dataset.blockStart, 10) };
-    const tlContent = el.closest(".ag-tl-content[data-date]");
+    if (blockCard) return { zone: "today-timed", type: "block", date: blockCard.dataset.date || homeAgendaDate, startMinute: parseInt(blockCard.dataset.blockStart, 10), minute: parseInt(blockCard.dataset.blockStart, 10), box: blockCard };
+    const tlContent = el.closest(".ag-tl-content[data-date]") || el.closest(".ag-tl-grid")?.querySelector(".ag-tl-content[data-date]");
     if (tlContent) {
       const rect = tlContent.getBoundingClientRect();
       const slot = Math.max(0, Math.floor((y - rect.top) / AG_TL_ROW_PX));
       // ⚠️ "|| agendaTimelineMinM"이면 그 열이 자정(0분)부터 시작할 때 0이 거짓값 취급돼 엉뚱한 값으로 빠지므로 NaN 체크로 처리.
       const parsedMinM = parseInt(tlContent.dataset.minM, 10);
       const minM = Number.isNaN(parsedMinM) ? agendaTimelineMinM : parsedMinM;
-      return { zone: "today-timed", date: tlContent.dataset.date, startMinute: minM + slot * AG_TL_SLOT_MIN };
+      return { zone: "today-timed", type: "time", date: tlContent.dataset.date, startMinute: minM + slot * AG_TL_SLOT_MIN, minute: OnekanDragRules.axisMinute(tlContent, y), box: tlContent };
     }
+    const flat = box => box.querySelector(".agenda-flat") || box;
     const alldayCol = el.closest(".ag-allday-col[data-date]");
-    if (alldayCol) return { zone: "today-allday", date: alldayCol.dataset.date };
-    if (el.closest("#agendaAllDayZone")) return { zone: "today-allday", date: homeAgendaDate };
+    if (alldayCol) return { zone: "today-allday", type: "allday", date: alldayCol.dataset.date, box: flat(alldayCol), el: alldayCol };
+    const alldayZone = el.closest("#agendaAllDayZone");
+    if (alldayZone) return { zone: "today-allday", type: "allday", date: homeAgendaDate, box: flat(alldayZone), el: alldayZone };
     // "시간블럭" 탭의 하루종일 영역 위에 놓으면 지금 보고 있는 homeAgendaDate의 하루종일 항목으로 옮김
     // — "시간 있는" 카드 위는 위의 .ag-block-card 케이스가 이미 처리함.
-    if (el.closest("#homeTodayBlockAllDay")) return { zone: "today-allday", date: homeAgendaDate };
-    if (el.closest("#somedayZone")) return { zone: "someday" };
-    // '모두'에 빌려 간 다가오는·담아두기 행을 주간 보드 열·월 달력 칸에 놓으면 그 날짜의 하루종일로(기존 이동 규칙 그대로)
+    const blockAllDay = el.closest("#homeTodayBlockAllDay");
+    if (blockAllDay) return { zone: "today-allday", type: "allday", date: homeAgendaDate, box: flat(blockAllDay), el: blockAllDay };
+    const somedayZone = el.closest("#somedayZone");
+    if (somedayZone) return { zone: "someday", type: "someday", box: somedayZone };
+    // '모두'에 빌려 간 다가오는·담아두기 행을 주간 보드 열·월 달력 칸에 놓으면 그 날짜로(언젠가 항목은 그 날짜의 하루종일 할일)
     const loanDate = currentPage === "all" ? allViews?.dropDate?.(x, y) : null;
-    if (loanDate) return { zone: "today-allday", date: loanDate };
+    if (loanDate) return { zone: "today-allday", type: "date", date: loanDate };
     return null;
+  }
+  // 지금한칸 끌기(공통 엔진)가 쓰는 놓을 자리. 블록이면 이름도 같이(미리보기 문구)
+  function homeMoveTarget(x, y) {
+    const z = homeDropZone(x, y);
+    if (!z?.type) return null;
+    const name = z.type === "block" ? (timeBlocks.find(b => b.start_minute === z.minute)?.title || timeBlocks.find(b => b.start_minute === z.minute)?.name || "") : "";
+    return { type: z.type, date: z.date || homeAgendaDate, minute: z.minute, box: z.box || z.el, zone: z.el, name };
+  }
+  // 공통 엔진이 다루는 항목 모양(일정 화면의 통합 행과 같은 칸: kind·source_id·title, 습관은 회차 날짜·완료/건너뜀 상태)
+  function homeMoveRow(kind, id, date) {
+    if (kind === "habit") {
+      const h = tasks.find(x => x.id === id); if (!h) return null;
+      const d = date || homeAgendaDate, st = habitDayStatus(id, d);
+      return { ...h, kind, id: "habit|" + id + "|" + d, source_id: id, title: h.name, action_date: d, status: st === "skipped" ? "skipped" : st };
+    }
+    const row = (kind === "event" ? events : kind === "todo" ? todos : []).find(x => x.id === id);
+    return row ? { ...row, kind, id: kind + "|" + id, source_id: id } : null;
   }
   let agendaTimelineMinM = 360; // renderAgendaTimeline이 매번 갱신(타임라인 뷰 드롭 위치→시각 계산용)
   let agendaTimelineMaxM = 1440; // renderAgendaTimeline이 매번 갱신(현재 시간선이 범위 안에 있는지 판단용)
   let homePlanDays = [];        // renderPlanUpcomingBoard가 매번 갱신(다가오는 계획 칸 idx→날짜 계산용)
 
   // kind: "habit" | "event" | "todo" | "someday"(아직 날짜 없는 언젠가 항목) 소스를 zone으로 옮김.
-  // 습관은 날짜 개념이 없어 오늘(하루종일/시간) 두 zone만 적용되고 나머지는 무시(아무 일도 안 일어남).
-  // 언젠가⇄할일은 테이블 자체가 달라서(tok_someday ↔ tok_todos) 새로 만들고 지우는 방식으로 옮김.
-  function periodDropPatch(kind,item,targetDate,startMinute,sourceDate,toAllDay=false) {
-    const base=OnekanPeriod.read(kind,item);
-    const offset=sourceDate&&base.startDate?daysBetween(base.startDate,sourceDate):0;
-    const date=offset?addDaysStr(targetDate,-offset):targetDate;
-    if(!toAllDay && startMinute!=null && offset>0 && !base.allDay) {
-      const clip=OnekanPeriod.clip(kind,item,sourceDate);
-      const shifted=OnekanPeriod.plus(date,base.startTime,startMinute-(clip?.start_minute||0));
-      return OnekanPeriod.shift(kind,item,shifted.date,OnekanPeriod.minutes(shifted.time));
-    }
-    return OnekanPeriod.shift(kind,item,date,startMinute,toAllDay);
-  }
+  // 2026-10-22: 일정·할일·습관은 공통 끌기(schedule-drag.js)의 규칙·저장(조건부 한 번, 반복 범위, 실행 취소)으로 처리.
+  //   지금한칸 화면에서는 공통 엔진이 직접 끌고, 여기로 오는 것은 다른 화면에 빌려 간 목록(다가오는 등)에서 끈 경우.
+  //   할일 → 언젠가는 막음(이유 안내). 언젠가 → 날짜는 아직 옛 방식(새로 만들고 지움) — 종류 선택·추가창 연결은 후속.
   async function moveItemToZone(kind, id, zoneObj) {
     if (!zoneObj) return;
     const zone = zoneObj.zone;
     // 8-3단계: zoneObj.date는 드롭한 열의 실제 날짜(homeDropZone이 채워줌) — 이제 여러 날짜 열이 있으므로
     // "오늘 보는 날짜" 하나가 아니라 이 date를 씀. 혹시 없으면(옛 호출 등) homeAgendaDate로 안전하게 대체.
     const targetDate = zoneObj.date || homeAgendaDate;
-    if (kind === "habit") {
-      if(zone!=='today-timed' && zone!=='today-allday') return;
-      const item=tasks.find(t=>t.id===id);if(!item)return;
-      const base=OnekanPeriod.read('habit',item);
-      const patch=periodDropPatch('habit',item,base.startDate,zone==='today-timed'?zoneObj.startMinute:null,null,zone==='today-allday');
-      const {error}=await sb.from('tok_habits').update(patch).eq('id',id);
-      if(error) {alert('이동 실패: '+error.message);return;}
-    } else if (kind === "event") {
-      if (zone === "someday") return; // 일정은 고정 스케줄 개념이라 언젠가로는 전환하지 않음
-      const item=events.find(e=>e.id===id);if(!item)return;
-      const patch=periodDropPatch('event',item,targetDate,zone==='today-timed'?zoneObj.startMinute:null,zoneObj.sourceDate,zone==='today-allday');
-      const { error } = await sb.from("tok_events").update(patch).eq("id", id);
-      if (error) { alert("이동 실패: " + error.message); return; }
-    } else if (kind === "todo") {
-      if (zone === "someday") {
-        const t = todos.find(x => x.id === id);
-        if (!t) return;
-        if (!classification?.isReady() && (t.group_id || t.project_id)) { alert('그룹·프로젝트 연결을 보존하려면 분류 저장소를 다시 불러온 후 이동해주세요.'); return; }
-        const { error: insErr } = await sb.from("tok_someday").insert({ title: t.title, is_done: t.is_done, tag_id: t.tag_id, ...classification?.inherited("todo",t), ...(classification?.isReady()&&t.project_id?{project_id:t.project_id}:{}) });
-        if (insErr) { alert("이동 실패: " + insErr.message); return; }
-        const { error: delErr } = await sb.from("tok_todos").delete().eq("id", id);
-        if (delErr) { alert("이동 실패: " + delErr.message); return; }
-      } else {
-        const item=todos.find(t=>t.id===id);if(!item)return;
-        const patch=periodDropPatch('todo',item,targetDate,zone==='today-timed'?zoneObj.startMinute:null,zoneObj.sourceDate,zone==='today-allday');
-        const { error } = await sb.from("tok_todos").update(patch).eq("id", id);
-        if (error) { alert("이동 실패: " + error.message); return; }
-      }
-    } else if (kind === "someday") {
-      if (zone === "someday") return; // 이미 언젠가라 놓아도 변화 없음
-      const s = somedayItems.find(x => x.id === id);
-      if (!s) return;
-      const patch = { title: s.title, is_done: s.is_done, tag_id: s.tag_id, ...classification?.inherited("someday",s), ...(s.project_id?{project_id:s.project_id}:{}) };
-      if (zone === "planday") patch.start_date = zoneObj.date;
-      else if (zone === "today-allday") patch.start_date = targetDate;
-      else { patch.start_date = targetDate; patch.todo_time = minutesToHHMM(zoneObj.startMinute) + ":00"; }
-      Object.assign(patch,OnekanPeriod.patch('todo',OnekanPeriod.defaults({startDate:patch.start_date,startTime:patch.todo_time},todayStr())));
-      const { error: insErr } = await sb.from("tok_todos").insert(patch);
-      if (insErr) { alert("이동 실패: " + insErr.message); return; }
-      const { error: delErr } = await sb.from("tok_someday").delete().eq("id", id);
-      if (delErr) { alert("이동 실패: " + delErr.message); return; }
+    if (kind !== "someday") {
+      // type이 없는 옛 호출: planday = 날짜만, today-allday = 하루종일, today-timed = 그 시각
+      const type = zoneObj.type || { planday: "date", "today-allday": "allday", "today-timed": "time", someday: "someday" }[zone];
+      if (!type || !homeMover) return;
+      await homeMover.drop(kind, id, zoneObj.sourceDate, { type, date: targetDate, minute: zoneObj.minute ?? zoneObj.startMinute });
+      return;
     }
-    await reloadTables(kind==="someday"||zone==="someday"?["tok_todos","tok_someday"]:[tableOf(kind)]);
+    if (zone === "someday") return; // 이미 언젠가라 놓아도 변화 없음
+    const s = somedayItems.find(x => x.id === id);
+    if (!s) return;
+    const patch = { title: s.title, is_done: s.is_done, tag_id: s.tag_id, ...classification?.inherited("someday",s), ...(s.project_id?{project_id:s.project_id}:{}) };
+    if (zone === "planday") patch.start_date = zoneObj.date;
+    else if (zone === "today-allday") patch.start_date = targetDate;
+    else { patch.start_date = targetDate; patch.todo_time = minutesToHHMM(zoneObj.startMinute) + ":00"; }
+    Object.assign(patch,OnekanPeriod.patch('todo',OnekanPeriod.defaults({startDate:patch.start_date,startTime:patch.todo_time},todayStr())));
+    const { error: insErr } = await sb.from("tok_todos").insert(patch);
+    if (insErr) { alert("이동 실패: " + insErr.message); return; }
+    const { error: delErr } = await sb.from("tok_someday").delete().eq("id", id);
+    if (delErr) { alert("이동 실패: " + delErr.message); return; }
+    await reloadTables(["tok_todos","tok_someday"]);
   }
 
-  function attachAgendaAllDayDrag() {
-    let dragEl = null, dragId = null, dragKindAttr = null, dragDateAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
-
-    document.querySelectorAll(".ag-allday-row[data-id]").forEach(row => {
-      row.addEventListener("pointerdown", (e) => {
-        if (e.target.closest("input, .habit-skip-mark") || e.button > 0) return; // 체크 자리(×)·오른쪽 클릭은 드래그·이름 수정으로 치지 않음
-        dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; dragDateAttr = row.dataset.date; moved = false; curTarget = null;
-        startX = e.clientX; startY = e.clientY;
-        row.setPointerCapture?.(e.pointerId);
-        touchGate.down(e);
-      });
-      row.addEventListener("pointermove", (e) => {
-        if (!dragEl) return;
-        if (!moved && touchGate.allow(e, startX, startY) && !loanMoveOwned(dragEl) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
-          moved = true;
-          dragEl.classList.add("dragging");
-        }
-        if (!moved) return;
-        // 2026-09-20 — "today-allday" zone이 이제 #agendaAllDayZone 하나가 아니라 목록/다가오는 등 여러 컨테이너에
-        // 걸쳐 있어서, zone 문자열만으로 하이라이트를 끄던 예전 방식(드롭 zone이 today-allday면 무조건 숨김)은
-        // 너무 광범위해짐 — 셀렉터 목록에서 자기 자신의 존(#agendaAllDayZone)만 빼서 자기 위에선 안 뜨고,
-        // 다른 today-allday 컨테이너(목록/다가오는 등) 위에서는 정상적으로 뜨게 함.
-        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card, .ag-tl-grid, .planup-day, #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
-        if (under !== curTarget) {
-          curTarget?.classList.remove("drop-target");
-          curTarget = under || null;
-          curTarget?.classList.add("drop-target");
-        }
-      });
-      const finish = async (e) => {
-        if (!dragEl) return;
-        const el = dragEl, id = dragId, kind = dragKindAttr, srcDate = dragDateAttr, wasMoved = moved;
-        dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false;
-        el.classList.remove("dragging");
-        curTarget?.classList.remove("drop-target");
-        curTarget = null;
-        if (!wasMoved) { if (loanMoveTaken(el) || touchGate.consumeCancelled()) return; startAgendaItemInlineEdit(el, id, kind, renderAgendaAllDay); return; }
-        const drop = homeDropZone(e.clientX, e.clientY);
-        if (!drop) return;
-        // 8-6단계 버그 수정: 여러 날짜 열이 나란히 있는 지금은 "하루종일" 존이 열마다 따로 있으므로,
-        // zone 문자열만 보고 무조건 무시하면 다른 날짜 열로 옮기는 드래그가 씹힘 — 같은 날짜일 때만 무시.
-        if (drop.zone === "today-allday" && drop.date === srcDate) return; // 같은 날 하루종일이라 놓아도 변화 없음
-        await moveItemToZone(kind,id,{...drop,sourceDate:srcDate});
-      };
-      row.addEventListener("pointerup", finish);
-      row.addEventListener("pointercancel", () => {
-        dragEl?.classList.remove("dragging");
-        curTarget?.classList.remove("drop-target");
-        dragEl = null; dragId = null; dragKindAttr = null; dragDateAttr = null; moved = false; curTarget = null;
-      });
+  // 2026-10-22: 하루종일·시간블록 줄의 끌어 옮기기는 공통 끌기(schedule-drag.js)가 맡음(지금한칸·일정 화면 일 보기 모두).
+  // 여기서는 짧게 누르기 = 이름 수정만. 터치로 길게 누르기 전에 움직였거나(스크롤) 방금 끌어 옮긴 줄이면 열지 않음.
+  function attachRowTapEdit(row, onTap) {
+    let pressed = false, startX = 0, startY = 0;
+    row.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("input, .habit-skip-mark") || e.button > 0) return; // 체크 자리(×)·오른쪽 클릭은 이름 수정으로 치지 않음
+      pressed = true; startX = e.clientX; startY = e.clientY;
+      row.setPointerCapture?.(e.pointerId);
+      touchGate.down(e);
     });
+    row.addEventListener("pointermove", (e) => { if (pressed) touchGate.allow(e, startX, startY); });
+    row.addEventListener("pointerup", () => {
+      if (!pressed) return;
+      pressed = false;
+      if (commonMoveTaken(row) || touchGate.consumeCancelled()) return;
+      onTap();
+    });
+    row.addEventListener("pointercancel", () => { pressed = false; });
+  }
+  function attachAgendaAllDayDrag() {
+    document.querySelectorAll(".ag-allday-row[data-id]").forEach(row => attachRowTapEdit(row, () => startAgendaItemInlineEdit(row, row.dataset.id, row.dataset.kind, renderAgendaAllDay)));
   }
 
   // 선택한 날짜의 "시간 있는" 항목만 모음: 습관(반복주기상 이 날짜에 차례인 것만) + 시간 있는 일정 + 시간 지정된 할일.
@@ -4727,57 +4690,7 @@
   // 이미 그려둔 다른 열의 행에도 매번 새로 리스너가 겹쳐 붙어(addEventListener라 덮어써지지 않음) 드래그가 여러 번 겹쳐 실행됨.
   function attachAgendaBlockDrag(containerEl, onRerender) {
     const rerender = onRerender || renderAgendaTimed;
-    let dragEl = null, dragId = null, dragKindAttr = null, moved = false, startX = 0, startY = 0, curTarget = null;
-    let ghost = null; // 타임라인처럼 커서를 따라다니는 항목 미리보기(2026-09-06 결님 요청 — 카드형 뷰는 절대좌표가 아니라
-                       // 정적 dim+테두리만으론 "따라 움직이는" 느낌이 안 나서, 손가락을 따라오는 작은 칩을 하나 더 붙임).
-
-    containerEl.querySelectorAll(".ag-block-row[data-id]").forEach(row => {
-      row.addEventListener("pointerdown", (e) => {
-        if (e.target.closest("input, .habit-skip-mark") || e.button > 0) return; // 체크 자리(×)·오른쪽 클릭은 드래그·이름 수정으로 치지 않음
-        dragEl = row; dragId = row.dataset.id; dragKindAttr = row.dataset.kind; moved = false; curTarget = null;
-        startX = e.clientX; startY = e.clientY;
-        row.setPointerCapture?.(e.pointerId);
-        touchGate.down(e);
-      });
-      row.addEventListener("pointermove", (e) => {
-        if (!dragEl) return;
-        if (!moved && touchGate.allow(e, startX, startY) && !loanMoveOwned(dragEl) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
-          moved = true;
-          dragEl.classList.add("dragging");
-          ghost = document.createElement("div");
-          ghost.className = "ag-drag-ghost";
-          ghost.textContent = dragEl.querySelector(".agenda-title")?.textContent || "";
-          document.body.appendChild(ghost);
-        }
-        if (!moved) return;
-        if (ghost) { ghost.style.left = `${e.clientX + 14}px`; ghost.style.top = `${e.clientY + 10}px`; }
-        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest(".ag-block-card[data-block-start], #agendaAllDayZone, .planup-day, #homeTodayBlockAllDay, .upcoming-day, #somedayZone");
-        if (under !== curTarget) {
-          curTarget?.classList.remove("drop-target");
-          curTarget = under || null;
-          curTarget?.classList.add("drop-target");
-        }
-      });
-      const finish = async (e) => {
-        if (!dragEl) return;
-        const el = dragEl, id = dragId, kind = dragKindAttr, wasMoved = moved;
-        dragEl = null; dragId = null; dragKindAttr = null; moved = false;
-        el.classList.remove("dragging");
-        ghost?.remove(); ghost = null;
-        curTarget?.classList.remove("drop-target");
-        curTarget = null;
-        if (!wasMoved) { if (loanMoveTaken(el) || touchGate.consumeCancelled()) return; startAgendaItemInlineEdit(el, id, kind, rerender); return; }
-        const drop = homeDropZone(e.clientX, e.clientY);
-        await moveItemToZone(kind,id,drop?{...drop,sourceDate:el.closest('[data-date]')?.dataset.date}:null);
-      };
-      row.addEventListener("pointerup", finish);
-      row.addEventListener("pointercancel", () => {
-        dragEl?.classList.remove("dragging");
-        ghost?.remove(); ghost = null;
-        curTarget?.classList.remove("drop-target");
-        dragEl = null; dragId = null; dragKindAttr = null; moved = false; curTarget = null;
-      });
-    });
+    containerEl.querySelectorAll(".ag-block-row[data-id]").forEach(row => attachRowTapEdit(row, () => startAgendaItemInlineEdit(row, row.dataset.id, row.dataset.kind, rerender)));
   }
 
   // ── 집 : 1열 "오늘" 탭(2026-09-20, 2단계) — 기존 renderAgendaAllDay(하루종일 수집)·timedItemsForDate
@@ -4866,7 +4779,7 @@
       });
       row.addEventListener("pointermove", (e) => {
         if (!row.hasPointerCapture?.(e.pointerId)) return;
-        if (!moved && touchGate.allow(e, startX, startY) && !loanMoveOwned(row) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+        if (!moved && touchGate.allow(e, startX, startY) && !commonMoveOwned(row) && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
           moved = true;
           row.classList.add("dragging");
           ghost = document.createElement("div");
@@ -4894,7 +4807,7 @@
         ghost?.remove(); ghost = null;
         curTarget?.classList.remove("drop-target");
         curTarget = null;
-        if (!wasMoved) { if (loanMoveTaken(row) || touchGate.consumeCancelled()) return;
+        if (!wasMoved) { if (commonMoveTaken(row) || touchGate.consumeCancelled()) return;
           if (skipInlineEditKinds.includes(kind)) return; // 다른 곳(예: 제목 클릭)이 처리하도록 그대로 둠
           startAgendaItemInlineEdit(row, id, kind, onRerender);
           return;
@@ -4985,7 +4898,7 @@
 
   const AG_TL_SLOT_MIN = 15, AG_TL_ROW_PX = 9, AG_TL_MIN_ITEM_PX = 24; // 2026-10-18 항목명 14px이 들어가게 최소 높이 20→24. // 2026-09-20: 사용자 요청으로 시간당 높이 약 30% 축소(13→9px, 1시간=36px)
   // 2026-09-28 새 항목 추가 단위 — 화면 칸(AG_TL_SLOT_MIN=15분, 높이·기존 항목 위치 계산에 씀)은 그대로 두고,
-  // 빈 곳 클릭·드래그로 "새로 추가"할 때만 시작·끝을 30분 경계에 맞춤. 기존 항목의 이동·길이 조절은 15분 그대로.
+  // 빈 곳 클릭·드래그로 "새로 추가"할 때만 시작·끝을 30분 경계에 맞춤. 기존 항목의 길이 조절은 15분 그대로(이동은 공통 끌기, 30분).
   const AG_TL_ADD_STEP_MIN = 30;
   const TL_LONG_PRESS_MS = 300;
   // 모바일 항목 이동(드래그) ↔ 화면 스크롤 충돌 방지 공용 장치. 터치로 끌려면 TL_LONG_PRESS_MS 동안 가만히 눌러야(진동) 하고,
@@ -5010,13 +4923,12 @@
         return false;
       },
       consumeCancelled() { const c = cancelled; cancelled = false; return c; },
-      arm() { touch = true; armed = true; }, // 다른 곳(타임라인 항목)이 자체 롱프레스로 이동을 시작했을 때 스크롤만 막음
     };
   })();
-  // 2026-10-18 3단계: 일정 화면 일 보기(#allHomeDay)에 빌려 간 줄의 '이동'은 일정 화면 끌기(schedule-drag.js)가 맡음.
-  // 여기서는 짧게 누르기(이름 수정)와 타임라인 끝부분 길이 조절만 그대로. 지금한칸 화면 자체의 끌기는 바뀌지 않음.
-  const loanMoveOwned = el => !!el.closest("#allHomeDay");
-  const loanMoveTaken = el => { if (!el.dataset.sdMoved) return false; delete el.dataset.sdMoved; return true; }; // 일정 화면 끌기가 방금 옮긴 줄 = 탭 아님
+  // 2026-10-18 3단계 / 2026-10-22: 지금한칸 화면과 일정 화면 일 보기(#allHomeDay)에 빌려 간 줄의 '이동'은 공통 끌기(schedule-drag.js)가 맡음.
+  // 여기서는 짧게 누르기(이름 수정)와 타임라인 끝부분 길이 조절(15분)만. 다른 화면에 빌려 간 목록(다가오는 등)은 옛 손짓 + 공통 저장(moveItemToZone).
+  const commonMoveOwned = el => !!(el.closest("#allHomeDay") || homeMover && el.closest('.page[data-page="home"]'));
+  const commonMoveTaken = el => { if (!el.dataset.sdMoved) return false; delete el.dataset.sdMoved; return true; }; // 공통 끌기가 방금 옮긴 줄 = 탭 아님
   const TL_EDGE_ZONE_PX = 8;
   // 8-3단계: dateStr/containerEl로 일반화 — 여러 날짜 열이 나란히 렌더되므로 각 열은 자기 min/max를
   // .ag-tl-content의 data-min-m/data-max-m에 저장해두고(homeDropZone·현재시각선이 열마다 따로 읽어씀).
@@ -5097,12 +5009,13 @@
       const fullDuration=originalPeriod.endTime?OnekanPeriod.duration(originalPeriod):null;
       const resizable=fullDuration==null||fullDuration===origDuration; // clipped continuation has no editable endpoint here
 
-      let dragKind = null, startY = 0, moved = false, cancelled = false, pressed = false, edgeAtStart = null, isMouse = false;
+      // 2026-10-22: 이동(같은 열·다른 열·하루종일·시간블록·다가오는)은 공통 끌기(schedule-drag.js, 30분 단위)가 맡음.
+      // 여기서는 짧게 누르기 = 이름 수정, 끝부분 끌기 = 길이 조절(15분 단위)만. held = 0.3초 눌러 이동으로 넘어감(끝부분이어도)
+      let dragKind = null, startY = 0, moved = false, cancelled = false, pressed = false, edgeAtStart = null, isMouse = false, held = false;
       let longPressTimer = null;
       let startScrollTop = 0;
       const timelineScroller = task.closest("#homeTimelineScroll");
       let pendingStart = origStart, pendingDuration = origDuration;
-      let outsideZone = null, outsideEl = null; // 이동 중 하루종일/다가오는계획/언젠가 쪽 위에 올라갔는지(놓으면 그쪽으로 옮김)
 
       const zoneAt = (clientY) => {
         if (!resizable) return null;
@@ -5156,7 +5069,7 @@
       task.addEventListener("pointerdown", (e) => {
         if (e.target.closest("input, .habit-skip-mark") || e.button > 0) return; // 체크 자리(×)·오른쪽 클릭은 드래그·이름 수정으로 치지 않음
         pressed = true;
-        moved = false; cancelled = false;
+        moved = false; cancelled = false; held = false;
         pendingStart = origStart; pendingDuration = origDuration;
         startY = e.clientY;
         startScrollTop = timelineScroller?.scrollTop || 0;
@@ -5166,15 +5079,13 @@
         isMouse = e.pointerType === "mouse";
         task.setPointerCapture?.(e.pointerId);
 
-        // 0.3초 눌러 대기하면(짧은 항목이라 끝부분에서 눌렀어도) 무조건 이동으로 전환.
+        // 0.3초 눌러 대기하면(짧은 항목이라 끝부분에서 눌렀어도) 길이 조절 대신 이동(공통 끌기가 같은 시간에 이동을 시작).
         // 마우스는 대기 전에 살짝만 움직여도 아래 pointermove에서 바로 판정(끝부분=조절, 몸통=이동)되므로
         // 이 타이머는 "짧은 항목이라 끝부분밖에 못 눌렀는데 이동시키고 싶을 때"의 보완 수단으로 항상 켜둠.
         longPressTimer = setTimeout(() => {
           longPressTimer = null;
-          if (cancelled || loanMoveOwned(task)) return;
-          dragKind = "move";
-          if (!isMouse) { touchGate.arm(); navigator.vibrate?.(15); }
-          task.classList.add("dragging");
+          if (cancelled) return;
+          held = true;
           clearHoverHint();
         }, TL_LONG_PRESS_MS);
       });
@@ -5192,18 +5103,10 @@
           const moveThreshold = isMouse ? 3 : 6;
           if (Math.abs(dy) > moveThreshold) {
             clearTimer();
-            if (edgeAtStart) {
+            if (edgeAtStart && !held) {
               dragKind = edgeAtStart === "top" ? "resize-top" : "resize-bottom";
-            } else if (loanMoveOwned(task)) {
-              if (!isMouse) cancelled = true; // 이동은 일정 화면 끌기가 맡음. 터치로 길게 누르기 전에 움직이면 스크롤(이름 수정 아님)
-              return;
-            } else if (isMouse) {
-              dragKind = "move";
-              task.classList.add("dragging");
-              clearHoverHint();
             } else {
-              // 터치 몸통에서 0.3초 되기 전에 움직임 → 스크롤로 보고 취소
-              cancelled = true;
+              if (!isMouse && !held) cancelled = true; // 이동은 공통 끌기가 맡음. 터치로 길게 누르기 전에 움직이면 스크롤(이름 수정 아님)
               return;
             }
           } else {
@@ -5212,26 +5115,8 @@
         }
         if (Math.abs(dy) > 6) moved = true;
         if (!moved) return;
-        if (dragKind === "move") {
-          // 8-3단계: 하루종일/언젠가뿐 아니라 "다른 날짜"의 타임라인 열도 바깥 존으로 침(자기 열은 제외 —
-          // 그래야 같은 열 안에서의 기존 이동/시간조절 동작이 그대로 유지됨).
-          const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest("#agendaAllDayZone, .planup-day, #homeTodayBlockAllDay, .upcoming-day, #somedayZone, .ag-tl-content[data-date]");
-          const el = (hit && hit.matches(".ag-tl-content") && hit.dataset.date === dateStr) ? null : hit;
-          if (el !== outsideEl) {
-            outsideEl?.classList.remove("drop-target");
-            outsideEl = el || null;
-            outsideEl?.classList.add("drop-target");
-            outsideZone = el ? homeDropZone(e.clientX, e.clientY) : null;
-            task.style.visibility = outsideZone ? "hidden" : "";
-          }
-          if (outsideZone) return; // 다른 열 위에 있는 동안은 시간 위치 미리보기를 갱신하지 않음
-        }
-        const deltaMin = Math.round(dy / AG_TL_ROW_PX) * AG_TL_SLOT_MIN;
-        if (dragKind === "move") {
-          let ns = origStart + deltaMin;
-          ns = Math.max(0, Math.min(1440 - origDuration, ns));
-          pendingStart = ns; pendingDuration = origDuration;
-        } else if (dragKind === "resize-top") {
+        const deltaMin = Math.round(dy / AG_TL_ROW_PX) * AG_TL_SLOT_MIN; // 길이 조절은 15분 단위(기존 그대로)
+        if (dragKind === "resize-top") {
           let ns = Math.max(0, Math.min(origStart + origDuration - AG_TL_SLOT_MIN, origStart + deltaMin));
           pendingStart = ns; pendingDuration = (origStart + origDuration) - ns;
         } else {
@@ -5244,34 +5129,24 @@
         clearTimer();
         if (!pressed) return; // 이 항목에서 누르기가 시작되지 않은 pointerup(오른쪽 클릭 등)은 무시
         pressed = false;
-        const k = dragKind, dropZone = outsideZone;
-        dragKind = null; outsideZone = null;
-        outsideEl?.classList.remove("drop-target");
-        outsideEl = null;
-        task.classList.remove("dragging");
-        task.style.visibility = "";
+        const k = dragKind, wasHeld = held;
+        dragKind = null; held = false;
         clearHoverHint();
 
         if (k === null) {
-          if (!loanMoveTaken(task) && !cancelled) startEditTitle();
+          // 공통 끌기가 옮겼거나, 스크롤했거나, 0.3초 눌렀다 뗀 경우(이동 준비였음)는 이름 수정 아님
+          if (!commonMoveTaken(task) && !cancelled && !wasHeld) startEditTitle();
           return;
         }
         if (!moved) return;
-        if (dropZone) {
-          await moveItemToZone(kind, id, {...dropZone,sourceDate:dateStr});
-          return;
-        }
+        // 길이 조절 저장(기존 그대로)
         const item=agendaItemById(kind,id); if(!item)return;
         const base=OnekanPeriod.read(kind,item);
-        const shifted=OnekanPeriod.plus(base.startDate,base.startTime,pendingStart-origStart);
-        const targetDate=shifted.date;
-        let patch=OnekanPeriod.shift(kind,item,targetDate,OnekanPeriod.minutes(shifted.time));
-        if(k!=='move') {
-          const originalClip=OnekanPeriod.clip(kind,item,dateStr);
-          if(base.endTime && originalClip && (originalClip.duration_minutes!==OnekanPeriod.duration(base))) {await loadAll();return;}
-          const end=OnekanPeriod.plus(targetDate,minutesToHHMM(pendingStart),pendingDuration);
-          patch=OnekanPeriod.patch(kind,{allDay:false,startDate:targetDate,startTime:minutesToHHMM(pendingStart),endDate:end.date,endTime:end.time});
-        }
+        const targetDate=OnekanPeriod.plus(base.startDate,base.startTime,pendingStart-origStart).date;
+        const originalClip=OnekanPeriod.clip(kind,item,dateStr);
+        if(base.endTime && originalClip && (originalClip.duration_minutes!==OnekanPeriod.duration(base))) {await loadAll();return;}
+        const end=OnekanPeriod.plus(targetDate,minutesToHHMM(pendingStart),pendingDuration);
+        const patch=OnekanPeriod.patch(kind,{allDay:false,startDate:targetDate,startTime:minutesToHHMM(pendingStart),endDate:end.date,endTime:end.time});
         const table=kind==='habit'?'tok_habits':kind==='todo'?'tok_todos':'tok_events';
         const {error}=await sb.from(table).update(patch).eq('id',id);
         if(error) alert('시간 변경 실패: '+error.message);
@@ -5279,9 +5154,7 @@
       };
       task.addEventListener("pointerup", finish);
       task.addEventListener("pointercancel", () => {
-        clearTimer(); pressed = false; dragKind = null; outsideZone = null;
-        outsideEl?.classList.remove("drop-target"); outsideEl = null;
-        task.classList.remove("dragging"); task.style.visibility = "";
+        clearTimer(); pressed = false; dragKind = null; held = false;
         clearHoverHint();
       });
       task.addEventListener("pointerleave", () => { if (!pressed) clearHoverHint(); });
@@ -10016,6 +9889,10 @@
     addSlotHtml,addSlot:wireDateAddSlot,rename:(row,kind,id,onDone)=>startAgendaItemInlineEdit(row,id,kind,onDone),
     rowHtml:homeTodayRowHtml,wireRows:wireHomeTodayChecks
   });
+  // 2026-10-22 지금한칸 끌어 옮기기: 일정 화면과 같은 규칙·저장(조건부 한 번, 반복 범위, 10초 실행 취소). 안내는 알림으로
+  homeMover=window.createOnekanScheduleDrag?.({screen:'home',period:OnekanPeriod,escape:escapeHtml,host:document.querySelector('.page[data-page="home"]'),sb,user:()=>appSymbolUserId,page:()=>currentPage,
+    todos:()=>todos,reload:table=>table?reloadTables([table]):loadAll(),render:()=>renderHome(),toast:(msg,action,ms)=>showToast(msg,action,ms),status:msg=>showToast(msg),
+    targetAt:homeMoveTarget,find:homeMoveRow,dayDate:()=>homeAgendaDate,habitSource:id=>tasks.find(h=>h.id===id)})||null;
   // 할일·습관 탭 오른쪽 '날짜별 · 언젠가'(지금 한칸과 같은 목록, 눈 없음). 모바일은 상단 추가 버튼 옆 버튼으로 여는 아래쪽 패널.
   for (const [page, before, id] of [["todos", "todoQuickAddBtn", "todoPanelBtn"], ["habits", "habitAddBtn", "habitPanelBtn"]]) {
     const host = document.querySelector(`.page[data-page="${page}"]`), btn = document.createElement("button");
