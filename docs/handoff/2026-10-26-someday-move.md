@@ -3,6 +3,7 @@
 - 작성일 / 작성 AI: 2026-10-27 / Claude Code
 - 상태: 검토용 PR. 운영 DB 적용·병합·배포는 결 확인 뒤(결 지시)
 - 브랜치: `claude/charming-pasteur-gqs5dm`
+- PR: https://github.com/greejiu/today-onekan/pull/116
 
 ## 목표
 언젠가(담아두기) 줄을 날짜·시간에 놓으면 일정·할일·습관 중 하나로 만들어 옮긴다.
