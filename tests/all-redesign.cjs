@@ -174,11 +174,13 @@ const pressed=async loc=>(await loc.getAttribute('aria-pressed'))==='true';
  await dragHome('#allSideAgenda .plan-row[data-id="t-next"]','#allWeekBoard [data-awb-col="'+target+'"]');
  await p.waitForFunction(t=>mockRows.tok_todos.find(x=>x.id==='t-next').start_date===t,target);await p.waitForTimeout(150);
  assert.equal(await col(target).locator('[data-awb-id="todo|t-next"]').count(),1,'다가오는 → 보드 열');
- // 언젠가 = 지금 한칸 담아두기(정렬·그룹 칩 포함), 담아두기 → 보드 열 끌기 = 그날 할일(종일)
+ // 언젠가 = 지금 한칸 담아두기(정렬·그룹 칩 포함), 담아두기 → 보드 열 끌기 = 종류 고르기 → 그날 하루종일로 채운 할일 추가창 → 저장(2026-10-26)
  await side.locator('[data-sa-list=someday]').click();assert.equal(await p.locator('#allSideAgenda #homeSomedayPanel').count(),1);
  assert(await side.locator('#somedayHomeSortSelect').isVisible(),'정렬 선택');assert(await side.locator('#homeUpcomingPanel').isHidden(),'다가오는은 숨김');
  assert.equal(await side.locator('[data-someday-id="s1"]').count(),1);
  await dragHome('#allSideAgenda [data-someday-id="s1"]','#allWeekBoard [data-awb-col="'+target+'"]');
+ await p.locator('.item-menu').getByText('할일로',{exact:true}).click();assert.equal(await p.locator('#td_start').inputValue(),target);assert.equal(await p.locator('#td_allday').isChecked(),true);
+ await p.locator('#todoSaveBtn').click();
  await p.waitForFunction(()=>!mockRows.tok_someday.some(s=>s.id==='s1'));assert(await p.evaluate(t=>mockRows.tok_todos.some(x=>x.title==='언젠가 읽을 책'&&x.start_date===t),target));
  await p.setViewportSize({width:1440,height:900});
  await go(p,'month');assert.equal(await p.evaluate(()=>allViews.agenda.state().list),'someday','목록 선택 기억');await go(p,'week');
