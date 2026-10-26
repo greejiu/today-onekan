@@ -160,9 +160,11 @@ const dismissToast=p=>p.evaluate(()=>document.querySelector('#appToast')?.classL
  await p.locator('#allViewTabs [data-common-view=month]').click();await p.waitForTimeout(300);
  const sideRow=p.locator('#allSideAgenda .plan-row[data-kind="event"][data-id="e-side"]').first();
  if(await sideRow.count()){
-  a=await center(sideRow);const cellBox=await p.locator('#allCalGrid .cal-cell[data-date="'+D[5]+'"]').boundingBox();
+  // 놓을 칸: 지금 달력에 보이는 옆 날짜(월 경계에 따라 D[5]가 안 보일 수 있음)
+  const sideTarget=await p.evaluate(d=>{const c=[...document.querySelectorAll('#allCalGrid .cal-cell[data-date]')].map(e=>e.dataset.date),i=c.indexOf(d);return c[i+1]||c[i-1];},D[1]);
+  a=await center(sideRow);const cellBox=await p.locator('#allCalGrid .cal-cell[data-date="'+sideTarget+'"]').boundingBox();
   await drag(p,a,{x:cellBox.x+cellBox.width/2,y:cellBox.y+cellBox.height-6});
-  await p.waitForFunction(d=>mockRows.tok_events.find(r=>r.id==='e-side').event_date===d,D[5]);r=await row(p,'tok_events','e-side');assert.equal(r.event_time,'18:00:00','날짜만(시간 유지)');assert.equal(r.end_time,'19:00:00');await dismissToast(p);
+  await p.waitForFunction(d=>mockRows.tok_events.find(r=>r.id==='e-side').event_date===d,sideTarget);r=await row(p,'tok_events','e-side');assert.equal(r.event_time,'18:00:00','날짜만(시간 유지)');assert.equal(r.end_time,'19:00:00');await dismissToast(p);
   // 옆 목록 습관 줄이 다른 날 칸에 놓인 경우(같은 저장 경로)
   before=await snap(p);w0=await writes(p);await p.evaluate(([a,b])=>moveItemToZone('habit','h1',{zone:'today-allday',type:'date',date:b,sourceDate:a}),[D[1],D[6]]);
   assert.equal(await snap(p),before,'습관 다른 날 = 그대로');assert.equal(await writes(p),w0);await dismissToast(p);
