@@ -265,7 +265,7 @@ const toastUndo=p=>p.locator('#appToast .toast-action');
  ok('일 보기 타임라인: 일정 시간 이동(소요시간 유지), 습관은 같은 날 시간만·전체 범위(꺼진 범위·취소는 그대로)·완료 기록 보존, 짧게 누르기 = 이름 수정, 길게 눌렀다 떼기 = 열리지 않음');
 
  // ── 9. 월: 막대를 다른 날로(미리보기는 도착 칸 안) ──
- await go('month');await p.evaluate(d=>allViews.selectDate(d),D[1]);await p.waitForTimeout(150);
+ await go('month');await p.evaluate(d=>allViews.selectDate(d),D[7]);await p.waitForTimeout(150); // 막대(D[7])가 있는 달(월 경계에서도 보이게)
  const chip=p.locator('#allCalGrid .cal-chip[data-id="event|e-repeat"]').first();
  const to=p.locator('#allCalGrid .cal-cell[data-date="'+D[6]+'"]');
  const e0=await row(p,'tok_events','e-repeat');await p.evaluate(()=>document.getElementById('appToast')?.classList.remove('show')); // 앞 단계 실행 취소 알림(10초)이 아래 줄 막대를 가리지 않게

@@ -694,6 +694,8 @@
   .cev-opt{color:var(--sub);font-weight:400;}
   .cev-hint{font-size:var(--fs-meta);color:var(--sub);margin:-4px 2px 10px;line-height:1.4;}
   .cev-hint[hidden]{display:none;}
+  .someday-move-note{display:flex;flex-direction:column;gap:4px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--accent-soft);color:var(--text);font-size:var(--fs-meta);line-height:1.5;}
+  .someday-move-note strong{font-size:var(--fs-body);}
   .cal-ev-sheet-bg .field textarea{background:var(--card);color:var(--text);resize:vertical;}
   .cal-today-btn{flex:none;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;font-size:var(--fs-body);font-family:inherit;padding:0 14px;height:32px;cursor:pointer;white-space:nowrap;}
   .cal-today-btn:hover{background:var(--accent-soft);}
@@ -4425,36 +4427,17 @@
   let agendaTimelineMaxM = 1440; // renderAgendaTimeline이 매번 갱신(현재 시간선이 범위 안에 있는지 판단용)
   let homePlanDays = [];        // renderPlanUpcomingBoard가 매번 갱신(다가오는 계획 칸 idx→날짜 계산용)
 
-  // kind: "habit" | "event" | "todo" | "someday"(아직 날짜 없는 언젠가 항목) 소스를 zone으로 옮김.
+  // kind: "habit" | "event" | "todo" 소스를 zone으로 옮김.
   // 2026-10-22: 일정·할일·습관은 공통 끌기(schedule-drag.js)의 규칙·저장(조건부 한 번, 반복 범위, 실행 취소)으로 처리.
   //   지금한칸 화면에서는 공통 엔진이 직접 끌고, 여기로 오는 것은 다른 화면에 빌려 간 목록(다가오는 등)에서 끈 경우.
-  //   할일 → 언젠가는 막음(이유 안내). 언젠가 → 날짜는 아직 옛 방식(새로 만들고 지움) — 종류 선택·추가창 연결은 후속.
+  //   할일 → 언젠가는 막음(이유 안내). 언젠가 → 날짜는 openSomedayMoveFromDrop(종류 선택 → 추가창 → 한 번 저장).
   async function moveItemToZone(kind, id, zoneObj) {
-    if (!zoneObj) return;
-    const zone = zoneObj.zone;
-    // 8-3단계: zoneObj.date는 드롭한 열의 실제 날짜(homeDropZone이 채워줌) — 이제 여러 날짜 열이 있으므로
-    // "오늘 보는 날짜" 하나가 아니라 이 date를 씀. 혹시 없으면(옛 호출 등) homeAgendaDate로 안전하게 대체.
-    const targetDate = zoneObj.date || homeAgendaDate;
-    if (kind !== "someday") {
-      // type이 없는 옛 호출: planday = 날짜만, today-allday = 하루종일, today-timed = 그 시각
-      const type = zoneObj.type || { planday: "date", "today-allday": "allday", "today-timed": "time", someday: "someday" }[zone];
-      if (!type || !homeMover) return;
-      await homeMover.drop(kind, id, zoneObj.sourceDate, { type, date: targetDate, minute: zoneObj.minute ?? zoneObj.startMinute });
-      return;
-    }
-    if (zone === "someday") return; // 이미 언젠가라 놓아도 변화 없음
-    const s = somedayItems.find(x => x.id === id);
-    if (!s) return;
-    const patch = { title: s.title, is_done: s.is_done, tag_id: s.tag_id, ...classification?.inherited("someday",s), ...(s.project_id?{project_id:s.project_id}:{}) };
-    if (zone === "planday") patch.start_date = zoneObj.date;
-    else if (zone === "today-allday") patch.start_date = targetDate;
-    else { patch.start_date = targetDate; patch.todo_time = minutesToHHMM(zoneObj.startMinute) + ":00"; }
-    Object.assign(patch,OnekanPeriod.patch('todo',OnekanPeriod.defaults({startDate:patch.start_date,startTime:patch.todo_time},todayStr())));
-    const { error: insErr } = await sb.from("tok_todos").insert(patch);
-    if (insErr) { alert("이동 실패: " + insErr.message); return; }
-    const { error: delErr } = await sb.from("tok_someday").delete().eq("id", id);
-    if (delErr) { alert("이동 실패: " + delErr.message); return; }
-    await reloadTables(["tok_todos","tok_someday"]);
+    if (!zoneObj || !homeMover) return;
+    // 8-3단계: zoneObj.date는 드롭한 열의 실제 날짜(homeDropZone이 채워줌). 혹시 없으면(옛 호출 등) homeAgendaDate로 대체.
+    // type이 없는 옛 호출: planday = 날짜만, today-allday = 하루종일, today-timed = 그 시각
+    const type = zoneObj.type || { planday: "date", "today-allday": "allday", "today-timed": "time", someday: "someday" }[zoneObj.zone];
+    if (!type) return;
+    await homeMover.drop(kind, id, zoneObj.sourceDate, { type, date: zoneObj.date || homeAgendaDate, minute: zoneObj.minute ?? zoneObj.startMinute });
   }
 
   // 2026-10-22: 하루종일·시간블록 줄의 끌어 옮기기는 공통 끌기(schedule-drag.js)가 맡음(지금한칸·일정 화면 일 보기 모두).
@@ -6070,8 +6053,8 @@
     });
   }
 
-  // 언젠가 행을 다가오는 계획의 특정 날짜/오늘(타임블럭·타임라인·하루종일)로 드래그하면
-  // tok_someday에서 지우고 tok_todos에 그 조건으로 새로 만듦(moveItemToZone의 someday 분기).
+  // 언젠가 행을 날짜(다가오는·일정 화면 달력 칸)·하루종일·시간블록·타임라인에 놓으면 종류(일정·할일·습관)를 고르고
+  // 놓은 날짜·시간을 채운 추가창에서 저장해야 옮겨짐(2026-10-26, openSomedayMoveFromDrop).
   function attachSomedayDrag() {
     document.querySelectorAll(".ag-someday-row[data-someday-id]").forEach(row => {
       let moved = false, startX = 0, startY = 0, curTarget = null, ghost = null;
@@ -6111,8 +6094,12 @@
         curTarget = null;
         if (!wasMoved) { if (touchGate.consumeCancelled()) return; startAgendaItemInlineEdit(row, id, "someday", renderSomedaySummary); return; }
         const drop = homeDropZone(e.clientX, e.clientY);
-        if (!drop || drop.zone === "someday") return; // 이미 언젠가라 놓아도 변화 없음
-        await moveItemToZone("someday", id, drop);
+        // 끈 직후 놓은 칸에 생기는 클릭(일정 화면 달력 칸 = 빈칸 추가 메뉴 등)이 종류 메뉴를 덮지 않게 한 번만 무시
+        const swallow = ev => { ev.preventDefault(); ev.stopImmediatePropagation(); };
+        window.addEventListener("click", swallow, { capture: true, once: true }); // window = 문서의 다른 클릭 처리(달력 빈칸 추가)보다 먼저
+        setTimeout(() => window.removeEventListener("click", swallow, true), 400);
+        if (!drop || drop.zone === "someday" || !drop.date) return; // 이미 언젠가라 놓아도 변화 없음
+        openSomedayMoveFromDrop(id, drop, e.clientX, e.clientY); // 종류 고르기 → 날짜·시간을 채운 추가창 → 저장해야만 옮김
       };
       row.addEventListener("pointerup", finish);
       row.addEventListener("pointercancel", () => {
@@ -6343,6 +6330,7 @@
     sel.value = selectedId || "";
   }
   function openTodoSheet(existing, prefill) {
+    clearSomedayMove(); // 언젠가에서 옮기는 창이면 openSomedayMoveWindow가 연 뒤 다시 정함
     todoSheetState = { saving: false, repeatEdit: !!existing?.repeat_unit, opener: document.activeElement && document.activeElement !== document.body ? document.activeElement : null };
     const start = existing ? existing.start_date : (prefill?.startDate || todayStr());
     $("todoSheetTitle").textContent = existing ? "할일 수정" : todoSheetTitleFor(start);
@@ -6379,6 +6367,7 @@
   $('td_repeat_days_row').addEventListener('change',syncTodoRepeatForm);
   function closeTodoSheet() {
     if (todoSheetState.saving) return;
+    clearSomedayMove();
     $("todoSheetBg").classList.remove("open");
     fitCalEventSheetToViewport();
     const o = todoSheetState.opener;
@@ -6426,6 +6415,12 @@
         if(!existingTodo||repeatStart!==(existingTodo.repeat_start_date||existingTodo.start_date||null))patch.repeat_start_date=repeatStart;
         if(!existingTodo||repeatEnd!==(existingTodo.end_date||null))patch.end_date=repeatEnd;
         if(editId && repeat_unit && !existingTodo.repeat_chain_id) patch.repeat_chain_id=editId;
+      }
+      if (!editId && somedayMove?.kind === "todo") { // 언젠가에서 옮기기: 저장 성공 시에만 담아두기에서 빠짐
+        const out = await saveSomedayMoveRow("todo", patch);
+        todoSheetState.saving = false; $("todoSaveBtn").disabled = false; $("todoSaveBtn").textContent = "저장";
+        await finishSomedayMove(out, closeTodoSheet, m => showErr(m, $("todoSaveBtn")));
+        return;
       }
       ({ error } = editId
         ? await sb.from("tok_todos").update(patch).eq("id", editId)
@@ -6838,6 +6833,107 @@
   $("sm_cancel").onclick = closeSomedayMoveSheet;
   $("sm_save").onclick = saveSomedayMove;
   $("smForm").onsubmit = (e) => { e.preventDefault(); saveSomedayMove(); };
+
+  // ── 2026-10-26 언젠가 → 날짜(끌어 놓기): 종류(일정·할일·습관)를 고르고, 놓은 날짜·시간을 채운 추가창에서 저장해야만 옮김 ──
+  // 저장 = DB 함수 tok_move_someday 한 번(언젠가 삭제 + 새 항목 + 옮긴 기록이 한 거래). 취소·실패 = 원본 그대로.
+  // 창마다 요청 키(requestId)를 하나 정해 다시 저장할 때도 같은 키를 씀 → 응답을 못 받고 다시 눌러도 새로 만들지 않고 처음 결과를 받음.
+  // 결과를 모르면(연결 끊김 등) 옮긴 기록(tok_someday_moves)과 원본을 읽어 실제로 어떻게 됐는지 확인한 뒤 안내.
+  // 제목·범주는 가져오고, 그룹은 도착 공간에서 고름(안 고르면 기본, 같은 이름 자동 연결 없음). 못 가져오는 것은 창 위에 안내.
+  let somedayMove = null; // { id, title, kind, requestId }
+  const SOMEDAY_MOVE_KIND = { event: "일정", todo: "할일", habit: "습관" };
+  const SOMEDAY_MOVE_TO = { event: "일정으로", todo: "할일로", habit: "습관으로" };
+  const SOMEDAY_MOVE_TABLE = { event: "tok_events", todo: "tok_todos", habit: "tok_habits" };
+  function newRequestId() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const b = crypto.getRandomValues(new Uint8Array(16)); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+    const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("");
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  }
+  function clearSomedayMove() { somedayMove = null; document.getElementById("somedayMoveNote")?.remove(); }
+  // 놓은 자리 → 추가창 기간: 날짜 칸·하루종일 = 그날 하루종일, 타임라인·시간블록 = 그 시각부터 30분
+  function somedayDropRange(drop) {
+    return drop.type === "time" || drop.type === "block"
+      ? { startDate: drop.date, startMinute: drop.minute, durationMinutes: 30, allDay: false }
+      : { startDate: drop.date, allDay: true };
+  }
+  function openSomedayMoveFromDrop(id, drop, x = null, y = null) {
+    const s = somedayItems.find(r => r.id === id);
+    if (!s || !drop?.date) return;
+    const range = somedayDropRange(drop);
+    openMenuShell({
+      title: `‘${s.title}’ 옮기기`,
+      sub: `${menuDateLabel(range.startDate)} ${range.allDay ? "하루종일" : minutesToHHMM(range.startMinute)} · 어떤 종류로 만들까요?`,
+      entries: ["event", "todo", "habit"].map(kind => ({ label: SOMEDAY_MOVE_TO[kind], icon: "plus", window: true, run: () => openSomedayMoveWindow(kind, id, range) })),
+      x, y, viaTouch: lastPointerType === "touch" || lastPointerType === "pen",
+    });
+  }
+  function openSomedayMoveWindow(kind, id, range) {
+    const s = somedayItems.find(r => r.id === id);
+    if (!s) return;
+    openAddWindowFor(kind, { ...range, tagId: s.tag_id || null, categoryId: s.tag_id || null, projectId: kind === "event" ? null : s.project_id || null });
+    somedayMove = { id, title: s.title, kind, requestId: newRequestId() };
+    $(kind === "event" ? "cev_title" : kind === "todo" ? "td_title" : "ha_name").value = s.title;
+    const catSel = $(kind === "event" ? "cev_shared_category_id" : kind === "todo" ? "td_tag" : "ha_category");
+    if (kind === "event" && catSel && s.tag_id && [...catSel.options].some(o => o.value === s.tag_id)) catSel.value = s.tag_id;
+    const projSel = kind === "event" ? null : $(kind === "todo" ? "td_project" : "ha_project");
+    // 가져오지 못하는 것: 저장 전에 알림
+    const lost = [];
+    const catName = id => habitCategories.find(c => c.id === id)?.name || "이름 없음";
+    if (s.tag_id && (catSel?.value || "") !== s.tag_id) lost.push(`범주 ‘${catName(s.tag_id)}’(이 창에서 고를 수 없어요)`);
+    const proj = s.project_id ? projectById(s.project_id) : null, projName = proj ? (proj.title || proj.name || "이름 없음") : "";
+    if (s.project_id && kind === "event") lost.push(`프로젝트 ‘${projName || "알 수 없음"}’(일정에는 프로젝트가 없어요)`);
+    else if (s.project_id && (projSel?.value || "") !== s.project_id) lost.push(`프로젝트 ‘${projName || "알 수 없음"}’(지금 고를 수 없는 프로젝트예요)`);
+    if (s.group_id) {
+      const g = classification?.groups?.().find(x => x.id === s.group_id);
+      lost.push(`담아두기 그룹 ‘${g?.name || "이름 없음"}’ — ${kind === "event" ? "일정 범주를 골라 주세요(안 고르면 기본 범주)" : SOMEDAY_MOVE_KIND[kind] + " 그룹을 골라 주세요(안 고르면 기본)"}`);
+    }
+    if (s.is_done) lost.push("완료 표시(새 항목은 완료 전으로 시작해요)");
+    const note = document.createElement("div");
+    note.id = "somedayMoveNote"; note.className = "someday-move-note"; note.setAttribute("role", "note");
+    note.innerHTML = `<strong>담아두기에서 옮겨요</strong><span>‘${escapeHtml(s.title)}’을(를) ${SOMEDAY_MOVE_TO[kind]} 저장하면 담아두기에서 빠져요. 취소하면 그대로예요.</span>`
+      + (lost.length ? `<span>가져오지 못하는 정보: ${lost.map(escapeHtml).join(" · ")}</span>` : "");
+    const form = $(kind === "event" ? "calEvForm" : kind === "todo" ? "todoForm" : "habitAddForm");
+    form.prepend(note);
+    if (kind === "event") calEvSheet.snapshot = cevFormState(); // 미리 채운 값 그대로 닫을 때는 묻지 않음
+  }
+  // 저장(추가창의 새 항목 값 row): 한 번 부르고, 결과를 모르면 기록·원본으로 확인 → {state:'moved'|'kept'|'gone'|'unknown', result, error}
+  async function saveSomedayMoveRow(kind, row) {
+    const mv = somedayMove;
+    let res;
+    try { res = await sb.rpc("tok_move_someday", { p_someday_id: mv.id, p_request_id: mv.requestId, p_kind: kind, p_row: row }); }
+    catch (err) { res = { error: err }; }
+    if (!res.error && res.data) return { state: "moved", result: res.data };
+    try {
+      const log = await sb.from("tok_someday_moves").select("*").eq("someday_id", mv.id).maybeSingle();
+      if (log.error) throw log.error;
+      if (log.data) return { state: "moved", result: { kind: log.data.kind, item_id: log.data.item_id, title: log.data.title, replayed: true, same_request: log.data.request_id === mv.requestId }, error: res.error };
+      const src = await sb.from("tok_someday").select("id").eq("id", mv.id).maybeSingle();
+      if (src.error) throw src.error;
+      return { state: src.data ? "kept" : "gone", error: res.error };
+    } catch (e) { return { state: "unknown", error: res.error || e }; }
+  }
+  // 결과 안내. 창을 닫아야 하면 close()를 부르고 true(옮겨졌거나 이미 없음), 창을 그대로 두면 showErr로 안내하고 true
+  async function finishSomedayMove(out, close, showErr) {
+    const msg = e => (e?.message || e || "").toString();
+    if (out.state === "moved" || out.state === "gone") {
+      const r = out.result, title = r?.title || somedayMove?.title || "";
+      close(); clearSomedayMove();
+      await reloadTables(["tok_someday", ...(r ? [SOMEDAY_MOVE_TABLE[r.kind]] : [])]);
+      if (out.state === "gone") { alert("이 항목은 이미 담아두기에 없어요(삭제됐거나 다른 방법으로 옮겨졌어요). 새로 만들지 않았어요."); return true; }
+      const where = `${SOMEDAY_MOVE_KIND[r.kind]} ‘${title}’`;
+      if (r.same_request === false) alert(`이미 다른 창에서 ${where}(으)로 옮겨졌어요. 새로 만들지 않았어요.${r.item_exists === false ? " 그 항목은 그 뒤 삭제됐어요." : ""}`);
+      else showToast(r.item_exists === false ? `${where}(으)로 옮겼지만 그 뒤 삭제됐어요` : `${where}(으)로 옮겼어요`);
+      return true;
+    }
+    if (out.state === "kept") {
+      showErr(/tok_move_someday|PGRST202|Could not find the function/.test(msg(out.error))
+        ? "아직 옮길 수 없어요(DB 업데이트가 적용되지 않았어요). 담아두기 항목은 그대로예요."
+        : `옮기지 못했어요. 담아두기 항목은 그대로예요. 입력한 내용도 그대로니 고친 뒤 다시 저장해 주세요. (${msg(out.error)})`);
+      return true;
+    }
+    showErr(`저장 결과를 확인하지 못했어요. 연결을 확인한 뒤 다시 저장해 주세요 — 다시 눌러도 두 번 생기지 않아요. (${msg(out.error)})`);
+    return true;
+  }
   $("somedayMoveSheetBg").addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.preventDefault(); closeSomedayMoveSheet(); return; }
     trapFocusIn($("somedayMoveSheetBg").querySelector(".sheet"), e);
@@ -7071,6 +7167,7 @@
   function openEventEditor({ mode = "add", id = null, date = null, startDate = null, endDate = null, startTime = null, endTime = null, time = null, startMinute = null, durationMinutes = null, allDay = null, opener = null, keepMonth = false } = {}) {
     const ev = mode === "edit" ? events.find(x => x.id === id) : null;
     if (mode === "edit" && !ev) return;
+    clearSomedayMove();
     calEvSheet = { mode, id: ev ? ev.id : null, saving: false, opener: opener || null, snapshot: "", keepMonth: !ev && keepMonth };
     renderCevCategories(ev ? (ev.category_id || null) : classification?.defaultGroup("event"));
     $('cev_title').value=ev?ev.title:'';
@@ -7090,6 +7187,7 @@
     $("cev_title").focus();
   }
   function hideCalEventSheet() {
+    clearSomedayMove();
     $("calEventSheetBg").classList.remove("open");
     fitCalEventSheetToViewport();
   }
@@ -7133,6 +7231,13 @@
     $("cev_save").disabled = true;
     $("cev_save").textContent = "저장 중…";
     $("calEventSheetBg").querySelector(".sheet").setAttribute("aria-busy", "true");
+    if (isAdd && somedayMove?.kind === "event") { // 언젠가에서 옮기기: 저장 성공 시에만 담아두기에서 빠짐
+      const out = await saveSomedayMoveRow("event", payload), opener = calEvSheet.opener;
+      calEvSheet.saving = false; $("cev_save").disabled = false; $("cev_save").textContent = "저장";
+      $("calEventSheetBg").querySelector(".sheet").removeAttribute("aria-busy");
+      await finishSomedayMove(out, () => { hideCalEventSheet(); restoreScheduleFocus(opener); }, m => { $("cev_error").textContent = m; $("cev_save").focus(); });
+      return;
+    }
     let error, data;
     try {
       ({ data, error } = isAdd
@@ -7433,6 +7538,7 @@
   // 2026-09-27: 습관 탭 [+ 습관] → 추가 창(예전 상시 입력줄 대신). 기본값은 예전 입력줄과 같음(오늘부터 매일, 30분).
   let habitAddState = { saving: false, opener: null };
   function openHabitAddSheet(opener, prefill) {
+    clearSomedayMove();
     habitAddState = { saving: false, opener: opener || null };
     $("ha_name").value = "";
     openPeriodForm('ha','habit',null,prefill);
@@ -7454,6 +7560,7 @@
   }
   function closeHabitAddSheet() {
     if (habitAddState.saving) return;
+    clearSomedayMove();
     $("habitAddSheetBg").classList.remove("open");
     fitCalEventSheetToViewport();
     const o = habitAddState.opener;
@@ -7483,6 +7590,12 @@
     $("ha_error").textContent = "";
     $("ha_save").disabled = true;
     $("ha_save").textContent = "저장 중…";
+    if (somedayMove?.kind === "habit") { // 언젠가에서 옮기기: 저장 성공 시에만 담아두기에서 빠짐
+      const out = await saveSomedayMoveRow("habit", row);
+      habitAddState.saving = false; $("ha_save").disabled = false; $("ha_save").textContent = "저장";
+      await finishSomedayMove(out, closeHabitAddSheet, m => showErr(m, $("ha_save")));
+      return;
+    }
     let error;
     try { ({ error } = await sb.from("tok_habits").insert(row)); } catch (err) { error = err; }
     habitAddState.saving = false;

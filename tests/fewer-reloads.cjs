@@ -24,7 +24,7 @@ try{
  assert(await p.locator('.page[data-page=todos] [data-iv-row] .agenda-title',{hasText:'보고서 마감'}).count(),'화면에 새 이름');
  ok('이름 수정: 할일 테이블만 다시 불러오고 화면 갱신');
  // 2) 끌어 옮기기(담아두기 → 내일 종일) → tok_todos·tok_someday만
- await p.evaluate(()=>moveItemToZone('someday','s1',{zone:'today-allday',date:addDaysStr(todayStr(),1)}));
+ await p.evaluate(()=>openSomedayMoveWindow('todo','s1',{startDate:addDaysStr(todayStr(),1),allDay:true}));await reads();await p.locator('#todoSaveBtn').click();await p.waitForFunction(()=>!document.querySelector('#todoSheetBg.open')); // 2026-10-26 언젠가 → 날짜 = 추가창 저장(한 번에 옮기는 함수)
  r=await reads();assert.deepEqual(data(r),['tok_someday','tok_todos'],'옮기기 '+r);
  assert(await p.evaluate(()=>todos.some(t=>t.title==='포트폴리오 정리')&&!somedayItems.length));ok('담아두기 → 날짜 옮기기: 두 테이블만, 상태 반영');
  // 3) 습관 이동 → tok_habits만
