@@ -1,32 +1,11 @@
 // 2026-10-26 언젠가 → 일정·할일·습관 한 번에 옮기기(tok_move_someday) 검증. 실제 Postgres(pglite), 가짜 id만 씀.
 // 한 거래(실패하면 원본 그대로), 응답 유실 후 재시도·다른 창 재요청 = 새로 만들지 않고 처음 결과, 허용 칸만, 본인 것만, 기록으로 결과 확인.
 const assert=require('node:assert/strict'),fs=require('node:fs');const {PGlite}=require('@electric-sql/pglite');
-const A='00000000-0000-0000-0000-000000000001',B='00000000-0000-0000-0000-000000000002';
+const {prepare,A,B}=require('./someday-move-schema.cjs');
 const R1='10000000-0000-0000-0000-000000000001',R2='10000000-0000-0000-0000-000000000002',R3='10000000-0000-0000-0000-000000000003';
-const mig=suffix=>fs.readFileSync('supabase/migrations/'+fs.readdirSync('supabase/migrations').find(f=>f.endsWith(suffix)),'utf8');
 (async()=>{
  const db=new PGlite();try{
-  await db.exec(`create schema auth;create role authenticated;create role anon;create table auth.users(id uuid primary key);
-  insert into auth.users values('${A}'),('${B}');
-  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
-  grant usage on schema auth to authenticated,anon;
-  create table tok_events(id uuid primary key default gen_random_uuid(),user_id uuid not null default auth.uid() references auth.users(id),title text not null,event_date date not null,end_date date,event_time time,duration_minutes integer,memo text,category_id uuid,repeat_unit text,repeat_interval integer);
-  create table tok_todos(id uuid primary key default gen_random_uuid(),user_id uuid not null default auth.uid() references auth.users(id),title text not null,start_date date not null,end_date date,todo_time time,duration_minutes integer,is_done boolean not null default false,tag_id uuid,repeat_unit text,repeat_interval integer,repeat_days smallint[],repeat_chain_id uuid,repeat_source_id uuid,completed_date date,project_id uuid,unique(id,user_id),constraint tok_todos_date_order check(end_date is null or end_date>=start_date));
-  create unique index tok_todos_repeat_source_id_key on tok_todos(repeat_source_id) where repeat_source_id is not null;
-  create table tok_habits(id uuid primary key default gen_random_uuid(),user_id uuid not null default auth.uid() references auth.users(id),name text not null,start_date date not null default current_date,end_date date,start_minute integer check(start_minute is null or start_minute>=0 and start_minute<1440),duration_minutes integer not null default 30 check(duration_minutes>0),is_active boolean not null default true,repeat_unit text,repeat_interval integer,repeat_days smallint[],cycle_changed_at date,category_id uuid,project_id uuid);
-  create table tok_someday(id uuid primary key default gen_random_uuid(),user_id uuid not null default auth.uid() references auth.users(id),title text,tag_id uuid,is_done boolean default false);
-  create table tok_habit_logs(id uuid primary key default gen_random_uuid(),user_id uuid not null default auth.uid() references auth.users(id),habit_id uuid not null references tok_habits(id) on delete cascade,done_date date not null default current_date,start_minute integer,duration_minutes integer,unique(habit_id,done_date));
-  create table tok_habit_pauses(id uuid primary key default gen_random_uuid(),habit_id uuid references tok_habits(id),paused_at date,resumed_at date);`);
-  for(const table of ['tok_events','tok_todos','tok_habits','tok_someday','tok_habit_logs'])await db.exec(`alter table ${table} enable row level security;grant select,insert,update,delete on ${table} to authenticated;create policy ${table}_select on ${table} for select to authenticated using(auth.uid()=user_id);create policy ${table}_insert on ${table} for insert to authenticated with check(auth.uid()=user_id);create policy ${table}_update on ${table} for update to authenticated using(auth.uid()=user_id) with check(auth.uid()=user_id);create policy ${table}_delete on ${table} for delete to authenticated using(auth.uid()=user_id);`);
-  await db.exec(fs.readFileSync('supabase/migrations/20260927000000_tok_habit_skips_and_someday_move.sql','utf8'));
-  // Supabase's public schema default grants, absent from a standalone Postgres fixture.
-  await db.exec('grant select,insert,delete on tok_habit_skips to authenticated;');
-  await db.exec(`create table tok_habit_categories(id uuid primary key default gen_random_uuid(),user_id uuid not null default auth.uid(),name text,color text,sort_order int,is_archived boolean);create table tok_event_categories(like tok_habit_categories including all);create table tok_projects(id uuid primary key default gen_random_uuid(),user_id uuid not null default auth.uid(),name text,unique(id,user_id));`);
-  for(const table of ['tok_habit_categories','tok_event_categories','tok_projects'])await db.exec(`alter table ${table} enable row level security;grant select,insert,update on ${table} to authenticated;create policy owner on ${table} to authenticated using(auth.uid()=user_id) with check(auth.uid()=user_id);`);
-  await db.exec(fs.readFileSync('supabase/migrations/'+fs.readdirSync('supabase/migrations').find(f=>f.endsWith('_tok_groups_shared_categories.sql')),'utf8'));
-  await db.exec(mig('_tok_common_period.sql'));
-  await db.exec('alter table tok_habits add column sort_order integer not null default 0;'); // 운영 표에 있는 칸(가져온 기존 준비에는 없음)
-  await db.exec(mig('_tok_someday_move_any_kind.sql'));
+  await prepare(sql=>db.exec(sql));
   const as=(id,sql,params=[])=>db.transaction(async tx=>{await tx.exec(`set local role ${id?'authenticated':'anon'}`);await tx.query("select set_config('request.jwt.claim.sub',$1,true)",[id||'']);return tx.query(sql,params);});
   const fails=async(p,re,m)=>{let err;try{await p;}catch(e){err=e;}assert(err,m+': 실패해야 함');if(re)assert.match(err.message,re,m);};
   const move=(user,someday,req,kind,row)=>as(user,'select tok_move_someday($1,$2,$3,$4::jsonb) r',[someday,req,kind,JSON.stringify(row)]).then(x=>x.rows[0].r);
@@ -92,5 +71,23 @@ const mig=suffix=>fs.readFileSync('supabase/migrations/'+fs.readdirSync('supabas
   await as(A,'delete from tok_todos where id=$1',[log.item_id]);
   again=await move(A,s1,R1,'todo',{title:'책 읽기',start_date:'2026-10-27'});assert.equal(again.replayed,true);assert.equal(again.item_exists,false);assert.equal(await count('tok_todos'),0);
   console.log('PASS 본인 것만(남의 언젠가·기록, 로그인 안 함, 기록 수정·삭제 불가), 지워진 언젠가 = 만들지 않음, 옮긴 뒤 지운 항목 = 다시 만들지 않고 알려 줌');
+
+  // 9. 직접 만든 가짜 기록으로 "이미 옮겨짐"이라고 속이기 막기(2026-11-02 결 검토): Supabase 기본 권한이 있어도
+  //    로그인 사용자는 기록 표에 넣을 수 없고(읽기만), 함수가 실제로 옮겼을 때만 기록이 생김
+  const s6=await some('가짜 기록 시험'),fakeItem='20000000-0000-0000-0000-000000000001';
+  await fails(as(A,"insert into tok_someday_moves(someday_id,user_id,request_id,kind,item_id,title) values($1,$2,$3,'todo',$4,'가짜')",[s6,A,R1,fakeItem]),/permission denied/,'기록 직접 넣기');
+  await fails(as(B,"insert into tok_someday_moves(someday_id,user_id,request_id,kind,item_id,title) values($1,$2,$3,'todo',$4,'가짜')",[s6,B,R1,fakeItem]),/permission denied/,'남이 기록 직접 넣기');
+  await fails(as(null,"select * from tok_someday_moves"),/permission denied/,'로그인 안 함 = 기록 못 읽음');
+  assert.deepEqual((await db.query("select privilege_type from information_schema.role_table_grants where table_name='tok_someday_moves' and grantee in ('authenticated','anon') order by 1")).rows.map(r=>r.privilege_type),['SELECT'],'로그인 사용자 = 읽기만');
+  assert.equal((await db.query("select count(*) c from pg_policies where tablename='tok_someday_moves' and cmd<>'SELECT'")).rows[0].c,0,'쓰기 정책 없음');
+  assert.equal((await db.query("select count(*) c from tok_someday_moves where someday_id=$1",[s6])).rows[0].c,0,'가짜 기록 없음');
+  r=await move(A,s6,R2,'todo',{title:'가짜 기록 시험',start_date:'2026-10-27',occurrence_end_date:'2026-10-27',all_day:true});
+  assert.equal(r.replayed,false,'진짜로 옮김(가짜 기록에 속지 않음)');assert.equal((await as(A,'select count(*) c from tok_todos where id=$1',[r.item_id])).rows[0].c,1);
+  // 함수로 남의 기록·항목을 엿보지 못함: B가 A의 옮긴 언젠가 id로 불러도 "없음"(A의 결과를 돌려주지 않음)
+  await fails(move(B,s6,R2,'todo',{title:'x',start_date:'2026-10-27'}),/someday_not_found/,'남의 기록 엿보기');
+  // security definer라도 새 항목의 주인은 항상 로그인한 사용자, 함수 설정은 search_path=''
+  assert.equal((await db.query('select user_id from tok_todos where id=$1',[r.item_id])).rows[0].user_id,A);
+  const fn=(await db.query("select prosecdef,proconfig from pg_proc where proname='tok_move_someday'")).rows[0];assert.equal(fn.prosecdef,true);assert.deepEqual(fn.proconfig,['search_path=""']);
+  console.log('PASS 가짜 기록 막기: 로그인 사용자는 기록 표 읽기만(직접 넣기·남이 넣기·로그인 안 함 거부), 함수가 실제로 옮겨야만 기록, 남의 기록 엿보기 불가, 새 항목 주인 = 본인');
  }finally{await db.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
