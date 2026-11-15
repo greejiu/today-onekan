@@ -66,6 +66,11 @@
       s.plans.push(p);
       return p;
     }
+    function doMigrate(s, p, toPeriod) {
+      const existing = livePlanOn(p.taskId, p.level, toPeriod);
+      p.status = 'migrated';
+      return existing ? existing.id : newPlan(s, p.taskId, { level: p.level, period: toPeriod, start: p.start, duration: p.duration, fromPlanId: p.id }).id;
+    }
     function sortPlans(list) {
       return list.sort((a, b) => (a.start == null) - (b.start == null) || (a.start ?? 0) - (b.start ?? 0) || a.order - b.order);
     }
@@ -142,10 +147,49 @@
       /* 옮기기(>): 이 계획은 '옮김'으로 남기고 다른 날에 새 계획 */
       migratePlan(planId, toPeriod) {
         const p = plan(planId); if (!p || p.status !== 'open' || toPeriod === p.period) return null;
-        return mutate('옮기기', s => {
-          const existing = livePlanOn(p.taskId, p.level, toPeriod);
-          p.status = 'migrated';
-          return existing ? existing.id : newPlan(s, p.taskId, { level: p.level, period: toPeriod, start: p.start, duration: p.duration, fromPlanId: p.id }).id;
+        return mutate('옮기기', s => doMigrate(s, p, toPeriod));
+      },
+      /* 날짜 바꾸기(2026-11-15 결 보고: 내일로 옮긴 걸 다시 오늘로 못 옮김).
+       * - 옮겨 온 계획을 원래 날로 보내면 = 되돌리기: 이 계획을 지우고 원래 계획(>)을 다시 엶. 흔적 없음
+       * - 오늘·지난 계획을 뒤로 미루면 = 옮기기(>) 흔적
+       * - 그 밖(앞으로 당기기, 아직 안 온 날끼리) = 날짜만 바꿈. 그날에 이미 있으면 합침
+       * nowPeriod: 오늘(일간) 또는 이번 주 월요일(주간). 결과 {id, how: restored|migrated|moved|merged} */
+      movePlan(planId, toPeriod, nowPeriod) {
+        const p = plan(planId); if (!p || p.status !== 'open' || toPeriod === p.period) return null;
+        const src = p.fromPlanId ? plan(p.fromPlanId) : null;
+        if (src && src.status === 'migrated' && src.period === toPeriod) {
+          return mutate('되돌리기', s => {
+            s.plans = s.plans.filter(x => x.id !== p.id);
+            src.status = 'open'; src.start = p.start; src.duration = p.duration;
+            return { id: src.id, how: 'restored' };
+          });
+        }
+        if (p.period <= nowPeriod && toPeriod > p.period) return mutate('옮기기', s => ({ id: doMigrate(s, p, toPeriod), how: 'migrated' }));
+        return mutate('날짜 바꾸기', s => {
+          const ex = livePlanOn(p.taskId, p.level, toPeriod);
+          if (ex) { s.plans = s.plans.filter(x => x.id !== p.id); return { id: ex.id, how: 'merged' }; }
+          p.period = toPeriod;
+          return { id: p.id, how: 'moved' };
+        });
+      },
+      /* ">" 줄 되돌리기: 이 계획에서 옮겨 간 계획들(연달아 옮긴 것까지)을 지우고 이 계획을 다시 엶.
+       * 옮겨 간 끝 계획을 이미 체크했으면 되돌리지 않음('done') */
+      restorePlan(planId) {
+        const p = plan(planId); if (!p || p.status !== 'migrated') return null;
+        const chain = []; let cur = p, guard = 0;
+        while (guard++ < 100) {
+          const next = state.plans.find(x => x.fromPlanId === cur.id && !chain.includes(x));
+          if (!next) break;
+          chain.push(next); if (next.status !== 'migrated') break; cur = next;
+        }
+        const last = chain[chain.length - 1];
+        if (last && last.status === 'done') return 'done';
+        return mutate('되돌리기', s => {
+          const ids = new Set(chain.map(x => x.id));
+          s.plans = s.plans.filter(x => !ids.has(x.id));
+          p.status = 'open';
+          if (last) { p.start = last.start; p.duration = last.duration; }
+          return 'restored';
         });
       },
       /* 계획 지우기. 다른 계획도 프로젝트도 없는 작업이면 작업도 지움 */
