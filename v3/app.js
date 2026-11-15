@@ -12,7 +12,9 @@
   const nowMinute = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
   const KIND_LABEL = { task: '할일', event: '일정', note: '메모' };
-  const SYM = { task: '•', event: '○', note: '–' };
+  const kindSym = k => store.symbols()[k];
+  // 완료면 완료 기호(비우면 원래 기호), 옮김이면 옮김 기호
+  const symOf = v => v.migrated ? store.symbols().migrated : v.done && v.t.kind !== 'note' ? (store.symbols().done || kindSym(v.t.kind)) : kindSym(v.t.kind);
 
   let today = todayStr();
   let selDate = today;
@@ -28,9 +30,9 @@
   }
   function bulletHtml(v) {
     const { p, t } = v;
-    if (v.migrated) return `<span class="bullet s-migrated" title="옮김" aria-label="옮김">&gt;</span>`;
-    if (t.kind === 'note') return `<span class="bullet k-note" aria-label="메모">${SYM.note}</span>`;
-    return `<button type="button" class="bullet k-${t.kind}${v.done ? ' s-done' : ''}" data-toggle="${p.id}" role="checkbox" aria-checked="${v.done}" aria-label="${esc(t.title)} ${p.level === 'week' ? '이번 주 몫' : '오늘 몫'} 완료">${v.done ? '×' : SYM[t.kind]}</button>`;
+    if (v.migrated) return `<span class="bullet s-migrated" title="옮김" aria-label="옮김">${esc(symOf(v))}</span>`;
+    if (t.kind === 'note') return `<span class="bullet k-note" aria-label="메모">${esc(symOf(v))}</span>`;
+    return `<button type="button" class="bullet k-${t.kind}${v.done ? ' s-done' : ''}" data-toggle="${p.id}" role="checkbox" aria-checked="${v.done}" aria-label="${esc(t.title)} ${p.level === 'week' ? '이번 주 몫' : '오늘 몫'} 완료">${esc(symOf(v))}</button>`;
   }
   const clsOf = v => `k-${v.t.kind} s-${v.p.status}${v.t.status === 'done' ? ' task-done' : ''}${v.a ? '' : ' no-area'}`;
   const styleOf = v => v.color ? `--c:${v.color};` : '';
@@ -48,6 +50,7 @@
 
   /* ---------- 그리기 ---------- */
   function render() {
+    document.body.classList.toggle('strike-done', store.strikeDone());
     renderHeader();
     renderNow();
     renderUntimed();
@@ -77,7 +80,7 @@
     if (current) {
       const v = view(current);
       const left = current.start + current.duration - m;
-      el.className = 'now-card has-now' + (v.done ? ' is-done' : '');
+      el.className = 'now-card has-now' + (v.done || v.t.status === 'done' ? ' is-done' : '');
       el.setAttribute('style', styleOf(v));
       el.innerHTML = `<div class="now-label">▶ 지금</div>
         <div class="now-main">${bulletHtml(v)}<span class="now-title">${esc(v.t.title)}</span></div>
@@ -296,7 +299,7 @@
       : ['작업 완료 ✓', () => { store.setTaskStatus(t.id, 'done'); undoToast(`『${t.title}』 작업 완료 ✓`); }]);
     items.push(['계획 지우기', () => { store.deletePlan(p.id); undoToast('지웠어요'); }, 'danger']);
     menu.innerHTML = `<div class="menu-head">${esc(t.title)}</div>`
-      + `<div class="menu-kinds" role="group" aria-label="종류">${Object.keys(KIND_LABEL).map(k => `<button type="button" data-kind="${k}" aria-pressed="${t.kind === k}">${SYM[k]} ${KIND_LABEL[k]}</button>`).join('')}</div>`
+      + `<div class="menu-kinds" role="group" aria-label="종류">${Object.keys(KIND_LABEL).map(k => `<button type="button" data-kind="${k}" aria-pressed="${t.kind === k}">${esc(kindSym(k))} ${KIND_LABEL[k]}</button>`).join('')}</div>`
       + items.map(([label, , cls], i) => `<button type="button" class="menu-item ${cls || ''}" data-i="${i}">${esc(label)}</button>`).join('');
     menu.querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => { const fn = items[+b.dataset.i][1]; closeMenu(); fn(); }));
     menu.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', () => { closeMenu(); store.setTaskKind(t.id, b.dataset.kind); }));
@@ -306,7 +309,7 @@
 
   function kindMenu(x, y, cb) {
     let picked = false;
-    menu.innerHTML = `<div class="menu-head">무엇을 적을까요?</div>` + Object.keys(KIND_LABEL).map(k => `<button type="button" class="menu-item" data-k="${k}">${SYM[k]} ${KIND_LABEL[k]}</button>`).join('');
+    menu.innerHTML = `<div class="menu-head">무엇을 적을까요?</div>` + Object.keys(KIND_LABEL).map(k => `<button type="button" class="menu-item" data-k="${k}">${esc(kindSym(k))} ${KIND_LABEL[k]}</button>`).join('');
     menu.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', () => { picked = true; closeMenu(); cb(b.dataset.k); }));
     placeMenu(x, y);
     const obs = new MutationObserver(() => { if (menu.hidden) { obs.disconnect(); if (!picked) cb(null); } });
@@ -343,7 +346,7 @@
     $('importList').innerHTML = list.map(p => {
       const v = view(p); const already = !!store.livePlanOn(p.taskId, 'day', selDate);
       return `<li><label class="${already ? 'is-already' : ''}"><input type="checkbox" value="${p.id}" ${already ? 'disabled' : ''} />
-        <span class="imp-sym">${v.done ? '×' : SYM[v.t.kind]}</span>
+        <span class="imp-sym">${esc(symOf(v))}</span>
         <span class="imp-time">${p.start != null ? hhmm(p.start) : '시간 없음'}</span>
         <span class="imp-title">${esc(v.t.title)}<small>${already ? '이미 있어요' : esc(v.meta)}</small></span></label></li>`;
     }).join('') || `<li class="empty">어제 계획이 없어요</li>`;
@@ -358,6 +361,32 @@
       const ids = [...$('importList').querySelectorAll('input:checked')].map(c => c.value);
       const n = store.importPlans(ids, selDate);
       if (n) undoToast(`${n}개 가져왔어요`);
+    };
+  }
+
+  /* ---------- 기호 설정 ---------- */
+  const SYM_FIELDS = { task: 'symTask', event: 'symEvent', note: 'symNote', done: 'symDone', migrated: 'symMigrated' };
+  function openSymbols() {
+    const dlg = $('symDlg'), cur = { ...BJStore.DEFAULT_SYMBOLS, ...(store.state.settings.symbols || {}) };
+    Object.entries(SYM_FIELDS).forEach(([k, id]) => { $(id).value = cur[k] || ''; });
+    $('symStrike').checked = store.strikeDone();
+    const read = () => Object.fromEntries(Object.entries(SYM_FIELDS).map(([k, id]) => [k, $(id).value.trim()]));
+    const preview = () => {
+      const s = read(), D = BJStore.DEFAULT_SYMBOLS, pick = k => s[k] || D[k];
+      const line = (sym, text, cls = '') => `<li class="${cls}"><span class="bullet">${esc(sym)}</span><span class="sp-title">${esc(text)}</span></li>`;
+      $('symPreview').classList.toggle('strike-done', $('symStrike').checked);
+      $('symPreview').innerHTML = line(pick('task'), '1장 읽기') + line(pick('event'), '14:00 약국 가기') + line(pick('note'), '책 추천 받은 것')
+        + line(s.done || pick('task'), '세수하기 (완료)', 'is-done') + line(pick('migrated'), '자소서 초안 (다음으로)', 'is-migrated');
+    };
+    dlg.oninput = preview;
+    $('symDefault').onclick = () => { Object.entries(SYM_FIELDS).forEach(([k, id]) => { $(id).value = BJStore.DEFAULT_SYMBOLS[k]; }); $('symStrike').checked = true; preview(); };
+    preview();
+    dlg.returnValue = '';
+    dlg.showModal();
+    dlg.onclose = () => {
+      if (dlg.returnValue !== 'save') return;
+      store.setSymbols(read(), $('symStrike').checked);
+      undoToast('기호를 바꿨어요');
     };
   }
 
@@ -395,6 +424,7 @@
   $('nextDay').onclick = () => { selDate = addDays(selDate, 1); render(); };
   $('todayBtn').onclick = () => { selDate = today; render(); scrollToNow(); };
   $('importBtn').onclick = openImport;
+  $('settingsBtn').onclick = openSymbols;
   $('resetBtn').onclick = () => { if (confirm('체험판 기록을 모두 지우고 처음부터 시작할까요?')) store.reset(); };
   store.subscribe(render);
 
