@@ -25,8 +25,10 @@
     const t = store.task(p.taskId) || { title: '(지워진 작업)', kind: 'task', status: 'open' };
     const a = t.areaId ? store.area(t.areaId) : null;
     const pr = t.projectId ? store.project(t.projectId) : null;
-    const meta = [a && a.name, pr && pr.name].filter(Boolean).join(' · ') || '미분류';
-    return { p, t, a, pr, meta, color: a ? a.color : '', done: p.status === 'done', migrated: p.status === 'migrated' };
+    // 영역 이름은 글자로 안 쓰고 색으로만 표시(결 요청 2026-11-15). 글자는 프로젝트 이름만. 화면 읽기용으로만 영역 이름을 넣음
+    const meta = pr ? pr.name : '';
+    const areaSr = `<span class="sr-only">${a ? esc(a.name) : '미분류'}</span>`;
+    return { p, t, a, pr, meta, areaSr, color: a ? a.color : '', done: p.status === 'done', migrated: p.status === 'migrated' };
   }
   function bulletHtml(v) {
     const { p, t } = v;
@@ -58,7 +60,12 @@
     renderWeek();
   }
 
+  function renderLegend() {
+    $('legend').innerHTML = store.areas().map(a => `<li style="--c:${a.color}">${esc(a.name)}</li>`).join('') + `<li class="no-area">미분류</li>`;
+  }
+
   function renderHeader() {
+    renderLegend();
     const d = parseDate(selDate);
     $('dayTitle').textContent = `${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
     $('dayBadge').hidden = selDate !== today;
@@ -84,7 +91,7 @@
       el.setAttribute('style', styleOf(v));
       el.innerHTML = `<div class="now-label">▶ 지금</div>
         <div class="now-main">${bulletHtml(v)}<span class="now-title">${esc(v.t.title)}</span></div>
-        <div class="now-sub">${hhmm(current.start)}–${hhmm(current.start + current.duration)} · ${v.done ? '오늘 몫 완료 🎉' : left + '분 남음'} · ${esc(v.meta)}</div>`;
+        <div class="now-sub">${hhmm(current.start)}–${hhmm(current.start + current.duration)} · ${v.done ? '오늘 몫 완료 🎉' : left + '분 남음'}${v.meta ? ' · ' + esc(v.meta) : ''}${v.a ? ` <span class="area-chip">${esc(v.a.name)}</span>` : ''}</div>`;
     } else {
       el.className = 'now-card';
       el.removeAttribute('style');
@@ -95,7 +102,7 @@
   function rowHtml(v, extra = '') {
     return `<li class="row ${clsOf(v)}" data-plan="${v.p.id}" style="${styleOf(v)}">
       ${bulletHtml(v)}
-      <span class="row-body"><span class="row-title">${esc(v.t.title)}</span><small class="row-meta">${v.t.status === 'done' ? '작업 완료 ✓ · ' : ''}${esc(v.meta)}</small></span>
+      <span class="row-body"><span class="row-title">${esc(v.t.title)}</span>${v.areaSr}${v.meta || v.t.status === 'done' ? `<small class="row-meta">${[v.t.status === 'done' ? '작업 완료 ✓' : '', esc(v.meta)].filter(Boolean).join(' · ')}</small>` : ''}</span>
       ${extra}
       <button type="button" class="more" data-more="${v.p.id}" aria-label="${esc(v.t.title)} 메뉴">⋯</button>
     </li>`;
@@ -112,7 +119,7 @@
   function renderTimeline() {
     const items = store.plansOn('day', selDate).filter(p => p.start != null).map(p => {
       const v = view(p);
-      return { id: p.id, start: p.start, duration: p.duration, title: v.t.title, meta: v.meta, lead: bulletHtml(v), cls: clsOf(v), style: styleOf(v) };
+      return { id: p.id, start: p.start, duration: p.duration, title: v.t.title, meta: v.meta, sr: v.a ? v.a.name : '미분류', lead: bulletHtml(v), cls: clsOf(v), style: styleOf(v) };
     });
     const s = store.state.settings;
     tl = BJTimeline.render($('timeline'), items, {
@@ -348,7 +355,7 @@
       return `<li><label class="${already ? 'is-already' : ''}"><input type="checkbox" value="${p.id}" ${already ? 'disabled' : ''} />
         <span class="imp-sym">${esc(symOf(v))}</span>
         <span class="imp-time">${p.start != null ? hhmm(p.start) : '시간 없음'}</span>
-        <span class="imp-title">${esc(v.t.title)}<small>${already ? '이미 있어요' : esc(v.meta)}</small></span></label></li>`;
+        <span class="imp-title">${esc(v.t.title)}${v.areaSr}${already || v.meta ? `<small>${already ? '이미 있어요' : esc(v.meta)}</small>` : ''}</span></label></li>`;
     }).join('') || `<li class="empty">어제 계획이 없어요</li>`;
     const go = $('importGo');
     const update = () => { const n = $('importList').querySelectorAll('input:checked').length; go.textContent = n ? `${n}개 가져오기` : '가져오기'; go.disabled = !n; };

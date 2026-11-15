@@ -78,8 +78,8 @@ h1, h2 { margin: 0; }
 
 /* 줄 */
 .rows { list-style: none; margin: 0; padding: 0; }
-.row { --c: var(--sub); display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 8px; border-radius: 10px; border-left: 3px solid var(--c); background: color-mix(in srgb, var(--c) 9%, var(--card)); margin-bottom: 4px; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.row.no-area { border-left-color: var(--line); background: var(--accent-soft); }
+.row { --c: var(--sub); display: flex; align-items: center; gap: 8px; padding: 7px 6px 7px 8px; border-radius: 10px; border-left: 4px solid var(--c); background: color-mix(in srgb, var(--c) 16%, var(--card)); margin-bottom: 4px; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.row.no-area { border-left-color: var(--line); background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 .row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .row-title { overflow-wrap: anywhere; cursor: text; }
 .row-meta { color: var(--sub); font-size: 11px; }
@@ -114,7 +114,7 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 .tl-line.hour { border-top-color: var(--line); }
 .tl-content { grid-column: 2; grid-row: 1 / -1; position: relative; touch-action: pan-y; cursor: cell; }
 .tl-item { --c: var(--sub); position: absolute; display: flex; align-items: flex-start; gap: 4px; padding: 1px 2px 1px 4px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--c) 55%, var(--line)); background: color-mix(in srgb, var(--c) 22%, var(--card)); overflow: hidden; z-index: 1; cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; line-height: 1.3; }
-.tl-item.no-area { border-color: var(--line); background: var(--accent-soft); }
+.tl-item.no-area { border-color: var(--line); background: var(--card); }
 .tl-item.k-event { border-style: dashed; }
 .tl-item.s-done .tl-title, .tl-item.task-done .tl-title { opacity: .55; }
 .strike-done .tl-item.s-done .tl-title, .strike-done .tl-item.task-done .tl-title { text-decoration: line-through; }
@@ -190,4 +190,10 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 .foot p { margin: 4px 0; }
 .foot a { color: inherit; }
 
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.legend { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 12px; margin: -4px 2px 10px; padding: 0; font-size: 12px; color: var(--sub); }
+.legend li { display: inline-flex; align-items: center; gap: 5px; }
+.legend li::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: color-mix(in srgb, var(--c) 45%, var(--card)); border: 2px solid var(--c); }
+.legend li.no-area::before { background: var(--card); border-color: color-mix(in srgb, var(--sub) 50%, transparent); }
+.area-chip { font-size: 11px; border-radius: 999px; padding: 0 7px; margin-left: 4px; background: color-mix(in srgb, var(--c) 30%, var(--card)); color: var(--text); }
 :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }

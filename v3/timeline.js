@@ -48,7 +48,7 @@
       const w = 100 / colCount;
       const lines = Math.max(1, Math.floor((height - 4) / 18));
       html += `<div class="tl-item ${it.cls || ''}" data-plan="${it.id}" data-start="${it.start}" data-duration="${it.duration}" style="top:${top}px;height:${height}px;left:${w * col}%;width:calc(${w}% - 4px);${it.style || ''}">
-        ${it.lead || ''}<span class="tl-title" style="-webkit-line-clamp:${lines}">${esc(it.title)}${it.meta ? `<small class="tl-meta">${esc(it.meta)}</small>` : ''}</span>
+        ${it.lead || ''}<span class="tl-title" style="-webkit-line-clamp:${lines}">${esc(it.title)}${it.sr ? `<span class="sr-only">${esc(it.sr)}</span>` : ''}${it.meta ? `<small class="tl-meta">${esc(it.meta)}</small>` : ''}</span>
         <button type="button" class="more" data-more="${it.id}" aria-label="${esc(it.title)} 메뉴">⋯</button>
       </div>`;
     });
