@@ -1,4 +1,4 @@
-/* 오늘한칸 v3 — 오늘 화면 (1단계: 오늘 + 타임라인 + 지금, docs/v3_설계.md 7·8장) */
+/* 오늘한칸 v3 — 오늘 화면(오늘 + 타임라인 + 지금) · 주간 화면(이번 주 목록 + 7일). docs/v3_설계.md 7·8장 */
 (function () {
   'use strict';
   const { createStore, addDays, weekStart, todayStr, parseDate } = BJStore;
@@ -19,6 +19,8 @@
   let today = todayStr();
   let selDate = today;
   let tl = null; // 지금 그린 타임라인
+  const modeOf = () => (location.hash === '#week' ? 'week' : 'today');
+  let mode = modeOf();
 
   /* ---------- 보기 모델 ---------- */
   function view(p) {
@@ -43,7 +45,8 @@
   function parseTitle(raw) {
     let areaId = null;
     const title = String(raw).replace(/(^|\s)#(\S+)/g, (m, sp, name) => {
-      const a = store.areas().find(x => x.name === name || x.name.split('(')[0] === name);
+      const list = store.areas();
+      const a = list.find(x => x.name === name || x.name.split('(')[0] === name) || (list.filter(x => x.name.startsWith(name)).length === 1 ? list.find(x => x.name.startsWith(name)) : null);
       if (a && !areaId) { areaId = a.id; return sp; }
       return m;
     }).replace(/\s+/g, ' ').trim();
@@ -53,6 +56,14 @@
   /* ---------- 그리기 ---------- */
   function render() {
     document.body.classList.toggle('strike-done', store.strikeDone());
+    mode = modeOf();
+    $('todayView').hidden = mode !== 'today';
+    $('weekView').hidden = mode !== 'week';
+    document.querySelectorAll('.tabs a').forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === '#' + mode ? 'page' : 'false'));
+    $('todayBtn').textContent = mode === 'week' ? '이번 주' : '오늘';
+    $('prevDay').setAttribute('aria-label', mode === 'week' ? '지난 주' : '전날');
+    $('nextDay').setAttribute('aria-label', mode === 'week' ? '다음 주' : '다음날');
+    if (mode === 'week') { tl = null; renderWeekView(); return; }
     renderHeader();
     renderNow();
     renderUntimed();
@@ -99,9 +110,9 @@
     }
   }
 
-  function rowHtml(v, extra = '') {
+  function rowHtml(v, extra = '', showTime = false) {
     return `<li class="row ${clsOf(v)}" data-plan="${v.p.id}" style="${styleOf(v)}">
-      ${bulletHtml(v)}
+      ${bulletHtml(v)}${showTime && v.p.start != null ? `<span class="row-time">${hhmm(v.p.start)}</span>` : ''}
       <span class="row-body"><span class="row-title">${esc(v.t.title)}</span>${v.areaSr}${v.meta || v.t.status === 'done' ? `<small class="row-meta">${[v.t.status === 'done' ? '작업 완료 ✓' : '', esc(v.meta)].filter(Boolean).join(' · ')}</small>` : ''}</span>
       ${extra}
       <button type="button" class="more" data-more="${v.p.id}" aria-label="${esc(v.t.title)} 메뉴">⋯</button>
@@ -216,14 +227,19 @@
         m = Math.max(0, Math.min(1440 - dur, m));
         return { type: 'time', start: m, duration: dur };
       }
+      const dz = el.closest('[data-drop-day]');
+      if (dz) return { type: 'day', date: dz.dataset.dropDay, el: dz };
       if (el.closest('#untimedZone')) return { type: 'untimed' };
       return null;
     };
+    let lastDz = null;
     const show = ev => {
       target = where(ev);
       ghost.style.transform = `translate(${ev.clientX + 12}px, ${ev.clientY + 12}px)`;
       $('untimedZone').classList.toggle('drop-on', target?.type === 'untimed');
-      const label = !target ? '여기엔 놓을 수 없어요' : target.type === 'untimed' ? '→ 시간 없음' : `→ ${hhmm(target.start)}–${hhmm(target.start + target.duration)}`;
+      if (lastDz && lastDz !== target?.el) lastDz.classList.remove('drop-on');
+      lastDz = target?.type === 'day' ? target.el : null; lastDz?.classList.add('drop-on');
+      const label = !target ? '여기엔 놓을 수 없어요' : target.type === 'untimed' ? '→ 시간 없음' : target.type === 'day' ? `→ ${dayName(target.date)}` : `→ ${hhmm(target.start)}–${hhmm(target.start + target.duration)}`;
       ghost.querySelector('.ghost-where').textContent = label;
       ghost.classList.toggle('no-drop', !target);
       if (target?.type === 'time') {
@@ -235,8 +251,16 @@
     };
     show(e0);
     BJGesture.follow(show, (ev, cancelled) => {
-      ghost.remove(); dropBox.remove(); srcEl.classList.remove('drag-src'); $('untimedZone').classList.remove('drop-on');
+      ghost.remove(); dropBox.remove(); srcEl.classList.remove('drag-src'); $('untimedZone').classList.remove('drop-on'); lastDz?.classList.remove('drop-on');
       if (cancelled || !target) return;
+      if (target.type === 'day') {
+        if (from === 'week') {
+          if (store.livePlanOn(p.taskId, 'day', target.date)) { toast(`이미 ${dayName(target.date)}에 있어요`); return; }
+          store.placeTask(p.taskId, { period: target.date });
+          undoToast(`${dayName(target.date)}에 놓았어요`);
+        } else if (target.date !== p.period) moveTo(planId, target.date);
+        return;
+      }
       if (from === 'week') {
         if (target.type === 'time') store.placeTask(p.taskId, { period: selDate, start: target.start, duration: 30 });
         else store.placeTask(p.taskId, { period: selDate });
@@ -270,9 +294,10 @@
     if (status !== 'done') { undoToast('체크를 풀었어요'); return; }
     const t = store.task(p.taskId);
     const otherOpenDay = store.plansOfTask(t.id).some(x => x.id !== p.id && x.level === 'day' && x.status === 'open');
-    const dayPlans = store.plansOn('day', selDate).filter(x => x.status !== 'migrated' && store.task(x.taskId)?.kind !== 'note');
+    const dayPlans = store.plansOn('day', p.period).filter(x => x.status !== 'migrated' && store.task(x.taskId)?.kind !== 'note');
     const n = dayPlans.filter(x => x.status === 'done').length;
-    const msg = p.level === 'day' ? `오늘 몫 완료! ${n === dayPlans.length ? '오늘 계획을 다 했어요 🎉' : `(${n}/${dayPlans.length})`}` : '이번 주 몫 완료!';
+    const dn = p.period === today ? '오늘' : dayName(p.period);
+    const msg = p.level === 'day' ? `${dn} 몫 완료! ${n === dayPlans.length ? `${dn} 계획을 다 했어요 🎉` : `(${n}/${dayPlans.length})`}` : '이번 주 몫 완료!';
     const actions = [{ label: '실행 취소', fn: () => store.undo() }];
     if (t.status !== 'done' && !otherOpenDay) actions.unshift({ label: '작업도 끝났어요', fn: () => { store.setTaskStatus(t.id, 'done'); toast(`『${t.title}』 작업 완료 ✓`); } });
     toast(msg, actions);
@@ -398,10 +423,44 @@
     };
   }
 
-  /* ---------- 기호 설정 ---------- */
+  /* ---------- 설정: 영역(이름·색·순서·숨기기·추가) + 기호 ---------- */
   const SYM_FIELDS = { task: 'symTask', event: 'symEvent', note: 'symNote', done: 'symDone', migrated: 'symMigrated' };
-  function openSymbols() {
-    const dlg = $('symDlg'), cur = { ...BJStore.DEFAULT_SYMBOLS, ...(store.state.settings.symbols || {}) };
+  const NEW_COLORS = ['#E58F6F', '#7C9CE0', '#D98FC9', '#B9A36A', '#6FBF9A', '#C98A6B'];
+  function openSettings() {
+    const dlg = $('setDlg'), cur = { ...BJStore.DEFAULT_SYMBOLS, ...(store.state.settings.symbols || {}) };
+    let draft = store.allAreas().map(a => ({ id: a.id, name: a.name, color: a.color, archived: !!a.archived }));
+    const drawAreas = () => {
+      const shown = draft.filter(a => !a.archived), hidden = draft.filter(a => a.archived);
+      const li = (a, i, list) => `<li class="${a.archived ? 'is-archived' : ''}" data-ai="${draft.indexOf(a)}">
+        <input type="color" value="${esc(a.color)}" aria-label="${esc(a.name || '새 영역')} 색" data-f="color" />
+        <input type="text" value="${esc(a.name)}" maxlength="20" placeholder="영역 이름" aria-label="영역 이름" data-f="name" />
+        ${a.archived ? '' : `<button type="button" data-act="up" aria-label="위로" ${i === 0 ? 'disabled' : ''}>▲</button><button type="button" data-act="down" aria-label="아래로" ${i === list.length - 1 ? 'disabled' : ''}>▼</button>`}
+        <button type="button" data-act="hide">${a.archived ? '보이기' : '숨기기'}</button></li>`;
+      $('areaEdit').innerHTML = shown.map(li).join('') + (hidden.length ? `<li class="area-edit-sep">숨긴 영역</li>` + hidden.map(li).join('') : '');
+    };
+    $('areaEdit').oninput = e => { const row = e.target.closest('[data-ai]'); if (!row) return; draft[+row.dataset.ai][e.target.dataset.f] = e.target.value; };
+    $('areaEdit').onclick = e => {
+      const btn = e.target.closest('[data-act]'); if (!btn) return;
+      const a = draft[+btn.closest('[data-ai]').dataset.ai];
+      const shown = draft.filter(x => !x.archived);
+      if (btn.dataset.act === 'hide') a.archived = !a.archived;
+      else {
+        const i = shown.indexOf(a), j = btn.dataset.act === 'up' ? i - 1 : i + 1;
+        if (j < 0 || j >= shown.length) return;
+        [shown[i], shown[j]] = [shown[j], shown[i]];
+        draft = [...shown, ...draft.filter(x => x.archived)];
+      }
+      drawAreas();
+    };
+    $('areaAdd').onclick = () => {
+      const used = new Set(draft.map(a => a.color.toLowerCase()));
+      draft.splice(draft.filter(a => !a.archived).length, 0, { id: null, name: '', color: NEW_COLORS.find(c => !used.has(c.toLowerCase())) || '#999999', archived: false });
+      drawAreas();
+      const inputs = $('areaEdit').querySelectorAll('li:not(.is-archived) input[type=text]');
+      inputs[inputs.length - 1]?.focus();
+    };
+    drawAreas();
+
     Object.entries(SYM_FIELDS).forEach(([k, id]) => { $(id).value = cur[k] || ''; });
     $('symStrike').checked = store.strikeDone();
     const read = () => Object.fromEntries(Object.entries(SYM_FIELDS).map(([k, id]) => [k, $(id).value.trim()]));
@@ -412,15 +471,15 @@
       $('symPreview').innerHTML = line(pick('task'), '1장 읽기') + line(pick('event'), '14:00 약국 가기') + line(pick('note'), '책 추천 받은 것')
         + line(s.done || pick('task'), '세수하기 (완료)', 'is-done') + line(pick('migrated'), '자소서 초안 (다음으로)', 'is-migrated');
     };
-    dlg.oninput = preview;
+    $('symBox').oninput = preview;
     $('symDefault').onclick = () => { Object.entries(SYM_FIELDS).forEach(([k, id]) => { $(id).value = BJStore.DEFAULT_SYMBOLS[k]; }); $('symStrike').checked = true; preview(); };
     preview();
     dlg.returnValue = '';
     dlg.showModal();
     dlg.onclose = () => {
       if (dlg.returnValue !== 'save') return;
-      store.setSymbols(read(), $('symStrike').checked);
-      undoToast('기호를 바꿨어요');
+      store.saveSettings({ symbols: read(), strikeDone: $('symStrike').checked, areas: draft });
+      undoToast('설정을 저장했어요');
     };
   }
 
@@ -436,6 +495,66 @@
   }
   function hideToast() { const el = $('toast'); el.classList.remove('show'); el.hidden = true; }
   const undoToast = msg => toast(msg, [{ label: '실행 취소', fn: () => { if (store.undo()) toast('되돌렸어요'); } }]);
+
+  /* ---------- 주간 화면: 왼쪽 이번 주 목록(영역별 고정) + 오른쪽 7일 ---------- */
+  function renderWeekView() {
+    const ws = weekStart(selDate), we = addDays(ws, 6);
+    const a = parseDate(ws), b = parseDate(we);
+    $('wkTitle').textContent = `${a.getMonth() + 1}월 ${a.getDate()}일 – ${a.getMonth() === b.getMonth() ? '' : (b.getMonth() + 1) + '월 '}${b.getDate()}일`;
+    $('wkBadge').hidden = ws !== weekStart(today);
+    $('todayBtn').disabled = ws === weekStart(today);
+    const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+
+    // 왼쪽: 영역마다 제목 + 줄 + 바로 적기. 이 주에 놓인 날을 작게 표시(✓ = 그날 몫 완료)
+    const weekPlans = store.plansOn('week', ws);
+    const dayTags = p => days.map(d => {
+      const x = store.livePlanOn(p.taskId, 'day', d); if (!x) return '';
+      return `<span class="tag${x.status === 'done' ? ' tag-done' : ''}">${DOW[parseDate(d).getDay()]}${x.status === 'done' ? '✓' : ''}</span>`;
+    }).join('');
+    const group = (area, list) => `<section class="wk-area${list.length ? '' : ' is-empty'}" style="${area ? `--c:${area.color}` : ''}">
+        <h3 class="wk-area-title${area ? '' : ' no-area'}">${area ? esc(area.name) : '미분류'}</h3>
+        <ul class="rows">${list.map(p => rowHtml(view(p), dayTags(p))).join('')}</ul>
+        <form class="add-form mini" data-add-week="${area ? area.id : ''}" autocomplete="off"><input type="text" enterkeyhint="done" placeholder="+ ${area ? esc(area.name) + '에' : ''} 적기" aria-label="${area ? esc(area.name) : '미분류'} 이번 주에 적기" /></form>
+      </section>`;
+    const areas = store.areas();
+    const areaIds = new Set(areas.map(x => x.id));
+    let html = areas.map(ar => group(ar, weekPlans.filter(p => store.task(p.taskId)?.areaId === ar.id))).join('');
+    const rest = weekPlans.filter(p => !areaIds.has(store.task(p.taskId)?.areaId));
+    html += group(null, rest);
+    $('wkAreas').innerHTML = html;
+    $('wkAreas').querySelectorAll('.row').forEach(wireRow('week'));
+
+    // 오른쪽: 7일. 줄은 시간 순 → 시간 없는 것. 날짜를 누르면 그날 오늘 화면으로
+    $('wkDays').innerHTML = days.map(d => {
+      const x = parseDate(d), list = store.plansOn('day', d);
+      const live = list.filter(p => p.status !== 'migrated' && store.task(p.taskId)?.kind !== 'note');
+      const done = live.filter(p => p.status === 'done').length;
+      return `<section class="wk-day${d === today ? ' is-today' : ''}${x.getDay() === 0 ? ' is-sun' : x.getDay() === 6 ? ' is-sat' : ''}" data-drop-day="${d}">
+        <header><button type="button" class="wk-day-title" data-goto="${d}">${x.getMonth() + 1}/${x.getDate()} (${DOW[x.getDay()]})</button>${d === today ? '<span class="today-badge">오늘</span>' : ''}${live.length ? `<small class="wk-count">${done}/${live.length}</small>` : ''}</header>
+        <ul class="rows">${list.map(p => rowHtml(view(p), '', true)).join('')}</ul>
+        <form class="add-form mini" data-add-day="${d}" autocomplete="off"><input type="text" enterkeyhint="done" placeholder="+ 적기" aria-label="${x.getMonth() + 1}월 ${x.getDate()}일에 적기" /></form>
+      </section>`;
+    }).join('');
+    $('wkDays').querySelectorAll('.row').forEach(wireRow('day'));
+  }
+
+  // 주간 화면 입력칸(영역별·날짜별)
+  document.addEventListener('submit', e => {
+    const f = e.target; if (!f.matches('[data-add-week], [data-add-day]')) return;
+    e.preventDefault();
+    const input = f.querySelector('input');
+    const { title, areaId } = parseTitle(input.value);
+    if (!title) return;
+    const keep = f.dataset.addWeek !== undefined ? `[data-add-week="${f.dataset.addWeek}"]` : `[data-add-day="${f.dataset.addDay}"]`;
+    if (f.dataset.addWeek !== undefined) store.addPlan({ title, level: 'week', period: weekStart(selDate), areaId: areaId || f.dataset.addWeek || null });
+    else store.addPlan({ title, period: f.dataset.addDay, areaId });
+    document.querySelector(keep + ' input')?.focus();
+  });
+  document.addEventListener('click', e => {
+    const g = e.target.closest('[data-goto]'); if (!g) return;
+    selDate = g.dataset.goto; location.hash = '#today';
+  });
+  window.addEventListener('hashchange', () => { closeMenu(); render(); window.scrollTo(0, 0); });
 
   /* ---------- 입력칸 ---------- */
   function wireAddForm(formId, level) {
@@ -454,11 +573,11 @@
   /* ---------- 시작 ---------- */
   wireAddForm('untimedAdd', 'day');
   wireAddForm('weekAdd', 'week');
-  $('prevDay').onclick = () => { selDate = addDays(selDate, -1); render(); };
-  $('nextDay').onclick = () => { selDate = addDays(selDate, 1); render(); };
+  $('prevDay').onclick = () => { selDate = addDays(selDate, mode === 'week' ? -7 : -1); render(); };
+  $('nextDay').onclick = () => { selDate = addDays(selDate, mode === 'week' ? 7 : 1); render(); };
   $('todayBtn').onclick = () => { selDate = today; render(); scrollToNow(); };
   $('importBtn').onclick = openImport;
-  $('settingsBtn').onclick = openSymbols;
+  $('settingsBtn').onclick = openSettings;
   $('resetBtn').onclick = () => { if (confirm('체험판 기록을 모두 지우고 처음부터 시작할까요?')) store.reset(); };
   store.subscribe(render);
 
@@ -470,7 +589,7 @@
   setInterval(() => {
     const t = todayStr();
     if (t !== today) { if (selDate === today) selDate = t; today = t; render(); return; }
-    renderNow(); positionNowLine();
+    if (mode === "today") { renderNow(); positionNowLine(); }
   }, 60000);
 
   render();

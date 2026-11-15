@@ -51,14 +51,14 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     p.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
     await p.clock.install({ time: new Date('2026-11-17T10:20:00+09:00') });
     await p.goto(base);
-    const T = '2026-11-17', Y = '2026-11-16', TM = '2026-11-18', W = '2026-11-16';
+    const T = '2026-11-17', Y = '2026-11-16', TM = '2026-11-18', W = '2026-11-15';
 
     // 1. 처음: 영역 4개, 빈 화면, 지금 없음
     let s = await S(p);
-    assert.deepEqual(s.areas.map(a => a.name), ['독서', '그림', '취업(일)', '생활']);
+    assert.deepEqual(s.areas.map(a => a.name), ['일', '그림공부', '독서', '브랜딩', '여가', '생활']);
     assert.equal(await p.locator('#dayTitle').textContent(), '11월 17일 (화)');
     assert.match(await p.locator('#now').textContent(), /지금 놓인 작업이 없어요/);
-    ok('처음 화면: 영역 4개(독서·그림·취업(일)·생활), 날짜, 지금 없음');
+    ok('처음 화면: 영역 6개(일·그림공부·독서·브랜딩·여가·생활), 날짜, 지금 없음');
 
     // 2. 타임라인 빈 곳 클릭 = 30분 추가, #영역 붙이기
     await scrollTo(p, 600);
@@ -69,7 +69,7 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     let a = await byTitle(p, T, '1장 읽기');
     assert.equal(a.start, 600); assert.equal(a.duration, 30);
     s = await S(p);
-    assert.equal(s.tasks.find(t => t.title === '1장 읽기').areaId, s.areas[0].id);
+    assert.equal(s.tasks.find(t => t.title === '1장 읽기').areaId, s.areas.find(a => a.name === '독서').id);
     ok('빈 곳 클릭 → 10:00 30분 추가, "#독서"로 영역 지정');
 
     // 3. 끌어서 범위 추가 13:00~14:30
@@ -153,7 +153,7 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     ok('타임라인 항목 → 시간 없음에 놓기 → 시간 빠짐');
 
     // 11. 이번 주에 적기 → [오늘로] → "오늘에 있음"
-    await p.locator('#weekAdd input').fill('자소서 초안 #취업');
+    await p.locator('#weekAdd input').fill('자소서 초안 #일');
     await p.keyboard.press('Enter');
     let wk = await p.evaluate(w => bj.plansOn('week', w).map(x => bj.task(x.taskId).title), W);
     assert.deepEqual(wk, ['자소서 초안']);
@@ -242,7 +242,7 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     await p.waitForFunction(() => bj.state.projects.length === 1);
     s = await S(p);
     const pr = s.projects.find(x => x.name === '건강 챙기기');
-    assert.ok(pr && pr.areaId === s.areas[3].id);
+    assert.ok(pr && pr.areaId === s.areas.find(a => a.name === '생활').id);
     assert.equal(s.tasks.find(t => t.title === '약국 가기').projectId, pr.id);
     assert.equal(await p.locator('.tl-item', { hasText: '약국 가기' }).locator('.tl-meta').textContent(), '건강 챙기기');
     ok('영역·프로젝트 창 → 생활 / 새 프로젝트 "건강 챙기기"');
@@ -270,11 +270,11 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     const washRow = p.locator('#untimedList .row', { hasText: '세수하기' });
     assert.doesNotMatch(await visible(washRow), /생활/);
     assert.doesNotMatch(await visible(p.locator('#untimedList')), /미분류/);
-    assert.doesNotMatch(await visible(p.locator('#weekList')), /취업|그림/);
+    assert.doesNotMatch(await visible(p.locator('#weekList')), /일|그림공부/);
     s = await S(p);
-    assert.equal(await washRow.evaluate(e => e.style.getPropertyValue('--c')), s.areas[3].color);
+    assert.equal(await washRow.evaluate(e => e.style.getPropertyValue('--c')), s.areas.find(a => a.name === '생활').color);
     assert.equal(await p.locator('#untimedList .row', { hasText: '메일 확인' }).evaluate(e => e.classList.contains('no-area')), true);
-    assert.deepEqual(await p.locator('#legend li').allTextContents(), ['독서', '그림', '취업(일)', '생활', '미분류']);
+    assert.deepEqual(await p.locator('#legend li').allTextContents(), ['일', '그림공부', '독서', '브랜딩', '여가', '생활', '미분류']);
     assert.equal(await washRow.locator('.sr-only').textContent(), '생활');
     ok('목록·타임라인에 영역 이름 글자 없음(프로젝트 이름만), 영역 색 + 범례, 화면 읽기용 이름은 남김');
 
@@ -304,14 +304,14 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     await p.locator('#symDone').fill('×');
     await p.locator('#symStrike').uncheck();
     assert.match(await p.locator('#symPreview').textContent(), /○14:00 약국 가기[\s\S]*×세수하기/);
-    await p.locator('#symDlg button[value=save]').click();
+    await p.locator('#setDlg button[value=save]').click();
     await p.waitForFunction(() => bj.symbols().done === '×');
     assert.equal(await p.locator('.tl-item', { hasText: '약국 가기' }).locator('.bullet').textContent(), '○');
     assert.equal(await wash.locator('.bullet').textContent(), '×');
     assert.equal(await deco(wash.locator('.row-title')), 'none');
     await p.locator('#settingsBtn').click();
     await p.locator('#symDefault').click();
-    await p.locator('#symDlg button[value=save]').click();
+    await p.locator('#setDlg button[value=save]').click();
     await p.waitForFunction(() => bj.symbols().done === '•' && bj.strikeDone());
     assert.equal(await deco(wash.locator('.row-title')), 'line-through');
     ok('기호 설정: 일정 ○ · 완료 × · 줄긋기 끄기 → 바로 반영, 기본값으로 되돌리기');
@@ -339,7 +339,7 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     mp.on('pageerror', e => errors.push(e.message));
     await mp.clock.install({ time: new Date('2026-11-17T10:20:00+09:00') });
     await mp.goto(base);
-    await mp.evaluate(t => { bj.addPlan({ title: '포트폴리오 표지 스케치', period: t, start: 600, duration: 60, areaId: bj.areas()[1].id }); bj.addPlan({ title: '이력서 1줄 고치기', period: t, areaId: bj.areas()[2].id }); bj.addPlan({ title: '자소서 초안', level: 'week', period: '2026-11-16' }); }, T);
+    await mp.evaluate(t => { bj.addPlan({ title: '포트폴리오 표지 스케치', period: t, start: 600, duration: 60, areaId: bj.areas()[1].id }); bj.addPlan({ title: '이력서 1줄 고치기', period: t, areaId: bj.areas()[2].id }); bj.addPlan({ title: '자소서 초안', level: 'week', period: '2026-11-15' }); }, T);
     const sw = await mp.evaluate(() => document.documentElement.scrollWidth);
     assert.ok(sw <= 390, 'scrollWidth ' + sw);
     const tlBox = await mp.locator('#timeline').boundingBox(), wkBox = await mp.locator('#weekZone').boundingBox();

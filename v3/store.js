@@ -4,8 +4,10 @@
 (function (root) {
   'use strict';
   const KEY = 'bj.v3';
-  const VERSION = 1;
-  const AREA_SEED = [['독서', '#6FA8DC'], ['그림', '#F2A0B6'], ['취업(일)', '#F0B85A'], ['생활', '#7CCBA6']];
+  const VERSION = 2;
+  // 2026-11-15 결의 노트 영역(일·그림공부·독서·브랜딩·여가) + 생활. 설정에서 이름·색·순서를 바꿀 수 있음
+  const AREA_SEED = [['일', '#F0B85A'], ['그림공부', '#F2A0B6'], ['독서', '#6FA8DC'], ['브랜딩', '#A98BD9'], ['여가', '#5EC4C4'], ['생활', '#94C973']];
+  const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
   const LEVELS = ['year', 'month', 'week', 'day'];
   const KINDS = ['task', 'event', 'note'];
   // 기호 기본값(결 지정 2026-11-15): • 할일 · * 일정 · - 메모 · • 완료(줄긋기) · > 다음으로. 완료를 비우면 원래 기호 그대로
@@ -15,7 +17,8 @@
   const dateStr = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   const parseDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
   const addDays = (s, n) => { const d = parseDate(s); d.setDate(d.getDate() + n); return dateStr(d); };
-  const weekStart = s => { const d = parseDate(s); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return dateStr(d); };
+  // 한 주는 일요일부터(결 지정 2026-11-15)
+  const weekStart = s => { const d = parseDate(s); d.setDate(d.getDate() - d.getDay()); return dateStr(d); };
   const todayStr = () => dateStr(new Date());
   let seq = 0;
   const uid = () => Date.now().toString(36) + (seq++).toString(36) + Math.random().toString(36).slice(2, 7);
@@ -29,6 +32,26 @@
     };
   }
 
+  /* 1 → 2: 영역을 노트 영역으로(이름이 옛 기본값 그대로일 때만 바꿈), 없는 기본 영역 추가, 주간 계획을 일요일 시작 주로 */
+  function migrate(s) {
+    if (s.version === 1) {
+      const OLD = { '취업(일)': ['일', '#F0B85A'], '그림': ['그림공부', '#F2A0B6'], '독서': ['독서', '#6FA8DC'], '생활': ['생활', '#7CCBA6'] };
+      s.areas.forEach(a => { const o = OLD[a.name]; if (o) { if (a.color === OLD[a.name][1] && a.name !== '생활') a.color = (AREA_SEED.find(x => x[0] === o[0]) || [])[1] || a.color; a.name = o[0]; } });
+      AREA_SEED.forEach(([name, color]) => { if (!s.areas.some(a => a.name === name)) s.areas.push({ id: uid(), name, color, order: 99, archived: false }); });
+      const rank = a => { const i = AREA_SEED.findIndex(x => x[0] === a.name); return i < 0 ? 50 + a.order : i; };
+      s.areas.sort((a, b) => rank(a) - rank(b)).forEach((a, i) => { a.order = i; });
+      const seen = new Set();
+      s.plans = s.plans.filter(p => {
+        if (p.level !== 'week') return true;
+        p.period = weekStart(p.period);
+        const k = p.taskId + p.period + (p.status === 'migrated' ? p.id : '');
+        if (seen.has(k)) return false; seen.add(k); return true;
+      });
+      s.version = 2;
+    }
+    return s;
+  }
+
   function createStore(storage) {
     const listeners = new Set();
     let undoSnap = null;
@@ -37,7 +60,11 @@
     function load() {
       try {
         const raw = storage && storage.getItem(KEY);
-        if (raw) { const s = JSON.parse(raw); if (s && s.version === VERSION) return s; }
+        if (raw) {
+          let s = JSON.parse(raw);
+          if (s && s.version < VERSION) { s = migrate(s); try { storage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* 다음에 */ } }
+          if (s && s.version === VERSION) return s;
+        }
       } catch (e) { /* 저장소를 못 읽으면 새로 시작 */ }
       return fresh();
     }
@@ -235,18 +262,37 @@
         return s;
       },
       strikeDone: () => state.settings.strikeDone !== false,
-      setSymbols(symbols, strikeDone) {
-        mutate('기호 설정', s => {
-          const clean = {};
-          Object.keys(DEFAULT_SYMBOLS).forEach(k => { clean[k] = Array.from(String(symbols[k] ?? '').trim()).slice(0, 3).join(''); });
-          s.settings.symbols = clean;
-          s.settings.strikeDone = !!strikeDone;
+      /* 설정 저장(한 번에, 실행 취소 한 번). areas: [{id?, name, color, archived}] 보이는 순서대로 */
+      saveSettings({ symbols, strikeDone, areas }) {
+        mutate('설정', s => {
+          if (symbols) {
+            const clean = {};
+            Object.keys(DEFAULT_SYMBOLS).forEach(k => { clean[k] = Array.from(String(symbols[k] ?? '').trim()).slice(0, 3).join(''); });
+            s.settings.symbols = clean;
+          }
+          if (strikeDone !== undefined) s.settings.strikeDone = !!strikeDone;
+          if (areas) {
+            const next = [];
+            areas.forEach((x, i) => {
+              const name = String(x.name || '').trim().slice(0, 20);
+              const old = x.id ? s.areas.find(a => a.id === x.id) : null;
+              if (!old && !name) return; // 이름 없는 새 영역은 버림
+              const a = old || { id: uid() };
+              a.name = name || a.name;
+              a.color = COLOR_RE.test(x.color || '') ? x.color : (a.color || '#999999');
+              a.archived = !!x.archived; a.order = i;
+              next.push(a);
+            });
+            s.areas.forEach(a => { if (!next.includes(a)) { a.order = next.length; next.push(a); } }); // 빠진 영역은 지우지 않음
+            s.areas = next;
+          }
         });
       },
+      allAreas: () => [...state.areas].sort((a, b) => a.order - b.order),
       reset() { state = fresh(); undoSnap = null; save(); emit(); },
     };
     return api;
   }
 
-  root.BJStore = { createStore, dateStr, parseDate, addDays, weekStart, todayStr, KEY, DEFAULT_SYMBOLS };
+  root.BJStore = { createStore, dateStr, parseDate, addDays, weekStart, todayStr, KEY, DEFAULT_SYMBOLS, AREA_SEED };
 })(typeof window !== 'undefined' ? window : globalThis);
