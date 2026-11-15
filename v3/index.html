@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>오늘한칸 v3</title>
+<meta name="description" content="프로젝트 중심 불렛저널 계획 앱 — 체험판" />
+<link rel="icon" type="image/svg+xml" href="../assets/symbol-hankan.svg" />
+<link rel="stylesheet" href="style.css?v=20261115" />
+</head>
+<body>
+<header class="top">
+  <div class="brand">오늘한칸 <span class="badge">v3 체험판</span></div>
+  <nav class="datenav" aria-label="날짜">
+    <button type="button" id="prevDay" aria-label="전날">‹</button>
+    <button type="button" id="todayBtn">오늘</button>
+    <button type="button" id="nextDay" aria-label="다음날">›</button>
+  </nav>
+</header>
+
+<main class="layout">
+  <section class="today" aria-labelledby="dayTitle">
+    <div id="now" class="now-card" aria-live="polite"></div>
+
+    <div class="day-head">
+      <h1><span id="dayTitle"></span> <span id="dayBadge" class="today-badge">오늘</span></h1>
+      <div id="progress" class="progress" hidden></div>
+    </div>
+
+    <div id="untimedZone" class="zone">
+      <div class="zone-head">
+        <h2>시간 없음</h2>
+        <button type="button" id="importBtn" class="link-btn">어제 계획 가져오기</button>
+      </div>
+      <ul id="untimedList" class="rows"></ul>
+      <form id="untimedAdd" class="add-form" autocomplete="off">
+        <input type="text" enterkeyhint="done" placeholder="+ 오늘 할 일 적기 (예: #독서 1장 읽기)" aria-label="오늘 할 일 적기" />
+      </form>
+    </div>
+
+    <div class="zone zone-tl">
+      <div class="zone-head"><h2>타임라인</h2><span class="hint">빈 곳을 누르면 적기 · 끌면 범위</span></div>
+      <div id="timeline"></div>
+    </div>
+  </section>
+
+  <aside id="weekZone" class="week zone" aria-labelledby="weekTitle">
+    <div class="zone-head">
+      <h2 id="weekTitle">이번 주에서</h2>
+      <span id="weekRange" class="hint"></span>
+    </div>
+    <p class="hint">끌어서 오늘에 놓거나 버튼을 누르세요</p>
+    <ul id="weekList" class="rows"></ul>
+    <form id="weekAdd" class="add-form" autocomplete="off">
+      <input type="text" enterkeyhint="done" placeholder="+ 이번 주에 적기" aria-label="이번 주에 할 일 적기" />
+    </form>
+  </aside>
+</main>
+
+<footer class="foot">
+  <p>체험판이라 <b>이 기기 브라우저에만</b> 저장돼요. 기존 오늘한칸 기록과는 따로예요.</p>
+  <p><a href="../">기존 오늘한칸으로</a> · <button type="button" id="resetBtn" class="link-btn">처음부터 다시</button></p>
+</footer>
+
+<div id="menu" class="menu" role="menu" hidden></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<dialog id="assignDlg" class="dlg">
+  <form method="dialog">
+    <h2>영역 · 프로젝트</h2>
+    <p id="assignTitle" class="dlg-sub"></p>
+    <label>영역 <select id="assignArea"></select></label>
+    <label>프로젝트 <select id="assignProject"></select></label>
+    <label>새 프로젝트 만들기 <input id="assignNewProject" type="text" placeholder="예: 『책 이름』 완독" /></label>
+    <div class="dlg-btns">
+      <button value="cancel" formnovalidate>취소</button>
+      <button value="save" class="primary">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="importDlg" class="dlg">
+  <form method="dialog">
+    <h2>어제 계획 가져오기</h2>
+    <p class="dlg-sub">오늘도 할 것을 고르세요. 끝낸 것도 고를 수 있어요(세수하기처럼).</p>
+    <ul id="importList" class="imp-list"></ul>
+    <div class="dlg-btns">
+      <button type="button" id="importAll">모두 고르기</button>
+      <button value="cancel" formnovalidate>닫기</button>
+      <button value="import" id="importGo" class="primary">가져오기</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="store.js?v=20261115"></script>
+<script src="gesture.js?v=20261115"></script>
+<script src="timeline.js?v=20261115"></script>
+<script src="app.js?v=20261115"></script>
+</body>
+</html>
