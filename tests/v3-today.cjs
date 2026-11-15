@@ -224,6 +224,38 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     assert.equal(await p.locator('#untimedList .row', { hasText: '메일 확인' }).locator('[data-toggle]').count(), 0);
     ok('종류를 메모로 → 체크 없음(–)');
 
+    // 16-1. 기호 기본값(• 할일 · * 일정 · - 메모 · • 완료+줄긋기 · > 다음으로)과 완료 줄긋기
+    const deco = loc => loc.evaluate(e => getComputedStyle(e).textDecorationLine);
+    assert.equal(await p.locator('#untimedList .row', { hasText: '메일 확인' }).locator('.bullet').textContent(), '-');
+    await p.locator('.tl-item', { hasText: '약국 가기' }).locator('.more').click();
+    await p.locator('#menu [data-kind=event]').click();
+    assert.equal(await p.locator('.tl-item', { hasText: '약국 가기' }).locator('.bullet').textContent(), '*');
+    const wash = p.locator('#untimedList .row', { hasText: '세수하기' });
+    await wash.locator('[data-toggle]').click();
+    assert.equal(await wash.locator('.bullet').textContent(), '•');
+    assert.equal(await deco(wash.locator('.row-title')), 'line-through');
+    assert.equal(await deco(p.locator('.tl-item', { hasText: '1장 다 읽기' }).locator('.tl-title')), 'line-through');
+    ok('기본 기호: 메모 "-", 일정 "*", 완료 "•" + 줄긋기, 작업 완료도 줄긋기');
+
+    // 16-2. 설정에서 기호 바꾸기 + 줄긋기 끄기 → 미리보기 → 저장 → 기본값으로
+    await p.locator('#settingsBtn').click();
+    assert.equal(await p.locator('#symTask').inputValue(), '•');
+    await p.locator('#symEvent').fill('○');
+    await p.locator('#symDone').fill('×');
+    await p.locator('#symStrike').uncheck();
+    assert.match(await p.locator('#symPreview').textContent(), /○14:00 약국 가기[\s\S]*×세수하기/);
+    await p.locator('#symDlg button[value=save]').click();
+    await p.waitForFunction(() => bj.symbols().done === '×');
+    assert.equal(await p.locator('.tl-item', { hasText: '약국 가기' }).locator('.bullet').textContent(), '○');
+    assert.equal(await wash.locator('.bullet').textContent(), '×');
+    assert.equal(await deco(wash.locator('.row-title')), 'none');
+    await p.locator('#settingsBtn').click();
+    await p.locator('#symDefault').click();
+    await p.locator('#symDlg button[value=save]').click();
+    await p.waitForFunction(() => bj.symbols().done === '•' && bj.strikeDone());
+    assert.equal(await deco(wash.locator('.row-title')), 'line-through');
+    ok('기호 설정: 일정 ○ · 완료 × · 줄긋기 끄기 → 바로 반영, 기본값으로 되돌리기');
+
     // 17. 새로고침해도 남음 + 날짜 이동
     await p.reload();
     assert.ok(await byTitle(p, T, '약국 가기'));

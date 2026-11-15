@@ -6,7 +6,7 @@
 <title>오늘한칸 v3</title>
 <meta name="description" content="프로젝트 중심 불렛저널 계획 앱 — 체험판" />
 <link rel="icon" type="image/svg+xml" href="../assets/symbol-hankan.svg" />
-<link rel="stylesheet" href="style.css?v=20261115" />
+<link rel="stylesheet" href="style.css?v=20261115b" />
 </head>
 <body>
 <header class="top">
@@ -15,6 +15,7 @@
     <button type="button" id="prevDay" aria-label="전날">‹</button>
     <button type="button" id="todayBtn">오늘</button>
     <button type="button" id="nextDay" aria-label="다음날">›</button>
+    <button type="button" id="settingsBtn" aria-label="기호 설정" title="기호 설정">⚙</button>
   </nav>
 </header>
 
@@ -79,6 +80,28 @@
   </form>
 </dialog>
 
+<dialog id="symDlg" class="dlg">
+  <form method="dialog">
+    <h2>기호 설정</h2>
+    <p class="dlg-sub">불렛저널 기호를 내 방식대로 정해요. 한 칸에 3글자까지.</p>
+    <div class="sym-grid">
+      <label>할일 <input id="symTask" type="text" maxlength="3" autocomplete="off" /></label>
+      <label>일정 <input id="symEvent" type="text" maxlength="3" autocomplete="off" /></label>
+      <label>메모 <input id="symNote" type="text" maxlength="3" autocomplete="off" /></label>
+      <label>완료 <input id="symDone" type="text" maxlength="3" autocomplete="off" placeholder="원래 기호" /></label>
+      <label>다음으로 <input id="symMigrated" type="text" maxlength="3" autocomplete="off" /></label>
+    </div>
+    <label class="check"><input id="symStrike" type="checkbox" /> 완료하면 줄긋기</label>
+    <p class="dlg-sub">완료를 비우면 할일·일정의 원래 기호를 그대로 써요.</p>
+    <ul id="symPreview" class="sym-preview" aria-label="미리보기"></ul>
+    <div class="dlg-btns">
+      <button type="button" id="symDefault">기본값</button>
+      <button value="cancel" formnovalidate>취소</button>
+      <button value="save" class="primary">저장</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="importDlg" class="dlg">
   <form method="dialog">
     <h2>어제 계획 가져오기</h2>
@@ -92,9 +115,9 @@
   </form>
 </dialog>
 
-<script src="store.js?v=20261115"></script>
-<script src="gesture.js?v=20261115"></script>
-<script src="timeline.js?v=20261115"></script>
-<script src="app.js?v=20261115"></script>
+<script src="store.js?v=20261115b"></script>
+<script src="gesture.js?v=20261115b"></script>
+<script src="timeline.js?v=20261115b"></script>
+<script src="app.js?v=20261115b"></script>
 </body>
 </html>

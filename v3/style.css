@@ -53,7 +53,8 @@ h1, h2 { margin: 0; }
 .now-label { font-size: 12px; font-weight: 700; color: var(--now); letter-spacing: .02em; }
 .now-main { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .now-title { font-size: 22px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
-.now-card.is-done .now-title { text-decoration: line-through; opacity: .6; }
+.now-card.is-done .now-title { opacity: .6; }
+.strike-done .now-card.is-done .now-title { text-decoration: line-through; }
 .now-main .bullet { width: 32px; height: 32px; font-size: 20px; }
 .now-sub, .now-empty { color: var(--sub); font-size: 13px; margin-top: 4px; }
 .now-empty b { color: var(--text); }
@@ -82,7 +83,8 @@ h1, h2 { margin: 0; }
 .row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .row-title { overflow-wrap: anywhere; cursor: text; }
 .row-meta { color: var(--sub); font-size: 11px; }
-.row.s-done .row-title, .row.s-migrated .row-title { text-decoration: line-through; color: var(--sub); }
+.row.s-done .row-title, .row.task-done .row-title, .row.s-migrated .row-title { color: var(--sub); }
+.strike-done .row.s-done .row-title, .strike-done .row.task-done .row-title { text-decoration: line-through; }
 .row.s-migrated { opacity: .6; }
 .row.k-note .row-title { color: var(--sub); }
 .row.bj-armed, .tl-item.bj-armed { box-shadow: 0 0 0 2px var(--accent); }
@@ -114,7 +116,8 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 .tl-item { --c: var(--sub); position: absolute; display: flex; align-items: flex-start; gap: 4px; padding: 1px 2px 1px 4px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--c) 55%, var(--line)); background: color-mix(in srgb, var(--c) 22%, var(--card)); overflow: hidden; z-index: 1; cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; line-height: 1.3; }
 .tl-item.no-area { border-color: var(--line); background: var(--accent-soft); }
 .tl-item.k-event { border-style: dashed; }
-.tl-item.s-done .tl-title { text-decoration: line-through; opacity: .55; }
+.tl-item.s-done .tl-title, .tl-item.task-done .tl-title { opacity: .55; }
+.strike-done .tl-item.s-done .tl-title, .strike-done .tl-item.task-done .tl-title { text-decoration: line-through; }
 .tl-item .bullet { width: 20px; height: 20px; font-size: 15px; }
 .tl-title { flex: 1; min-width: 0; padding-top: 1px; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
 .tl-meta { color: var(--sub); font-size: 11px; margin-left: 6px; }
@@ -166,6 +169,15 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 .dlg-btns button { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 7px 14px; }
 .dlg-btns .primary { background: var(--text); color: var(--card); border-color: var(--text); }
 .dlg-btns .primary:disabled { opacity: .4; cursor: default; }
+.sym-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.sym-grid label { margin-bottom: 6px; font-size: 12px; }
+.sym-grid input { width: 100%; text-align: center; font-size: 18px; font-weight: 700; padding: 6px 2px !important; }
+.dlg label.check { flex-direction: row; align-items: center; gap: 8px; font-size: 14px; margin: 4px 0 0; }
+.sym-preview { list-style: none; margin: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.sym-preview li { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.sym-preview .is-done .bullet { color: var(--ok); }
+.sym-preview .is-done .sp-title, .sym-preview .is-migrated .sp-title { color: var(--sub); }
+.sym-preview.strike-done .is-done .sp-title { text-decoration: line-through; }
 .imp-list { list-style: none; margin: 0; padding: 0; max-height: 50vh; overflow: auto; }
 .imp-list label { flex-direction: row; align-items: center; gap: 8px; padding: 6px 4px; margin: 0; border-bottom: 1px solid var(--line); font-size: 14px; cursor: pointer; }
 .imp-list label.is-already { opacity: .5; cursor: default; }

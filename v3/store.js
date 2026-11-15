@@ -8,6 +8,8 @@
   const AREA_SEED = [['독서', '#6FA8DC'], ['그림', '#F2A0B6'], ['취업(일)', '#F0B85A'], ['생활', '#7CCBA6']];
   const LEVELS = ['year', 'month', 'week', 'day'];
   const KINDS = ['task', 'event', 'note'];
+  // 기호 기본값(결 지정 2026-11-15): • 할일 · * 일정 · - 메모 · • 완료(줄긋기) · > 다음으로. 완료를 비우면 원래 기호 그대로
+  const DEFAULT_SYMBOLS = { task: '•', event: '*', note: '-', done: '•', migrated: '>' };
 
   const pad = n => String(n).padStart(2, '0');
   const dateStr = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
@@ -23,7 +25,7 @@
       version: VERSION,
       areas: AREA_SEED.map(([name, color], i) => ({ id: uid(), name, color, order: i, archived: false })),
       projects: [], tasks: [], plans: [],
-      settings: { dayStart: 360, dayEnd: 1440 },
+      settings: { dayStart: 360, dayEnd: 1440, symbols: { ...DEFAULT_SYMBOLS }, strikeDone: true },
     };
   }
 
@@ -182,10 +184,25 @@
         state = JSON.parse(undoSnap.json); undoSnap = null; save(); emit();
         return true;
       },
+      /* 기호 설정. 한 칸에 최대 3글자. 할일·일정·메모·옮김을 비우면 기본값, 완료를 비우면 원래 기호 그대로 */
+      symbols() {
+        const s = { ...DEFAULT_SYMBOLS, ...(state.settings.symbols || {}) };
+        ['task', 'event', 'note', 'migrated'].forEach(k => { if (!s[k]) s[k] = DEFAULT_SYMBOLS[k]; });
+        return s;
+      },
+      strikeDone: () => state.settings.strikeDone !== false,
+      setSymbols(symbols, strikeDone) {
+        mutate('기호 설정', s => {
+          const clean = {};
+          Object.keys(DEFAULT_SYMBOLS).forEach(k => { clean[k] = Array.from(String(symbols[k] ?? '').trim()).slice(0, 3).join(''); });
+          s.settings.symbols = clean;
+          s.settings.strikeDone = !!strikeDone;
+        });
+      },
       reset() { state = fresh(); undoSnap = null; save(); emit(); },
     };
     return api;
   }
 
-  root.BJStore = { createStore, dateStr, parseDate, addDays, weekStart, todayStr, KEY };
+  root.BJStore = { createStore, dateStr, parseDate, addDays, weekStart, todayStr, KEY, DEFAULT_SYMBOLS };
 })(typeof window !== 'undefined' ? window : globalThis);
