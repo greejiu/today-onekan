@@ -300,8 +300,17 @@
     }]);
     items.push(['영역 · 프로젝트 정하기…', () => openAssign(t.id)]);
     if (p.start != null) items.push(['시간 빼기', () => { store.setPlanTime(p.id, null); undoToast('시간을 뺐어요'); }]);
-    if (p.status === 'open' && p.level === 'day') items.push(['내일로 옮기기  >', () => { store.migratePlan(p.id, addDays(p.period, 1)); undoToast('내일로 옮겼어요'); }]);
-    if (p.status === 'open' && p.level === 'week') items.push(['다음 주로 옮기기  >', () => { store.migratePlan(p.id, addDays(p.period, 7)); undoToast('다음 주로 옮겼어요'); }]);
+    if (p.status === 'open' && p.level === 'day') {
+      if (p.period !== today) items.push(['오늘로 옮기기', () => moveTo(p.id, today)]);
+      items.push([`내일로 옮기기${p.period <= today ? '  >' : ''}`, () => moveTo(p.id, addDays(p.period, 1))]);
+      items.push(['날짜 고르기…', () => openDatePick(p.id)]);
+    }
+    if (p.status === 'open' && p.level === 'week') items.push([`다음 주로 옮기기${p.period <= weekStart(today) ? '  >' : ''}`, () => moveTo(p.id, addDays(p.period, 7))]);
+    if (p.status === 'migrated') items.push([p.level === 'week' ? '다시 이 주로 되돌리기' : p.period === today ? '다시 오늘로 되돌리기' : '다시 이 날로 되돌리기', () => {
+      const r = store.restorePlan(p.id);
+      if (r === 'done') toast('옮겨 간 날에 이미 체크해서 되돌릴 수 없어요. 그 날 계획을 먼저 풀어 주세요.');
+      else if (r) undoToast('되돌렸어요');
+    }]);
     items.push(t.status === 'done' ? ['작업 다시 열기', () => { store.setTaskStatus(t.id, 'open'); undoToast('작업을 다시 열었어요'); }]
       : ['작업 완료 ✓', () => { store.setTaskStatus(t.id, 'done'); undoToast(`『${t.title}』 작업 완료 ✓`); }]);
     items.push(['계획 지우기', () => { store.deletePlan(p.id); undoToast('지웠어요'); }, 'danger']);
@@ -312,6 +321,24 @@
     menu.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', () => { closeMenu(); store.setTaskKind(t.id, b.dataset.kind); }));
     const r = anchor.getBoundingClientRect();
     placeMenu(r.right - 200, r.bottom + 4);
+  }
+
+  const dayName = d => { if (d === today) return '오늘'; if (d === addDays(today, 1)) return '내일'; if (d === addDays(today, -1)) return '어제'; const x = parseDate(d); return `${x.getMonth() + 1}/${x.getDate()}(${DOW[x.getDay()]})`; };
+  function moveTo(planId, to) {
+    const p = store.plan(planId); if (!p) return;
+    const r = store.movePlan(planId, to, p.level === 'week' ? weekStart(today) : today);
+    if (!r) return;
+    const where = p.level === 'week' ? '그 주' : dayName(to);
+    undoToast(r.how === 'restored' ? `${where}로 되돌렸어요` : r.how === 'migrated' ? `${where}로 옮겼어요  >` : `${where}로 옮겼어요`);
+  }
+  function openDatePick(planId) {
+    const p = store.plan(planId), t = p && store.task(p.taskId); if (!t) return;
+    const dlg = $('dateDlg');
+    $('dateTitle').textContent = t.title;
+    $('dateInput').value = p.period;
+    dlg.returnValue = '';
+    dlg.showModal();
+    dlg.onclose = () => { const v = $('dateInput').value; if (dlg.returnValue === 'move' && v && v !== p.period) moveTo(planId, v); };
   }
 
   function kindMenu(x, y, cb) {

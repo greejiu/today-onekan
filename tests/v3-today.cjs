@@ -186,6 +186,53 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     assert.equal(await p.locator('#untimedList .row', { hasText: '자소서 초안' }).locator('.bullet').textContent(), '>');
     ok('내일로 옮기기 → 오늘 계획은 ">"로 남고 내일에 계획');
 
+    // 13-1. 내일로 옮긴 걸 다시 오늘로(결 보고 2026-11-15)
+    const menuOn = async (loc, label) => { await loc.locator('.more').click(); await p.locator('#menu .menu-item', { hasText: label }).click(); };
+    const cnt = (title) => p.evaluate(t => bj.state.plans.filter(x => bj.task(x.taskId)?.title === t).map(x => x.period + ':' + x.status).sort().join(','), title);
+    await p.locator('#untimedAdd input').fill('포트폴리오 표지');
+    await p.keyboard.press('Enter');
+    const pf = () => p.locator('#untimedList .row', { hasText: '포트폴리오 표지' });
+    await menuOn(pf(), '내일로 옮기기');
+    assert.equal(await cnt('포트폴리오 표지'), `${T}:migrated,${TM}:open`);
+    await menuOn(pf(), '다시 오늘로 되돌리기');
+    assert.equal(await cnt('포트폴리오 표지'), `${T}:open`);
+    assert.notEqual(await pf().locator('.bullet').textContent(), '>');
+    ok('">" 줄 메뉴 → 다시 오늘로 되돌리기: 내일 계획 지우고 오늘 계획 다시 열림');
+    await menuOn(pf(), '내일로 옮기기');
+    await p.locator('#nextDay').click();
+    await menuOn(pf(), '오늘로 옮기기');
+    assert.equal(await cnt('포트폴리오 표지'), `${T}:open`);
+    assert.match(await p.locator('#toast').textContent(), /오늘로 되돌렸어요/);
+    await p.locator('#todayBtn').click();
+    ok('내일 화면에서 오늘로 옮기기 → 되돌리기(흔적 없음, 계획 1개)');
+    // 날짜 고르기: 오늘 → 11/20 (>), 11/20에서 → 11/19 (앞당기기 = 날짜만)
+    await menuOn(pf(), '날짜 고르기');
+    await p.locator('#dateInput').fill('2026-11-20');
+    await p.locator('#dateDlg button[value=move]').click();
+    await p.waitForFunction(() => bj.state.plans.some(x => x.period === '2026-11-20'));
+    assert.equal(await cnt('포트폴리오 표지'), `${T}:migrated,2026-11-20:open`);
+    const fut = await p.evaluate(() => bj.state.plans.find(x => x.period === '2026-11-20').id);
+    await p.evaluate(([id, t]) => bj.movePlan(id, '2026-11-19', t), [fut, T]);
+    assert.equal(await cnt('포트폴리오 표지'), `${T}:migrated,2026-11-19:open`);
+    await menuOn(pf(), '다시 오늘로 되돌리기');
+    assert.equal(await cnt('포트폴리오 표지'), `${T}:open`);
+    ok('날짜 고르기 → 11/20(>), 미래끼리 당기기 = 날짜만, 되돌리기는 옮겨 간 곳을 따라가 지움');
+    // 지난 계획 → 오늘로 = 옮기기(>), 옮겨 간 곳을 체크했으면 되돌리기 막음
+    await p.evaluate(y => bj.addPlan({ title: '어제 못 한 일', period: y }), Y);
+    await p.locator('#prevDay').click();
+    await menuOn(p.locator('#untimedList .row', { hasText: '어제 못 한 일' }), '오늘로 옮기기');
+    assert.equal(await cnt('어제 못 한 일'), `${Y}:migrated,${T}:open`);
+    await p.locator('#todayBtn').click();
+    await p.locator('#untimedList .row', { hasText: '어제 못 한 일' }).locator('[data-toggle]').click();
+    await p.evaluate(() => document.querySelector('#toast').hidden = true);
+    await p.locator('#prevDay').click();
+    await menuOn(p.locator('#untimedList .row', { hasText: '어제 못 한 일' }), '다시 이 날로 되돌리기');
+    assert.match(await p.locator('#toast').textContent(), /이미 체크해서 되돌릴 수 없어요/);
+    assert.equal(await cnt('어제 못 한 일'), `${Y}:migrated,${T}:done`);
+    await p.locator('#todayBtn').click();
+    await p.evaluate(t => { bj.deletePlan(bj.plansOn('day', t).find(x => bj.task(x.taskId).title === '어제 못 한 일').id); bj.deletePlan(bj.state.plans.find(x => bj.task(x.taskId)?.title === '어제 못 한 일').id); bj.deletePlan(bj.plansOn('day', t).find(x => bj.task(x.taskId).title === '포트폴리오 표지').id); }, T);
+    ok('지난 계획 → 오늘로 = 옮기기(>), 옮겨 간 곳을 이미 체크했으면 되돌리기 막고 안내');
+
     // 14. 메뉴: 영역·프로젝트 정하기(새 프로젝트)
     await p.locator('.tl-item', { hasText: '약국 가기' }).locator('.more').click();
     await p.locator('#menu .menu-item', { hasText: '영역 · 프로젝트' }).click();
