@@ -113,9 +113,9 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     ok('짧게 누르기 → 이름 수정');
 
     // 8. 지금: 10:20은 10:00~11:15 안
-    assert.match(await p.locator('#now').textContent(), /1장 다 읽기[\s\S]*10:00–11:15 · 55분 남음 · 독서/);
+    assert.match(await p.locator('#now').textContent(), /1장 다 읽기[\s\S]*10:00–11:15 · 55분 남음 독서/);
     assert.equal(await p.locator('#timeline .tl-now').count(), 1);
-    ok('지금 카드: 10:00–11:15 · 55분 남음 · 독서, 지금 선 1개');
+    ok('지금 카드: 10:00–11:15 · 55분 남음 + 영역 칩, 지금 선 1개');
 
     // 9. 불렛 체크 = 오늘 몫 완료, 계획이 하나뿐이면 "작업도 끝났어요" 제안
     await p.locator('#now [data-toggle]').click();
@@ -197,7 +197,7 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     const pr = s.projects.find(x => x.name === '건강 챙기기');
     assert.ok(pr && pr.areaId === s.areas[3].id);
     assert.equal(s.tasks.find(t => t.title === '약국 가기').projectId, pr.id);
-    assert.match(await p.locator('.tl-item', { hasText: '약국 가기' }).textContent(), /생활 · 건강 챙기기/);
+    assert.equal(await p.locator('.tl-item', { hasText: '약국 가기' }).locator('.tl-meta').textContent(), '건강 챙기기');
     ok('영역·프로젝트 창 → 생활 / 새 프로젝트 "건강 챙기기"');
 
     // 15. 어제 계획 가져오기(반복 대신): 끝낸 것도 고를 수 있음, 시간 그대로, 같은 작업
@@ -217,6 +217,19 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     assert.equal(await p.locator('#importList input:disabled').count(), 2);
     await p.locator('#importDlg button[value=cancel]').click();
     ok('어제 계획 가져오기 → 완료한 것도 가져옴, 시간 유지, 작업 그대로, 두 번째는 "이미 있어요"');
+
+    // 15-1. 목록엔 영역 이름(·미분류) 글자 없이 색으로만. 범례에 영역 4개 + 미분류
+    const visible = loc => loc.evaluate(e => { const c = e.cloneNode(true); c.querySelectorAll('.sr-only').forEach(x => x.remove()); return c.textContent; });
+    const washRow = p.locator('#untimedList .row', { hasText: '세수하기' });
+    assert.doesNotMatch(await visible(washRow), /생활/);
+    assert.doesNotMatch(await visible(p.locator('#untimedList')), /미분류/);
+    assert.doesNotMatch(await visible(p.locator('#weekList')), /취업|그림/);
+    s = await S(p);
+    assert.equal(await washRow.evaluate(e => e.style.getPropertyValue('--c')), s.areas[3].color);
+    assert.equal(await p.locator('#untimedList .row', { hasText: '메일 확인' }).evaluate(e => e.classList.contains('no-area')), true);
+    assert.deepEqual(await p.locator('#legend li').allTextContents(), ['독서', '그림', '취업(일)', '생활', '미분류']);
+    assert.equal(await washRow.locator('.sr-only').textContent(), '생활');
+    ok('목록·타임라인에 영역 이름 글자 없음(프로젝트 이름만), 영역 색 + 범례, 화면 읽기용 이름은 남김');
 
     // 16. 종류 바꾸기: 메모는 체크 없음
     await p.locator('#untimedList .row', { hasText: '메일 확인' }).locator('.more').click();
