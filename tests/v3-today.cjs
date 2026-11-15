@@ -26,10 +26,10 @@ const byTitle = async (p, d, t) => (await dayPlans(p, d)).find(x => x.title === 
 const tlPoint = (p, minute, xFrac = 0.6) => p.locator('#timeline .tl-content').evaluate((e, [m, xf]) => {
   const r = e.getBoundingClientRect(); return { x: r.left + r.width * xf, y: r.top + (m - Number(e.dataset.min)) / 15 * 9 + 1 };
 }, [minute, xFrac]);
-async function scrollTo(p, minute) {
-  await p.locator('#timeline .tl-content').evaluate((e, m) => {
-    const r = e.getBoundingClientRect(); window.scrollTo(0, window.scrollY + r.top + (m - Number(e.dataset.min)) / 15 * 9 - 300);
-  }, minute);
+async function scrollTo(p, minute, at = 300) {
+  await p.locator('#timeline .tl-content').evaluate((e, [m, at]) => {
+    const r = e.getBoundingClientRect(); window.scrollTo(0, window.scrollY + r.top + (m - Number(e.dataset.min)) / 15 * 9 - at);
+  }, [minute, at]);
 }
 async function drag(p, from, to, { hold = 0 } = {}) {
   await p.mouse.move(from.x, from.y); await p.mouse.down();
@@ -137,7 +137,7 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     let row = p.locator('#untimedList .row', { hasText: '세수하기' });
     await row.scrollIntoViewIfNeeded();
     box = await row.boundingBox();
-    await scrollTo(p, 480);
+    await scrollTo(p, 480, 520); // 끌 줄이 두 줄 머리(약 90px) 아래로 보이게
     box = await row.boundingBox();
     let to = await tlPoint(p, 480 + 10);
     await drag(p, { x: box.x + box.width / 2, y: box.y + box.height / 2 }, to);

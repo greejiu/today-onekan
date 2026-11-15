@@ -6,20 +6,21 @@
 <title>오늘한칸 v3</title>
 <meta name="description" content="프로젝트 중심 불렛저널 계획 앱 — 체험판" />
 <link rel="icon" type="image/svg+xml" href="../assets/symbol-hankan.svg" />
-<link rel="stylesheet" href="style.css?v=20261115f" />
+<link rel="stylesheet" href="style.css?v=20261115g" />
 </head>
 <body>
 <header class="top">
-  <div class="brand">오늘한칸 <span class="badge">v3 체험판</span></div>
-  <nav class="tabs" aria-label="화면">
-    <a href="#today">오늘</a>
-    <a href="#week">주간</a>
-  </nav>
+  <div class="top-row">
+    <nav class="tabs" aria-label="화면">
+      <a href="#today">오늘</a>
+      <a href="#week">주간</a>
+    </nav>
+    <button type="button" id="settingsBtn" class="icon-btn" aria-label="설정" title="설정">⚙</button>
+  </div>
   <nav class="datenav" aria-label="날짜">
     <button type="button" id="prevDay" aria-label="전날">‹</button>
     <button type="button" id="todayBtn">오늘</button>
     <button type="button" id="nextDay" aria-label="다음날">›</button>
-    <button type="button" id="settingsBtn" aria-label="설정" title="설정">⚙</button>
   </nav>
 </header>
 
@@ -77,7 +78,7 @@
 </main>
 
 <footer class="foot">
-  <p>체험판이라 <b>이 기기 브라우저에만</b> 저장돼요. 기존 오늘한칸 기록과는 따로예요.</p>
+  <p><b>오늘한칸 v3 체험판</b> · 체험판이라 <b>이 기기 브라우저에만</b> 저장돼요. 기존 오늘한칸 기록과는 따로예요.</p>
   <p><a href="../">기존 오늘한칸으로</a> · <button type="button" id="resetBtn" class="link-btn">처음부터 다시</button></p>
 </footer>
 
@@ -152,9 +153,9 @@
   </form>
 </dialog>
 
-<script src="store.js?v=20261115f"></script>
-<script src="gesture.js?v=20261115f"></script>
-<script src="timeline.js?v=20261115f"></script>
-<script src="app.js?v=20261115f"></script>
+<script src="store.js?v=20261115g"></script>
+<script src="gesture.js?v=20261115g"></script>
+<script src="timeline.js?v=20261115g"></script>
+<script src="app.js?v=20261115g"></script>
 </body>
 </html>
