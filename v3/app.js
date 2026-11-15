@@ -29,7 +29,7 @@
     const pr = t.projectId ? store.project(t.projectId) : null;
     // 영역 이름은 글자로 안 쓰고 색으로만 표시(결 요청 2026-11-15). 글자는 프로젝트 이름만. 화면 읽기용으로만 영역 이름을 넣음
     const meta = pr ? pr.name : '';
-    const areaSr = `<span class="sr-only">${a ? esc(a.name) : '미분류'}</span>`;
+    const areaSr = `<span class="sr-only">${a ? esc(a.name) : '기본'}</span>`;
     return { p, t, a, pr, meta, areaSr, color: a ? a.color : '', done: p.status === 'done', migrated: p.status === 'migrated' };
   }
   function bulletHtml(v) {
@@ -72,7 +72,7 @@
   }
 
   function renderLegend() {
-    $('legend').innerHTML = store.areas().map(a => `<li style="--c:${a.color}">${esc(a.name)}</li>`).join('') + `<li class="no-area">미분류</li>`;
+    $('legend').innerHTML = store.areas().map(a => `<li style="--c:${a.color}">${esc(a.name)}</li>`).join('') + `<li class="no-area">기본</li>`;
   }
 
   function renderHeader() {
@@ -130,7 +130,7 @@
   function renderTimeline() {
     const items = store.plansOn('day', selDate).filter(p => p.start != null).map(p => {
       const v = view(p);
-      return { id: p.id, start: p.start, duration: p.duration, title: v.t.title, meta: v.meta, sr: v.a ? v.a.name : '미분류', lead: bulletHtml(v), cls: clsOf(v), style: styleOf(v) };
+      return { id: p.id, start: p.start, duration: p.duration, title: v.t.title, meta: v.meta, sr: v.a ? v.a.name : '기본', lead: bulletHtml(v), cls: clsOf(v), style: styleOf(v) };
     });
     const s = store.state.settings;
     tl = BJTimeline.render($('timeline'), items, {
@@ -381,7 +381,7 @@
     const dlg = $('assignDlg');
     const areaSel = $('assignArea'), projSel = $('assignProject'), newProj = $('assignNewProject');
     $('assignTitle').textContent = t.title;
-    areaSel.innerHTML = `<option value="">미분류</option>` + store.areas().map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+    areaSel.innerHTML = `<option value="">기본</option>` + store.areas().map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
     const fillProjects = () => {
       const aid = areaSel.value || null;
       projSel.innerHTML = `<option value="">프로젝트 없음</option>` + store.projects().filter(p => p.areaId === aid).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
@@ -512,9 +512,9 @@
       return `<span class="tag${x.status === 'done' ? ' tag-done' : ''}">${DOW[parseDate(d).getDay()]}${x.status === 'done' ? '✓' : ''}</span>`;
     }).join('');
     const group = (area, list) => `<section class="wk-area${list.length ? '' : ' is-empty'}" style="${area ? `--c:${area.color}` : ''}">
-        <h3 class="wk-area-title${area ? '' : ' no-area'}">${area ? esc(area.name) : '미분류'}</h3>
+        <h3 class="wk-area-title${area ? '' : ' no-area'}">${area ? esc(area.name) : '기본'}</h3>
         <ul class="rows">${list.map(p => rowHtml(view(p), dayTags(p))).join('')}</ul>
-        <form class="add-form mini" data-add-week="${area ? area.id : ''}" autocomplete="off"><input type="text" enterkeyhint="done" placeholder="+ ${area ? esc(area.name) + '에' : ''} 적기" aria-label="${area ? esc(area.name) : '미분류'} 이번 주에 적기" /></form>
+        <form class="add-form mini" data-add-week="${area ? area.id : ''}" autocomplete="off"><input type="text" enterkeyhint="done" placeholder="+ ${area ? esc(area.name) : '기본'}에 적기" aria-label="${area ? esc(area.name) : '기본'} 이번 주에 적기" /></form>
       </section>`;
     const areas = store.areas();
     const areaIds = new Set(areas.map(x => x.id));
@@ -552,7 +552,7 @@
   });
   document.addEventListener('click', e => {
     const g = e.target.closest('[data-goto]'); if (!g) return;
-    selDate = g.dataset.goto; location.hash = '#today';
+    selDate = g.dataset.goto; location.hash = '#today'; render(); window.scrollTo(0, 0);
   });
   window.addEventListener('hashchange', () => { closeMenu(); render(); window.scrollTo(0, 0); });
 

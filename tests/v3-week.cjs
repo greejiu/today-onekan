@@ -60,11 +60,11 @@ const plansOf = (p, title) => p.evaluate(t => bj.state.plans.filter(x => bj.task
     assert.equal(await p.locator('#wkTitle').textContent(), '11월 15일 – 21일');
     assert.deepEqual(await p.locator('.wk-day-title').allTextContents(), ['11/15 (일)', '11/16 (월)', '11/17 (화)', '11/18 (수)', '11/19 (목)', '11/20 (금)', '11/21 (토)']);
     assert.equal(await p.locator('.wk-day.is-today .wk-day-title').textContent(), '11/17 (화)');
-    assert.deepEqual(await p.locator('.wk-area-title').allTextContents(), ['일', '그림공부', '독서', '브랜딩', '여가', '생활', '미분류']);
+    assert.deepEqual(await p.locator('.wk-area-title').allTextContents(), ['일', '그림공부', '독서', '브랜딩', '여가', '생활', '기본']);
     assert.equal(await p.locator('.wk-area', { hasText: '일' }).first().locator('.row-title').textContent(), '자소서 초안');
     assert.equal(await p.locator('.wk-day.is-today .row-time').textContent(), '10:00');
     assert.equal(await p.locator('.tabs a[aria-current=page]').textContent(), '주간');
-    ok('주간: 11/15(일)~21(토) 7일, 오늘 강조, 영역 6개 + 미분류 제목, 이번 주 목록·시간 표시');
+    ok('주간: 11/15(일)~21(토) 7일, 오늘 강조, 영역 6개 + 기본 제목, 이번 주 목록·시간 표시');
 
     // 3. 영역 칸에 바로 적기 → 그 영역의 이번 주 계획
     const areaForm = name => p.locator('.wk-area').filter({ has: p.locator('.wk-area-title', { hasText: new RegExp('^' + name + '$') }) }).locator('form input');
@@ -132,18 +132,18 @@ const plansOf = (p, title) => p.evaluate(t => bj.state.plans.filter(x => bj.task
     await p.locator('#areaEdit li:not(.is-archived) input[type=text]').last().fill('운동');
     await p.locator('#setDlg button[value=save]').click();
     await p.waitForFunction(() => bj.areas().some(a => a.name === '운동'));
-    assert.deepEqual(await p.locator('.wk-area-title').allTextContents(), ['일', '그림공부', '독서', '브랜딩 공부', '생활', '운동', '미분류']);
+    assert.deepEqual(await p.locator('.wk-area-title').allTextContents(), ['일', '그림공부', '독서', '브랜딩 공부', '생활', '운동', '기본']);
     s = await p.evaluate(() => bj.state);
     assert.equal(s.areas.find(a => a.name === '브랜딩 공부').color, '#112233');
     assert.equal(s.areas.find(a => a.name === '여가').archived, true);
     assert.equal(await p.evaluate(() => bj.allAreas().map(a => a.name).join(',')), '일,그림공부,독서,브랜딩 공부,생활,운동,여가');
     ok('설정 영역: 이름·색 바꾸기, ▲로 순서, 여가 숨기기, 운동 추가 → 주간 제목에 바로 반영');
     await p.locator('#toast button', { hasText: '실행 취소' }).click();
-    assert.deepEqual(await p.locator('.wk-area-title').allTextContents(), ['일', '그림공부', '독서', '브랜딩', '여가', '생활', '미분류']);
+    assert.deepEqual(await p.locator('.wk-area-title').allTextContents(), ['일', '그림공부', '독서', '브랜딩', '여가', '생활', '기본']);
     ok('설정 저장도 실행 취소 한 번으로 되돌림');
 
     // 10. "#그림"처럼 앞부분만 적어도 하나로 정해지면 그 영역
-    await areaForm('미분류').fill('#그림 크로키 10장'); await p.keyboard.press('Enter');
+    await areaForm('기본').fill('#그림 크로키 10장'); await p.keyboard.press('Enter');
     s = await p.evaluate(() => bj.state);
     assert.equal(s.tasks.find(t => t.title === '크로키 10장').areaId, 'a2');
     ok('"#그림" → 그림공부 영역(앞부분이 하나로만 맞을 때)');

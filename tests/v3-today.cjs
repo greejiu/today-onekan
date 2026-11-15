@@ -265,16 +265,16 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     await p.locator('#importDlg button[value=cancel]').click();
     ok('어제 계획 가져오기 → 완료한 것도 가져옴, 시간 유지, 작업 그대로, 두 번째는 "이미 있어요"');
 
-    // 15-1. 목록엔 영역 이름(·미분류) 글자 없이 색으로만. 범례에 영역 4개 + 미분류
+    // 15-1. 목록엔 영역 이름(·기본) 글자 없이 색으로만. 범례에 영역 4개 + 기본
     const visible = loc => loc.evaluate(e => { const c = e.cloneNode(true); c.querySelectorAll('.sr-only').forEach(x => x.remove()); return c.textContent; });
     const washRow = p.locator('#untimedList .row', { hasText: '세수하기' });
     assert.doesNotMatch(await visible(washRow), /생활/);
-    assert.doesNotMatch(await visible(p.locator('#untimedList')), /미분류/);
+    assert.doesNotMatch(await visible(p.locator('#untimedList')), /기본/);
     assert.doesNotMatch(await visible(p.locator('#weekList')), /일|그림공부/);
     s = await S(p);
     assert.equal(await washRow.evaluate(e => e.style.getPropertyValue('--c')), s.areas.find(a => a.name === '생활').color);
     assert.equal(await p.locator('#untimedList .row', { hasText: '메일 확인' }).evaluate(e => e.classList.contains('no-area')), true);
-    assert.deepEqual(await p.locator('#legend li').allTextContents(), ['일', '그림공부', '독서', '브랜딩', '여가', '생활', '미분류']);
+    assert.deepEqual(await p.locator('#legend li').allTextContents(), ['일', '그림공부', '독서', '브랜딩', '여가', '생활', '기본']);
     assert.equal(await washRow.locator('.sr-only').textContent(), '생활');
     ok('목록·타임라인에 영역 이름 글자 없음(프로젝트 이름만), 영역 색 + 범례, 화면 읽기용 이름은 남김');
 
