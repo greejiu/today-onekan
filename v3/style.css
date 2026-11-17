@@ -188,7 +188,7 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 
 /* 주간 */
 .wk { max-width: 1180px; margin: 0 auto; padding: 16px; }
-.wk[hidden], .layout[hidden] { display: none; }
+.wk[hidden], .layout[hidden], .mo[hidden] { display: none; }
 .wk-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
 .wk-left { position: sticky; top: 112px; max-height: calc(100vh - 128px); overflow: auto; }
 .wk-area { margin-bottom: 10px; }
@@ -215,6 +215,53 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 @media (max-width: 760px) {
   .wk-grid { grid-template-columns: minmax(0, 1fr); }
   .wk-left { position: static; max-height: none; }
+}
+
+/* 월간: 하루 3줄 = 오전·오후·저녁 */
+.mo { max-width: 1180px; margin: 0 auto; padding: 16px; }
+.mo-head { align-items: baseline; }
+.mo-head .hint { margin: 0; }
+.mo-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.mo-cal { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.mo-dow, .mo-cells { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.mo-dow span { text-align: center; font-size: 12px; color: var(--sub); padding: 6px 0; border-bottom: 1px solid var(--line); }
+.mo-dow .is-sun, .mc.is-sun .mc-num { color: var(--danger-text); }
+.mc { position: relative; min-height: 96px; padding: 4px 4px 6px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); cursor: pointer; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mc:nth-child(7n) { border-right: 0; }
+.mc.is-other { background: color-mix(in srgb, var(--bg) 70%, var(--card)); }
+.mc.is-other .mc-num, .mc.is-other .mc-line { opacity: .45; }
+.mc.is-sel { box-shadow: inset 0 0 0 2px var(--text); }
+.mc.drop-on { box-shadow: inset 0 0 0 2px var(--accent); outline: 2px dashed var(--accent); outline-offset: -4px; }
+.mc-num { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 18px; padding-left: 2px; }
+.mc.is-today .mc-num { display: inline-grid; place-items: center; min-width: 20px; height: 20px; border-radius: 999px; background: var(--text); color: var(--card); padding: 0 4px; align-self: flex-start; }
+.mc-more { position: absolute; right: 4px; top: 4px; font-size: 10px; color: var(--sub); border: 1px solid var(--line); border-radius: 999px; padding: 0 5px; line-height: 15px; }
+.mc-line { --c: var(--sub); display: flex; align-items: center; gap: 2px; min-height: 19px; border-radius: 5px; padding: 0 4px; font-size: 11px; line-height: 1.3; background: color-mix(in srgb, var(--c) 18%, var(--card)); min-width: 0; }
+.mc-line.no-area { background: var(--accent-soft); }
+.mc-line.is-empty { background: none; color: color-mix(in srgb, var(--sub) 60%, transparent); }
+.mc-text { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mc-n { font-size: 10px; color: var(--sub); flex-shrink: 0; }
+.mc-line.is-done .mc-text { color: var(--sub); }
+.strike-done .mc-line.is-done .mc-text { text-decoration: line-through; }
+.mo-detail { position: sticky; top: 112px; max-height: calc(100vh - 128px); overflow: auto; }
+.md-slot { border-top: 1px solid var(--line); padding: 8px 0 6px; border-radius: 8px; }
+.md-slot.drop-on { outline: 2px dashed var(--accent); outline-offset: 2px; }
+.md-slot h3 { font-size: 13px; margin: 0 2px 4px; }
+.md-slot h3 small { font-weight: 400; color: var(--sub); font-size: 11px; }
+.row-slot { border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; }
+.row-cont { --c: var(--sub); list-style: none; font-size: 12px; color: var(--sub); padding: 3px 8px; margin-bottom: 4px; border-left: 3px dashed var(--c); }
+.row-cont small { font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  .mo-grid { grid-template-columns: minmax(0, 1fr); }
+  .mo-detail { position: static; max-height: none; }
+  .mo-head .hint { width: 100%; }
+  /* 휴대폰: 글자 대신 칸마다 색 막대(빈 시간 찾기) */
+  .mc { min-height: 64px; padding: 3px 3px 5px; gap: 3px; }
+  .mc-line { min-height: 0; height: 7px; padding: 0; border-radius: 3px; background: var(--c); }
+  .mc-line.no-area { background: color-mix(in srgb, var(--sub) 55%, transparent); }
+  .mc-line.is-empty { background: color-mix(in srgb, var(--line) 70%, transparent); }
+  .mc-line.is-done { opacity: .35; }
+  .mc-text, .mc-n { display: none; }
+  .mc-more { top: 3px; right: 2px; padding: 0 3px; }
 }
 
 /* 설정: 영역 */

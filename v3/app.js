@@ -1,4 +1,4 @@
-/* 오늘한칸 v3 — 오늘 화면(오늘 + 타임라인 + 지금) · 주간 화면(이번 주 목록 + 7일). docs/v3_설계.md 7·8장 */
+/* 오늘한칸 v3 — 오늘(오늘 + 타임라인 + 지금) · 주간(이번 주 목록 + 7일) · 월간(하루 3줄 = 오전·오후·저녁). docs/v3_설계.md */
 (function () {
   'use strict';
   const { createStore, addDays, weekStart, todayStr, parseDate } = BJStore;
@@ -19,7 +19,10 @@
   let today = todayStr();
   let selDate = today;
   let tl = null; // 지금 그린 타임라인
-  const modeOf = () => (location.hash === '#week' ? 'week' : 'today');
+  const modeOf = () => (location.hash === '#week' ? 'week' : location.hash === '#month' ? 'month' : 'today');
+  const SLOT_LABEL = { am: '오전', pm: '오후', eve: '저녁' };
+  const SLOT_HINT = { am: '12시 전', pm: '12~18시', eve: '18시 이후' };
+  const addMonths = (d, n) => { const x = parseDate(d), day = x.getDate(); const y = new Date(x.getFullYear(), x.getMonth() + n, 1); y.setDate(Math.min(day, new Date(y.getFullYear(), y.getMonth() + 1, 0).getDate())); return BJStore.dateStr(y); };
   let mode = modeOf();
 
   /* ---------- 보기 모델 ---------- */
@@ -59,11 +62,13 @@
     mode = modeOf();
     $('todayView').hidden = mode !== 'today';
     $('weekView').hidden = mode !== 'week';
+    $('monthView').hidden = mode !== 'month';
     document.querySelectorAll('.tabs a').forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === '#' + mode ? 'page' : 'false'));
-    $('todayBtn').textContent = mode === 'week' ? '이번 주' : '오늘';
-    $('prevDay').setAttribute('aria-label', mode === 'week' ? '지난 주' : '전날');
-    $('nextDay').setAttribute('aria-label', mode === 'week' ? '다음 주' : '다음날');
+    $('todayBtn').textContent = { today: '오늘', week: '이번 주', month: '이번 달' }[mode];
+    $('prevDay').setAttribute('aria-label', { today: '전날', week: '지난 주', month: '지난 달' }[mode]);
+    $('nextDay').setAttribute('aria-label', { today: '다음날', week: '다음 주', month: '다음 달' }[mode]);
     if (mode === 'week') { tl = null; renderWeekView(); return; }
+    if (mode === 'month') { tl = null; renderMonthView(); return; }
     renderHeader();
     renderNow();
     renderUntimed();
@@ -112,7 +117,7 @@
 
   function rowHtml(v, extra = '', showTime = false) {
     return `<li class="row ${clsOf(v)}" data-plan="${v.p.id}" style="${styleOf(v)}">
-      ${bulletHtml(v)}${showTime && v.p.start != null ? `<span class="row-time">${hhmm(v.p.start)}</span>` : ''}
+      ${bulletHtml(v)}${showTime && v.p.start != null ? `<span class="row-time">${hhmm(v.p.start)}</span>` : showTime === true && v.p.slot && !v.migrated ? `<span class="row-time row-slot">${SLOT_LABEL[v.p.slot]}</span>` : ''}
       <span class="row-body"><span class="row-title">${esc(v.t.title)}</span>${v.areaSr}${v.meta || v.t.status === 'done' ? `<small class="row-meta">${[v.t.status === 'done' ? '작업 완료 ✓' : '', esc(v.meta)].filter(Boolean).join(' · ')}</small>` : ''}</span>
       ${extra}
       <button type="button" class="more" data-more="${v.p.id}" aria-label="${esc(v.t.title)} 메뉴">⋯</button>
@@ -121,7 +126,7 @@
 
   function renderUntimed() {
     const list = store.plansOn('day', selDate).filter(p => p.start == null);
-    $('untimedList').innerHTML = list.map(p => rowHtml(view(p))).join('') || `<li class="empty">시간을 안 정한 일을 여기에 적어요</li>`;
+    $('untimedList').innerHTML = list.map(p => rowHtml(view(p), '', true)).join('') || `<li class="empty">시간을 안 정한 일을 여기에 적어요</li>`;
     $('untimedList').querySelectorAll('.row').forEach(wireRow('day'));
     const y = store.plansOn('day', addDays(selDate, -1)).filter(p => p.status !== 'migrated');
     $('importBtn').textContent = `어제 계획 가져오기${y.length ? ` (${y.length})` : ''}`;
@@ -227,6 +232,8 @@
         m = Math.max(0, Math.min(1440 - dur, m));
         return { type: 'time', start: m, duration: dur };
       }
+      const sz = el.closest('[data-drop-slot]');
+      if (sz && from !== 'week') return { type: 'slot', slot: sz.dataset.dropSlot || null, date: sz.dataset.day, el: sz };
       const dz = el.closest('[data-drop-day]');
       if (dz) return { type: 'day', date: dz.dataset.dropDay, el: dz };
       if (el.closest('#untimedZone')) return { type: 'untimed' };
@@ -238,8 +245,8 @@
       ghost.style.transform = `translate(${ev.clientX + 12}px, ${ev.clientY + 12}px)`;
       $('untimedZone').classList.toggle('drop-on', target?.type === 'untimed');
       if (lastDz && lastDz !== target?.el) lastDz.classList.remove('drop-on');
-      lastDz = target?.type === 'day' ? target.el : null; lastDz?.classList.add('drop-on');
-      const label = !target ? '여기엔 놓을 수 없어요' : target.type === 'untimed' ? '→ 시간 없음' : target.type === 'day' ? `→ ${dayName(target.date)}` : `→ ${hhmm(target.start)}–${hhmm(target.start + target.duration)}`;
+      lastDz = target?.el || null; lastDz?.classList.add('drop-on');
+      const label = !target ? '여기엔 놓을 수 없어요' : target.type === 'untimed' ? '→ 시간 없음' : target.type === 'day' ? `→ ${dayName(target.date)}` : target.type === 'slot' ? `→ ${target.slot ? SLOT_LABEL[target.slot] : '구간 없음'}` : `→ ${hhmm(target.start)}–${hhmm(target.start + target.duration)}`;
       ghost.querySelector('.ghost-where').textContent = label;
       ghost.classList.toggle('no-drop', !target);
       if (target?.type === 'time') {
@@ -253,6 +260,14 @@
     BJGesture.follow(show, (ev, cancelled) => {
       ghost.remove(); dropBox.remove(); srcEl.classList.remove('drag-src'); $('untimedZone').classList.remove('drop-on'); lastDz?.classList.remove('drop-on');
       if (cancelled || !target) return;
+      if (target.type === 'slot') {
+        if (target.date !== p.period) moveTo(planId, target.date);
+        if (p.start == null && (p.slot || null) === target.slot) return;
+        const wasTimed = p.start != null; // 저장하면 p가 바뀌므로 먼저 기억
+        store.setPlanSlot(planId, target.slot);
+        undoToast(`${target.slot ? SLOT_LABEL[target.slot] : '구간 없음'}으로 옮겼어요${wasTimed ? ' (시간은 뺐어요)' : ''}`);
+        return;
+      }
       if (target.type === 'day') {
         if (from === 'week') {
           if (store.livePlanOn(p.taskId, 'day', target.date)) { toast(`이미 ${dayName(target.date)}에 있어요`); return; }
@@ -341,9 +356,11 @@
     items.push(['계획 지우기', () => { store.deletePlan(p.id); undoToast('지웠어요'); }, 'danger']);
     menu.innerHTML = `<div class="menu-head">${esc(t.title)}</div>`
       + `<div class="menu-kinds" role="group" aria-label="종류">${Object.keys(KIND_LABEL).map(k => `<button type="button" data-kind="${k}" aria-pressed="${t.kind === k}">${esc(kindSym(k))} ${KIND_LABEL[k]}</button>`).join('')}</div>`
+      + (p.level === 'day' && p.start == null && p.status !== 'migrated' ? `<div class="menu-kinds" role="group" aria-label="구간">${['am', 'pm', 'eve', ''].map(k => `<button type="button" data-slot="${k}" aria-pressed="${(p.slot || '') === k}">${k ? SLOT_LABEL[k] : '없음'}</button>`).join('')}</div>` : '')
       + items.map(([label, , cls], i) => `<button type="button" class="menu-item ${cls || ''}" data-i="${i}">${esc(label)}</button>`).join('');
     menu.querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => { const fn = items[+b.dataset.i][1]; closeMenu(); fn(); }));
     menu.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', () => { closeMenu(); store.setTaskKind(t.id, b.dataset.kind); }));
+    menu.querySelectorAll('[data-slot]').forEach(b => b.addEventListener('click', () => { closeMenu(); store.setPlanSlot(p.id, b.dataset.slot || null); }));
     const r = anchor.getBoundingClientRect();
     placeMenu(r.right - 200, r.bottom + 4);
   }
@@ -538,15 +555,73 @@
     $('wkDays').querySelectorAll('.row').forEach(wireRow('day'));
   }
 
+  /* ---------- 월간 화면: 하루 3줄 = 오전·오후·저녁(결의 월간 노트). 빈 줄 = 빈 시간 ---------- */
+  function renderMonthView() {
+    const x = parseDate(selDate), y = x.getFullYear(), m = x.getMonth();
+    const first = BJStore.dateStr(new Date(y, m, 1)), last = BJStore.dateStr(new Date(y, m + 1, 0));
+    $('moTitle').textContent = `${y}년 ${m + 1}월`;
+    const thisMonth = today.slice(0, 7) === selDate.slice(0, 7);
+    $('moBadge').hidden = !thisMonth;
+    $('todayBtn').disabled = thisMonth && selDate === today;
+    const start = weekStart(first), end = addDays(weekStart(last), 6);
+    // by = 시작 구간(자세히 목록), cover = 시간이 걸친 구간 모두(달력 칸: 9~18시 출근이면 오전·오후 둘 다 참)
+    const RANGE = { am: [0, 720], pm: [720, 1080], eve: [1080, 1440] };
+    const slotsOf = d => {
+      const live = store.plansOn('day', d).filter(p => p.status !== 'migrated');
+      const by = { am: [], pm: [], eve: [], none: [] }, cover = { am: [], pm: [], eve: [], none: [] };
+      live.forEach(p => {
+        by[store.slotOf(p) || 'none'].push(p);
+        if (p.start == null) { cover[store.slotOf(p) || 'none'].push(p); return; }
+        ['am', 'pm', 'eve'].forEach(k => { if (p.start < RANGE[k][1] && p.start + p.duration > RANGE[k][0]) cover[k].push(p); });
+      });
+      return { by, cover };
+    };
+    let cells = '';
+    for (let d = start; d <= end; d = addDays(d, 1)) {
+      const dx = parseDate(d), { cover: by } = slotsOf(d);
+      const line = k => {
+        const list = by[k];
+        if (!list.length) return `<div class="mc-line is-empty"><span class="mc-text">·</span></div>`;
+        const v = view(list[0]);
+        const done = list.every(p => p.status === 'done' || store.task(p.taskId)?.kind === 'note');
+        return `<div class="mc-line${done ? ' is-done' : ''}${v.a ? '' : ' no-area'}" style="${styleOf(v)}"><span class="mc-text">${esc(symOf(v))} ${esc(v.t.title)}</span>${list.length > 1 ? `<span class="mc-n">+${list.length - 1}</span>` : ''}</div>`;
+      };
+      const sr = ['am', 'pm', 'eve'].map(k => `${SLOT_LABEL[k]} ${by[k].length ? by[k].map(p => store.task(p.taskId)?.title).join(', ') : '비어 있음'}`).join(', ');
+      cells += `<div class="mc${d < first || d > last ? ' is-other' : ''}${d === today ? ' is-today' : ''}${d === selDate ? ' is-sel' : ''}${dx.getDay() === 0 ? ' is-sun' : ''}" data-drop-day="${d}" data-pick="${d}" role="button" tabindex="0" aria-pressed="${d === selDate}" aria-label="${dx.getMonth() + 1}월 ${dx.getDate()}일. ${esc(sr)}${by.none.length ? `. 구간 없음 ${by.none.length}개` : ''}">
+        <span class="mc-num">${dx.getDate()}</span>${by.none.length ? `<span class="mc-more" title="구간 없음 ${by.none.length}개">+${by.none.length}</span>` : ''}
+        ${line('am')}${line('pm')}${line('eve')}
+      </div>`;
+    }
+    $('moCells').innerHTML = cells;
+
+    // 고른 날 자세히: 3구간 + 구간 없음. 줄을 다른 구간이나 달력 날짜로 끌 수 있음
+    const { by, cover } = slotsOf(selDate), sd = parseDate(selDate);
+    // 앞 구간에서 이어지는 시간 계획은 흐리게 한 줄(예: 09~18시 출근 → 오후에 "↳ 출근")
+    const cont = k => (k ? cover[k].filter(p => !by[k].includes(p)) : []).map(p => `<li class="row-cont" style="${styleOf(view(p))}">↳ ${esc(store.task(p.taskId)?.title)} <small>${hhmm(p.start)}–${hhmm(p.start + p.duration)}</small></li>`).join('');
+    const sec = (k, list) => `<section class="md-slot" data-drop-slot="${k}" data-day="${selDate}">
+        <h3>${k ? SLOT_LABEL[k] : '구간 없음'}${k ? ` <small>${SLOT_HINT[k]}</small>` : ''}</h3>
+        <ul class="rows">${cont(k)}${list.map(p => rowHtml(view(p), '', 'time')).join('')}</ul>
+        ${k ? `<form class="add-form mini" data-add-slot="${k}" data-day="${selDate}" autocomplete="off"><input type="text" enterkeyhint="done" placeholder="+ ${SLOT_LABEL[k]}에 적기" aria-label="${sd.getMonth() + 1}월 ${sd.getDate()}일 ${SLOT_LABEL[k]}에 적기" /></form>` : ''}
+      </section>`;
+    $('moDetail').innerHTML = `<div class="zone-head"><h2>${sd.getMonth() + 1}월 ${sd.getDate()}일 (${DOW[sd.getDay()]})${selDate === today ? ' <span class="today-badge">오늘</span>' : ''}</h2><button type="button" class="link-btn" data-goto="${selDate}">이 날 열기</button></div>`
+      + sec('am', by.am) + sec('pm', by.pm) + sec('eve', by.eve) + (by.none.length ? sec('', by.none) : '');
+    $('moDetail').querySelectorAll('.row').forEach(wireRow('day'));
+  }
+  // 월간 칸 고르기(누르기·Enter)
+  const pickDay = d => { selDate = d; render(); };
+  document.addEventListener('click', e => { const c = e.target.closest('[data-pick]'); if (c && mode === 'month') pickDay(c.dataset.pick); });
+  document.addEventListener('keydown', e => { const c = e.target.closest?.('[data-pick]'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pickDay(c.dataset.pick); document.querySelector(`[data-pick="${c.dataset.pick}"]`)?.focus(); } });
+
   // 주간 화면 입력칸(영역별·날짜별)
   document.addEventListener('submit', e => {
-    const f = e.target; if (!f.matches('[data-add-week], [data-add-day]')) return;
+    const f = e.target; if (!f.matches('[data-add-week], [data-add-day], [data-add-slot]')) return;
     e.preventDefault();
     const input = f.querySelector('input');
     const { title, areaId } = parseTitle(input.value);
     if (!title) return;
-    const keep = f.dataset.addWeek !== undefined ? `[data-add-week="${f.dataset.addWeek}"]` : `[data-add-day="${f.dataset.addDay}"]`;
-    if (f.dataset.addWeek !== undefined) store.addPlan({ title, level: 'week', period: weekStart(selDate), areaId: areaId || f.dataset.addWeek || null });
+    const keep = f.dataset.addWeek !== undefined ? `[data-add-week="${f.dataset.addWeek}"]` : f.dataset.addSlot !== undefined ? `[data-add-slot="${f.dataset.addSlot}"]` : `[data-add-day="${f.dataset.addDay}"]`;
+    if (f.dataset.addSlot !== undefined) store.addPlan({ title, period: f.dataset.day, slot: f.dataset.addSlot || null, areaId });
+    else if (f.dataset.addWeek !== undefined) store.addPlan({ title, level: 'week', period: weekStart(selDate), areaId: areaId || f.dataset.addWeek || null });
     else store.addPlan({ title, period: f.dataset.addDay, areaId });
     document.querySelector(keep + ' input')?.focus();
   });
@@ -573,8 +648,9 @@
   /* ---------- 시작 ---------- */
   wireAddForm('untimedAdd', 'day');
   wireAddForm('weekAdd', 'week');
-  $('prevDay').onclick = () => { selDate = addDays(selDate, mode === 'week' ? -7 : -1); render(); };
-  $('nextDay').onclick = () => { selDate = addDays(selDate, mode === 'week' ? 7 : 1); render(); };
+  const step = n => (mode === 'month' ? addMonths(selDate, n) : addDays(selDate, mode === 'week' ? 7 * n : n));
+  $('prevDay').onclick = () => { selDate = step(-1); render(); };
+  $('nextDay').onclick = () => { selDate = step(1); render(); };
   $('todayBtn').onclick = () => { selDate = today; render(); scrollToNow(); };
   $('importBtn').onclick = openImport;
   $('settingsBtn').onclick = openSettings;
