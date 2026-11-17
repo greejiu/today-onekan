@@ -9,6 +9,10 @@
   const AREA_SEED = [['일', '#F0B85A'], ['그림공부', '#F2A0B6'], ['독서', '#6FA8DC'], ['브랜딩', '#A98BD9'], ['여가', '#5EC4C4'], ['생활', '#94C973']];
   const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
   const LEVELS = ['year', 'month', 'week', 'day'];
+  // 하루 3구간(결의 월간 노트: 하루 3줄). 오전 12시 전 / 오후 12~18시 / 저녁 18시 이후
+  const SLOTS = ['am', 'pm', 'eve'];
+  const slotOfMinute = m => (m < 720 ? 'am' : m < 1080 ? 'pm' : 'eve');
+  const slotOf = p => (p.start != null ? slotOfMinute(p.start) : (SLOTS.includes(p.slot) ? p.slot : null));
   const KINDS = ['task', 'event', 'note'];
   // 기호 기본값(결 지정 2026-11-15): • 할일 · * 일정 · - 메모 · • 완료(줄긋기) · > 다음으로. 완료를 비우면 원래 기호 그대로
   const DEFAULT_SYMBOLS = { task: '•', event: '*', note: '-', done: '•', migrated: '>' };
@@ -88,36 +92,38 @@
     const livePlanOn = (taskId, level, period) => state.plans.find(p => p.taskId === taskId && p.level === level && p.period === period && p.status !== 'migrated') || null;
     const nextOrder = () => Date.now() + (seq++) / 1000;
 
-    function newPlan(s, taskId, { level = 'day', period, start = null, duration = null, fromPlanId = null }) {
-      const p = { id: uid(), taskId, level, period, start, duration: start == null ? null : (duration || 30), status: 'open', order: nextOrder(), fromPlanId, createdAt: Date.now(), doneAt: null };
+    function newPlan(s, taskId, { level = 'day', period, start = null, duration = null, fromPlanId = null, slot = null }) {
+      const p = { id: uid(), taskId, level, period, start, duration: start == null ? null : (duration || 30), slot: start == null && SLOTS.includes(slot) ? slot : null, status: 'open', order: nextOrder(), fromPlanId, createdAt: Date.now(), doneAt: null };
       s.plans.push(p);
       return p;
     }
     function doMigrate(s, p, toPeriod) {
       const existing = livePlanOn(p.taskId, p.level, toPeriod);
       p.status = 'migrated';
-      return existing ? existing.id : newPlan(s, p.taskId, { level: p.level, period: toPeriod, start: p.start, duration: p.duration, fromPlanId: p.id }).id;
+      return existing ? existing.id : newPlan(s, p.taskId, { level: p.level, period: toPeriod, start: p.start, duration: p.duration, fromPlanId: p.id, slot: p.slot }).id;
     }
+    // 시간 있는 것(시간 순) → 시간 없는 것(오전·오후·저녁·구간 없음 순, 그다음 적은 순)
+    const slotRank = p => { const i = SLOTS.indexOf(p.slot); return i < 0 ? 9 : i; };
     function sortPlans(list) {
-      return list.sort((a, b) => (a.start == null) - (b.start == null) || (a.start ?? 0) - (b.start ?? 0) || a.order - b.order);
+      return list.sort((a, b) => (a.start == null) - (b.start == null) || (a.start ?? 0) - (b.start ?? 0) || (a.start == null ? slotRank(a) - slotRank(b) : 0) || a.order - b.order);
     }
 
     const api = {
       get state() { return state; },
       subscribe(f) { listeners.add(f); return () => listeners.delete(f); },
-      task, plan, area, project, plansOfTask, livePlanOn,
+      task, plan, area, project, plansOfTask, livePlanOn, slotOf,
       areas: () => state.areas.filter(a => !a.archived).sort((a, b) => a.order - b.order),
       projects: areaId => state.projects.filter(p => p.status !== 'done' && (areaId === undefined || p.areaId === areaId)),
       plansOn: (level, period) => sortPlans(state.plans.filter(p => p.level === level && p.period === period)),
 
       /* 계획에 바로 적기 = 작업도 함께 생김(설계 6장: 계획은 항상 작업을 가리킴) */
-      addPlan({ title, kind = 'task', level = 'day', period, start = null, duration = null, areaId = null, projectId = null }) {
+      addPlan({ title, kind = 'task', level = 'day', period, start = null, duration = null, areaId = null, projectId = null, slot = null }) {
         title = String(title || '').trim();
         if (!title || !LEVELS.includes(level) || !period) return null;
         return mutate('적기', s => {
           const t = { id: uid(), title, kind: KINDS.includes(kind) ? kind : 'task', areaId, projectId, status: 'open', createdAt: Date.now(), doneAt: null };
           s.tasks.push(t);
-          return newPlan(s, t.id, { level, period, start, duration }).id;
+          return newPlan(s, t.id, { level, period, start, duration, slot }).id;
         });
       },
       /* 이번 주 → 오늘처럼, 이미 있는 작업을 다른 기간에 놓기. 같은 날에 이미 있으면 그 계획의 시간만 바꿈 */
@@ -125,18 +131,24 @@
         if (!task(taskId)) return null;
         return mutate('가져오기', s => {
           const existing = livePlanOn(taskId, level, period);
-          if (existing) { existing.start = start; existing.duration = start == null ? null : (duration || existing.duration || 30); return existing.id; }
+          if (existing) { if (start != null) existing.slot = null; existing.start = start; existing.duration = start == null ? null : (duration || existing.duration || 30); return existing.id; }
           return newPlan(s, taskId, { level, period, start, duration }).id;
         });
       },
       setPlanTime(planId, start, duration) {
         const p = plan(planId); if (!p) return;
         mutate(start == null ? '시간 빼기' : '옮기기', () => {
-          if (start == null) { p.start = null; p.duration = null; return; }
+          if (start == null) { p.slot = slotOf(p); p.start = null; p.duration = null; return; } // 시간을 빼도 구간은 남김
+          p.slot = null;
           const d = Math.max(15, duration || p.duration || 30);
           p.start = Math.max(0, Math.min(1440 - d, start));
           p.duration = Math.min(d, 1440 - p.start);
         });
+      },
+      /* 구간(오전·오후·저녁·null) 정하기. 시간이 있던 계획이면 시간을 빼고 그 구간으로 */
+      setPlanSlot(planId, slot) {
+        const p = plan(planId); if (!p || (slot !== null && !SLOTS.includes(slot))) return;
+        mutate('구간', () => { p.start = null; p.duration = null; p.slot = slot; });
       },
       togglePlan(planId) {
         const p = plan(planId); if (!p || p.status === 'migrated' || task(p.taskId)?.kind === 'note') return null;
@@ -187,7 +199,7 @@
         if (src && src.status === 'migrated' && src.period === toPeriod) {
           return mutate('되돌리기', s => {
             s.plans = s.plans.filter(x => x.id !== p.id);
-            src.status = 'open'; src.start = p.start; src.duration = p.duration;
+            src.status = 'open'; src.start = p.start; src.duration = p.duration; src.slot = p.slot ?? null;
             return { id: src.id, how: 'restored' };
           });
         }
@@ -215,7 +227,7 @@
           const ids = new Set(chain.map(x => x.id));
           s.plans = s.plans.filter(x => !ids.has(x.id));
           p.status = 'open';
-          if (last) { p.start = last.start; p.duration = last.duration; }
+          if (last) { p.start = last.start; p.duration = last.duration; p.slot = last.slot ?? null; }
           return 'restored';
         });
       },
@@ -235,7 +247,7 @@
           planIds.forEach(id => {
             const p = s.plans.find(x => x.id === id);
             if (!p || livePlanOn(p.taskId, 'day', toPeriod)) return;
-            newPlan(s, p.taskId, { level: 'day', period: toPeriod, start: p.start, duration: p.duration, fromPlanId: p.id });
+            newPlan(s, p.taskId, { level: 'day', period: toPeriod, start: p.start, duration: p.duration, fromPlanId: p.id, slot: p.slot });
             n++;
           });
           return n;
@@ -294,5 +306,5 @@
     return api;
   }
 
-  root.BJStore = { createStore, dateStr, parseDate, addDays, weekStart, todayStr, KEY, DEFAULT_SYMBOLS, AREA_SEED };
+  root.BJStore = { createStore, dateStr, parseDate, addDays, weekStart, todayStr, KEY, DEFAULT_SYMBOLS, AREA_SEED, SLOTS, slotOf, slotOfMinute };
 })(typeof window !== 'undefined' ? window : globalThis);
