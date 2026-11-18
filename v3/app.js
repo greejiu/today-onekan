@@ -290,7 +290,7 @@
       const sz = el.closest('[data-drop-slot]');
       if (sz && from !== 'week' && from !== 'month') return { type: 'slot', slot: sz.dataset.dropSlot || null, date: sz.dataset.day, el: sz };
       const wz = el.closest('[data-drop-week]');
-      if ((from === 'month' || (from === 'week' && mode === 'month')) && wz) return { type: 'week', el: wz, period: wz.dataset.dropWeek };
+      if (from === 'month' && wz) return { type: 'week', el: wz, period: wz.dataset.dropWeek };
       const dz = el.closest('[data-drop-day]');
       if (dz) return { type: 'day', date: dz.dataset.dropDay, el: dz };
       if (el.closest('#untimedZone')) return { type: 'untimed' };
@@ -683,23 +683,14 @@
     const dayTags = p => store.plansOfTask(p.taskId).filter(x => x.level === 'day' && x.status !== 'migrated' && x.period >= first && x.period <= last)
       .sort((a, b) => a.period < b.period ? -1 : 1).map(x => `<span class="tag${x.status === 'done' ? ' tag-done' : ''}">${parseDate(x.period).getDate()}일${x.status === 'done' ? '✓' : ''}</span>`).join('');
     const monthPlans = store.plansOn('month', first);
-    $('moListHint').textContent = narrowMq.matches ? '주 묶음·날짜로 끌기 · ⋯ 주에 놓기' : '달력 왼쪽 주 칸·날짜로 끌어 놓기';
-    if (!narrowMq.matches) {
-      // PC: 할 일 목록 + 8열 달력(맨 왼쪽 주 칸으로 끌면 그 주)
-      $('moList').innerHTML = `<ul class="rows">${monthPlans.map(p => rowHtml(view(p), `<span class="tags">${weekTags(p)}${dayTags(p)}</span>`)).join('') || `<li class="empty">이번 달에 할 일을 적어 두고, 달력 왼쪽 주 칸이나 날짜로 끌어 놓으세요</li>`}</ul>`;
-    } else {
-      // 휴대폰(결 제안 2026-11-18): 기본(아직 주에 안 놓은 일) + 1주·2주… 묶음, 달력은 7열. 줄을 주 묶음으로 끌거나 ⋯ → 주에 놓기
-      const weeks = []; for (let w = start; w <= end; w = addDays(w, 7)) weeks.push(w);
-      const base = monthPlans.filter(p => !weeks.some(w => store.livePlanOn(p.taskId, 'week', w)));
-      const range = w => { const a = parseDate(w), b = parseDate(addDays(w, 6)); return `${a.getMonth() + 1}/${a.getDate()}–${a.getMonth() === b.getMonth() ? '' : (b.getMonth() + 1) + '/'}${b.getDate()}`; };
-      const wDayTags = (p, w) => Array.from({ length: 7 }, (_, i) => addDays(w, i)).map(d => { const x = store.livePlanOn(p.taskId, 'day', d); return x ? `<span class="tag${x.status === 'done' ? ' tag-done' : ''}">${DOW[parseDate(d).getDay()]}${x.status === 'done' ? '✓' : ''}</span>` : ''; }).join('');
-      $('moList').innerHTML = `<section class="mo-group"><h3>기본 <small>아직 주에 안 놓은 일</small></h3><ul class="rows">${base.map(p => rowHtml(view(p), `<span class="tags">${dayTags(p)}</span>`)).join('') || `<li class="empty">${monthPlans.length ? '모두 주에 놓았어요 👍' : '이번 달에 할 일을 적어 보세요'}</li>`}</ul></section>`
-        + weeks.map(w => { const wl = store.plansOn('week', w).filter(p => p.status !== 'migrated'); return `<section class="mo-group mo-week${w === weekStart(today) ? ' is-this' : ''}" data-drop-week="${w}">
-          <h3>${weekNo(w, first)}주 <small>${range(w)}${w === weekStart(today) ? ' · 이번 주' : ''}</small></h3>
-          <ul class="rows">${wl.map(p => rowHtml(view(p), `<span class="tags">${wDayTags(p, w)}</span>`)).join('')}</ul></section>`; }).join('');
-      $('moList').querySelectorAll('.mo-week .row').forEach(wireRow('week'));
-    }
-    $('moList').querySelectorAll('.mo-group:not(.mo-week) .row, #moList > .rows .row').forEach(wireRow('month'));
+    $('moListHint').textContent = narrowMq.matches ? '아래 주 버튼·날짜로 끌기 · ⋯ 주에 놓기' : '달력 왼쪽 주 칸·날짜로 끌어 놓기';
+    // 이번 달 목표만(주간과 겹치지 않게, 결 2026-11-18). 주·날짜에 놓아도 목록에 남고 '3주'·'20일✓'로 진행이 보임
+    $('moList').innerHTML = `<ul class="rows">${monthPlans.map(p => rowHtml(view(p), `<span class="tags">${weekTags(p)}${dayTags(p)}</span>`)).join('') || `<li class="empty">이번 달에 할 일을 적어 두고, 주·날짜로 끌어 놓으세요</li>`}</ul>`;
+    $('moList').querySelectorAll('.row').forEach(wireRow('month'));
+    // 휴대폰: 주 버튼 한 줄(PC의 8열 '주' 칸 역할). 끌어 놓으면 그 주, 누르면 그 주 주간. 개수만 작게
+    const weeksOf = []; for (let w = start; w <= end; w = addDays(w, 7)) weeksOf.push(w);
+    $('moWeeks').innerHTML = `<span class="menu-lab">주에 놓기</span>` + weeksOf.map(w => { const n = store.plansOn('week', w).filter(p => p.status !== 'migrated').length;
+      return `<button type="button" class="wk-chip${w === weekStart(today) ? ' is-this' : ''}" data-drop-week="${w}" data-goto-week="${w}" aria-label="${weekNo(w, first)}주${n ? `, ${n}개` : ''}. 누르면 주간">${weekNo(w, first)}주${n ? `<small>·${n}</small>` : ''}</button>`; }).join('');
 
     // 고른 날 자세히: 3구간 + 구간 없음. 줄을 다른 구간이나 달력 날짜로 끌 수 있음
     const { by, cover } = slotsOf(selDate), sd = parseDate(selDate);

@@ -233,18 +233,23 @@ const planOf = (p, title) => p.evaluate(t => { const x = bj.state.plans.find(y =
     assert.match(await mp.locator('#moDetail .zone-head').textContent(), /11월 13일/);
     const cb = await mp.locator('.mo-cal').boundingBox(), db = await mp.locator('#moDetail').boundingBox();
     assert.ok(db.y > cb.y + cb.height - 2);
-    // 휴대폰 월간: 이번 달 할 일 = 기본 + 1주~5주 묶음, 달력 7열(주 칸 없음), ⋯ → 주에 놓기
-    await mp.evaluate(() => { bj.addPlan({ title: '책 1권 다 읽기', level: 'month', period: '2026-11-01', areaId: bj.areas().find(a => a.name === '독서').id }); bj.addPlan({ title: '포트폴리오 완성', level: 'month', period: '2026-11-01' }); });
-    assert.deepEqual(await mp.locator('#moList .mo-group h3').evaluateAll(els => els.map(e => e.firstChild.textContent.trim())), ['기본', '1주', '2주', '3주', '4주', '5주']);
-    assert.deepEqual(await mp.locator('#moList .mo-group').first().locator('.row-title').allTextContents(), ['책 1권 다 읽기', '포트폴리오 완성']);
+    // 휴대폰 월간: 이번 달 목표만 + 주 버튼 한 줄(주간과 겹치지 않게), 달력 7열
+    await mp.evaluate(() => { bj.addPlan({ title: '책 1권 다 읽기', level: 'month', period: '2026-11-01', areaId: bj.areas().find(a => a.name === '독서').id }); bj.addPlan({ title: '포트폴리오 완성', level: 'month', period: '2026-11-01' }); bj.addPlan({ title: '주간에서 바로 적은 일', level: 'week', period: '2026-11-15' }); });
+    assert.deepEqual(await mp.locator('#moList .row-title').allTextContents(), ['책 1권 다 읽기', '포트폴리오 완성']);
+    assert.deepEqual(await mp.locator('#moWeeks .wk-chip').allTextContents(), ['1주', '2주', '3주·1', '4주', '5주']);
     assert.equal(await mp.locator('.mo-cells .mw').first().isVisible(), false);
     assert.equal(await mp.locator('.mo-dow span:visible').count(), 7);
     await mp.locator('#moList .row', { hasText: '포트폴리오 완성' }).locator('.more').tap();
     await mp.locator('#menu [data-week="2026-11-15"]').tap();
-    assert.deepEqual(await mp.locator('#moList .mo-group').first().locator('.row-title').allTextContents(), ['책 1권 다 읽기']);
-    assert.deepEqual(await mp.locator('#moList .mo-week[data-drop-week="2026-11-15"] .row-title').allTextContents(), ['포트폴리오 완성']);
-    assert.match(await mp.locator('#moList .mo-week[data-drop-week="2026-11-15"] h3').textContent(), /3주 11\/15–21 · 이번 주/);
-    ok('휴대폰 월간: 이번 달 할 일 = 기본 + 1주~5주 묶음, ⋯ 주에 놓기 → 3주 묶음으로, 달력 7열');
+    assert.deepEqual(await mp.locator('#moList .row-title').allTextContents(), ['책 1권 다 읽기', '포트폴리오 완성']);
+    assert.equal(await mp.locator('#moList .row', { hasText: '포트폴리오 완성' }).locator('.tag').textContent(), '3주');
+    assert.equal(await mp.locator('#moWeeks [data-drop-week="2026-11-15"]').textContent(), '3주·2');
+    ok('휴대폰 월간: 이번 달 목표만(주간에서 적은 일은 안 보임) + 주 버튼 한 줄(개수), ⋯ 주에 놓기 → 목록에 남고 "3주", 달력 7열');
+    await mp.locator('#moWeeks [data-drop-week="2026-11-15"]').tap();
+    await mp.waitForFunction(() => location.hash === '#week');
+    assert.equal(await mp.locator('#wkTitle').textContent(), '11월 15일 – 21일');
+    ok('휴대폰 주 버튼 누르기 → 그 주 주간');
+    await mp.locator('.tabs a', { hasText: '월간' }).tap();
     await mp.evaluate(() => window.scrollTo(0, 0));
     await mp.screenshot({ path: path.join(OUT, 'mobile.png'), fullPage: true });
     ok('휴대폰 390: 가로 스크롤 없음, 칸마다 작은 글씨로 3줄 내용(기호 없이), 칸 탭 → 달력 아래 그날 자세히');

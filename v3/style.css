@@ -263,13 +263,11 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 .mw-num { color: var(--sub); }
 .mo-dow .mw-h { border-right: 2px solid var(--line); }
 .menu-lab { font-size: 11px; color: var(--sub); align-self: center; white-space: nowrap; margin-right: 2px; }
-.mo-group { border-top: 1px solid var(--line); padding: 6px 0 2px; }
-.mo-group:first-child { border-top: 0; padding-top: 0; }
-.mo-group h3 { font-size: 13px; margin: 0 2px 4px; }
-.mo-group h3 small { font-weight: 400; color: var(--sub); font-size: 11px; }
-.mo-week { border-radius: 8px; min-height: 30px; }
-.mo-week.is-this h3 { color: var(--text); }
-.mo-week.drop-on { outline: 2px dashed var(--accent); outline-offset: 2px; }
+.mo-weeks { display: none; } /* PC는 8열 '주' 칸 */
+.wk-chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 4px 10px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.wk-chip small { font-weight: 400; color: var(--sub); margin-left: 2px; }
+.wk-chip.is-this { border-color: var(--text); }
+.wk-chip.drop-on { outline: 2px dashed var(--accent); outline-offset: 2px; }
 .tags { display: inline-flex; flex-wrap: wrap; gap: 3px; justify-content: flex-end; max-width: 45%; }
 .seg { display: flex; gap: 2px; background: var(--accent-soft); border-radius: 9px; padding: 2px; }
 .seg button { border: 0; background: none; color: var(--sub); font-weight: 600; font-size: 13px; padding: 3px 10px; border-radius: 7px; }
@@ -305,6 +303,7 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
   /* 휴대폰: 달력은 7열(주 칸은 위 목록의 주 묶음으로) */
   .mo-dow, .mo-cells { grid-template-columns: repeat(7, minmax(0, 1fr)); }
   .mw, .mo-dow .mw-h { display: none; }
+  .mo-weeks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
   .mo-list .rows { display: block; }
   .mc-line { min-height: 0; height: 15px; padding: 0 2px; border-radius: 3px; font-size: 10px; line-height: 15px; letter-spacing: -.4px; background: color-mix(in srgb, var(--c) 32%, var(--card)); }
   .mc-line.no-area { background: color-mix(in srgb, var(--sub) 22%, var(--card)); }
