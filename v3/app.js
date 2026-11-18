@@ -653,7 +653,7 @@
         if (!list.length) return `<div class="mc-line is-empty"><span class="mc-text">·</span></div>`;
         const v = view(list[0]);
         const done = list.every(p => p.status === 'done' || store.task(p.taskId)?.kind === 'note');
-        return `<div class="mc-line${done ? ' is-done' : ''}${v.a ? '' : ' no-area'}" style="${styleOf(v)}"><span class="mc-text">${esc(symOf(v))} ${esc(v.t.title)}</span>${list.length > 1 ? `<span class="mc-n">+${list.length - 1}</span>` : ''}</div>`;
+        return `<div class="mc-line${done ? ' is-done' : ''}${v.a ? '' : ' no-area'}" style="${styleOf(v)}"><span class="mc-text"><span class="mc-sym">${esc(symOf(v))} </span>${esc(v.t.title)}</span>${list.length > 1 ? `<span class="mc-n">+${list.length - 1}</span>` : ''}</div>`;
       };
       const sr = ['am', 'pm', 'eve'].map(k => `${SLOT_LABEL[k]} ${by[k].length ? by[k].map(p => store.task(p.taskId)?.title).join(', ') : '비어 있음'}`).join(', ');
       cells += `<div class="mc${d < first || d > last ? ' is-other' : ''}${d === today ? ' is-today' : ''}${d === selDate ? ' is-sel' : ''}${dx.getDay() === 0 ? ' is-sun' : ''}" data-drop-day="${d}" data-pick="${d}" role="button" tabindex="0" aria-pressed="${d === selDate}" aria-label="${dx.getMonth() + 1}월 ${dx.getDate()}일. ${esc(sr)}${by.none.length ? `. 구간 없음 ${by.none.length}개` : ''}">
