@@ -285,13 +285,16 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
   .mo-grid { grid-template-columns: minmax(0, 1fr); }
   .mo-detail { position: static; max-height: none; }
   .mo-head .hint { width: 100%; }
-  /* 휴대폰: 글자 대신 칸마다 색 막대(빈 시간 찾기) */
-  .mc { min-height: 64px; padding: 3px 3px 5px; gap: 3px; }
-  .mc-line { min-height: 0; height: 7px; padding: 0; border-radius: 3px; background: var(--c); }
-  .mc-line.no-area { background: color-mix(in srgb, var(--sub) 55%, transparent); }
-  .mc-line.is-empty { background: color-mix(in srgb, var(--line) 70%, transparent); }
-  .mc-line.is-done { opacity: .35; }
-  .mc-text, .mc-n { display: none; }
+  /* 휴대폰: 좁은 칸이라 작은 글씨로 3줄 내용을 보여 줌(결 요청 2026-11-18). 기호·+N은 빼고 색 띠 위에 이름 앞부분 */
+  .mc { min-height: 74px; padding: 3px 2px 4px; gap: 2px; }
+  .mc-line { min-height: 0; height: 15px; padding: 0 2px; border-radius: 3px; font-size: 10px; line-height: 15px; letter-spacing: -.4px; background: color-mix(in srgb, var(--c) 32%, var(--card)); }
+  .mc-line.no-area { background: color-mix(in srgb, var(--sub) 22%, var(--card)); }
+  .mc-line.is-empty { background: color-mix(in srgb, var(--line) 45%, transparent); }
+  .mc-line.is-empty .mc-text { visibility: hidden; }
+  .mc-line.is-done { opacity: .5; }
+  .mc-text { text-overflow: clip; }
+  .mc-sym { display: none; }
+  .mc-n { font-size: 8px; letter-spacing: 0; margin-left: 1px; } /* 같은 구간에 더 있으면 아주 작게 +1 */
   .mc-more { top: 3px; right: 2px; padding: 0 3px; }
 }
 

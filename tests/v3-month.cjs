@@ -201,15 +201,18 @@ const planOf = (p, title) => p.evaluate(t => { const x = bj.state.plans.find(y =
     });
     const sw = await mp.evaluate(() => document.documentElement.scrollWidth);
     assert.ok(sw <= 390, 'scrollWidth ' + sw);
-    assert.equal(await mp.locator('.mc .mc-text').first().isVisible(), false);
+    const t16 = mp.locator('.mc[data-pick="2026-11-16"] .mc-text').first();
+    assert.equal(await t16.isVisible(), true);
+    assert.equal(await t16.innerText(), '출근'); // 휴대폰: 기호 없이 이름
+    assert.equal(await t16.evaluate(e => getComputedStyle(e).fontSize), '10px');
     const bar = await mp.locator('.mc[data-pick="2026-11-16"] .mc-line').first().boundingBox();
-    assert.ok(bar.height <= 8 && bar.width > 20, JSON.stringify(bar));
+    assert.ok(bar.height <= 16 && bar.width > 40, JSON.stringify(bar));
     await mp.locator('.mc[data-pick="2026-11-13"]').tap();
     assert.match(await mp.locator('#moDetail .zone-head').textContent(), /11월 13일/);
     const cb = await mp.locator('.mo-cal').boundingBox(), db = await mp.locator('#moDetail').boundingBox();
     assert.ok(db.y > cb.y + cb.height - 2);
     await mp.screenshot({ path: path.join(OUT, 'mobile.png'), fullPage: true });
-    ok('휴대폰 390: 가로 스크롤 없음, 글자 대신 색 막대, 칸 탭 → 달력 아래 그날 자세히');
+    ok('휴대폰 390: 가로 스크롤 없음, 칸마다 작은 글씨로 3줄 내용(기호 없이), 칸 탭 → 달력 아래 그날 자세히');
 
     assert.deepEqual(errors, []);
     ok('콘솔·페이지 오류 0');
