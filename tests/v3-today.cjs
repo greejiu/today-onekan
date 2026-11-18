@@ -296,6 +296,13 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     assert.equal(await wash.locator('.bullet').textContent(), '•');
     assert.equal(await deco(wash.locator('.row-title')), 'line-through');
     assert.equal(await deco(p.locator('.tl-item', { hasText: '1장 다 읽기' }).locator('.tl-title')), 'line-through');
+    // 줄은 기호부터(제목 앞 빈칸이 기호 자리까지 늘어남), 그래도 기호는 눌림
+    assert.equal(await wash.locator('.row-title').evaluate(e => getComputedStyle(e, '::before').marginLeft), '-21px');
+    await wash.locator('[data-toggle]').click();
+    assert.equal(await wash.locator('.bullet').evaluate(e => e.getAttribute('aria-checked')), 'false');
+    await wash.locator('[data-toggle]').click();
+    assert.equal(await wash.locator('.bullet').evaluate(e => e.getAttribute('aria-checked')), 'true');
+    await p.evaluate(() => document.querySelector('#toast').hidden = true);
     ok('기본 기호: 메모 "-", 일정 "*", 완료 "•" + 줄긋기, 작업 완료도 줄긋기');
 
     // 16-2. 설정에서 기호 바꾸기 + 줄긋기 끄기 → 미리보기 → 저장 → 기본값으로

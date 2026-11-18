@@ -74,6 +74,8 @@ h1, h2 { margin: 0; }
 .now-title { font-size: 22px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
 .now-card.is-done .now-title { opacity: .6; }
 .strike-done .now-card.is-done .now-title { text-decoration: line-through; }
+.strike-done .now-card.is-done .now-title::before { content: "\00a0"; letter-spacing: 21px; margin-left: -26px; }
+.now-main .bullet { position: relative; top: -2px; z-index: 1; }
 .now-main .bullet { width: 32px; height: 32px; font-size: 20px; }
 .now-sub, .now-empty { color: var(--sub); font-size: 13px; margin-top: 4px; }
 .now-empty b { color: var(--text); }
@@ -97,13 +99,20 @@ h1, h2 { margin: 0; }
 
 /* 줄 */
 .rows { list-style: none; margin: 0; padding: 0; }
-.row { --c: var(--sub); display: flex; align-items: center; gap: 8px; padding: 7px 6px 7px 8px; border-radius: 10px; border-left: 4px solid var(--c); background: color-mix(in srgb, var(--c) 16%, var(--card)); margin-bottom: 4px; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.row { --c: var(--sub); display: flex; align-items: flex-start; gap: 8px; padding: 7px 6px 7px 8px; border-radius: 10px; border-left: 4px solid var(--c); background: color-mix(in srgb, var(--c) 16%, var(--card)); margin-bottom: 4px; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .row.no-area { border-left-color: var(--line); background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 .row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .row-title { overflow-wrap: anywhere; cursor: text; }
 .row-meta { color: var(--sub); font-size: 11px; }
 .row.s-done .row-title, .row.task-done .row-title, .row.s-migrated .row-title { color: var(--sub); }
 .strike-done .row.s-done .row-title, .strike-done .row.task-done .row-title { text-decoration: line-through; }
+/* 완료 줄긋기는 기호부터(결 요청 2026-11-18): 제목 앞에 빈칸 하나를 기호 자리까지 늘려 같은 취소선이 이어지게.
+   줄은 제목 첫 줄 높이 → 기호도 첫 줄에 맞춰 위로 정렬 */
+.row > .bullet { margin-top: -2.5px; position: relative; z-index: 1; } /* 기호 쪽으로 늘린 줄이 기호 누르기를 가로채지 않게 */
+.row > .more { margin-top: -3.5px; }
+.row > .row-time, .row > .tag, .row > .pull { margin-top: 2px; }
+.strike-done .row.s-done .row-title::before, .strike-done .row.task-done .row-title::before { content: "\00a0"; letter-spacing: 17px; margin-left: -21px; }
+.sym-preview.strike-done .is-done .sp-title::before { content: "\00a0"; letter-spacing: 17px; margin-left: -21px; } /* 기호 한가운데부터 */
 .row.s-migrated { opacity: .6; }
 .row.k-note .row-title { color: var(--sub); }
 .row.bj-armed, .tl-item.bj-armed { box-shadow: 0 0 0 2px var(--accent); }
@@ -136,7 +145,9 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 .tl-item.no-area { border-color: var(--line); background: var(--card); }
 .tl-item.k-event { border-style: dashed; }
 .tl-item.s-done .tl-title, .tl-item.task-done .tl-title { opacity: .55; }
-.strike-done .tl-item.s-done .tl-title, .strike-done .tl-item.task-done .tl-title { text-decoration: line-through; }
+.strike-done .tl-item.s-done .tl-title, .strike-done .tl-item.task-done .tl-title { text-decoration: line-through; margin-left: -24px; padding-left: 24px; }
+.strike-done .tl-item.s-done .tl-title::before, .strike-done .tl-item.task-done .tl-title::before { content: "\00a0"; letter-spacing: 10px; margin-left: -14px; }
+.tl-item .bullet { position: relative; z-index: 1; margin-top: -2px; }
 .tl-item .bullet { width: 20px; height: 20px; font-size: 15px; }
 .tl-title { flex: 1; min-width: 0; padding-top: 1px; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
 .tl-meta { color: var(--sub); font-size: 11px; margin-left: 6px; }
