@@ -4,7 +4,7 @@
 (function (root) {
   'use strict';
   const KEY = 'bj.v3';
-  const VERSION = 2;
+  const VERSION = 3; // 3: 목표(월간·주간)와 할 일(goalId로 연결) 나누기(2026-11-18)
   // 2026-11-15 결의 노트 영역(일·그림공부·독서·브랜딩·여가) + 생활. 설정에서 이름·색·순서를 바꿀 수 있음
   const AREA_SEED = [['일', '#F0B85A'], ['그림공부', '#F2A0B6'], ['독서', '#6FA8DC'], ['브랜딩', '#A98BD9'], ['여가', '#5EC4C4'], ['생활', '#94C973']];
   const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
@@ -53,8 +53,36 @@
       });
       s.version = 2;
     }
+    /* 2 → 3: 목표와 할 일 나누기. 두 기기가 따로 바꿔도 같은 결과가 나오게 새 id는 고정 규칙으로 만듦
+     * - 프로젝트 → 목표(그 프로젝트를 만든 달의 월간 목표). 프로젝트에 연결된 작업은 그 목표의 할 일
+     * - 월간·주간에 놓인 작업 = 목표. 그 작업을 날짜에 놓은 계획은 새 할 일(같은 이름, 목표에 연결)로 옮김 */
+    if (s.version === 2) {
+      const monthOf = ms => { const d = new Date(ms || 0); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'; };
+      (s.projects || []).forEach(pr => {
+        const gid = 'g-' + pr.id;
+        if (!s.tasks.some(t => t.id === gid)) {
+          s.tasks.push({ id: gid, title: pr.name, kind: 'task', areaId: pr.areaId || null, goal: true, status: pr.status === 'done' ? 'done' : 'open', createdAt: pr.createdAt || 0, doneAt: null });
+          s.plans.push({ id: 'gp-' + pr.id, taskId: gid, level: 'month', period: monthOf(pr.createdAt), start: null, duration: null, slot: null, status: 'open', order: pr.createdAt || 0, fromPlanId: null, createdAt: pr.createdAt || 0, doneAt: null });
+        }
+        s.tasks.forEach(t => { if (t.projectId === pr.id) { t.goalId = gid; } });
+      });
+      s.tasks.forEach(t => { delete t.projectId; });
+      s.projects = [];
+      const goalIds = new Set(s.plans.filter(p => p.level === 'month' || p.level === 'week').map(p => p.taskId));
+      s.tasks.slice().forEach(t => {
+        if (!goalIds.has(t.id)) return;
+        t.goal = true;
+        const days = s.plans.filter(p => p.taskId === t.id && p.level === 'day');
+        if (!days.length) return;
+        const sid = t.id + '-s';
+        if (!s.tasks.some(x => x.id === sid)) s.tasks.push({ id: sid, title: t.title, kind: t.kind, areaId: t.areaId || null, goalId: t.id, status: 'open', createdAt: t.createdAt || 0, doneAt: null });
+        days.forEach(p => { p.taskId = sid; });
+      });
+      s.version = 3;
+    }
     return s;
   }
+  const upgrade = x => (x && x.version < VERSION ? migrate(JSON.parse(JSON.stringify(x))) : x);
 
   /* ---------- 계정 연동용: 고친 시각 도장 + 합치기 (2026-11-17) ----------
    * 항목(영역·프로젝트·작업·계획)마다 u = 마지막으로 고친 시각(ms). 지운 항목은 state.gone[id] = 지운 시각.
@@ -75,6 +103,7 @@
   }
   // b = 서버 쪽. 더 최근인지 가릴 수 없으면(도장 같음·없음) b를 남김
   function merge(a, b) {
+    a = upgrade(a); b = upgrade(b); // 옛 버전 기기 기록도 같은 규칙으로 바꾼 뒤 합침
     if (!b || typeof b !== 'object') return JSON.parse(JSON.stringify(a));
     if (!a || typeof a !== 'object') return JSON.parse(JSON.stringify(b));
     const out = { version: Math.max(a.version || 0, b.version || 0), gone: { ...(a.gone || {}) } };
@@ -179,11 +208,15 @@
       plansOn: (level, period) => sortPlans(state.plans.filter(p => p.level === level && p.period === period)),
 
       /* 계획에 바로 적기 = 작업도 함께 생김(설계 6장: 계획은 항상 작업을 가리킴) */
-      addPlan({ title, kind = 'task', level = 'day', period, start = null, duration = null, areaId = null, projectId = null, slot = null }) {
+      // 월간·주간에 적으면 목표, 날짜에 적으면 할 일(goalId로 목표에 연결 가능, 영역은 목표를 따름)
+      addPlan({ title, kind = 'task', level = 'day', period, start = null, duration = null, areaId = null, goalId = null, slot = null }) {
         title = String(title || '').trim();
         if (!title || !LEVELS.includes(level) || !period) return null;
         return mutate('적기', s => {
-          const t = { id: uid(), title, kind: KINDS.includes(kind) ? kind : 'task', areaId, projectId, status: 'open', createdAt: Date.now(), doneAt: null };
+          const g = goalId ? s.tasks.find(x => x.id === goalId) : null;
+          const t = { id: uid(), title, kind: KINDS.includes(kind) ? kind : 'task', areaId: areaId || (g && g.areaId) || null, status: 'open', createdAt: Date.now(), doneAt: null };
+          if (level === 'month' || level === 'week') t.goal = true;
+          else if (g) t.goalId = g.id;
           s.tasks.push(t);
           return newPlan(s, t.id, { level, period, start, duration, slot }).id;
         });
@@ -232,19 +265,23 @@
         });
       },
       /* 프로젝트를 고르면 영역은 프로젝트의 영역을 따름 */
-      assignTask(taskId, { areaId = null, projectId = null, newProjectName = '' }) {
+      /* 영역·목표 정하기. 목표를 고르면 영역은 목표를 따름. 새 목표 이름을 적으면 그 달의 월간 목표를 만들고 연결 */
+      assignTask(taskId, { areaId = null, goalId = null, newGoalName = '', newGoalMonth = null }) {
         const t = task(taskId); if (!t) return;
-        mutate('영역·프로젝트', s => {
-          newProjectName = String(newProjectName || '').trim();
-          if (newProjectName) {
-            const pr = { id: uid(), areaId, name: newProjectName, status: 'active', createdAt: Date.now() };
-            s.projects.push(pr); projectId = pr.id;
+        mutate('영역·목표', s => {
+          newGoalName = String(newGoalName || '').trim();
+          if (newGoalName && !t.goal && newGoalMonth) {
+            const g = { id: uid(), title: newGoalName, kind: 'task', areaId, goal: true, status: 'open', createdAt: Date.now(), doneAt: null };
+            s.tasks.push(g); newPlan(s, g.id, { level: 'month', period: newGoalMonth }); goalId = g.id;
           }
-          const pr = projectId ? s.projects.find(x => x.id === projectId) : null;
-          t.projectId = pr ? pr.id : null;
-          t.areaId = pr ? pr.areaId : areaId;
+          const g = goalId && !t.goal ? s.tasks.find(x => x.id === goalId && x.goal) : null;
+          if (t.goal) { t.areaId = areaId; s.tasks.forEach(x => { if (x.goalId === t.id && !x.areaId) x.areaId = areaId; }); return; }
+          t.goalId = g ? g.id : null;
+          t.areaId = g && g.areaId ? g.areaId : areaId;
         });
       },
+      goals: () => state.tasks.filter(t => t.goal),
+      stepsOf: goalId => state.tasks.filter(t => t.goalId === goalId),
       /* 옮기기(>): 이 계획은 '옮김'으로 남기고 다른 날에 새 계획 */
       migratePlan(planId, toPeriod) {
         const p = plan(planId); if (!p || p.status !== 'open' || toPeriod === p.period) return null;
@@ -299,7 +336,10 @@
         mutate('지우기', s => {
           s.plans = s.plans.filter(x => x.id !== planId);
           const t = s.tasks.find(x => x.id === p.taskId);
-          if (t && !t.projectId && !s.plans.some(x => x.taskId === t.id)) s.tasks = s.tasks.filter(x => x.id !== t.id);
+          if (t && !s.plans.some(x => x.taskId === t.id)) {
+            s.tasks = s.tasks.filter(x => x.id !== t.id);
+            if (t.goal) s.tasks.forEach(x => { if (x.goalId === t.id) x.goalId = null; }); // 목표가 없어지면 할 일은 연결만 풀림
+          }
         });
       },
       /* 어제 계획 가져오기(반복 대신): 같은 작업에 오늘 계획을 하나 더. 시간도 그대로. 이미 오늘에 있으면 건너뜀 */

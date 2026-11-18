@@ -153,20 +153,35 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     assert.equal(a.start, null);
     ok('타임라인 항목 → 시간 없음에 놓기 → 시간 빠짐');
 
-    // 11. 이번 주에 적기 → [오늘로] → "오늘에 있음"
+    // 11. 이번 주 목표 적기 → [할 일 ▾] → 이 목표의 오늘 할 일 적기(연결) → 진행 "할 일 0/1"
     await p.locator('#weekAdd input').fill('자소서 초안 #일');
     await p.keyboard.press('Enter');
     let wk = await p.evaluate(w => bj.plansOn('week', w).map(x => bj.task(x.taskId).title), W);
     assert.deepEqual(wk, ['자소서 초안']);
-    await p.locator('#weekList .pull').click();
-    a = await byTitle(p, T, '자소서 초안');
-    assert.ok(a && a.start == null);
-    assert.match(await p.locator('#weekList .row').textContent(), /오늘에 있음/);
+    assert.equal(await p.locator('#panelTabs [aria-selected=true]').textContent(), '이번 주 목표');
+    await p.locator('#weekList [data-expand]').click();
+    await p.locator('#weekList [data-add-step] input').fill('경력 부분 쓰기');
+    await p.keyboard.press('Enter');
     s = await S(p);
-    assert.equal(s.tasks.filter(t => t.title === '자소서 초안').length, 1);
-    ok('이번 주에 적기 → [오늘로] → 같은 작업에 오늘 계획, "오늘에 있음"');
+    const goal = s.tasks.find(t => t.title === '자소서 초안'), step = s.tasks.find(t => t.title === '경력 부분 쓰기');
+    assert.ok(goal.goal && step.goalId === goal.id && step.areaId === goal.areaId);
+    a = await byTitle(p, T, '경력 부분 쓰기');
+    assert.ok(a && a.start == null);
+    assert.match(await p.locator('#untimedList .row', { hasText: '경력 부분 쓰기' }).locator('.row-meta').textContent(), /◎ 자소서 초안/);
+    assert.match(await p.locator('#weekList > .row').textContent(), /할 일 0\/1/);
+    assert.match(await p.locator('#weekList .goal-steps .row').textContent(), /오늘에 있음/);
+    await p.locator('#untimedList .row', { hasText: '경력 부분 쓰기' }).locator('[data-toggle]').click();
+    assert.match(await p.locator('#weekList > .row').textContent(), /할 일 1\/1/);
+    await p.locator('#untimedList .row', { hasText: '경력 부분 쓰기' }).locator('[data-toggle]').click(); // 다시 풀기(아래 옮기기 시험용)
+    ok('이번 주 목표 → 할 일 ▾ → 오늘 할 일 적기(목표에 연결, 영역 따라감, "◎ 목표" 표시) → 체크하면 "할 일 1/1"');
+    // 목표 달성은 직접 체크
+    await p.locator('#weekList > .row [data-goal]').click();
+    assert.match(await p.locator('#toast').textContent(), /목표 달성! 🎉/);
+    assert.equal((await S(p)).tasks.find(t => t.title === '자소서 초안').status, 'done');
+    await p.locator('#weekList > .row [data-goal]').click();
+    ok('목표 달성은 직접 체크(토스트 🎉), 다시 누르면 열림');
 
-    // 12. 이번 주 줄을 타임라인에 끌기 → 이미 오늘에 있으면 그 계획의 시간만
+    // 12. 이번 주 목표를 타임라인에 끌기 → 같은 이름의 할 일(목표에 연결)이 그 시각에
     await p.locator('#weekAdd input').fill('표지 디자인 #그림');
     await p.keyboard.press('Enter');
     await scrollTo(p, 900);
@@ -176,15 +191,17 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     await drag(p, { x: box.x + 60, y: box.y + box.height / 2 }, to);
     a = await byTitle(p, T, '표지 디자인');
     assert.deepEqual([a.start, a.duration], [900, 30]);
-    ok('이번 주 줄 → 타임라인 15:00에 끌어오기');
+    s = await S(p);
+    assert.equal(s.tasks.find(t => t.id === s.plans.find(x => x.id === a.id).taskId).goalId, s.tasks.find(t => t.title === '표지 디자인' && t.goal).id);
+    ok('이번 주 목표 → 타임라인 15:00에 끌기 → 연결된 할 일');
 
     // 13. 메뉴: 내일로 옮기기(>)
-    await p.locator('#untimedList .row', { hasText: '자소서 초안' }).locator('.more').click();
+    await p.locator('#untimedList .row', { hasText: '경력 부분 쓰기' }).locator('.more').click();
     await p.locator('#menu .menu-item', { hasText: '내일로 옮기기' }).click();
-    a = await byTitle(p, T, '자소서 초안');
+    a = await byTitle(p, T, '경력 부분 쓰기');
     assert.equal(a.status, 'migrated');
-    assert.ok(await byTitle(p, TM, '자소서 초안'));
-    assert.equal(await p.locator('#untimedList .row', { hasText: '자소서 초안' }).locator('.bullet').textContent(), '>');
+    assert.ok(await byTitle(p, TM, '경력 부분 쓰기'));
+    assert.equal(await p.locator('#untimedList .row', { hasText: '경력 부분 쓰기' }).locator('.bullet').textContent(), '>');
     ok('내일로 옮기기 → 오늘 계획은 ">"로 남고 내일에 계획');
 
     // 13-1. 내일로 옮긴 걸 다시 오늘로(결 보고 2026-11-15)
@@ -234,19 +251,26 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     await p.evaluate(t => { bj.deletePlan(bj.plansOn('day', t).find(x => bj.task(x.taskId).title === '어제 못 한 일').id); bj.deletePlan(bj.state.plans.find(x => bj.task(x.taskId)?.title === '어제 못 한 일').id); bj.deletePlan(bj.plansOn('day', t).find(x => bj.task(x.taskId).title === '포트폴리오 표지').id); }, T);
     ok('지난 계획 → 오늘로 = 옮기기(>), 옮겨 간 곳을 이미 체크했으면 되돌리기 막고 안내');
 
-    // 14. 메뉴: 영역·프로젝트 정하기(새 프로젝트)
+    // 14. 메뉴: 영역·목표 정하기(새 목표 = 이번 달 목표로 만들고 연결)
     await p.locator('.tl-item', { hasText: '약국 가기' }).locator('.more').click();
-    await p.locator('#menu .menu-item', { hasText: '영역 · 프로젝트' }).click();
+    await p.locator('#menu .menu-item', { hasText: '영역 · 목표' }).click();
     await p.locator('#assignArea').selectOption({ label: '생활' });
-    await p.locator('#assignNewProject').fill('건강 챙기기');
+    await p.locator('#assignNewGoal').fill('건강 챙기기');
     await p.locator('#assignDlg button[value=save]').click();
-    await p.waitForFunction(() => bj.state.projects.length === 1);
+    await p.waitForFunction(() => bj.state.tasks.some(t => t.title === '건강 챙기기' && t.goal));
     s = await S(p);
-    const pr = s.projects.find(x => x.name === '건강 챙기기');
-    assert.ok(pr && pr.areaId === s.areas.find(a => a.name === '생활').id);
-    assert.equal(s.tasks.find(t => t.title === '약국 가기').projectId, pr.id);
-    assert.equal(await p.locator('.tl-item', { hasText: '약국 가기' }).locator('.tl-meta').textContent(), '건강 챙기기');
-    ok('영역·프로젝트 창 → 생활 / 새 프로젝트 "건강 챙기기"');
+    const gl = s.tasks.find(x => x.title === '건강 챙기기' && x.goal);
+    assert.ok(gl.areaId === s.areas.find(a => a.name === '생활').id);
+    assert.ok(s.plans.some(x => x.taskId === gl.id && x.level === 'month' && x.period === '2026-11-01'));
+    assert.equal(s.tasks.find(t => t.title === '약국 가기').goalId, gl.id);
+    assert.equal(await p.locator('.tl-item', { hasText: '약국 가기' }).locator('.tl-meta').textContent(), '◎ 건강 챙기기');
+    // 이미 있는 목표 고르기
+    await p.locator('#untimedList .row', { hasText: '세수하기' }).locator('.more').click();
+    await p.locator('#menu .menu-item', { hasText: '영역 · 목표' }).click();
+    await p.locator('#assignGoal').selectOption({ label: '건강 챙기기' });
+    await p.locator('#assignDlg button[value=save]').click();
+    await p.waitForFunction(() => bj.state.tasks.find(t => t.title === '세수하기').goalId);
+    ok('영역·목표 창 → 생활 / 새 목표 "건강 챙기기"(11월 목표) 연결, 이미 있는 목표 고르기');
 
     // 15. 어제 계획 가져오기(반복 대신): 끝낸 것도 고를 수 있음, 시간 그대로, 같은 작업
     await p.evaluate(y => { const id = bj.addPlan({ title: '아침 스트레칭', period: y, start: 420, duration: 30 }); bj.togglePlan(id); bj.addPlan({ title: '메일 확인', period: y }); }, Y);
@@ -271,7 +295,7 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     const washRow = p.locator('#untimedList .row', { hasText: '세수하기' });
     assert.doesNotMatch(await visible(washRow), /생활/);
     assert.doesNotMatch(await visible(p.locator('#untimedList')), /기본/);
-    assert.doesNotMatch(await visible(p.locator('#weekList')), /일|그림공부/);
+    assert.doesNotMatch(await visible(p.locator('#weekList')), /그림공부|생활|독서/); // '할 일'에 '일'이 들어 있어 영역 '일'은 화면 읽기용 이름으로만 확인
     s = await S(p);
     assert.equal(await washRow.evaluate(e => e.style.getPropertyValue('--c')), s.areas.find(a => a.name === '생활').color);
     assert.equal(await p.locator('#untimedList .row', { hasText: '메일 확인' }).evaluate(e => e.classList.contains('no-area')), true);
@@ -330,7 +354,7 @@ async function drag(p, from, to, { hold = 0 } = {}) {
     await p.locator('#nextDay').click();
     assert.equal(await p.locator('#dayTitle').textContent(), '11월 18일 (수)');
     assert.ok(await p.locator('#now').isHidden());
-    assert.equal(await p.locator('#untimedList .row', { hasText: '자소서 초안' }).count(), 1);
+    assert.equal(await p.locator('#untimedList .row', { hasText: '경력 부분 쓰기' }).count(), 1);
     await p.locator('#todayBtn').click();
     ok('새로고침해도 기록 유지, 다음 날로 이동(지금 숨김, 옮긴 작업 보임)');
 

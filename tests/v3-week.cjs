@@ -50,7 +50,8 @@ const plansOf = (p, title) => p.evaluate(t => bj.state.plans.filter(x => bj.task
     })));
     await p.goto(base + '#week');
     let s = await p.evaluate(() => bj.state);
-    assert.equal(s.version, 2);
+    assert.equal(s.version, 3);
+    assert.ok(s.tasks.find(t => t.id === 't1').goal); // 주간에 있던 작업 = 목표
     assert.deepEqual(s.areas.sort((a, b) => a.order - b.order).map(a => a.name), ['일', '그림공부', '독서', '브랜딩', '여가', '생활']);
     assert.equal(s.areas.find(a => a.name === '일').id, 'a3');
     assert.equal(s.plans.find(x => x.id === 'p1').period, '2026-11-15');
@@ -87,7 +88,7 @@ const plansOf = (p, title) => p.evaluate(t => bj.state.plans.filter(x => bj.task
     const wrow = () => p.locator('.wk-area .row', { hasText: '포인트 캐릭터 드로잉' });
     await drag(p, await mid(wrow()), await mid(p.locator('[data-drop-day="2026-11-19"] header')));
     assert.deepEqual(await plansOf(p, '포인트 캐릭터 드로잉'), ['d:2026-11-19:open', 'w:2026-11-15:open']);
-    assert.equal(await wrow().locator('.tag').textContent(), '목');
+    assert.equal(await wrow().locator('.tag').first().textContent(), '목');
     assert.match(await p.locator('#toast').textContent(), /11\/19\(목\)에 놓았어요/);
     await drag(p, await mid(wrow()), await mid(p.locator('[data-drop-day="2026-11-19"] header')));
     assert.match(await p.locator('#toast').textContent(), /이미 11\/19\(목\)에 있어요/);
@@ -96,7 +97,7 @@ const plansOf = (p, title) => p.evaluate(t => bj.state.plans.filter(x => bj.task
     // 6. 그날 체크 → "11/19(목) 몫 완료", 이번 주 줄에 목✓
     await p.locator('[data-drop-day="2026-11-19"] .row [data-toggle]').click();
     assert.match(await p.locator('#toast').textContent(), /11\/19\(목\) 몫 완료!/);
-    assert.equal(await wrow().locator('.tag').textContent(), '목✓');
+    assert.equal(await wrow().locator('.tag').first().textContent(), '목✓');
     assert.equal(await p.locator('[data-drop-day="2026-11-19"] .wk-count').textContent(), '1/1');
     await p.locator('[data-drop-day="2026-11-19"] .row [data-toggle]').click();
     ok('그날 체크 → "목 몫 완료", 이번 주 줄 목✓, 날짜 칸 1/1');

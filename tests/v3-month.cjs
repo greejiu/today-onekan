@@ -161,8 +161,9 @@ const planOf = (p, title) => p.evaluate(t => { const x = bj.state.plans.find(y =
     await drag(p, await mid(p.locator('#moList .row', { hasText: '책 1권' })), await mid(p.locator('.mc[data-pick="2026-11-20"] .mc-num')));
     assert.deepEqual(await p.evaluate(() => bj.state.plans.filter(x => bj.task(x.taskId).title === '책 1권 다 읽기').map(x => x.level + ':' + x.period).sort()), ['day:2026-11-20', 'month:2026-11-01']);
     assert.equal(await p.locator('#moList .row', { hasText: '포트폴리오 완성' }).locator('.tag').textContent(), '3주');
-    assert.equal(await p.locator('#moList .row', { hasText: '책 1권' }).locator('.tag').textContent(), '20일');
-    ok('8열 달력: 이번 달 할 일 → 왼쪽 3주 칸 = 그 주 배치, → 20일 칸 = 그날 배치, 할 일 옆 "3주"·"20일"');
+    assert.equal(await p.locator('#moList .row', { hasText: '책 1권' }).locator('.tag').textContent(), '할 일 0/1');
+    assert.ok(await p.evaluate(() => { const g = bj.state.tasks.find(t => t.title === '책 1권 다 읽기' && t.goal); return bj.stepsOf(g.id).length === 1; }));
+    ok('8열 달력: 이번 달 목표 → 왼쪽 3주 칸 = 그 주 목표, → 20일 칸 = 그날 할 일(목표에 연결), 목표 옆 "3주"·"할 일 0/1"');
     // 주 칸 누르기 → 그 주 주간 화면. 주간에는 '이번 달에서'가 없음
     await p.locator('.mw[data-drop-week="2026-11-15"]').click();
     await p.waitForFunction(() => location.hash === '#week');
@@ -173,32 +174,37 @@ const planOf = (p, title) => p.evaluate(t => { const x = bj.state.plans.find(y =
     // 오늘 화면: [이번 주 | 이번 달] 탭 → 이번 달 할 일을 오늘로
     await p.locator('.tabs a', { hasText: '오늘' }).click();
     await p.locator('#todayBtn').click();
-    assert.equal(await p.locator('#panelTabs [aria-selected=true]').textContent(), '이번 주');
+    assert.equal(await p.locator('#panelTabs [aria-selected=true]').textContent(), '이번 주 목표');
     assert.deepEqual(await p.locator('#weekList .row-title').allTextContents(), ['포트폴리오 완성']);
     await p.locator('#panelTabs [data-panel=month]').click();
     assert.deepEqual(await p.locator('#weekList .row-title').allTextContents(), ['책 1권 다 읽기', '포트폴리오 완성']);
-    await p.locator('#weekList .row', { hasText: '책 1권' }).locator('[data-pull]').click();
-    assert.ok(await p.evaluate(() => bj.plansOn('day', '2026-11-17').some(x => bj.task(x.taskId).title === '책 1권 다 읽기')));
-    assert.match(await p.locator('#weekList .row', { hasText: '책 1권' }).textContent(), /오늘에 있음/);
+    // 목표 펼치기 → 20일에 놓았던 할 일 [오늘로], 이 목표의 오늘 할 일 바로 적기
+    await p.locator('#weekList > .row', { hasText: '책 1권' }).locator('[data-expand]').click();
+    await p.locator('#weekList .goal-steps .row', { hasText: '책 1권' }).locator('[data-pull]').click();
+    assert.ok(await p.evaluate(() => bj.plansOn('day', '2026-11-17').some(x => bj.task(x.taskId).title === '책 1권 다 읽기' && bj.task(x.taskId).goalId)));
+    assert.match(await p.locator('#weekList .goal-steps .row', { hasText: '책 1권' }).textContent(), /오늘에 있음/);
+    await p.locator('#weekList [data-add-step] input').fill('2장 읽기'); await p.keyboard.press('Enter');
+    assert.match(await p.locator('#weekList > .row', { hasText: '책 1권' }).textContent(), /할 일 0\/2/);
     await p.locator('#weekAdd input').fill('블로그 글 4개'); await p.keyboard.press('Enter');
     assert.ok(await p.evaluate(() => bj.plansOn('month', '2026-11-01').some(x => bj.task(x.taskId).title === '블로그 글 4개')));
     await p.reload(); await p.waitForFunction(() => window.bj);
-    assert.equal(await p.locator('#panelTabs [aria-selected=true]').textContent(), '이번 달');
+    assert.equal(await p.locator('#panelTabs [aria-selected=true]').textContent(), '이번 달 목표');
     await p.locator('#panelTabs [data-panel=week]').click();
-    ok('오늘: [이번 주 | 이번 달] 탭, 이번 달 할 일 [오늘로], 이번 달 탭에서 적으면 이번 달 할 일, 고른 탭 기억');
+    ok('오늘: [이번 주 목표 | 이번 달 목표] 탭, 목표 펼쳐 할 일 [오늘로]·바로 적기(할 일 0/2), 이번 달 탭에서 적으면 이번 달 목표, 고른 탭 기억');
     await p.locator('.tabs a', { hasText: '월간' }).click();
     // 월간에서 몇째 주에 놓였는지(11/15 주 = 3주), 다음 달로 옮기기(>)·되돌리기
     await p.locator('.tabs a', { hasText: '월간' }).click();
-    assert.match(await p.locator('#moList .row', { hasText: '책 1권' }).locator('.tags').textContent(), /17일20일/);
+    assert.match(await p.locator('#moList .row', { hasText: '책 1권' }).locator('.tags').textContent(), /할 일 0\/2/);
     await p.locator('#moList .row', { hasText: '포트폴리오 완성' }).locator('.more').click();
     await p.locator('#menu .menu-item', { hasText: '다음 달로 옮기기' }).click();
     assert.deepEqual(await p.evaluate(() => bj.state.plans.filter(x => x.level === 'month' && bj.task(x.taskId).title === '포트폴리오 완성').map(x => x.period + ':' + x.status).sort()), ['2026-11-01:migrated', '2026-12-01:open']);
     await p.locator('#moList .row', { hasText: '포트폴리오 완성' }).locator('.more').click();
     await p.locator('#menu .menu-item', { hasText: '다시 이 달로 되돌리기' }).click();
     assert.deepEqual(await p.evaluate(() => bj.state.plans.filter(x => x.level === 'month' && bj.task(x.taskId).title === '포트폴리오 완성').map(x => x.period + ':' + x.status)), ['2026-11-01:open']);
-    await p.locator('#moList .row', { hasText: '책 1권' }).locator('[data-toggle]').click();
-    assert.match(await p.locator('#toast').textContent(), /이번 달 몫 완료!/);
-    ok('월간 할 일에 "3주" 표시, 다음 달로 옮기기(>) → 되돌리기, 체크 = 이번 달 몫 완료');
+    await p.locator('#moList .row', { hasText: '책 1권' }).locator('[data-goal]').click();
+    assert.match(await p.locator('#toast').textContent(), /목표 달성! 🎉 『책 1권 다 읽기』 \(할 일 0\/2\)/);
+    assert.equal(await p.locator('#moList .row', { hasText: '책 1권' }).evaluate(e => e.classList.contains('task-done')), true);
+    ok('월간 목표에 "3주" 표시, 다음 달로 옮기기(>) → 되돌리기, 체크 = 목표 달성(직접)');
     // 시간 있는 줄: 시간이 제목 안 → 줄이 기호 → 시간 → 제목으로 이어짐
     await p.locator('.mc[data-pick="2026-11-17"]').click();
     assert.equal(await p.locator('#moDetail .row', { hasText: '출근' }).locator('.row-title > .row-time').textContent(), '09:00');

@@ -73,19 +73,35 @@
   function view(p) {
     const t = store.task(p.taskId) || { title: '(지워진 작업)', kind: 'task', status: 'open' };
     const a = t.areaId ? store.area(t.areaId) : null;
-    const pr = t.projectId ? store.project(t.projectId) : null;
-    // 영역 이름은 글자로 안 쓰고 색으로만 표시(결 요청 2026-11-15). 글자는 프로젝트 이름만. 화면 읽기용으로만 영역 이름을 넣음
-    const meta = pr ? pr.name : '';
+    // 목표(월간·주간 줄)와 할 일(날짜 줄, 목표에 연결 가능)을 나눔(결 2026-11-18). 할 일 아래 작은 글씨 = 연결된 목표
+    const g = t.goalId ? store.task(t.goalId) : null;
+    const isGoalRow = p.level === 'month' || p.level === 'week';
+    // 영역 이름은 글자로 안 쓰고 색으로만 표시(결 요청 2026-11-15). 화면 읽기용으로만 영역 이름을 넣음
+    const meta = g ? '◎ ' + g.title : '';
     const areaSr = `<span class="sr-only">${a ? esc(a.name) : '기본'}</span>`;
-    return { p, t, a, pr, meta, areaSr, color: a ? a.color : '', done: p.status === 'done', migrated: p.status === 'migrated' };
+    return { p, t, a, g, isGoalRow, meta, areaSr, color: a ? a.color : '', done: isGoalRow ? t.status === 'done' : p.status === 'done', migrated: p.status === 'migrated' };
   }
   function bulletHtml(v) {
     const { p, t } = v;
     if (v.migrated) return `<span class="bullet s-migrated" title="옮김" aria-label="옮김">${esc(symOf(v))}</span>`;
     if (t.kind === 'note') return `<span class="bullet k-note" aria-label="메모">${esc(symOf(v))}</span>`;
+    if (v.isGoalRow) return `<button type="button" class="bullet k-${t.kind}${v.done ? ' s-done' : ''}" data-goal="${t.id}" role="checkbox" aria-checked="${v.done}" aria-label="${esc(t.title)} 목표 달성">${esc(symOf(v))}</button>`;
     return `<button type="button" class="bullet k-${t.kind}${v.done ? ' s-done' : ''}" data-toggle="${p.id}" role="checkbox" aria-checked="${v.done}" aria-label="${esc(t.title)} ${{ week: '이번 주 몫', month: '이번 달 몫' }[p.level] || '오늘 몫'} 완료">${esc(symOf(v))}</button>`;
   }
-  const clsOf = v => `k-${v.t.kind} s-${v.p.status}${v.t.status === 'done' ? ' task-done' : ''}${v.a ? '' : ' no-area'}`;
+  const clsOf = v => `k-${v.t.kind} s-${v.p.status}${v.t.status === 'done' ? ' task-done' : ''}${v.a ? '' : ' no-area'}${v.isGoalRow ? ' is-goal' : ''}`;
+  // 목표 진행: 연결된 할 일 중 끝낸 것(작업 완료 또는 한 번이라도 그날 몫 체크) / 전체
+  function goalProgress(goalId) {
+    const steps = store.stepsOf(goalId);
+    const done = steps.filter(s => s.status === 'done' || store.plansOfTask(s.id).some(p => p.level === 'day' && p.status === 'done')).length;
+    return { n: steps.length, done };
+  }
+  const progTag = goalId => { const { n, done } = goalProgress(goalId); return n ? `<span class="tag prog${done === n ? ' tag-done' : ''}">할 일 ${done}/${n}</span>` : ''; };
+  // 목표의 할 일이 그 날들 중 언제 놓였는지(✓ = 그날 다 함)
+  const stepDayTags = (goalId, days) => days.map(d => {
+    const ps = store.stepsOf(goalId).map(s => store.livePlanOn(s.id, 'day', d)).filter(Boolean); if (!ps.length) return '';
+    const dn = ps.every(x => x.status === 'done');
+    return `<span class="tag${dn ? ' tag-done' : ''}">${DOW[parseDate(d).getDay()]}${dn ? '✓' : ''}</span>`;
+  }).join('');
   const styleOf = v => v.color ? `--c:${v.color};` : '';
 
   /* "#독서 1장 읽기" → 독서 영역 */
@@ -162,7 +178,7 @@
   function rowHtml(v, extra = '', showTime = false) {
     return `<li class="row ${clsOf(v)}" data-plan="${v.p.id}" style="${styleOf(v)}">
       ${bulletHtml(v)}
-      <span class="row-body"><span class="row-title">${showTime && v.p.start != null ? `<span class="row-time">${hhmm(v.p.start)}</span>` : showTime === true && v.p.slot && !v.migrated ? `<span class="row-time row-slot">${SLOT_LABEL[v.p.slot]}</span>` : ''}${esc(v.t.title)}</span>${v.areaSr}${v.meta || v.t.status === 'done' ? `<small class="row-meta">${[v.t.status === 'done' ? '작업 완료 ✓' : '', esc(v.meta)].filter(Boolean).join(' · ')}</small>` : ''}</span>
+      <span class="row-body"><span class="row-title">${showTime && v.p.start != null ? `<span class="row-time">${hhmm(v.p.start)}</span>` : showTime === true && v.p.slot && !v.migrated ? `<span class="row-time row-slot">${SLOT_LABEL[v.p.slot]}</span>` : ''}${esc(v.t.title)}</span>${v.areaSr}${v.meta || (v.t.status === 'done' && !v.isGoalRow) ? `<small class="row-meta">${[v.t.status === 'done' && !v.isGoalRow ? '작업 완료 ✓' : '', esc(v.meta)].filter(Boolean).join(' · ')}</small>` : ''}</span>
       ${extra}
       <button type="button" class="more" data-more="${v.p.id}" aria-label="${esc(v.t.title)} 메뉴">⋯</button>
     </li>`;
@@ -213,22 +229,38 @@
     const thisWeek = ws === weekStart(today), thisMonth = ms === monthStart(today);
     const f = s => { const d = parseDate(s); return `${d.getMonth() + 1}/${d.getDate()}`; };
     const mName = `${parseDate(ms).getMonth() + 1}월`;
-    document.querySelectorAll('#panelTabs [data-panel]').forEach(b => { b.setAttribute('aria-selected', b.dataset.panel === panel); b.textContent = b.dataset.panel === 'month' ? (thisMonth ? '이번 달' : mName) : (thisWeek ? '이번 주' : '이 주'); });
-    $('weekTitle').textContent = panel === 'month' ? `${mName}에서` : thisWeek ? '이번 주에서' : '이 주에서';
+    document.querySelectorAll('#panelTabs [data-panel]').forEach(b => { b.setAttribute('aria-selected', b.dataset.panel === panel); b.textContent = (b.dataset.panel === 'month' ? (thisMonth ? '이번 달' : mName) : (thisWeek ? '이번 주' : '이 주')) + ' 목표'; });
+    $('weekTitle').textContent = panel === 'month' ? `${mName} 목표` : thisWeek ? '이번 주 목표' : '이 주 목표';
     $('weekRange').textContent = panel === 'month' ? mName : `${f(ws)} – ${f(we)}`;
-    $('weekAdd').querySelector('input').placeholder = panel === 'month' ? `+ ${thisMonth ? '이번 달' : mName}에 적기` : `+ ${thisWeek ? '이번 주' : '이 주'}에 적기`;
+    $('weekAdd').querySelector('input').placeholder = panel === 'month' ? `+ ${thisMonth ? '이번 달' : mName} 목표 적기` : `+ ${thisWeek ? '이번 주' : '이 주'} 목표 적기`;
     const dayLabel = selDate === today ? '오늘' : f(selDate);
     const list = panel === 'month' ? store.plansOn('month', ms).filter(p => p.status !== 'migrated') : store.plansOn('week', ws);
+    // 목표를 누르면(할 일 ▾) 연결된 할 일 + 바로 적기. 할 일은 [오늘로]·끌기, 목표를 통째로 끌면 같은 이름의 할 일이 생김
     $('weekList').innerHTML = list.map(p => {
-      const v = view(p);
-      const onDay = store.livePlanOn(p.taskId, 'day', selDate);
-      let extra = '';
-      if (onDay) extra = `<span class="tag${onDay.status === 'done' ? ' tag-done' : ''}">${dayLabel}${onDay.status === 'done' ? ' 몫 ✓' : '에 있음'}</span>`;
-      else if (p.status === 'open' && v.t.status !== 'done') extra = `<button type="button" class="pull" data-pull="${p.id}">${dayLabel}로</button>`;
-      return rowHtml(v, extra);
-    }).join('') || `<li class="empty">${panel === 'month' ? '[월간]에서 이번 달 할 일을 적어 두면 여기서 오늘로 가져와요' : '이번 주에 할 일을 적어 두고, 하루에 하나씩 끌어오세요'}</li>`;
-    $('weekList').querySelectorAll('.row').forEach(wireRow(panel));
+      const v = view(p), open = openGoals.has(v.t.id);
+      const extra = `${progTag(v.t.id)}<button type="button" class="pull" data-expand="${v.t.id}" aria-expanded="${open}">할 일 ${open ? '▴' : '▾'}</button>`;
+      let html = rowHtml(v, extra);
+      if (open) {
+        const steps = store.stepsOf(v.t.id).map(s => {
+          const ps = store.plansOfTask(s.id).filter(x => x.level === 'day' && x.status !== 'migrated');
+          return ps.find(x => x.period === selDate) || ps.sort((a, b) => (a.period < b.period ? 1 : -1))[0];
+        }).filter(Boolean);
+        const stepDone = sp => store.task(sp.taskId).status === 'done' || sp.status === 'done';
+        steps.sort((a, b) => stepDone(a) - stepDone(b) || (a.period < b.period ? 1 : -1)); // 끝낸 할 일은 아래로
+        html += `<li class="goal-steps"><ul class="rows">${steps.map(sp => {
+          const sv = view(sp), onDay = sp.period === selDate;
+          const ex = onDay ? `<span class="tag${sp.status === 'done' ? ' tag-done' : ''}">${dayLabel}${sp.status === 'done' ? ' ✓' : '에 있음'}</span>`
+            : `<span class="tag${stepDone(sp) ? ' tag-done' : ''}">${parseDate(sp.period).getMonth() + 1}/${parseDate(sp.period).getDate()}${sp.status === 'done' ? '✓' : ''}</span>${stepDone(sp) ? '' : `<button type="button" class="pull" data-pull="${sp.id}">${dayLabel}로</button>`}`;
+          return rowHtml(sv, ex);
+        }).join('')}</ul>
+          <form class="add-form mini" data-add-step="${v.t.id}" autocomplete="off"><input type="text" enterkeyhint="done" placeholder="+ ${dayLabel} 할 일 (이 목표)" aria-label="${esc(v.t.title)} 목표에 ${dayLabel} 할 일 적기" /></form></li>`;
+      }
+      return html;
+    }).join('') || `<li class="empty">${panel === 'month' ? '[월간]에서 이번 달 목표를 적어 두면 여기서 할 일로 나눠 오늘로 가져와요' : '이번 주 목표를 적어 두고, 오늘 할 일로 나눠 가져오세요'}</li>`;
+    $('weekList').querySelectorAll(':scope > .row').forEach(wireRow('goal'));
+    $('weekList').querySelectorAll('.goal-steps .row').forEach(wireRow('week'));
   }
+  const openGoals = new Set();
   document.addEventListener('click', e => {
     const b = e.target.closest('#panelTabs [data-panel]'); if (!b) return;
     panel = b.dataset.panel; try { localStorage.setItem('bj.v3.panel', panel); } catch (err) { /* */ }
@@ -288,9 +320,9 @@
         return { type: 'time', start: m, duration: dur };
       }
       const sz = el.closest('[data-drop-slot]');
-      if (sz && from !== 'week' && from !== 'month') return { type: 'slot', slot: sz.dataset.dropSlot || null, date: sz.dataset.day, el: sz };
+      if (sz && from !== 'week' && from !== 'goal') return { type: 'slot', slot: sz.dataset.dropSlot || null, date: sz.dataset.day, el: sz };
       const wz = el.closest('[data-drop-week]');
-      if (from === 'month' && wz) return { type: 'week', el: wz, period: wz.dataset.dropWeek };
+      if (from === 'goal' && p.level === 'month' && wz) return { type: 'week', el: wz, period: wz.dataset.dropWeek };
       const dz = el.closest('[data-drop-day]');
       if (dz) return { type: 'day', date: dz.dataset.dropDay, el: dz };
       if (el.closest('#untimedZone')) return { type: 'untimed' };
@@ -325,16 +357,22 @@
         undoToast(`${target.slot ? SLOT_LABEL[target.slot] : '구간 없음'}으로 옮겼어요${wasTimed ? ' (시간은 뺐어요)' : ''}`);
         return;
       }
-      if (target.type === 'week') { if (from === 'week') { if (target.period !== p.period) moveTo(planId, target.period); } else pullToWeek(p, target.period); return; }
+      // 목표를 날짜·타임라인·시간 없음에 놓으면 = 그 목표의 할 일(같은 이름)을 그날에. 이번 달 목표를 주에 놓으면 = 그 주 목표
+      if (from === 'goal') {
+        if (target.type === 'week') { pullToWeek(p, target.period); return; }
+        const date = target.type === 'day' ? target.date : selDate;
+        addStep(t, date, target.type === 'time' ? { start: target.start, duration: 30 } : {});
+        return;
+      }
       if (target.type === 'day') {
-        if (from === 'week' || from === 'month') {
+        if (from === 'week') {
           if (store.livePlanOn(p.taskId, 'day', target.date)) { toast(`이미 ${dayName(target.date)}에 있어요`); return; }
           store.placeTask(p.taskId, { period: target.date });
           undoToast(`${dayName(target.date)}에 놓았어요`);
         } else if (target.date !== p.period) moveTo(planId, target.date);
         return;
       }
-      if (from === 'week' || from === 'month') {
+      if (from === 'week') {
         if (target.type === 'time') store.placeTask(p.taskId, { period: selDate, start: target.start, duration: 30 });
         else store.placeTask(p.taskId, { period: selDate });
         undoToast(`${selDate === today ? '오늘' : '그날'}로 가져왔어요`);
@@ -355,6 +393,17 @@
   document.addEventListener('click', e => {
     const tg = e.target.closest('[data-toggle]');
     if (tg) { onToggle(tg.dataset.toggle); return; }
+    const gl = e.target.closest('[data-goal]');
+    if (gl) { // 목표 달성은 직접 체크(결 2026-11-18)
+      const t = store.task(gl.dataset.goal); if (!t) return;
+      const done = t.status !== 'done';
+      store.setTaskStatus(t.id, done ? 'done' : 'open');
+      const { n, done: d } = goalProgress(t.id);
+      if (done) toast(`목표 달성! 🎉 『${t.title}』${n ? ` (할 일 ${d}/${n})` : ''}`, [{ label: '실행 취소', fn: () => store.undo() }]); else undoToast('목표를 다시 열었어요');
+      return;
+    }
+    const ex = e.target.closest('[data-expand]');
+    if (ex) { const id = ex.dataset.expand; openGoals.has(id) ? openGoals.delete(id) : openGoals.add(id); renderWeek(); return; }
     const mo = e.target.closest('[data-more]');
     if (mo) { openMenu(mo.dataset.more, mo); return; }
     const pu = e.target.closest('[data-pull]');
@@ -396,7 +445,7 @@
       const host = document.querySelector(`[data-plan="${p.id}"] .row-title, [data-plan="${p.id}"] .tl-title`);
       inlineRename(p.id, host);
     }]);
-    items.push(['영역 · 프로젝트 정하기…', () => openAssign(t.id)]);
+    items.push([v.isGoalRow ? '영역 정하기…' : '영역 · 목표 정하기…', () => openAssign(t.id)]);
     if (p.start != null) items.push(['시간 빼기', () => { store.setPlanTime(p.id, null); undoToast('시간을 뺐어요'); }]);
     if (p.status === 'open' && p.level === 'day') {
       if (p.period !== today) items.push(['오늘로 옮기기', () => moveTo(p.id, today)]);
@@ -410,8 +459,9 @@
       if (r === 'done') toast('옮겨 간 날에 이미 체크해서 되돌릴 수 없어요. 그 날 계획을 먼저 풀어 주세요.');
       else if (r) undoToast('되돌렸어요');
     }]);
-    items.push(t.status === 'done' ? ['작업 다시 열기', () => { store.setTaskStatus(t.id, 'open'); undoToast('작업을 다시 열었어요'); }]
-      : ['작업 완료 ✓', () => { store.setTaskStatus(t.id, 'done'); undoToast(`『${t.title}』 작업 완료 ✓`); }]);
+    const noun = v.isGoalRow ? '목표' : '작업';
+    items.push(t.status === 'done' ? [`${noun} 다시 열기`, () => { store.setTaskStatus(t.id, 'open'); undoToast(`${noun}를 다시 열었어요`); }]
+      : [v.isGoalRow ? '목표 달성 ✓' : '작업 완료 ✓', () => { store.setTaskStatus(t.id, 'done'); undoToast(`『${t.title}』 ${v.isGoalRow ? '목표 달성 🎉' : '작업 완료 ✓'}`); }]);
     items.push(['계획 지우기', () => { store.deletePlan(p.id); undoToast('지웠어요'); }, 'danger']);
     menu.innerHTML = `<div class="menu-head">${esc(t.title)}</div>`
       + `<div class="menu-kinds" role="group" aria-label="종류">${Object.keys(KIND_LABEL).map(k => `<button type="button" data-kind="${k}" aria-pressed="${t.kind === k}">${esc(kindSym(k))} ${KIND_LABEL[k]}</button>`).join('')}</div>`
@@ -433,6 +483,13 @@
     if (store.livePlanOn(p.taskId, 'week', ws)) { toast(ws === weekStart(today) ? '이미 이번 주에 있어요' : '이미 그 주에 있어요'); return; }
     store.placeTask(p.taskId, { level: 'week', period: ws });
     undoToast(ws === weekStart(today) ? '이번 주에 놓았어요' : `${parseDate(ws).getMonth() + 1}/${parseDate(ws).getDate()} 주에 놓았어요`);
+  }
+  // 목표 → 그날 할 일(같은 이름, 목표에 연결). 같은 날에 같은 이름의 할 일이 이미 있으면 안내만
+  function addStep(g, date, opts = {}) {
+    const dup = store.stepsOf(g.id).find(s => s.title === g.title && store.livePlanOn(s.id, 'day', date));
+    if (dup) { toast(`이미 ${dayName(date)}에 있어요`); return; }
+    store.addPlan({ title: g.title, period: date, goalId: g.id, ...opts });
+    undoToast(`${dayName(date)}에 놓았어요 (◎ ${g.title})`);
   }
   // 그 달의 몇째 주(일요일 시작, 1일이 든 주 = 1주)
   const weekNo = (ws, first) => Math.round((parseDate(ws) - parseDate(weekStart(first))) / 864e5 / 7) + 1;
@@ -467,21 +524,23 @@
   function openAssign(taskId) {
     const t = store.task(taskId); if (!t) return;
     const dlg = $('assignDlg');
-    const areaSel = $('assignArea'), projSel = $('assignProject'), newProj = $('assignNewProject');
+    const areaSel = $('assignArea'), goalSel = $('assignGoal'), newGoal = $('assignNewGoal');
     $('assignTitle').textContent = t.title;
+    $('assignHead').textContent = t.goal ? '영역' : '영역 · 목표';
+    $('assignGoalLab').hidden = $('assignNewLab').hidden = !!t.goal;
     areaSel.innerHTML = `<option value="">기본</option>` + store.areas().map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
-    const fillProjects = () => {
-      const aid = areaSel.value || null;
-      projSel.innerHTML = `<option value="">프로젝트 없음</option>` + store.projects().filter(p => p.areaId === aid).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
-    };
-    areaSel.value = t.areaId || ''; fillProjects(); projSel.value = t.projectId || ''; newProj.value = '';
-    areaSel.onchange = fillProjects;
+    // 고를 수 있는 목표: 안 끝난 목표(지금 연결된 것은 끝났어도 보임). 이번 달·이번 주 목표 먼저
+    const cur = new Set([...store.plansOn('month', monthStart(selDate)), ...store.plansOn('week', weekStart(selDate))].map(p => p.taskId));
+    const goals = store.goals().filter(g => g.status !== 'done' || g.id === t.goalId).sort((a, b) => cur.has(b.id) - cur.has(a.id));
+    goalSel.innerHTML = `<option value="">목표 없음</option>` + goals.map(g => `<option value="${g.id}">${esc(g.title)}</option>`).join('');
+    areaSel.value = t.areaId || ''; goalSel.value = t.goalId || ''; newGoal.value = '';
+    $('assignNewGoal').placeholder = `예: 포트폴리오 완성 (${parseDate(selDate).getMonth() + 1}월 목표로)`;
     dlg.returnValue = '';
     dlg.showModal();
     dlg.onclose = () => {
       if (dlg.returnValue !== 'save') return;
-      store.assignTask(taskId, { areaId: areaSel.value || null, projectId: projSel.value || null, newProjectName: newProj.value });
-      undoToast('영역 · 프로젝트를 정했어요');
+      store.assignTask(taskId, { areaId: areaSel.value || null, goalId: goalSel.value || null, newGoalName: newGoal.value, newGoalMonth: monthStart(selDate) });
+      undoToast(t.goal ? '영역을 정했어요' : '영역 · 목표를 정했어요');
     };
   }
 
@@ -596,10 +655,7 @@
 
     // 왼쪽: 영역마다 제목 + 줄 + 바로 적기. 이 주에 놓인 날을 작게 표시(✓ = 그날 몫 완료)
     const weekPlans = store.plansOn('week', ws);
-    const dayTags = p => days.map(d => {
-      const x = store.livePlanOn(p.taskId, 'day', d); if (!x) return '';
-      return `<span class="tag${x.status === 'done' ? ' tag-done' : ''}">${DOW[parseDate(d).getDay()]}${x.status === 'done' ? '✓' : ''}</span>`;
-    }).join('');
+    const dayTags = p => `<span class="tags">${stepDayTags(p.taskId, days)}${progTag(p.taskId)}</span>`;
     const group = (area, list) => `<section class="wk-area${list.length ? '' : ' is-empty'}" style="${area ? `--c:${area.color}` : ''}">
         <h3 class="wk-area-title${area ? '' : ' no-area'}">${area ? esc(area.name) : '기본'}</h3>
         <ul class="rows">${list.map(p => rowHtml(view(p), dayTags(p))).join('')}</ul>
@@ -611,7 +667,7 @@
     const rest = weekPlans.filter(p => !areaIds.has(store.task(p.taskId)?.areaId));
     html += group(null, rest);
     $('wkAreas').innerHTML = html;
-    $('wkAreas').querySelectorAll('.row').forEach(wireRow('week'));
+    $('wkAreas').querySelectorAll('.row').forEach(wireRow('goal'));
 
 
     // 오른쪽: 7일. 줄은 시간 순 → 시간 없는 것. 날짜를 누르면 그날 오늘 화면으로
@@ -680,13 +736,11 @@
     $('moAdd').querySelector('input').placeholder = `+ ${m + 1}월에 적기 (예: #독서 1권 다 읽기)`;
     const weekTags = p => store.plansOfTask(p.taskId).filter(w => w.level === 'week' && w.status !== 'migrated' && w.period <= last && addDays(w.period, 6) >= first)
       .sort((a, b) => a.period < b.period ? -1 : 1).map(w => `<span class="tag${w.status === 'done' ? ' tag-done' : ''}">${weekNo(w.period, first)}주${w.status === 'done' ? '✓' : ''}</span>`).join('');
-    const dayTags = p => store.plansOfTask(p.taskId).filter(x => x.level === 'day' && x.status !== 'migrated' && x.period >= first && x.period <= last)
-      .sort((a, b) => a.period < b.period ? -1 : 1).map(x => `<span class="tag${x.status === 'done' ? ' tag-done' : ''}">${parseDate(x.period).getDate()}일${x.status === 'done' ? '✓' : ''}</span>`).join('');
     const monthPlans = store.plansOn('month', first);
     $('moListHint').textContent = narrowMq.matches ? '아래 주 버튼·날짜로 끌기 · ⋯ 주에 놓기' : '달력 왼쪽 주 칸·날짜로 끌어 놓기';
     // 이번 달 목표만(주간과 겹치지 않게, 결 2026-11-18). 주·날짜에 놓아도 목록에 남고 '3주'·'20일✓'로 진행이 보임
-    $('moList').innerHTML = `<ul class="rows">${monthPlans.map(p => rowHtml(view(p), `<span class="tags">${weekTags(p)}${dayTags(p)}</span>`)).join('') || `<li class="empty">이번 달에 할 일을 적어 두고, 주·날짜로 끌어 놓으세요</li>`}</ul>`;
-    $('moList').querySelectorAll('.row').forEach(wireRow('month'));
+    $('moList').innerHTML = `<ul class="rows">${monthPlans.map(p => rowHtml(view(p), `<span class="tags">${weekTags(p)}${progTag(p.taskId)}</span>`)).join('') || `<li class="empty">이번 달 목표를 적어 두고, 주·날짜로 끌어 놓으세요</li>`}</ul>`;
+    $('moList').querySelectorAll('.row').forEach(wireRow('goal'));
     // 휴대폰: 주 버튼 한 줄(PC의 8열 '주' 칸 역할). 끌어 놓으면 그 주, 누르면 그 주 주간. 개수만 작게
     const weeksOf = []; for (let w = start; w <= end; w = addDays(w, 7)) weeksOf.push(w);
     $('moWeeks').innerHTML = `<span class="menu-lab">주에 놓기</span>` + weeksOf.map(w => { const n = store.plansOn('week', w).filter(p => p.status !== 'migrated').length;
@@ -719,6 +773,12 @@
       e.preventDefault();
       const input = e.target.querySelector('input'), { title, areaId } = parseTitle(input.value);
       if (title) { store.addPlan({ title, level: 'month', period: monthStart(selDate), areaId }); $('moAdd').querySelector('input').focus(); }
+      return;
+    }
+    if (e.target.matches('[data-add-step]')) {
+      e.preventDefault();
+      const gid = e.target.dataset.addStep, input = e.target.querySelector('input'), { title, areaId } = parseTitle(input.value);
+      if (title) { store.addPlan({ title, period: selDate, goalId: gid, areaId }); document.querySelector(`[data-add-step="${gid}"] input`)?.focus(); }
       return;
     }
     const f = e.target; if (!f.matches('[data-add-week], [data-add-day], [data-add-slot]')) return;
