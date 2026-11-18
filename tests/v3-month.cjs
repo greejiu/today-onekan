@@ -145,6 +145,44 @@ const planOf = (p, title) => p.evaluate(t => { const x = bj.state.plans.find(y =
     assert.equal(await p.locator('#moDetail .row-slot').count(), 0);
     ok('체크 → 달력 칸 줄도 완료(줄긋기), 자세히: 오후에 "↳ 출근 09:00–18:00", 구간 안에서 구간 표시 중복 없음');
 
+    // 10-1. 달력 위 '이번 달에 할 일' → 주간 '11월에서' → 이번 주로(오늘이 이번 주에서 가져오는 것처럼)
+    assert.equal(await p.locator('#moListTitle').textContent(), '11월에 할 일');
+    await p.locator('#moAdd input').fill('#독서 책 1권 다 읽기'); await p.keyboard.press('Enter');
+    await p.locator('#moAdd input').fill('포트폴리오 완성'); await p.keyboard.press('Enter');
+    let mp2 = await p.evaluate(() => bj.plansOn('month', '2026-11-01').map(x => [bj.task(x.taskId).title, bj.area(bj.task(x.taskId).areaId)?.name || null]));
+    assert.deepEqual(mp2, [['책 1권 다 읽기', '독서'], ['포트폴리오 완성', null]]);
+    await p.locator('.tabs a', { hasText: '주간' }).click();
+    assert.equal(await p.locator('#wkMonthTitle').textContent(), '11월에서');
+    assert.deepEqual(await p.locator('#wkMonth .row-title').allTextContents(), ['책 1권 다 읽기', '포트폴리오 완성']);
+    await p.locator('#wkMonth .row', { hasText: '책 1권' }).locator('[data-pull-week]').click();
+    assert.deepEqual(await p.evaluate(() => bj.plansOn('week', '2026-11-15').map(x => bj.task(x.taskId).title)), ['책 1권 다 읽기']);
+    assert.match(await p.locator('#wkMonth .row', { hasText: '책 1권' }).textContent(), /이번 주에 있음/);
+    assert.equal(await p.locator('.wk-area .row-title', { hasText: '책 1권 다 읽기' }).count(), 1);
+    ok('월간 달력 위에 이번 달 할 일 적기(#영역) → 주간 "11월에서" → [이번 주로] → 이번 주 목록(같은 작업)');
+    // 끌기: 이번 달 줄 → 이번 주 목록, → 날짜 칸
+    await drag(p, await mid(p.locator('#wkMonth .row', { hasText: '포트폴리오 완성' })), await mid(p.locator('#wkAreas .wk-area-title').first()));
+    assert.deepEqual((await p.evaluate(() => bj.plansOn('week', '2026-11-15').map(x => bj.task(x.taskId).title))).sort(), ['책 1권 다 읽기', '포트폴리오 완성']);
+    await drag(p, await mid(p.locator('#wkMonth .row', { hasText: '책 1권' })), await mid(p.locator('[data-drop-day="2026-11-20"] header')));
+    assert.deepEqual(await planOf(p, '책 1권 다 읽기').then(() => p.evaluate(() => bj.state.plans.filter(x => bj.task(x.taskId).title === '책 1권 다 읽기').map(x => x.level + ':' + x.period).sort())), ['day:2026-11-20', 'month:2026-11-01', 'week:2026-11-15']);
+    ok('끌기: 이번 달 줄 → 이번 주 목록(주 계획), → 금요일 칸(그날 계획)');
+    // 월간에서 몇째 주에 놓였는지(11/15 주 = 3주), 다음 달로 옮기기(>)·되돌리기
+    await p.locator('.tabs a', { hasText: '월간' }).click();
+    assert.equal(await p.locator('#moList .row', { hasText: '책 1권' }).locator('.tag').textContent(), '3주');
+    await p.locator('#moList .row', { hasText: '포트폴리오 완성' }).locator('.more').click();
+    await p.locator('#menu .menu-item', { hasText: '다음 달로 옮기기' }).click();
+    assert.deepEqual(await p.evaluate(() => bj.state.plans.filter(x => x.level === 'month' && bj.task(x.taskId).title === '포트폴리오 완성').map(x => x.period + ':' + x.status).sort()), ['2026-11-01:migrated', '2026-12-01:open']);
+    await p.locator('#moList .row', { hasText: '포트폴리오 완성' }).locator('.more').click();
+    await p.locator('#menu .menu-item', { hasText: '다시 이 달로 되돌리기' }).click();
+    assert.deepEqual(await p.evaluate(() => bj.state.plans.filter(x => x.level === 'month' && bj.task(x.taskId).title === '포트폴리오 완성').map(x => x.period + ':' + x.status)), ['2026-11-01:open']);
+    await p.locator('#moList .row', { hasText: '책 1권' }).locator('[data-toggle]').click();
+    assert.match(await p.locator('#toast').textContent(), /이번 달 몫 완료!/);
+    ok('월간 할 일에 "3주" 표시, 다음 달로 옮기기(>) → 되돌리기, 체크 = 이번 달 몫 완료');
+    // 시간 있는 줄: 시간이 제목 안 → 줄이 기호 → 시간 → 제목으로 이어짐
+    await p.locator('.mc[data-pick="2026-11-17"]').click();
+    assert.equal(await p.locator('#moDetail .row', { hasText: '출근' }).locator('.row-title > .row-time').textContent(), '09:00');
+    assert.equal(await p.locator('#moDetail .row', { hasText: '출근' }).locator('.row-title').evaluate(e => getComputedStyle(e).textDecorationLine), 'line-through');
+    ok('시간 있는 완료 줄: 시간이 제목 안에 있어 기호부터 시간·제목까지 한 줄로 그어짐');
+
     await p.screenshot({ path: path.join(OUT, 'desktop.png'), fullPage: true });
 
     // 11. 휴대폰 390: 가로 스크롤 없음, 글자 대신 색 막대, 달력 아래 자세히
