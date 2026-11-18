@@ -60,6 +60,9 @@
   let today = todayStr();
   let selDate = today;
   let tl = null; // 지금 그린 타임라인
+  // 휴대폰 폭이면 월간을 주 묶음 목록 + 7열 달력으로(PC는 8열)
+  const narrowMq = window.matchMedia('(max-width: 760px)');
+  narrowMq.addEventListener?.('change', () => { if (mode === 'month') render(); });
   const modeOf = () => (location.hash === '#week' ? 'week' : location.hash === '#month' ? 'month' : 'today');
   const SLOT_LABEL = { am: '오전', pm: '오후', eve: '저녁' };
   const SLOT_HINT = { am: '12시 전', pm: '12~18시', eve: '18시 이후' };
@@ -202,14 +205,20 @@
     line.style.top = tl.topOf(m) + 'px';
   }
 
+  // 오늘 화면 옆 목록: [이번 주 | 이번 달] 탭(결 2026-11-18). 고른 탭은 이 기기에 기억
+  let panel = 'week';
+  try { if (localStorage.getItem('bj.v3.panel') === 'month') panel = 'month'; } catch (e) { /* */ }
   function renderWeek() {
-    const ws = weekStart(selDate), we = addDays(ws, 6);
-    const thisWeek = ws === weekStart(today);
+    const ws = weekStart(selDate), we = addDays(ws, 6), ms = monthStart(selDate);
+    const thisWeek = ws === weekStart(today), thisMonth = ms === monthStart(today);
     const f = s => { const d = parseDate(s); return `${d.getMonth() + 1}/${d.getDate()}`; };
-    $('weekTitle').textContent = thisWeek ? '이번 주에서' : '이 주에서';
-    $('weekRange').textContent = `${f(ws)} – ${f(we)}`;
+    const mName = `${parseDate(ms).getMonth() + 1}월`;
+    document.querySelectorAll('#panelTabs [data-panel]').forEach(b => { b.setAttribute('aria-selected', b.dataset.panel === panel); b.textContent = b.dataset.panel === 'month' ? (thisMonth ? '이번 달' : mName) : (thisWeek ? '이번 주' : '이 주'); });
+    $('weekTitle').textContent = panel === 'month' ? `${mName}에서` : thisWeek ? '이번 주에서' : '이 주에서';
+    $('weekRange').textContent = panel === 'month' ? mName : `${f(ws)} – ${f(we)}`;
+    $('weekAdd').querySelector('input').placeholder = panel === 'month' ? `+ ${thisMonth ? '이번 달' : mName}에 적기` : `+ ${thisWeek ? '이번 주' : '이 주'}에 적기`;
     const dayLabel = selDate === today ? '오늘' : f(selDate);
-    const list = store.plansOn('week', ws);
+    const list = panel === 'month' ? store.plansOn('month', ms).filter(p => p.status !== 'migrated') : store.plansOn('week', ws);
     $('weekList').innerHTML = list.map(p => {
       const v = view(p);
       const onDay = store.livePlanOn(p.taskId, 'day', selDate);
@@ -217,9 +226,14 @@
       if (onDay) extra = `<span class="tag${onDay.status === 'done' ? ' tag-done' : ''}">${dayLabel}${onDay.status === 'done' ? ' 몫 ✓' : '에 있음'}</span>`;
       else if (p.status === 'open' && v.t.status !== 'done') extra = `<button type="button" class="pull" data-pull="${p.id}">${dayLabel}로</button>`;
       return rowHtml(v, extra);
-    }).join('') || `<li class="empty">이번 주에 할 일을 적어 두고, 하루에 하나씩 끌어오세요</li>`;
-    $('weekList').querySelectorAll('.row').forEach(wireRow('week'));
+    }).join('') || `<li class="empty">${panel === 'month' ? '[월간]에서 이번 달 할 일을 적어 두면 여기서 오늘로 가져와요' : '이번 주에 할 일을 적어 두고, 하루에 하나씩 끌어오세요'}</li>`;
+    $('weekList').querySelectorAll('.row').forEach(wireRow(panel));
   }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('#panelTabs [data-panel]'); if (!b) return;
+    panel = b.dataset.panel; try { localStorage.setItem('bj.v3.panel', panel); } catch (err) { /* */ }
+    renderWeek();
+  });
 
   /* ---------- 줄 손짓: 짧게 = 이름 수정, 끌기 = 옮기기 ---------- */
   const wireRow = from => li => {
@@ -275,7 +289,8 @@
       }
       const sz = el.closest('[data-drop-slot]');
       if (sz && from !== 'week' && from !== 'month') return { type: 'slot', slot: sz.dataset.dropSlot || null, date: sz.dataset.day, el: sz };
-      if (from === 'month' && el.closest('[data-drop-week]') && !el.closest('[data-no-drop]')) return { type: 'week', el: el.closest('[data-drop-week]') };
+      const wz = el.closest('[data-drop-week]');
+      if ((from === 'month' || (from === 'week' && mode === 'month')) && wz) return { type: 'week', el: wz, period: wz.dataset.dropWeek };
       const dz = el.closest('[data-drop-day]');
       if (dz) return { type: 'day', date: dz.dataset.dropDay, el: dz };
       if (el.closest('#untimedZone')) return { type: 'untimed' };
@@ -288,7 +303,7 @@
       $('untimedZone').classList.toggle('drop-on', target?.type === 'untimed');
       if (lastDz && lastDz !== target?.el) lastDz.classList.remove('drop-on');
       lastDz = target?.el || null; lastDz?.classList.add('drop-on');
-      const label = !target ? '여기엔 놓을 수 없어요' : target.type === 'untimed' ? '→ 시간 없음' : target.type === 'day' ? `→ ${dayName(target.date)}` : target.type === 'week' ? '→ 이번 주' : target.type === 'slot' ? `→ ${target.slot ? SLOT_LABEL[target.slot] : '구간 없음'}` : `→ ${hhmm(target.start)}–${hhmm(target.start + target.duration)}`;
+      const label = !target ? '여기엔 놓을 수 없어요' : target.type === 'untimed' ? '→ 시간 없음' : target.type === 'day' ? `→ ${dayName(target.date)}` : target.type === 'week' ? `→ ${weekNo(target.period, monthStart(selDate))}주` : target.type === 'slot' ? `→ ${target.slot ? SLOT_LABEL[target.slot] : '구간 없음'}` : `→ ${hhmm(target.start)}–${hhmm(target.start + target.duration)}`;
       ghost.querySelector('.ghost-where').textContent = label;
       ghost.classList.toggle('no-drop', !target);
       if (target?.type === 'time') {
@@ -310,7 +325,7 @@
         undoToast(`${target.slot ? SLOT_LABEL[target.slot] : '구간 없음'}으로 옮겼어요${wasTimed ? ' (시간은 뺐어요)' : ''}`);
         return;
       }
-      if (target.type === 'week') { pullToWeek(p); return; }
+      if (target.type === 'week') { if (from === 'week') { if (target.period !== p.period) moveTo(planId, target.period); } else pullToWeek(p, target.period); return; }
       if (target.type === 'day') {
         if (from === 'week' || from === 'month') {
           if (store.livePlanOn(p.taskId, 'day', target.date)) { toast(`이미 ${dayName(target.date)}에 있어요`); return; }
@@ -319,7 +334,7 @@
         } else if (target.date !== p.period) moveTo(planId, target.date);
         return;
       }
-      if (from === 'week') {
+      if (from === 'week' || from === 'month') {
         if (target.type === 'time') store.placeTask(p.taskId, { period: selDate, start: target.start, duration: 30 });
         else store.placeTask(p.taskId, { period: selDate });
         undoToast(`${selDate === today ? '오늘' : '그날'}로 가져왔어요`);
@@ -343,9 +358,7 @@
     const mo = e.target.closest('[data-more]');
     if (mo) { openMenu(mo.dataset.more, mo); return; }
     const pu = e.target.closest('[data-pull]');
-    if (pu) { const p = store.plan(pu.dataset.pull); if (p) { store.placeTask(p.taskId, { period: selDate }); undoToast(`${selDate === today ? '오늘' : '그날'}로 가져왔어요`); } return; }
-    const pw = e.target.closest('[data-pull-week]');
-    if (pw) { const p = store.plan(pw.dataset.pullWeek); if (p) pullToWeek(p); }
+    if (pu) { const p = store.plan(pu.dataset.pull); if (p) { store.placeTask(p.taskId, { period: selDate }); undoToast(`${selDate === today ? '오늘' : '그날'}로 가져왔어요`); } }
   });
 
   function onToggle(planId) {
@@ -402,22 +415,24 @@
     items.push(['계획 지우기', () => { store.deletePlan(p.id); undoToast('지웠어요'); }, 'danger']);
     menu.innerHTML = `<div class="menu-head">${esc(t.title)}</div>`
       + `<div class="menu-kinds" role="group" aria-label="종류">${Object.keys(KIND_LABEL).map(k => `<button type="button" data-kind="${k}" aria-pressed="${t.kind === k}">${esc(kindSym(k))} ${KIND_LABEL[k]}</button>`).join('')}</div>`
+      + (p.level === 'month' && p.status === 'open' ? (() => { const f = monthStart(p.period), l = BJStore.dateStr(new Date(parseDate(f).getFullYear(), parseDate(f).getMonth() + 1, 0)); const ws = []; for (let w = weekStart(f); w <= l; w = addDays(w, 7)) ws.push(w);
+          return `<div class="menu-kinds" role="group" aria-label="주에 놓기"><span class="menu-lab">주에 놓기</span>${ws.map(w => `<button type="button" data-week="${w}" aria-pressed="${!!store.livePlanOn(t.id, 'week', w)}">${weekNo(w, f)}주</button>`).join('')}</div>`; })() : '')
       + (p.level === 'day' && p.start == null && p.status !== 'migrated' ? `<div class="menu-kinds" role="group" aria-label="구간">${['am', 'pm', 'eve', ''].map(k => `<button type="button" data-slot="${k}" aria-pressed="${(p.slot || '') === k}">${k ? SLOT_LABEL[k] : '없음'}</button>`).join('')}</div>` : '')
       + items.map(([label, , cls], i) => `<button type="button" class="menu-item ${cls || ''}" data-i="${i}">${esc(label)}</button>`).join('');
     menu.querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => { const fn = items[+b.dataset.i][1]; closeMenu(); fn(); }));
     menu.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', () => { closeMenu(); store.setTaskKind(t.id, b.dataset.kind); }));
     menu.querySelectorAll('[data-slot]').forEach(b => b.addEventListener('click', () => { closeMenu(); store.setPlanSlot(p.id, b.dataset.slot || null); }));
+    menu.querySelectorAll('[data-week]').forEach(b => b.addEventListener('click', () => { closeMenu(); pullToWeek(p, b.dataset.week); }));
     const r = anchor.getBoundingClientRect();
     placeMenu(r.right - 200, r.bottom + 4);
   }
 
   const monthStart = d => d.slice(0, 8) + '01';
   // 이번 달 → 이번 주(오늘이 이번 주에서 가져오는 것처럼). 같은 작업에 그 주 계획
-  function pullToWeek(p) {
-    const ws = weekStart(selDate);
-    if (store.livePlanOn(p.taskId, 'week', ws)) { toast('이미 이번 주에 있어요'); return; }
+  function pullToWeek(p, ws = weekStart(selDate)) {
+    if (store.livePlanOn(p.taskId, 'week', ws)) { toast(ws === weekStart(today) ? '이미 이번 주에 있어요' : '이미 그 주에 있어요'); return; }
     store.placeTask(p.taskId, { level: 'week', period: ws });
-    undoToast(ws === weekStart(today) ? '이번 주로 가져왔어요' : '그 주로 가져왔어요');
+    undoToast(ws === weekStart(today) ? '이번 주에 놓았어요' : `${parseDate(ws).getMonth() + 1}/${parseDate(ws).getDate()} 주에 놓았어요`);
   }
   // 그 달의 몇째 주(일요일 시작, 1일이 든 주 = 1주)
   const weekNo = (ws, first) => Math.round((parseDate(ws) - parseDate(weekStart(first))) / 864e5 / 7) + 1;
@@ -598,17 +613,6 @@
     $('wkAreas').innerHTML = html;
     $('wkAreas').querySelectorAll('.row').forEach(wireRow('week'));
 
-    // 이번 달에서(오늘의 '이번 주에서'처럼): 이번 달 할 일을 이번 주로. 끌어서 아래 목록·날짜에 놓거나 [이번 주로]
-    const ms = monthStart(ws <= selDate ? selDate : ws), monthPlans = store.plansOn('month', ms).filter(p => p.status !== 'migrated');
-    const wsLabel = ws === weekStart(today) ? '이번 주' : '이 주';
-    $('wkMonthTitle').textContent = `${parseDate(ms).getMonth() + 1}월에서`;
-    $('wkMonth').innerHTML = monthPlans.map(p => {
-      const v = view(p), inWeek = store.livePlanOn(p.taskId, 'week', ws);
-      const extra = inWeek ? `<span class="tag${inWeek.status === 'done' ? ' tag-done' : ''}">${wsLabel}${inWeek.status === 'done' ? ' ✓' : '에 있음'}</span>`
-        : p.status === 'open' && v.t.status !== 'done' ? `<button type="button" class="pull" data-pull-week="${p.id}">${wsLabel}로</button>` : '';
-      return rowHtml(v, extra);
-    }).join('') || `<li class="empty">[월간]에서 이번 달 할 일을 적어 두면 여기서 이번 주로 가져와요</li>`;
-    $('wkMonth').querySelectorAll('.row').forEach(wireRow('month'));
 
     // 오른쪽: 7일. 줄은 시간 순 → 시간 없는 것. 날짜를 누르면 그날 오늘 화면으로
     $('wkDays').innerHTML = days.map(d => {
@@ -648,6 +652,14 @@
     let cells = '';
     for (let d = start; d <= end; d = addDays(d, 1)) {
       const dx = parseDate(d), { cover: by } = slotsOf(d);
+      if (dx.getDay() === 0) { // 줄 맨 왼쪽 = 그 주에 배치한 일(결 제안: 8열). 이번 달 할 일을 여기로 끌면 그 주
+        const wl = store.plansOn('week', d).filter(p => p.status !== 'migrated'), n = weekNo(d, first);
+        const wline = p => { const v = view(p); return `<div class="mc-line${p.status === 'done' ? ' is-done' : ''}${v.a ? '' : ' no-area'}" style="${styleOf(v)}"><span class="mc-text"><span class="mc-sym">${esc(symOf(v))} </span>${esc(v.t.title)}</span></div>`; };
+        cells += `<div class="mw${d === weekStart(today) ? ' is-this' : ''}" data-drop-week="${d}" data-goto-week="${d}" role="button" tabindex="0" aria-label="${n}주 배치: ${wl.length ? esc(wl.map(p => store.task(p.taskId)?.title).join(', ')) : '없음'}. 누르면 주간">
+          <span class="mc-num mw-num">${n}주</span>${wl.length > 3 ? `<span class="mc-more">+${wl.length - 3}</span>` : ''}
+          ${wl.slice(0, 3).map(wline).join('')}
+        </div>`;
+      }
       const line = k => {
         const list = by[k];
         if (!list.length) return `<div class="mc-line is-empty"><span class="mc-text">·</span></div>`;
@@ -668,8 +680,26 @@
     $('moAdd').querySelector('input').placeholder = `+ ${m + 1}월에 적기 (예: #독서 1권 다 읽기)`;
     const weekTags = p => store.plansOfTask(p.taskId).filter(w => w.level === 'week' && w.status !== 'migrated' && w.period <= last && addDays(w.period, 6) >= first)
       .sort((a, b) => a.period < b.period ? -1 : 1).map(w => `<span class="tag${w.status === 'done' ? ' tag-done' : ''}">${weekNo(w.period, first)}주${w.status === 'done' ? '✓' : ''}</span>`).join('');
-    $('moList').innerHTML = store.plansOn('month', first).map(p => rowHtml(view(p), weekTags(p))).join('') || `<li class="empty">이번 달에 할 일을 적어 두고, [주간]에서 한 주씩 가져오세요</li>`;
-    $('moList').querySelectorAll('.row').forEach(wireRow('month'));
+    const dayTags = p => store.plansOfTask(p.taskId).filter(x => x.level === 'day' && x.status !== 'migrated' && x.period >= first && x.period <= last)
+      .sort((a, b) => a.period < b.period ? -1 : 1).map(x => `<span class="tag${x.status === 'done' ? ' tag-done' : ''}">${parseDate(x.period).getDate()}일${x.status === 'done' ? '✓' : ''}</span>`).join('');
+    const monthPlans = store.plansOn('month', first);
+    $('moListHint').textContent = narrowMq.matches ? '주 묶음·날짜로 끌기 · ⋯ 주에 놓기' : '달력 왼쪽 주 칸·날짜로 끌어 놓기';
+    if (!narrowMq.matches) {
+      // PC: 할 일 목록 + 8열 달력(맨 왼쪽 주 칸으로 끌면 그 주)
+      $('moList').innerHTML = `<ul class="rows">${monthPlans.map(p => rowHtml(view(p), `<span class="tags">${weekTags(p)}${dayTags(p)}</span>`)).join('') || `<li class="empty">이번 달에 할 일을 적어 두고, 달력 왼쪽 주 칸이나 날짜로 끌어 놓으세요</li>`}</ul>`;
+    } else {
+      // 휴대폰(결 제안 2026-11-18): 기본(아직 주에 안 놓은 일) + 1주·2주… 묶음, 달력은 7열. 줄을 주 묶음으로 끌거나 ⋯ → 주에 놓기
+      const weeks = []; for (let w = start; w <= end; w = addDays(w, 7)) weeks.push(w);
+      const base = monthPlans.filter(p => !weeks.some(w => store.livePlanOn(p.taskId, 'week', w)));
+      const range = w => { const a = parseDate(w), b = parseDate(addDays(w, 6)); return `${a.getMonth() + 1}/${a.getDate()}–${a.getMonth() === b.getMonth() ? '' : (b.getMonth() + 1) + '/'}${b.getDate()}`; };
+      const wDayTags = (p, w) => Array.from({ length: 7 }, (_, i) => addDays(w, i)).map(d => { const x = store.livePlanOn(p.taskId, 'day', d); return x ? `<span class="tag${x.status === 'done' ? ' tag-done' : ''}">${DOW[parseDate(d).getDay()]}${x.status === 'done' ? '✓' : ''}</span>` : ''; }).join('');
+      $('moList').innerHTML = `<section class="mo-group"><h3>기본 <small>아직 주에 안 놓은 일</small></h3><ul class="rows">${base.map(p => rowHtml(view(p), `<span class="tags">${dayTags(p)}</span>`)).join('') || `<li class="empty">${monthPlans.length ? '모두 주에 놓았어요 👍' : '이번 달에 할 일을 적어 보세요'}</li>`}</ul></section>`
+        + weeks.map(w => { const wl = store.plansOn('week', w).filter(p => p.status !== 'migrated'); return `<section class="mo-group mo-week${w === weekStart(today) ? ' is-this' : ''}" data-drop-week="${w}">
+          <h3>${weekNo(w, first)}주 <small>${range(w)}${w === weekStart(today) ? ' · 이번 주' : ''}</small></h3>
+          <ul class="rows">${wl.map(p => rowHtml(view(p), `<span class="tags">${wDayTags(p, w)}</span>`)).join('')}</ul></section>`; }).join('');
+      $('moList').querySelectorAll('.mo-week .row').forEach(wireRow('week'));
+    }
+    $('moList').querySelectorAll('.mo-group:not(.mo-week) .row, #moList > .rows .row').forEach(wireRow('month'));
 
     // 고른 날 자세히: 3구간 + 구간 없음. 줄을 다른 구간이나 달력 날짜로 끌 수 있음
     const { by, cover } = slotsOf(selDate), sd = parseDate(selDate);
@@ -687,6 +717,9 @@
   // 월간 칸 고르기(누르기·Enter)
   const pickDay = d => { selDate = d; render(); };
   document.addEventListener('click', e => { const c = e.target.closest('[data-pick]'); if (c && mode === 'month') pickDay(c.dataset.pick); });
+  const gotoWeek = ws => { selDate = ws < monthStart(selDate) ? monthStart(selDate) : ws; location.hash = '#week'; render(); window.scrollTo(0, 0); };
+  document.addEventListener('click', e => { const w = e.target.closest('[data-goto-week]'); if (w && mode === 'month') gotoWeek(w.dataset.gotoWeek); });
+  document.addEventListener('keydown', e => { const w = e.target.closest?.('[data-goto-week]'); if (w && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); gotoWeek(w.dataset.gotoWeek); } });
   document.addEventListener('keydown', e => { const c = e.target.closest?.('[data-pick]'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pickDay(c.dataset.pick); document.querySelector(`[data-pick="${c.dataset.pick}"]`)?.focus(); } });
 
   // 주간 화면 입력칸(영역별·날짜별)
@@ -727,8 +760,9 @@
       const input = form.querySelector('input');
       const { title, areaId } = parseTitle(input.value);
       if (!title) return;
-      const period = level === 'week' ? weekStart(selDate) : selDate;
-      store.addPlan({ title, level, period, areaId });
+      const lv = formId === 'weekAdd' && panel === 'month' ? 'month' : level;
+      const period = lv === 'month' ? monthStart(selDate) : lv === 'week' ? weekStart(selDate) : selDate;
+      store.addPlan({ title, level: lv, period, areaId });
       input.value = ''; input.focus();
     });
   }

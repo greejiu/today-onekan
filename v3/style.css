@@ -219,8 +219,6 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 .wk-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
 .wk-left { position: sticky; top: 112px; max-height: calc(100vh - 128px); overflow: auto; }
 .wk-area { margin-bottom: 10px; }
-.wk-month { border-bottom: 1px dashed var(--line); padding-bottom: 8px; margin-bottom: 10px; }
-.wk-left.drop-on { outline: 2px dashed var(--accent); outline-offset: -2px; }
 .mo-list { margin-bottom: 12px; }
 .mo-list .rows { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); column-gap: 8px; }
 .wk-area-title { font-size: 13px; display: flex; align-items: center; gap: 6px; margin: 6px 2px 4px; }
@@ -254,11 +252,28 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 .mo-head .hint { margin: 0; }
 .mo-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
 .mo-cal { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
-.mo-dow, .mo-cells { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.mo-dow, .mo-cells { display: grid; grid-template-columns: minmax(0, 1.15fr) repeat(7, minmax(0, 1fr)); } /* 8열: 맨 왼쪽 = 그 주 배치 */
 .mo-dow span { text-align: center; font-size: 12px; color: var(--sub); padding: 6px 0; border-bottom: 1px solid var(--line); }
 .mo-dow .is-sun, .mc.is-sun .mc-num { color: var(--danger-text); }
 .mc { position: relative; min-height: 96px; padding: 4px 4px 6px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); cursor: pointer; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.mc:nth-child(7n) { border-right: 0; }
+.mc:nth-child(8n) { border-right: 0; }
+.mw { position: relative; min-height: 96px; padding: 4px 4px 6px; border-right: 2px solid var(--line); border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--accent-soft) 60%, var(--card)); cursor: pointer; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mw.is-this { background: color-mix(in srgb, var(--text) 7%, var(--card)); }
+.mw.drop-on { outline: 2px dashed var(--accent); outline-offset: -4px; }
+.mw-num { color: var(--sub); }
+.mo-dow .mw-h { border-right: 2px solid var(--line); }
+.menu-lab { font-size: 11px; color: var(--sub); align-self: center; white-space: nowrap; margin-right: 2px; }
+.mo-group { border-top: 1px solid var(--line); padding: 6px 0 2px; }
+.mo-group:first-child { border-top: 0; padding-top: 0; }
+.mo-group h3 { font-size: 13px; margin: 0 2px 4px; }
+.mo-group h3 small { font-weight: 400; color: var(--sub); font-size: 11px; }
+.mo-week { border-radius: 8px; min-height: 30px; }
+.mo-week.is-this h3 { color: var(--text); }
+.mo-week.drop-on { outline: 2px dashed var(--accent); outline-offset: 2px; }
+.tags { display: inline-flex; flex-wrap: wrap; gap: 3px; justify-content: flex-end; max-width: 45%; }
+.seg { display: flex; gap: 2px; background: var(--accent-soft); border-radius: 9px; padding: 2px; }
+.seg button { border: 0; background: none; color: var(--sub); font-weight: 600; font-size: 13px; padding: 3px 10px; border-radius: 7px; }
+.seg button[aria-selected="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 .mc.is-other { background: color-mix(in srgb, var(--bg) 70%, var(--card)); }
 .mc.is-other .mc-num, .mc.is-other .mc-line { opacity: .45; }
 .mc.is-sel { box-shadow: inset 0 0 0 2px var(--text); }
@@ -286,7 +301,11 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
   .mo-detail { position: static; max-height: none; }
   .mo-head .hint { width: 100%; }
   /* 휴대폰: 좁은 칸이라 작은 글씨로 3줄 내용을 보여 줌(결 요청 2026-11-18). 기호·+N은 빼고 색 띠 위에 이름 앞부분 */
-  .mc { min-height: 74px; padding: 3px 2px 4px; gap: 2px; }
+  .mc, .mw { min-height: 74px; padding: 3px 2px 4px; gap: 2px; }
+  /* 휴대폰: 달력은 7열(주 칸은 위 목록의 주 묶음으로) */
+  .mo-dow, .mo-cells { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .mw, .mo-dow .mw-h { display: none; }
+  .mo-list .rows { display: block; }
   .mc-line { min-height: 0; height: 15px; padding: 0 2px; border-radius: 3px; font-size: 10px; line-height: 15px; letter-spacing: -.4px; background: color-mix(in srgb, var(--c) 32%, var(--card)); }
   .mc-line.no-area { background: color-mix(in srgb, var(--sub) 22%, var(--card)); }
   .mc-line.is-empty { background: color-mix(in srgb, var(--line) 45%, transparent); }
