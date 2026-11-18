@@ -90,7 +90,8 @@ h1, h2 { margin: 0; }
 /* 구역 */
 .zone { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; margin-bottom: 14px; }
 .zone-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
-.zone-head h2 { font-size: 14px; }
+.zone-head h2 { font-size: 14px; white-space: nowrap; flex-shrink: 0; }
+.zone-head .hint { text-align: right; }
 .hint { color: var(--sub); font-size: 12px; margin: 0 0 6px; }
 .zone-head .hint { margin: 0; }
 .zone.drop-on { outline: 2px dashed var(--accent); outline-offset: -2px; }
@@ -110,7 +111,9 @@ h1, h2 { margin: 0; }
    줄은 제목 첫 줄 높이 → 기호도 첫 줄에 맞춰 위로 정렬 */
 .row > .bullet { margin-top: -2.5px; position: relative; z-index: 1; } /* 기호 쪽으로 늘린 줄이 기호 누르기를 가로채지 않게 */
 .row > .more { margin-top: -3.5px; }
-.row > .row-time, .row > .tag, .row > .pull { margin-top: 2px; }
+.row > .tag, .row > .pull { margin-top: 2px; }
+.row-title > .row-time { margin-right: 6px; } /* 시간은 제목 안: 줄이 기호 → 시간 → 제목으로 이어짐 */
+.row-title > .row-slot { display: inline; padding: 0 5px; }
 .strike-done .row.s-done .row-title::before, .strike-done .row.task-done .row-title::before { content: "\00a0"; letter-spacing: 17px; margin-left: -21px; }
 .sym-preview.strike-done .is-done .sp-title::before { content: "\00a0"; letter-spacing: 17px; margin-left: -21px; } /* 기호 한가운데부터 */
 .row.s-migrated { opacity: .6; }
@@ -216,6 +219,10 @@ button.bullet:hover { background: color-mix(in srgb, var(--text) 10%, transparen
 .wk-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
 .wk-left { position: sticky; top: 112px; max-height: calc(100vh - 128px); overflow: auto; }
 .wk-area { margin-bottom: 10px; }
+.wk-month { border-bottom: 1px dashed var(--line); padding-bottom: 8px; margin-bottom: 10px; }
+.wk-left.drop-on { outline: 2px dashed var(--accent); outline-offset: -2px; }
+.mo-list { margin-bottom: 12px; }
+.mo-list .rows { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); column-gap: 8px; }
 .wk-area-title { font-size: 13px; display: flex; align-items: center; gap: 6px; margin: 6px 2px 4px; }
 .wk-area-title::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: color-mix(in srgb, var(--c) 45%, var(--card)); border: 2px solid var(--c); }
 .wk-area-title.no-area::before { background: var(--card); border-color: color-mix(in srgb, var(--sub) 50%, transparent); }

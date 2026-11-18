@@ -6,7 +6,7 @@
 <title>오늘한칸 v3</title>
 <meta name="description" content="프로젝트 중심 불렛저널 계획 앱 — 체험판" />
 <link rel="icon" type="image/svg+xml" href="../assets/symbol-hankan.svg" />
-<link rel="stylesheet" href="style.css?v=20261118b" />
+<link rel="stylesheet" href="style.css?v=20261118c" />
 </head>
 <body>
 <header class="top">
@@ -73,7 +73,11 @@
     <h1><span id="wkTitle"></span> <span id="wkBadge" class="today-badge">이번 주</span></h1>
   </div>
   <div class="wk-grid">
-    <aside class="wk-left zone" aria-label="이번 주 목록">
+    <aside class="wk-left zone" aria-label="이번 주 목록" data-drop-week>
+      <section class="wk-month" data-no-drop>
+        <div class="zone-head"><h2 id="wkMonthTitle">이번 달에서</h2><span class="hint">끌어서 이번 주·날짜에 놓기</span></div>
+        <ul id="wkMonth" class="rows"></ul>
+      </section>
       <div class="zone-head"><h2>이번 주</h2><span class="hint">영역별로 고정 · 오른쪽 날짜로 끌어 놓기</span></div>
       <div id="wkAreas"></div>
     </aside>
@@ -86,6 +90,11 @@
     <h1><span id="moTitle"></span> <span id="moBadge" class="today-badge">이번 달</span></h1>
     <p class="hint">한 칸 = 오전 · 오후 · 저녁. 빈 줄(·)이 빈 시간이에요</p>
   </div>
+  <section class="mo-list zone" aria-labelledby="moListTitle">
+    <div class="zone-head"><h2 id="moListTitle">이번 달에 할 일</h2><span class="hint">[주간]에서 한 주씩 가져와요</span></div>
+    <ul id="moList" class="rows"></ul>
+    <form id="moAdd" class="add-form" autocomplete="off"><input type="text" enterkeyhint="done" aria-label="이번 달에 할 일 적기" /></form>
+  </section>
   <div class="mo-grid">
     <div class="mo-cal">
       <div class="mo-dow" aria-hidden="true"><span class="is-sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
@@ -173,10 +182,10 @@
   </form>
 </dialog>
 
-<script src="store.js?v=20261118a"></script>
-<script src="gesture.js?v=20261118a"></script>
-<script src="timeline.js?v=20261118a"></script>
-<script src="sync.js?v=20261118a"></script>
-<script src="app.js?v=20261118a"></script>
+<script src="store.js?v=20261118c"></script>
+<script src="gesture.js?v=20261118c"></script>
+<script src="timeline.js?v=20261118c"></script>
+<script src="sync.js?v=20261118c"></script>
+<script src="app.js?v=20261118c"></script>
 </body>
 </html>
