@@ -34,6 +34,7 @@ const planOf = (p, title) => p.evaluate(t => { const x = bj.state.plans.find(y =
   try {
     fs.mkdirSync(OUT, { recursive: true });
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Asia/Seoul', locale: 'ko-KR' });
+    await ctx.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/javascript', body: '' }));
     const p = await ctx.newPage();
     p.on('pageerror', e => errors.push(e.message));
     p.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -148,6 +149,7 @@ const planOf = (p, title) => p.evaluate(t => { const x = bj.state.plans.find(y =
 
     // 11. 휴대폰 390: 가로 스크롤 없음, 글자 대신 색 막대, 달력 아래 자세히
     const m = await b.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'Asia/Seoul', locale: 'ko-KR', hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+    await m.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/javascript', body: '' }));
     const mp = await m.newPage();
     mp.on('pageerror', e => errors.push(e.message));
     await mp.clock.install({ time: new Date('2026-11-17T10:20:00+09:00') });

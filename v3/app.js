@@ -6,6 +6,47 @@
   let storage = null; try { storage = window.localStorage; } catch (e) { /* 개인 창 등 */ }
   const store = createStore(storage);
   window.bj = store; // 테스트·디버그용
+  // 계정 연동(PC·휴대폰). 로그인 안 하면 이 기기에만
+  const SYNC_TEXT = { loading: '…', local: '이 기기에만', saving: '저장 중…', saved: '☁ 저장됨', offline: '오프라인', error: '저장 안 됨' };
+  const sync = BJSync.createSync(store, { storage, onChange: s => renderSync(s) });
+  window.bjSync = sync;
+  function renderSync(s) {
+    const pill = document.getElementById('syncStatus'); if (!pill) return;
+    pill.dataset.s = s.status; pill.textContent = SYNC_TEXT[s.status] || '';
+    pill.title = s.signedIn ? `${s.email} 계정에 저장` : '로그인하면 PC·휴대폰에 같이 저장돼요';
+    const foot = document.getElementById('footSync');
+    if (foot) foot.innerHTML = s.signedIn ? '계정에 저장돼 <b>PC·휴대폰에서 같이</b> 보여요.' : '로그인하지 않으면 <b>이 기기 브라우저에만</b> 저장돼요.';
+    if (document.getElementById('setDlg')?.open) renderAccount();
+  }
+  // 설정 창의 계정 칸
+  function renderAccount() {
+    const box = document.getElementById('acctBox');
+    if (sync.signedIn) {
+      box.innerHTML = `<p class="acct-who"><b></b> 로 로그인했어요. 기록이 PC·휴대폰에 같이 저장돼요.</p><p class="dlg-sub">상태: ${SYNC_TEXT[sync.status]}</p><button type="button" id="acctOut" class="link-btn">로그아웃</button><p id="acctMsg" class="acct-msg" role="alert"></p>`;
+      box.querySelector('.acct-who b').textContent = sync.email;
+      box.querySelector('#acctOut').onclick = async () => {
+        if (!confirm('로그아웃할까요? 이 기기의 기록은 지워지고, 기록은 계정에 남아요.')) return;
+        const msg = await sync.signOut();
+        if (msg) box.querySelector('#acctMsg').textContent = msg;
+      };
+    } else {
+      box.innerHTML = `<p class="dlg-sub">기존 오늘한칸과 같은 계정이에요. 로그인하면 PC·휴대폰에 같이 저장되고, 지금 이 기기 기록도 계정으로 옮겨요.</p>
+        <div class="acct-form"><input id="acctEmail" type="email" autocomplete="username" placeholder="이메일" aria-label="이메일" />
+        <input id="acctPw" type="password" autocomplete="current-password" placeholder="비밀번호" aria-label="비밀번호" />
+        <button type="button" id="acctIn" class="primary-btn">로그인</button></div>
+        <p class="dlg-sub">계정 만들기는 <a href="../">기존 오늘한칸</a>에서 해요.</p><p id="acctMsg" class="acct-msg" role="alert"></p>`;
+      const go = async () => {
+        const btn = box.querySelector('#acctIn'), msgEl = box.querySelector('#acctMsg');
+        const email = box.querySelector('#acctEmail').value.trim(), pw = box.querySelector('#acctPw').value;
+        if (!email || !pw) { msgEl.textContent = '이메일과 비밀번호를 적어 주세요.'; return; }
+        btn.disabled = true; msgEl.textContent = '로그인 중…';
+        const msg = await sync.signIn(email, pw);
+        btn.disabled = false; if (!msg) msgEl.textContent = ''; else msgEl.textContent = msg;
+      };
+      box.querySelector('#acctIn').onclick = go;
+      box.querySelector('#acctPw').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); go(); } };
+    }
+  }
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -444,6 +485,7 @@
   const SYM_FIELDS = { task: 'symTask', event: 'symEvent', note: 'symNote', done: 'symDone', migrated: 'symMigrated' };
   const NEW_COLORS = ['#E58F6F', '#7C9CE0', '#D98FC9', '#B9A36A', '#6FBF9A', '#C98A6B'];
   function openSettings() {
+    renderAccount();
     const dlg = $('setDlg'), cur = { ...BJStore.DEFAULT_SYMBOLS, ...(store.state.settings.symbols || {}) };
     let draft = store.allAreas().map(a => ({ id: a.id, name: a.name, color: a.color, archived: !!a.archived }));
     const drawAreas = () => {
@@ -654,7 +696,8 @@
   $('todayBtn').onclick = () => { selDate = today; render(); scrollToNow(); };
   $('importBtn').onclick = openImport;
   $('settingsBtn').onclick = openSettings;
-  $('resetBtn').onclick = () => { if (confirm('체험판 기록을 모두 지우고 처음부터 시작할까요?')) store.reset(); };
+  $('resetBtn').onclick = () => { if (confirm(sync.signedIn ? '기록을 모두 지우고 처음부터 시작할까요? 계정의 기록도 지워져요(PC·휴대폰 모두).' : '이 기기 기록을 모두 지우고 처음부터 시작할까요?')) store.reset(); };
+  $('syncStatus').onclick = () => (sync.signedIn ? sync.syncNow() : openSettings());
   store.subscribe(render);
 
   function scrollToNow() {
@@ -670,4 +713,5 @@
 
   render();
   if (!storage) toast('이 브라우저에서는 저장이 안 돼요. 창을 닫으면 기록이 사라져요.');
+  sync.start();
 })();

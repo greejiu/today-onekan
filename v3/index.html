@@ -6,7 +6,7 @@
 <title>오늘한칸 v3</title>
 <meta name="description" content="프로젝트 중심 불렛저널 계획 앱 — 체험판" />
 <link rel="icon" type="image/svg+xml" href="../assets/symbol-hankan.svg" />
-<link rel="stylesheet" href="style.css?v=20261117a" />
+<link rel="stylesheet" href="style.css?v=20261118a" />
 </head>
 <body>
 <header class="top">
@@ -16,7 +16,10 @@
       <a href="#week">주간</a>
       <a href="#month">월간</a>
     </nav>
-    <button type="button" id="settingsBtn" class="icon-btn" aria-label="설정" title="설정">⚙</button>
+    <div class="top-right">
+      <button type="button" id="syncStatus" class="sync-pill" data-s="loading" aria-live="polite" title="저장 상태">…</button>
+      <button type="button" id="settingsBtn" class="icon-btn" aria-label="설정" title="설정">⚙</button>
+    </div>
   </div>
   <nav class="datenav" aria-label="날짜">
     <button type="button" id="prevDay" aria-label="전날">‹</button>
@@ -93,7 +96,7 @@
 </main>
 
 <footer class="foot">
-  <p><b>오늘한칸 v3 체험판</b> · 체험판이라 <b>이 기기 브라우저에만</b> 저장돼요. 기존 오늘한칸 기록과는 따로예요.</p>
+  <p><b>오늘한칸 v3</b> · <span id="footSync">로그인하지 않으면 <b>이 기기 브라우저에만</b> 저장돼요.</span> 기존 오늘한칸 기록과는 따로예요.</p>
   <p><a href="../">기존 오늘한칸으로</a> · <button type="button" id="resetBtn" class="link-btn">처음부터 다시</button></p>
 </footer>
 
@@ -116,7 +119,9 @@
 
 <dialog id="setDlg" class="dlg dlg-wide">
   <form method="dialog">
-    <h2>설정</h2>
+    <h2 tabindex="-1" autofocus>설정</h2>
+    <h3 class="dlg-h3">계정</h3>
+    <div id="acctBox" class="acct"></div>
     <h3 class="dlg-h3">영역</h3>
     <p class="dlg-sub">이름과 색을 바꾸고 ▲▼로 순서를 정해요. 숨긴 영역의 작업은 색을 그대로 가져요.</p>
     <ul id="areaEdit" class="area-edit"></ul>
@@ -168,9 +173,10 @@
   </form>
 </dialog>
 
-<script src="store.js?v=20261117a"></script>
-<script src="gesture.js?v=20261117a"></script>
-<script src="timeline.js?v=20261117a"></script>
-<script src="app.js?v=20261117a"></script>
+<script src="store.js?v=20261118a"></script>
+<script src="gesture.js?v=20261118a"></script>
+<script src="timeline.js?v=20261118a"></script>
+<script src="sync.js?v=20261118a"></script>
+<script src="app.js?v=20261118a"></script>
 </body>
 </html>

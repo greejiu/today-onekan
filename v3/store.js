@@ -56,6 +56,67 @@
     return s;
   }
 
+  /* ---------- 계정 연동용: 고친 시각 도장 + 합치기 (2026-11-17) ----------
+   * 항목(영역·프로젝트·작업·계획)마다 u = 마지막으로 고친 시각(ms). 지운 항목은 state.gone[id] = 지운 시각.
+   * 설정은 state.settingsU. 두 기기 기록을 합칠 때 항목별로 더 최근 것을 남기고, 지운 뒤 다시 안 고친 항목은 뺀다. */
+  const COLS = ['areas', 'projects', 'tasks', 'plans'];
+  function stamp(before, after, now) {
+    after.gone = after.gone || {};
+    COLS.forEach(c => {
+      const old = new Map((before[c] || []).map(x => [x.id, JSON.stringify(x)]));
+      const ids = new Set();
+      (after[c] || []).forEach(x => {
+        ids.add(x.id);
+        if (old.get(x.id) !== JSON.stringify(x)) { x.u = now; delete after.gone[x.id]; }
+      });
+      old.forEach((_, id) => { if (!ids.has(id)) after.gone[id] = now; });
+    });
+    if (JSON.stringify(before.settings) !== JSON.stringify(after.settings)) after.settingsU = now;
+  }
+  // b = 서버 쪽. 더 최근인지 가릴 수 없으면(도장 같음·없음) b를 남김
+  function merge(a, b) {
+    if (!b || typeof b !== 'object') return JSON.parse(JSON.stringify(a));
+    if (!a || typeof a !== 'object') return JSON.parse(JSON.stringify(b));
+    const out = { version: Math.max(a.version || 0, b.version || 0), gone: { ...(a.gone || {}) } };
+    Object.entries(b.gone || {}).forEach(([id, t]) => { if (!(out.gone[id] >= t)) out.gone[id] = t; });
+    COLS.forEach(c => {
+      const m = new Map();
+      [...(a[c] || []), ...(b[c] || [])].forEach(x => { const cur = m.get(x.id); if (!cur || (x.u || 0) >= (cur.u || 0)) m.set(x.id, x); });
+      out[c] = [...m.values()].filter(x => !(out.gone[x.id] > (x.u || 0))).map(x => JSON.parse(JSON.stringify(x)));
+    });
+    // 이름이 같은 영역은 하나로(기기마다 기본 영역이 다른 id로 생기므로). 남길 것은 최근 고친 것, 같으면 id 순 → 어느 기기에서 합쳐도 같은 결과
+    const keep = new Map(), remap = new Map();
+    out.areas.forEach(x => {
+      const k = String(x.name || '').trim();
+      const cur = keep.get(k);
+      if (!cur) { keep.set(k, x); return; }
+      const win = (x.u || 0) > (cur.u || 0) || ((x.u || 0) === (cur.u || 0) && x.id < cur.id) ? x : cur;
+      const lose = win === x ? cur : x;
+      keep.set(k, win); remap.set(lose.id, win.id);
+    });
+    if (remap.size) {
+      out.areas = [...keep.values()];
+      const fix = id => { let r = id; for (let i = 0; i < 5 && remap.has(r); i++) r = remap.get(r); return r; };
+      out.tasks.forEach(t => { if (t.areaId) t.areaId = fix(t.areaId); });
+      out.projects.forEach(p => { if (p.areaId) p.areaId = fix(p.areaId); });
+    }
+    out.areas.sort((x, y) => (x.order ?? 0) - (y.order ?? 0)).forEach((x, i) => { x.order = i; });
+    const sa = a.settingsU || 0, sb2 = b.settingsU || 0;
+    out.settings = JSON.parse(JSON.stringify(sb2 >= sa ? b.settings : a.settings));
+    out.settingsU = Math.max(sa, sb2);
+    return out;
+  }
+  // 키 순서와 상관없이 같은 기록인지 비교(서버 jsonb는 키 순서를 바꿈)
+  function canon(v) {
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    if (v && typeof v === 'object') return '{' + Object.keys(v).filter(k => v[k] !== undefined).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+    return JSON.stringify(v);
+  }
+
+  // 도장 시계: 같은 1ms 안에 여러 번 고쳐도 순서가 섞이지 않게 항상 앞으로만
+  let clock = 0;
+  const tick = () => (clock = Math.max(Date.now(), clock + 1));
+
   function createStore(storage) {
     const listeners = new Set();
     let undoSnap = null;
@@ -73,11 +134,12 @@
       return fresh();
     }
     function save() { try { storage && storage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* 저장 실패해도 화면은 계속 */ } }
-    function emit() { listeners.forEach(f => f(state)); }
+    function emit(meta = {}) { listeners.forEach(f => f(state, meta)); }
     function mutate(label, fn) {
       const before = JSON.stringify(state);
       const result = fn(state);
       if (JSON.stringify(state) === before) return result;
+      stamp(JSON.parse(before), state, tick());
       undoSnap = { label, json: before };
       save(); emit();
       return result;
@@ -264,7 +326,10 @@
       canUndo: () => !!undoSnap,
       undo() {
         if (!undoSnap) return false;
-        state = JSON.parse(undoSnap.json); undoSnap = null; save(); emit();
+        const cur = state;
+        state = JSON.parse(undoSnap.json); undoSnap = null;
+        stamp(cur, state, tick()); // 되돌린 것도 '지금 고친 것'으로(다른 기기와 합칠 때 되돌림이 이기게)
+        save(); emit();
         return true;
       },
       /* 기호 설정. 한 칸에 최대 3글자. 할일·일정·메모·옮김을 비우면 기본값, 완료를 비우면 원래 기호 그대로 */
@@ -301,10 +366,22 @@
         });
       },
       allAreas: () => [...state.areas].sort((a, b) => a.order - b.order),
-      reset() { state = fresh(); undoSnap = null; save(); emit(); },
+      // 처음부터 다시: 지금 기록을 모두 '지움'으로 표시(계정에 연결돼 있으면 다른 기기에서도 지워짐)
+      reset() { const before = state; state = fresh(); stamp(before, state, tick()); undoSnap = null; save(); emit(); },
+      /* 계정 연동: 다른 기기 기록과 합친 결과로 바꾸기(실행 취소 기록 없음, 구독자에게 remote 표시) */
+      merge: (a, b) => merge(a, b),
+      sameAs: (a, b) => canon(a) === canon(b),
+      replaceState(next) {
+        if (!next || next.version !== VERSION) next = next && next.version < VERSION ? migrate(next) : null;
+        if (!next) return false;
+        if (canon(next) === canon(state)) return false;
+        state = next; undoSnap = null; save(); emit({ remote: true });
+        return true;
+      },
+      clearLocal() { state = fresh(); undoSnap = null; save(); emit({ remote: true }); },
     };
     return api;
   }
 
-  root.BJStore = { createStore, dateStr, parseDate, addDays, weekStart, todayStr, KEY, DEFAULT_SYMBOLS, AREA_SEED, SLOTS, slotOf, slotOfMinute };
+  root.BJStore = { merge, canon, createStore, dateStr, parseDate, addDays, weekStart, todayStr, KEY, DEFAULT_SYMBOLS, AREA_SEED, SLOTS, slotOf, slotOfMinute };
 })(typeof window !== 'undefined' ? window : globalThis);
