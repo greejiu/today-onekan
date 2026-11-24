@@ -14,6 +14,8 @@
   const slotOfMinute = m => (m < 720 ? 'am' : m < 1080 ? 'pm' : 'eve');
   const slotOf = p => (p.start != null ? slotOfMinute(p.start) : (SLOTS.includes(p.slot) ? p.slot : null));
   const KINDS = ['task', 'event', 'note'];
+  const PAGE_TYPES = ['day', 'week', 'month', 'note'];
+  const PAPERS = ['blank', 'line', 'grid', 'dot'];
   // 기호 기본값(결 지정 2026-11-15): • 할일 · * 일정 · - 메모 · • 완료(줄긋기) · > 다음으로. 완료를 비우면 원래 기호 그대로
   const DEFAULT_SYMBOLS = { task: '•', event: '*', note: '-', done: '•', migrated: '>' };
 
@@ -31,7 +33,7 @@
     return {
       version: VERSION,
       areas: AREA_SEED.map(([name, color], i) => ({ id: uid(), name, color, order: i, archived: false })),
-      projects: [], tasks: [], plans: [],
+      projects: [], tasks: [], plans: [], pages: [],
       settings: { dayStart: 360, dayEnd: 1440, symbols: { ...DEFAULT_SYMBOLS }, strikeDone: true },
     };
   }
@@ -87,7 +89,7 @@
   /* ---------- 계정 연동용: 고친 시각 도장 + 합치기 (2026-11-17) ----------
    * 항목(영역·프로젝트·작업·계획)마다 u = 마지막으로 고친 시각(ms). 지운 항목은 state.gone[id] = 지운 시각.
    * 설정은 state.settingsU. 두 기기 기록을 합칠 때 항목별로 더 최근 것을 남기고, 지운 뒤 다시 안 고친 항목은 뺀다. */
-  const COLS = ['areas', 'projects', 'tasks', 'plans'];
+  const COLS = ['areas', 'projects', 'tasks', 'plans', 'pages']; // pages = 바인더 속지(2026-11-24, 설계 10장)
   function stamp(before, after, now) {
     after.gone = after.gone || {};
     COLS.forEach(c => {
@@ -157,7 +159,7 @@
         if (raw) {
           let s = JSON.parse(raw);
           if (s && s.version < VERSION) { s = migrate(s); try { storage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* 다음에 */ } }
-          if (s && s.version === VERSION) return s;
+          if (s && s.version === VERSION) { if (!Array.isArray(s.pages)) s.pages = []; return s; }
         }
       } catch (e) { /* 저장소를 못 읽으면 새로 시작 */ }
       return fresh();
@@ -363,6 +365,72 @@
         const next = timed.filter(p => p.start > minute && p.status === 'open').sort((a, b) => a.start - b.start)[0] || null;
         return { current: cur, next };
       },
+      /* ---------- 바인더 속지 (설계 10장) ---------- */
+      pages: () => [...(state.pages || [])].sort((a, b) => a.order - b.order),
+      page: id => (state.pages || []).find(x => x.id === id) || null,
+      /* 속지 끼우기. 같은 달 월간·같은 주 주간·같은 날 하루는 한 번만(이미 있으면 그 id). after = 이 속지 뒤에 끼움(없으면 맨 뒤) */
+      addPage({ type, period = null, paper = 'line', title = '', after = null }) {
+        if (!PAGE_TYPES.includes(type)) return null;
+        if (type !== 'note') {
+          if (!period || !/^\d{4}-\d{2}-\d{2}$/.test(period)) return null;
+          period = type === 'month' ? period.slice(0, 8) + '01' : type === 'week' ? weekStart(period) : period;
+          const ex = (state.pages || []).find(x => x.type === type && x.period === period);
+          if (ex) return ex.id;
+        }
+        return mutate('속지 끼우기', s => {
+          s.pages = s.pages || [];
+          const list = [...s.pages].sort((a, b) => a.order - b.order);
+          const i = after ? list.findIndex(x => x.id === after) : -1;
+          const order = i < 0 || i === list.length - 1 ? (list.length ? list[list.length - 1].order + 1 : 1) : (list[i].order + list[i + 1].order) / 2;
+          const pg = { id: uid(), type, period: type === 'note' ? null : period, order, createdAt: Date.now() };
+          if (type === 'note') { pg.paper = PAPERS.includes(paper) ? paper : 'line'; pg.title = String(title || '').trim().slice(0, 40); pg.ink = []; }
+          s.pages.push(pg);
+          return pg.id;
+        });
+      },
+      /* 순서 바꾸기: 이 속지를 toIndex(0부터) 자리로. 쪽수는 순서대로 자동 */
+      movePage(id, toIndex) {
+        const list = api.pages(), from = list.findIndex(x => x.id === id);
+        if (from < 0) return;
+        toIndex = Math.max(0, Math.min(list.length - 1, toIndex));
+        if (toIndex === from) return;
+        mutate('속지 순서', s => {
+          const ids = list.map(x => x.id); ids.splice(from, 1); ids.splice(toIndex, 0, id);
+          ids.forEach((pid, i) => { const pg = s.pages.find(x => x.id === pid); if (pg.order !== i + 1) pg.order = i + 1; });
+        });
+      },
+      removePage(id) {
+        if (!api.page(id)) return;
+        mutate('속지 빼기', s => { s.pages = s.pages.filter(x => x.id !== id); });
+      },
+      setPageNote(id, { title, paper }) {
+        const pg = api.page(id); if (!pg || pg.type !== 'note') return;
+        mutate('노트', () => {
+          if (title !== undefined) pg.title = String(title || '').trim().slice(0, 40);
+          if (paper !== undefined && PAPERS.includes(paper)) pg.paper = paper;
+        });
+      },
+      /* 손글씨: 한 획 더하기 / 획 지우기(번호들). 한 번 = 실행 취소 한 번 */
+      addStroke(id, stroke) {
+        const pg = api.page(id); if (!pg || pg.type !== 'note' || !Array.isArray(stroke) || stroke.length < 6) return;
+        const clean = stroke.map(n => Math.round(Number(n) || 0));
+        mutate('쓰기', () => { pg.ink = [...(pg.ink || []), clean]; });
+      },
+      eraseStrokes(id, idxs) {
+        const pg = api.page(id); if (!pg || !idxs || !idxs.length) return;
+        const drop = new Set(idxs);
+        mutate('지우기', () => { pg.ink = (pg.ink || []).filter((_, i) => !drop.has(i)); });
+      },
+      // 노트 되돌리기용: 획 목록을 통째로 바꿈
+      setInk(id, list) {
+        const pg = api.page(id); if (!pg || pg.type !== 'note' || !Array.isArray(list)) return;
+        const clean = list.filter(Array.isArray).map(st => st.map(n => Math.round(Number(n) || 0)));
+        mutate('되돌리기', () => { pg.ink = clean; });
+      },
+      clearInk(id) {
+        const pg = api.page(id); if (!pg || !(pg.ink || []).length) return;
+        mutate('모두 지우기', () => { pg.ink = []; });
+      },
       canUndo: () => !!undoSnap,
       undo() {
         if (!undoSnap) return false;
@@ -414,6 +482,7 @@
       replaceState(next) {
         if (!next || next.version !== VERSION) next = next && next.version < VERSION ? migrate(next) : null;
         if (!next) return false;
+        if (!Array.isArray(next.pages)) next = { ...next, pages: [] };
         if (canon(next) === canon(state)) return false;
         state = next; undoSnap = null; save(); emit({ remote: true });
         return true;
@@ -423,5 +492,5 @@
     return api;
   }
 
-  root.BJStore = { merge, canon, createStore, dateStr, parseDate, addDays, weekStart, todayStr, KEY, DEFAULT_SYMBOLS, AREA_SEED, SLOTS, slotOf, slotOfMinute };
+  root.BJStore = { merge, canon, createStore, dateStr, parseDate, addDays, weekStart, todayStr, KEY, DEFAULT_SYMBOLS, AREA_SEED, SLOTS, slotOf, slotOfMinute, PAGE_TYPES, PAPERS };
 })(typeof window !== 'undefined' ? window : globalThis);

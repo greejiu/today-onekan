@@ -16,7 +16,7 @@
     pill.title = s.signedIn ? `${s.email} 계정에 저장` : '로그인하면 PC·휴대폰에 같이 저장돼요';
     const foot = document.getElementById('footSync');
     if (foot) foot.innerHTML = s.signedIn ? '계정에 저장돼 <b>PC·휴대폰에서 같이</b> 보여요.' : '로그인하지 않으면 <b>이 기기 브라우저에만</b> 저장돼요.';
-    if (document.getElementById('setDlg')?.open) renderAccount();
+    if (document.getElementById('setDlg')?.open || document.querySelector('form.in-page')) renderAccount();
   }
   // 설정 창의 계정 칸
   function renderAccount() {
@@ -63,7 +63,12 @@
   // 휴대폰 폭이면 월간을 주 묶음 목록 + 7열 달력으로(PC는 8열)
   const narrowMq = window.matchMedia('(max-width: 760px)');
   narrowMq.addEventListener?.('change', () => { if (mode === 'month') render(); });
-  const modeOf = () => (location.hash === '#week' ? 'week' : location.hash === '#month' ? 'month' : 'today');
+  // 바인더(#b/…)에서는 그 속지가 보여 주는 화면. 기호·색인·노트·설정은 'page'(바인더가 직접 그림)
+  let binder = null, binderPageSeen = null;
+  const modeOf = () => {
+    if (binder && binder.active()) { const c = binder.current(); return ({ day: 'today', week: 'week', month: 'month' })[c?.kind] || 'page'; }
+    return location.hash === '#week' ? 'week' : location.hash === '#month' ? 'month' : 'today';
+  };
   const SLOT_LABEL = { am: '오전', pm: '오후', eve: '저녁' };
   const SLOT_HINT = { am: '12시 전', pm: '12~18시', eve: '18시 이후' };
   const addMonths = (d, n) => { const x = parseDate(d), day = x.getDate(); const y = new Date(x.getFullYear(), x.getMonth() + n, 1); y.setDate(Math.min(day, new Date(y.getFullYear(), y.getMonth() + 1, 0).getDate())); return BJStore.dateStr(y); };
@@ -119,11 +124,18 @@
   /* ---------- 그리기 ---------- */
   function render() {
     document.body.classList.toggle('strike-done', store.strikeDone());
+    const bc = binder ? binder.current() : null;
+    // 속지를 새로 열 때만 그 속지의 날짜로(속지 안에서 월간 날짜를 고르는 건 그대로 두게)
+    if (bc && bc.page && bc.kind !== 'note' && binderPageSeen !== bc.id) selDate = bc.page.period;
+    binderPageSeen = bc ? bc.id : null;
     mode = modeOf();
-    $('todayView').hidden = mode !== 'today';
-    $('weekView').hidden = mode !== 'week';
-    $('monthView').hidden = mode !== 'month';
-    document.querySelectorAll('.tabs a').forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === '#' + mode ? 'page' : 'false'));
+    binder && binder.renderChrome(bc);
+    const own = binder ? binder.renderOwn(bc) : false;
+    $('todayView').hidden = own || mode !== 'today';
+    $('weekView').hidden = own || mode !== 'week';
+    $('monthView').hidden = own || mode !== 'month';
+    document.querySelectorAll('.tabs a').forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === (bc ? '#b' : '#' + mode) ? 'page' : 'false'));
+    if (own) { tl = null; return; }
     $('todayBtn').textContent = { today: '오늘', week: '이번 주', month: '이번 달' }[mode];
     $('prevDay').setAttribute('aria-label', { today: '전날', week: '지난 주', month: '지난 달' }[mode]);
     $('nextDay').setAttribute('aria-label', { today: '다음날', week: '다음 주', month: '다음 달' }[mode]);
@@ -574,8 +586,28 @@
   const SYM_FIELDS = { task: 'symTask', event: 'symEvent', note: 'symNote', done: 'symDone', migrated: 'symMigrated' };
   const NEW_COLORS = ['#E58F6F', '#7C9CE0', '#D98FC9', '#B9A36A', '#6FBF9A', '#C98A6B'];
   function openSettings() {
+    const save = fillSettings(), dlg = $('setDlg');
+    dlg.returnValue = '';
+    dlg.showModal();
+    dlg.onclose = () => { if (dlg.returnValue === 'save') save(); };
+  }
+  // 바인더 맨 뒤 장 = 설정. 설정 창의 내용을 그 장으로 옮겨 그대로 씀(저장 = 저장, 취소 = 바꾼 것 되돌림)
+  const setForm = $('setDlg').querySelector('form');
+  const settingsPage = {
+    mount(el) {
+      el.appendChild(setForm); setForm.classList.add('in-page');
+      let save = fillSettings();
+      setForm.onsubmit = e => {
+        e.preventDefault();
+        if (e.submitter && e.submitter.value === 'save') save(); else toast('바꾼 것을 되돌렸어요');
+        save = fillSettings();
+      };
+    },
+    unmount() { setForm.onsubmit = null; setForm.classList.remove('in-page'); $('setDlg').appendChild(setForm); },
+  };
+  function fillSettings() {
     renderAccount();
-    const dlg = $('setDlg'), cur = { ...BJStore.DEFAULT_SYMBOLS, ...(store.state.settings.symbols || {}) };
+    const cur = { ...BJStore.DEFAULT_SYMBOLS, ...(store.state.settings.symbols || {}) };
     let draft = store.allAreas().map(a => ({ id: a.id, name: a.name, color: a.color, archived: !!a.archived }));
     const drawAreas = () => {
       const shown = draft.filter(a => !a.archived), hidden = draft.filter(a => a.archived);
@@ -622,10 +654,7 @@
     $('symBox').oninput = preview;
     $('symDefault').onclick = () => { Object.entries(SYM_FIELDS).forEach(([k, id]) => { $(id).value = BJStore.DEFAULT_SYMBOLS[k]; }); $('symStrike').checked = true; preview(); };
     preview();
-    dlg.returnValue = '';
-    dlg.showModal();
-    dlg.onclose = () => {
-      if (dlg.returnValue !== 'save') return;
+    return () => {
       store.saveSettings({ symbols: read(), strikeDone: $('symStrike').checked, areas: draft });
       undoToast('설정을 저장했어요');
     };
@@ -819,6 +848,8 @@
   }
 
   /* ---------- 시작 ---------- */
+  binder = BJBinder.create({ store, esc, toast, undoToast, settings: settingsPage });
+  window.bjBinder = binder; // 테스트·디버그용
   wireAddForm('untimedAdd', 'day');
   wireAddForm('weekAdd', 'week');
   const step = n => (mode === 'month' ? addMonths(selDate, n) : addDays(selDate, mode === 'week' ? 7 * n : n));
@@ -826,7 +857,7 @@
   $('nextDay').onclick = () => { selDate = step(1); render(); };
   $('todayBtn').onclick = () => { selDate = today; render(); scrollToNow(); };
   $('importBtn').onclick = openImport;
-  $('settingsBtn').onclick = openSettings;
+  $('settingsBtn').onclick = () => (binder.active() ? binder.go('settings', 1) : openSettings());
   $('resetBtn').onclick = () => { if (confirm(sync.signedIn ? '기록을 모두 지우고 처음부터 시작할까요? 계정의 기록도 지워져요(PC·휴대폰 모두).' : '이 기기 기록을 모두 지우고 처음부터 시작할까요?')) store.reset(); };
   $('syncStatus').onclick = () => (sync.signedIn ? sync.syncNow() : openSettings());
   store.subscribe(render);

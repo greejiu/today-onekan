@@ -6,7 +6,7 @@
 <title>오늘한칸 v3</title>
 <meta name="description" content="프로젝트 중심 불렛저널 계획 앱 — 체험판" />
 <link rel="icon" type="image/svg+xml" href="../assets/symbol-hankan.svg" />
-<link rel="stylesheet" href="style.css?v=20261118g" />
+<link rel="stylesheet" href="style.css?v=20261124a" />
 </head>
 <body>
 <header class="top">
@@ -15,16 +15,22 @@
       <a href="#today">오늘</a>
       <a href="#week">주간</a>
       <a href="#month">월간</a>
+      <a href="#b">바인더</a>
     </nav>
     <div class="top-right">
       <button type="button" id="syncStatus" class="sync-pill" data-s="loading" aria-live="polite" title="저장 상태">…</button>
       <button type="button" id="settingsBtn" class="icon-btn" aria-label="설정" title="설정">⚙</button>
     </div>
   </div>
-  <nav class="datenav" aria-label="날짜">
+  <nav id="dateNav" class="datenav" aria-label="날짜">
     <button type="button" id="prevDay" aria-label="전날">‹</button>
     <button type="button" id="todayBtn">오늘</button>
     <button type="button" id="nextDay" aria-label="다음날">›</button>
+  </nav>
+  <nav id="binderNav" class="datenav binder-nav" aria-label="바인더 쪽" hidden>
+    <button type="button" id="pgPrev" aria-label="앞 장">‹</button>
+    <button type="button" id="pgLabel" class="pg-label"></button>
+    <button type="button" id="pgNext" aria-label="뒤 장">›</button>
   </nav>
 </header>
 
@@ -105,6 +111,10 @@
   </div>
 </main>
 
+<main id="binderView" class="bv" hidden></main>
+<div class="rings" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<span id="pgCorner" class="pg-corner" aria-hidden="true" hidden></span>
+
 <footer class="foot">
   <p><b>오늘한칸 v3</b> · <span id="footSync">로그인하지 않으면 <b>이 기기 브라우저에만</b> 저장돼요.</span> 기존 오늘한칸 기록과는 따로예요.</p>
   <p><a href="../">기존 오늘한칸으로</a> · <button type="button" id="resetBtn" class="link-btn">처음부터 다시</button></p>
@@ -170,6 +180,33 @@
   </form>
 </dialog>
 
+<dialog id="pageDlg" class="dlg">
+  <form method="dialog">
+    <h2>속지 끼우기</h2>
+    <p class="dlg-sub">맨 뒤에 끼우고, 끼운 순서대로 쪽수가 붙어요. 색인에서 순서를 바꿀 수 있어요.</p>
+    <fieldset class="pick-row"><legend class="sr-only">속지 종류</legend>
+      <label><input type="radio" name="ptype" value="month" checked /> 월간</label>
+      <label><input type="radio" name="ptype" value="week" /> 주간</label>
+      <label><input type="radio" name="ptype" value="day" /> 하루</label>
+      <label><input type="radio" name="ptype" value="note" /> 빈 노트</label>
+    </fieldset>
+    <label id="pageDateLab">어느 달 <input id="pageDate" type="date" /></label>
+    <div id="pageNoteBox" hidden>
+      <label>제목 (없어도 돼요) <input id="pageTitle" type="text" maxlength="40" autocomplete="off" /></label>
+      <fieldset class="pick-row"><legend>속지 모양</legend>
+        <label><input type="radio" name="paper" value="line" checked /> 줄</label>
+        <label><input type="radio" name="paper" value="grid" /> 모눈</label>
+        <label><input type="radio" name="paper" value="dot" /> 도트</label>
+        <label><input type="radio" name="paper" value="blank" /> 무지</label>
+      </fieldset>
+    </div>
+    <div class="dlg-btns">
+      <button value="cancel" formnovalidate>취소</button>
+      <button value="add" class="primary">끼우기</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="importDlg" class="dlg">
   <form method="dialog">
     <h2>어제 계획 가져오기</h2>
@@ -183,10 +220,11 @@
   </form>
 </dialog>
 
-<script src="store.js?v=20261118g"></script>
-<script src="gesture.js?v=20261118g"></script>
-<script src="timeline.js?v=20261118g"></script>
-<script src="sync.js?v=20261118g"></script>
-<script src="app.js?v=20261118g"></script>
+<script src="store.js?v=20261124a"></script>
+<script src="gesture.js?v=20261124a"></script>
+<script src="timeline.js?v=20261124a"></script>
+<script src="sync.js?v=20261124a"></script>
+<script src="binder.js?v=20261124a"></script>
+<script src="app.js?v=20261124a"></script>
 </body>
 </html>
